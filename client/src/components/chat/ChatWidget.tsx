@@ -322,7 +322,7 @@ export function ChatWidget() {
 
   const displayName = config?.agentName || "Assistant";
   const avatarUrl = avatarSrc || config?.agentAvatarUrl || config?.fallbackAvatarUrl || "/favicon.png";
-  const headerIcon = config?.agentAvatarUrl || config?.fallbackAvatarUrl || "/favicon.png";
+  const headerIcon = config?.companyLogo || config?.fallbackAvatarUrl || "/favicon.png";
   const launcherHasAvatar = Boolean(avatarUrl);
 
   const handleAvatarError = useCallback(() => {

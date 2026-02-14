@@ -20,6 +20,8 @@ router.post("/chat/message", handleMessage);
 router.get("/chat/config", async (_req, res) => {
     try {
         const settings = await storage.getChatSettings();
+        const companySettings = await storage.getCompanySettings();
+
         if (!settings) {
             return res.json({
                 enabled: false,
@@ -27,6 +29,7 @@ router.get("/chat/config", async (_req, res) => {
                 welcomeMessage: "Hi! How can I help?",
                 agentAvatarUrl: "",
                 fallbackAvatarUrl: undefined,
+                companyLogo: companySettings?.logoIcon || undefined,
                 languageSelectorEnabled: false,
                 defaultLanguage: "en",
                 excludedUrlRules: [],
@@ -40,6 +43,7 @@ router.get("/chat/config", async (_req, res) => {
             agentName: settings.agentName || ui.title || "Assistant",
             agentAvatarUrl: settings.agentAvatarUrl || ui.avatarUrl || "",
             fallbackAvatarUrl: undefined,
+            companyLogo: companySettings?.logoIcon || undefined,
             welcomeMessage: settings.welcomeMessage || ui.welcomeMessage || "Hi! How can I help?",
             languageSelectorEnabled: settings.languageSelectorEnabled ?? false,
             defaultLanguage: settings.defaultLanguage || "en",
