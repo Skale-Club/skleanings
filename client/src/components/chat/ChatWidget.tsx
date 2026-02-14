@@ -265,7 +265,7 @@ export function ChatWidget() {
 
   useEffect(() => {
     if (!config) return;
-    setAvatarSrc(config.agentAvatarUrl || config.fallbackAvatarUrl || "/favicon.ico");
+    setAvatarSrc(config.agentAvatarUrl || config.fallbackAvatarUrl || "/favicon.png");
   }, [config]);
 
   useEffect(() => {
@@ -321,15 +321,15 @@ export function ChatWidget() {
   }, [config, location]);
 
   const displayName = config?.agentName || "Assistant";
-  const avatarUrl = avatarSrc || config?.agentAvatarUrl || config?.fallbackAvatarUrl || "/favicon.ico";
-  const headerIcon = config?.fallbackAvatarUrl || "/favicon.ico";
+  const avatarUrl = avatarSrc || config?.agentAvatarUrl || config?.fallbackAvatarUrl || "/favicon.png";
+  const headerIcon = config?.agentAvatarUrl || config?.fallbackAvatarUrl || "/favicon.png";
   const launcherHasAvatar = Boolean(avatarUrl);
 
   const handleAvatarError = useCallback(() => {
     if (config?.fallbackAvatarUrl && avatarSrc !== config.fallbackAvatarUrl) {
       setAvatarSrc(config.fallbackAvatarUrl);
     } else {
-      setAvatarSrc("/favicon.ico");
+      setAvatarSrc("/favicon.png");
     }
   }, [config?.fallbackAvatarUrl, avatarSrc]);
 

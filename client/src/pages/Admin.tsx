@@ -7679,7 +7679,7 @@ function ChatSection({ getAccessToken }: { getAccessToken: () => Promise<string 
   const assistantName = settingsDraft.agentName || companySettings?.companyName || 'Assistant';
   const assistantAvatar = (settingsDraft.agentAvatarUrl && settingsDraft.agentAvatarUrl.trim())
     ? settingsDraft.agentAvatarUrl
-    : (companySettings?.logoIcon || '/favicon.ico');
+    : (companySettings?.logoIcon || '/favicon.png');
   const visitorName = selectedConversation?.visitorName || 'Guest';
   const openConversations = conversations?.filter((conv) => conv.status === 'open').length || 0;
   const closedConversations = conversations?.filter((conv) => conv.status === 'closed').length || 0;

@@ -229,7 +229,7 @@ export function ChatSettings({
     const assistantName = settingsDraft.agentName || companyName || 'Assistant';
     const assistantAvatar = (settingsDraft.agentAvatarUrl && settingsDraft.agentAvatarUrl.trim())
         ? settingsDraft.agentAvatarUrl
-        : (companyLogo || '/favicon.ico');
+        : (companyLogo || '/favicon.png');
 
     return (
         <div className="max-w-4xl mx-auto space-y-6 pb-12">
