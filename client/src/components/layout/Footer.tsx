@@ -1,0 +1,140 @@
+import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import { useCompanySettings } from "@/context/CompanySettingsContext";
+import type { Category, Service } from "@shared/schema";
+import {
+  SiFacebook,
+  SiInstagram,
+  SiX,
+  SiYoutube,
+  SiLinkedin,
+  SiTiktok
+} from "react-icons/si";
+
+const platformIcons: Record<string, any> = {
+  facebook: SiFacebook,
+  instagram: SiInstagram,
+  twitter: SiX,
+  x: SiX,
+  youtube: SiYoutube,
+  linkedin: SiLinkedin,
+  tiktok: SiTiktok,
+};
+
+export function Footer() {
+  const { settings: companySettings } = useCompanySettings();
+
+  const { data: categories } = useQuery<Category[]>({
+    queryKey: ['/api/categories'],
+  });
+
+  const { data: services } = useQuery<Service[]>({
+    queryKey: ['/api/services'],
+  });
+
+  // Filter categories that have at least one service
+  const activeCategories = categories?.filter(category => 
+    services?.some(service => service.categoryId === category.id)
+  );
+
+  return (
+    <footer className="bg-slate-900 text-slate-200 py-6 pt-[40px] pb-[40px]">
+      <div className="container-custom mx-auto grid grid-cols-1 md:grid-cols-5 gap-8">
+        <div className="col-span-1 md:col-span-2">
+          <Link href="/" className="flex items-center gap-2 mb-4">
+            {companySettings?.logoDark ? (
+              <img
+                src={companySettings.logoDark}
+                alt={companySettings.companyName || ''}
+                className="h-7 w-auto"
+              />
+            ) : companySettings?.logoIcon ? (
+              <img
+                src={companySettings.logoIcon}
+                alt={companySettings.companyName || ''}
+                className="h-7 w-auto brightness-0 invert"
+              />
+            ) : companySettings?.companyName ? (
+              <span className="text-xl font-bold text-white">
+                {companySettings.companyName}
+              </span>
+            ) : null}
+          </Link>
+          <p className="text-slate-400 max-w-sm mb-6 text-[14px]">
+            Professional cleaning services. 
+            We provide upfront pricing and easy online booking for your convenience.
+          </p>
+          
+          {companySettings && (companySettings as any).socialLinks && Array.isArray((companySettings as any).socialLinks) && (companySettings as any).socialLinks.length > 0 && (
+            <div className="flex gap-4">
+              {((companySettings as any).socialLinks as {platform: string, url: string}[]).map((link, i) => {
+                const Icon = platformIcons[link.platform.toLowerCase()] || SiFacebook;
+                return (
+                  <a 
+                    key={i} 
+                    href={link.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-slate-400 hover:text-white transition-colors"
+                  >
+                    <Icon className="w-5 h-5" />
+                  </a>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        
+        <div>
+          <h4 className="font-bold text-white mb-4">Services</h4>
+          <ul className="space-y-2 text-sm text-slate-400">
+            {activeCategories && activeCategories.length > 0 ? (
+              <>
+                {activeCategories.map((category) => (
+                  <li key={category.id}>
+                    <Link href={`/services?category=${category.id}`} className="hover:text-primary transition-colors">
+                      {category.name}
+                    </Link>
+                  </li>
+                ))}
+                <li><Link href="/service-areas" className="hover:text-primary transition-colors">Service Areas</Link></li>
+              </>
+            ) : (
+              <>
+                <li><Link href="/services" className="hover:text-primary transition-colors">Home Cleaning</Link></li>
+                <li><Link href="/services" className="hover:text-primary transition-colors">Carpet Cleaning</Link></li>
+                <li><Link href="/services" className="hover:text-primary transition-colors">Upholstery</Link></li>
+                <li><Link href="/services" className="hover:text-primary transition-colors">Move-in/Move-out</Link></li>
+                <li><Link href="/service-areas" className="hover:text-primary transition-colors">Service Areas</Link></li>
+              </>
+            )}
+          </ul>
+        </div>
+        
+        <div>
+          <h4 className="font-bold text-white mb-4">Company</h4>
+          <ul className="space-y-2 text-sm text-slate-400">
+            <li><Link href="/about" className="hover:text-primary transition-colors">About Us</Link></li>
+            <li><Link href="/contact" className="hover:text-primary transition-colors">Contact</Link></li>
+            <li><Link href="/team" className="hover:text-primary transition-colors">Our Team</Link></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 className="font-bold text-white mb-4">Resources</h4>
+          <ul className="space-y-2 text-sm text-slate-400">
+            <li><Link href="/blog" className="hover:text-primary transition-colors">Blog</Link></li>
+            <li><Link href="/faq" className="hover:text-primary transition-colors">FAQ</Link></li>
+          </ul>
+        </div>
+      </div>
+      <div className="container-custom mx-auto mt-6 pt-6 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-500 text-sm">
+        <p>© {new Date().getFullYear()} {companySettings?.companyName || ''}. All rights reserved.</p>
+        <div className="flex gap-6">
+          <Link href="/privacy-policy" className="hover:text-primary transition-colors">Privacy Policy</Link>
+          <Link href="/terms-of-service" className="hover:text-primary transition-colors">Terms of Service</Link>
+        </div>
+      </div>
+    </footer>
+  );
+}

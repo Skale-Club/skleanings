@@ -1,0 +1,84 @@
+{
+  "$schema": "./seed-data.schema.json",
+  "categories": [
+    {
+      "name": "Upholstery Cleaning",
+      "slug": "upholstery-cleaning",
+      "description": "Deep cleaning for your sofas, mattresses, and chairs.",
+      "imageUrl": "https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?w=800&auto=format&fit=crop",
+      "services": [
+        {
+          "name": "3-Seater Sofa Cleaning",
+          "description": "Deep clean for a standard 3-seater sofa.",
+          "price": "120.00",
+          "durationMinutes": 120,
+          "imageUrl": "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&auto=format&fit=crop"
+        },
+        {
+          "name": "Mattress Cleaning (Queen)",
+          "description": "Hygienic steam clean for a Queen size mattress.",
+          "price": "80.00",
+          "durationMinutes": 60,
+          "imageUrl": "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&auto=format&fit=crop"
+        }
+      ]
+    },
+    {
+      "name": "Carpet & Rug Cleaning",
+      "slug": "carpet-cleaning",
+      "description": "Revitalize your home with our carpet cleaning services.",
+      "imageUrl": "https://images.unsplash.com/photo-1527513192501-1e9671d18f5d?w=800&auto=format&fit=crop",
+      "services": [
+        {
+          "name": "Room Carpet Cleaning (up to 20sqm)",
+          "description": "Standard room carpet cleaning.",
+          "price": "50.00",
+          "durationMinutes": 45,
+          "imageUrl": "https://images.unsplash.com/photo-1562663474-6cbb3eaa4d14?w=800&auto=format&fit=crop"
+        }
+      ]
+    }
+  ],
+  "faqs": [
+    {
+      "question": "What payment methods do you accept?",
+      "answer": "We accept all major credit and debit cards, cash, Zelle, and Venmo. Payment is due at the time of service.",
+      "order": 1
+    },
+    {
+      "question": "Are your cleaning products safe for pets and children?",
+      "answer": "Yes! We use eco-friendly, non-toxic cleaning solutions that are safe for pets, children, and people with allergies. If you have specific concerns, please let us know.",
+      "order": 2
+    },
+    {
+      "question": "Do you offer commercial cleaning services?",
+      "answer": "Yes, we offer commercial cleaning for offices, retail spaces, and other businesses. Contact our team for a custom quote.",
+      "order": 3
+    },
+    {
+      "question": "What is your cancellation policy?",
+      "answer": "You can cancel or reschedule your booking up to 24 hours before the appointment at no charge. Cancellations within 24 hours may be subject to a fee.",
+      "order": 4
+    },
+    {
+      "question": "Do you offer emergency or same-day cleaning?",
+      "answer": "We do our best to accommodate same-day and emergency requests, subject to availability. Contact us directly and we'll try to fit you in.",
+      "order": 5
+    },
+    {
+      "question": "How long does a typical cleaning session take?",
+      "answer": "The duration depends on the service and the size of the area. Most single-item cleanings take 1-2 hours. We'll provide an estimate when you book.",
+      "order": 6
+    },
+    {
+      "question": "Do I need to be home during the cleaning?",
+      "answer": "We prefer someone to be home to let us in and review the areas to be cleaned. If that's not possible, we can arrange alternative access.",
+      "order": 7
+    },
+    {
+      "question": "What areas do you serve?",
+      "answer": "We serve the Greater Boston area and surrounding communities. Check our service areas page or ask us if we cover your location.",
+      "order": 8
+    }
+  ]
+}
