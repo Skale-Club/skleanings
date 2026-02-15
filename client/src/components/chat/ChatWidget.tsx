@@ -26,6 +26,7 @@ type ChatConfig = {
   enabled: boolean;
   agentName: string;
   agentAvatarUrl?: string;
+  companyLogo?: string;
   fallbackAvatarUrl?: string;
   welcomeMessage: string;
   languageSelectorEnabled?: boolean;
