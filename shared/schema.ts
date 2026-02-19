@@ -178,10 +178,12 @@ export const twilioSettings = pgTable("twilio_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Heartbeat table for keep-alive cron
-export const heartbeat = pgTable("heartbeat", {
-  id: integer("id").primaryKey().default(1),
-  lastSeen: timestamp("last_seen", { withTimezone: true }).notNull().defaultNow(),
+// Heartbeat log table for keep-alive cron runs
+export const systemHeartbeats = pgTable("system_heartbeats", {
+  id: serial("id").primaryKey(),
+  source: text("source").notNull().default("vercel-cron"),
+  note: text("note").notNull().default(""),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const conversations = pgTable("conversations", {
@@ -382,7 +384,7 @@ export type IntegrationSettings = typeof integrationSettings.$inferSelect;
 export type ChatSettings = typeof chatSettings.$inferSelect;
 export type ChatIntegrations = typeof chatIntegrations.$inferSelect;
 export type TwilioSettings = typeof twilioSettings.$inferSelect;
-export type Heartbeat = typeof heartbeat.$inferSelect;
+export type SystemHeartbeat = typeof systemHeartbeats.$inferSelect;
 export type Conversation = typeof conversations.$inferSelect;
 export type ConversationMessage = typeof conversationMessages.$inferSelect;
 

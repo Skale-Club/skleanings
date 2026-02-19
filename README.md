@@ -43,6 +43,7 @@ Create a `.env` file with the following:
 # Required
 DATABASE_URL=postgresql://user:password@host:port/database
 SESSION_SECRET=your-session-secret
+CRON_SECRET=your-strong-random-cron-secret
 
 # Supabase Authentication (Required for admin login)
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co

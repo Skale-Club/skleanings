@@ -21,6 +21,12 @@
       "maxDuration": 30
     }
   },
+  "crons": [
+    {
+      "path": "/api/cron/supabase-keepalive",
+      "schedule": "0 */6 * * *"
+    }
+  ],
   "env": {
     "NODE_ENV": "production"
   }
