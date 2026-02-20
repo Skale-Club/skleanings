@@ -56,6 +56,15 @@ ADMIN_PASSWORD_HASH=bcrypt-hashed-password
 
 **Note:** See [SUPABASE_AUTH_SETUP.md](docs/SUPABASE_AUTH_SETUP.md) for detailed Supabase configuration instructions.
 
+### GitHub Actions Keepalive
+
+The Supabase keepalive runs via GitHub Actions at `.github/workflows/supabase-keepalive.yml`.
+
+Configure these repository secrets:
+
+- `APP_URL` - public base URL of the deployed app (example: `https://your-app.vercel.app`)
+- `CRON_SECRET` - same value configured in the server environment
+
 ### Installation
 
 ```bash
