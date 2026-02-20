@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { clsx } from 'clsx';
 import { SiFacebook, SiGoogleanalytics, SiGoogletagmanager, SiOpenai } from 'react-icons/si';
-import { authenticatedRequest, apiRequest, queryClient } from '@/lib/queryClient';
+import { authenticatedRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import type {
   AnalyticsSettings,
@@ -247,7 +247,11 @@ export function IntegrationsSection({ getAccessToken }: { getAccessToken: () => 
   const saveAnalyticsSettings = useCallback(async (newSettings: Partial<AnalyticsSettings>) => {
     setIsSavingAnalytics(true);
     try {
-      await apiRequest('PUT', '/api/company-settings', newSettings);
+      const token = await getTokenWithRetry();
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+      await authenticatedRequest('PUT', '/api/company-settings', token, newSettings);
       queryClient.invalidateQueries({ queryKey: ['/api/company-settings'] });
       setLastSavedAnalytics(new Date());
     } catch (error: any) {
@@ -259,18 +263,22 @@ export function IntegrationsSection({ getAccessToken }: { getAccessToken: () => 
     } finally {
       setIsSavingAnalytics(false);
     }
-  }, [toast]);
+  }, [getTokenWithRetry, toast]);
 
   const updateAnalyticsField = useCallback(<K extends keyof AnalyticsSettings>(field: K, value: AnalyticsSettings[K]) => {
-    setAnalyticsSettings(prev => ({ ...prev, [field]: value }));
+    setAnalyticsSettings(prev => {
+      const next = { ...prev, [field]: value };
 
-    if (saveAnalyticsTimeoutRef.current) {
-      clearTimeout(saveAnalyticsTimeoutRef.current);
-    }
+      if (saveAnalyticsTimeoutRef.current) {
+        clearTimeout(saveAnalyticsTimeoutRef.current);
+      }
 
-    saveAnalyticsTimeoutRef.current = setTimeout(() => {
-      saveAnalyticsSettings({ [field]: value });
-    }, 800);
+      saveAnalyticsTimeoutRef.current = setTimeout(() => {
+        saveAnalyticsSettings(next);
+      }, 800);
+
+      return next;
+    });
   }, [saveAnalyticsSettings]);
 
   const saveOpenAISettings = async (settingsToSave?: Partial<OpenAISettings> & { apiKey?: string }) => {

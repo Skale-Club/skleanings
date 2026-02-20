@@ -151,6 +151,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         // Recalculate price based on quantity
         const unitPrice = item.calculatedPrice / item.quantity;
         const newCalculatedPrice = unitPrice * quantity;
+        const quantityDelta = quantity - item.quantity;
+
+        if (quantityDelta > 0) {
+          trackAddToCart({
+            id: item.id,
+            name: item.name,
+            price: unitPrice,
+            quantity: quantityDelta,
+          });
+        } else if (quantityDelta < 0) {
+          trackRemoveFromCart({
+            id: item.id,
+            name: item.name,
+            price: unitPrice,
+            quantity: Math.abs(quantityDelta),
+          });
+        }
 
         return {
           ...item,

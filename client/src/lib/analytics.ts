@@ -18,6 +18,7 @@ export interface AnalyticsConfig {
 let isInitialized = false;
 let config: AnalyticsConfig = {};
 let initializedProviders = { gtm: false, ga4: false, fbq: false };
+const pendingEvents: Array<{ eventName: AnalyticsEventName; payload: AnalyticsEventPayload }> = [];
 
 export function initAnalytics(settings: AnalyticsConfig) {
   // Disable analytics in development
@@ -25,24 +26,30 @@ export function initAnalytics(settings: AnalyticsConfig) {
     return;
   }
 
-  config = settings;
+  config = {
+    ...settings,
+    gtmContainerId: settings.gtmContainerId?.trim(),
+    ga4MeasurementId: settings.ga4MeasurementId?.trim(),
+    facebookPixelId: settings.facebookPixelId?.trim(),
+  };
 
-  if (settings.gtmEnabled && settings.gtmContainerId && !initializedProviders.gtm) {
-    injectGTM(settings.gtmContainerId);
+  if (config.gtmEnabled && config.gtmContainerId && !initializedProviders.gtm) {
+    injectGTM(config.gtmContainerId);
     initializedProviders.gtm = true;
   }
 
-  if (settings.ga4Enabled && settings.ga4MeasurementId && !initializedProviders.ga4) {
-    injectGA4(settings.ga4MeasurementId);
+  if (config.ga4Enabled && config.ga4MeasurementId && !initializedProviders.ga4) {
+    injectGA4(config.ga4MeasurementId);
     initializedProviders.ga4 = true;
   }
 
-  if (settings.facebookPixelEnabled && settings.facebookPixelId && !initializedProviders.fbq) {
-    injectFacebookPixel(settings.facebookPixelId);
+  if (config.facebookPixelEnabled && config.facebookPixelId && !initializedProviders.fbq) {
+    injectFacebookPixel(config.facebookPixelId);
     initializedProviders.fbq = true;
   }
 
   isInitialized = true;
+  flushPendingEvents();
 }
 
 function isGtagAvailable(): boolean {
@@ -147,21 +154,35 @@ export interface AnalyticsEventPayload {
   [key: string]: any;
 }
 
-export function trackEvent(eventName: AnalyticsEventName, payload: AnalyticsEventPayload = {}) {
-  if (import.meta.env.DEV) {
-    console.log('[Analytics]', eventName, payload);
+function pushToDataLayer(eventName: AnalyticsEventName, payload: AnalyticsEventPayload) {
+  window.dataLayer = window.dataLayer || [];
+  const eventPayload: Record<string, any> = {
+    event: eventName,
+    ...payload,
+  };
+
+  // Keep an ecommerce object for GTM templates that expect GA4 ecommerce shape.
+  if (!eventPayload.ecommerce && payload.items?.length) {
+    eventPayload.ecommerce = {
+      currency: payload.currency || 'USD',
+      value: payload.value,
+      items: payload.items,
+    };
   }
 
   if (config.gtmEnabled) {
-    window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push({
-      event: eventName,
-      ...payload
-    });
+    window.dataLayer.push(eventPayload);
   }
+}
+
+function dispatchEvent(eventName: AnalyticsEventName, payload: AnalyticsEventPayload) {
+  pushToDataLayer(eventName, payload);
 
   if (config.ga4Enabled && config.ga4MeasurementId && isGtagAvailable()) {
-    window.gtag('event', eventName, payload);
+    window.gtag('event', eventName, {
+      ...payload,
+      send_to: config.ga4MeasurementId,
+    });
   }
 
   if (config.facebookPixelEnabled && config.facebookPixelId && isFbqAvailable()) {
@@ -191,6 +212,28 @@ export function trackEvent(eventName: AnalyticsEventName, payload: AnalyticsEven
       window.fbq('trackCustom', eventName, payload);
     }
   }
+}
+
+function flushPendingEvents() {
+  if (!pendingEvents.length) return;
+  const eventsToFlush = pendingEvents.splice(0, pendingEvents.length);
+  for (const queued of eventsToFlush) {
+    dispatchEvent(queued.eventName, queued.payload);
+  }
+}
+
+export function trackEvent(eventName: AnalyticsEventName, payload: AnalyticsEventPayload = {}) {
+  if (import.meta.env.DEV) {
+    console.log('[Analytics]', eventName, payload);
+    return;
+  }
+
+  if (!isInitialized) {
+    pendingEvents.push({ eventName, payload });
+    return;
+  }
+
+  dispatchEvent(eventName, payload);
 }
 
 export function trackPageView(path: string, title?: string) {
