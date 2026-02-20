@@ -31,9 +31,9 @@ export type IntakeObjective = {
 };
 
 export const DEFAULT_INTAKE_OBJECTIVES: IntakeObjective[] = [
-    { id: 'zipcode', label: 'Zip code', description: 'Collect zip/postal code to validate service area', enabled: true },
     { id: 'serviceType', label: 'Service type', description: 'Which service is requested', enabled: true },
     { id: 'serviceDetails', label: 'Service details', description: 'Extra details (size, options, notes)', enabled: true },
+    { id: 'zipcode', label: 'Zip code', description: 'Collect ZIP code to validate service area', enabled: true },
     { id: 'date', label: 'Preferred date', description: 'Ask for a preferred date before showing availability', enabled: true },
     { id: 'name', label: 'Name', description: 'Customer full name', enabled: true },
     { id: 'phone', label: 'Phone', description: 'Phone number for confirmations', enabled: true },
@@ -379,6 +379,36 @@ export function parsePhoneFromText(text: string): string | null {
     return phoneMatch[0].trim();
 }
 
+export function parseNameFromText(text: string): string | null {
+    if (!text) return null;
+    const normalized = text
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim();
+
+    const patterns = [
+        /\b(?:my name is|i am|i'm)\s+([a-z][a-z' -]{1,50})/i,
+        /\b(?:meu nome e|meu nome eh|sou)\s+([a-z][a-z' -]{1,50})/i,
+        /\b(?:mi nombre es|soy)\s+([a-z][a-z' -]{1,50})/i,
+    ];
+
+    for (const pattern of patterns) {
+        const match = normalized.match(pattern);
+        if (!match) continue;
+        const candidate = match[1]
+            .split(/[,.;!?]/)[0]
+            .trim()
+            .split(/\s+/)
+            .slice(0, 3)
+            .join(' ');
+        if (looksLikeName(candidate)) {
+            return candidate;
+        }
+    }
+
+    return null;
+}
+
 export function looksLikeName(text: string): boolean {
     if (!text) return false;
     const trimmed = text.trim();
@@ -412,11 +442,48 @@ export function looksLikeAddress(text: string): boolean {
 export function isAffirmativeResponse(text: string): boolean {
     if (!text) return false;
     const normalized = text.toLowerCase().trim();
-    if (normalized.length > 40) return false;
+
+    // Avoid treating explicit negatives as confirmation.
+    if (/\b(no|nope|not now|don't|do not|cancel)\b/.test(normalized)) {
+        return false;
+    }
+
     if (/^(yes|yep|yeah|yup|correct|right|sure|ok|okay|confirm|sounds good|sounds right|that\'s right|that is right|please do|go ahead)$/.test(normalized)) {
         return true;
     }
-    return /\b(yes|yep|yeah|yup|correct|right|sure|ok|okay|confirm|sounds good|sounds right)\b/.test(normalized);
+
+    // Long confirmations are common in natural chat ("Yes, please confirm and create the booking now.").
+    if (/^(yes|yep|yeah|yup|sure|ok|okay)\b/.test(normalized)) {
+        return true;
+    }
+
+    return /\b(confirm|please do|go ahead|book it|lock it in|sounds good|sounds right|that works)\b/.test(normalized);
+}
+
+export function detectMessageLanguage(text: string): 'en' | 'pt-BR' | 'es' | null {
+    if (!text) return null;
+    const normalized = text
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+
+    const ptHints = /\b(ola|oi|voce|voces|preciso|quero|agendar|limpeza|endereco|telefone|cep|amanha|hoje|tarde|obrigado)\b/;
+    const esHints = /\b(hola|usted|necesito|quiero|reservar|limpieza|direccion|telefono|manana|hoy|tarde|gracias)\b/;
+
+    if (ptHints.test(normalized)) return 'pt-BR';
+    if (esHints.test(normalized)) return 'es';
+    return 'en';
+}
+
+export function isLikelyDirectQuestion(text: string): boolean {
+    if (!text) return false;
+    const normalized = text
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim();
+    if (normalized.includes('?')) return true;
+    return /\b(what|which|when|where|who|how|do you|can you|is there|are there|quanto|quais|qual|quando|onde|como|voces|tem|tiene|tienen|cuando|donde|como)\b/.test(normalized);
 }
 
 export function isServiceConfirmationPrompt(text: string): boolean {
@@ -517,24 +584,64 @@ export function sanitizeAssistantResponse(text: string): string {
     return cleaned || 'Got it.';
 }
 
-export function getIntakeQuestion(objectiveId: IntakeObjective['id']): string {
+export function getIntakeQuestion(objectiveId: IntakeObjective['id'], language: string = 'en'): string {
+    const lang = language?.toLowerCase().startsWith('pt')
+        ? 'pt'
+        : language?.toLowerCase().startsWith('es')
+            ? 'es'
+            : 'en';
+
+    const copy = {
+        en: {
+            zipcode: "What's your ZIP code?",
+            serviceType: 'What service do you need?',
+            serviceDetails: 'Any size, material, or special details I should know?',
+            date: 'What day would you like to schedule?',
+            name: "What's your full name?",
+            phone: "What's the best phone number to reach you?",
+            address: "What's the full address?",
+            fallback: 'What should we start with?',
+        },
+        pt: {
+            zipcode: 'Qual é o seu ZIP code?',
+            serviceType: 'Qual serviço você precisa?',
+            serviceDetails: 'Tem algum detalhe de tamanho, material ou observação?',
+            date: 'Qual dia você gostaria de agendar?',
+            name: 'Qual é o seu nome completo?',
+            phone: 'Qual é o melhor telefone para contato?',
+            address: 'Qual é o endereço completo?',
+            fallback: 'Por onde você quer começar?',
+        },
+        es: {
+            zipcode: '¿Cuál es su código ZIP?',
+            serviceType: '¿Qué servicio necesita?',
+            serviceDetails: '¿Hay detalles de tamaño, material o notas especiales?',
+            date: '¿Qué día le gustaría agendar?',
+            name: '¿Cuál es su nombre completo?',
+            phone: '¿Cuál es el mejor teléfono para contactarle?',
+            address: '¿Cuál es la dirección completa?',
+            fallback: '¿Por dónde empezamos?',
+        },
+    } as const;
+
+    const selected = copy[lang];
     switch (objectiveId) {
         case 'zipcode':
-            return "What's your ZIP code?";
+            return selected.zipcode;
         case 'serviceType':
-            return 'What service do you need?';
+            return selected.serviceType;
         case 'serviceDetails':
-            return 'Any size, material, or special details I should know?';
+            return selected.serviceDetails;
         case 'date':
-            return 'What day would you like to schedule?';
+            return selected.date;
         case 'name':
-            return "What's your full name?";
+            return selected.name;
         case 'phone':
-            return "What's the best phone number to reach you?";
+            return selected.phone;
         case 'address':
-            return "What's the full address?";
+            return selected.address;
         default:
-            return 'What should we start with?';
+            return selected.fallback;
     }
 }
 

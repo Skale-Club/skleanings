@@ -81,7 +81,7 @@ export const RATE_LIMIT = {
 // OpenAI Configuration
 export const OPENAI_CONFIG = {
   DEFAULT_MODEL: 'gpt-4o-mini',
-  MAX_COMPLETION_TOKENS: 800,
+  MAX_COMPLETION_TOKENS: 500,
   TEMPERATURE: 0.7,
   DEFAULT_TIMEOUT_MS: 30000,
 } as const;

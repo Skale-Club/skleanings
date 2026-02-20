@@ -14,9 +14,7 @@ import {
 import { getAvailabilityForDate, getAvailabilityRange, getTodayStr } from "../../lib/availability";
 import { acquireTimeSlotLock, releaseTimeSlotLock } from "../../lib/time-slot-lock";
 import { canCreateBooking, recordBookingCreation } from "../../lib/rate-limit";
-import {
-    formatDateTimeWithTimezone
-} from "../../integrations/ghl";
+import { syncBookingToGhl } from "../../lib/booking-ghl-sync";
 import crypto from "crypto";
 import { CHAT_TOOL, CACHE_TTL, MESSAGE_ROLE } from "./constants";
 import { chatDeps } from "./dependencies";
@@ -404,11 +402,7 @@ export async function runChatTool(
             const company = await chatDeps.storage.getCompanySettings();
             const timeZone = company?.timeZone || 'America/New_York';
             const ghlSettings = await chatDeps.storage.getIntegrationSettings('gohighlevel');
-            const chatSettings = await chatDeps.storage.getChatSettings();
-            const calendarProvider = chatSettings?.calendarProvider || 'gohighlevel';
-            const calendarIdOverride = chatSettings?.calendarId || '';
-            const effectiveCalendarId = calendarIdOverride || ghlSettings?.calendarId || '';
-            const useGhl = calendarProvider === 'gohighlevel' && !!(ghlSettings?.isEnabled && ghlSettings.apiKey && effectiveCalendarId);
+            const useGhl = !!(ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.calendarId);
 
             // If specific date is requested, prioritize that range
             let startDateStr = getTodayStr(new Date(), timeZone);
@@ -437,7 +431,7 @@ export async function runChatTool(
                     durationMinutes,
                     {
                         useGhl,
-                        ghlSettings: { ...ghlSettings, calendarId: effectiveCalendarId },
+                        ghlSettings,
                         requireGhl: useGhl,
                         timeZone
                     }
@@ -501,18 +495,64 @@ export async function runChatTool(
                 };
             }
 
-            // Filter FAQs by query (search in both question and answer)
-            const filtered = allFaqs.filter(faq =>
-                faq.question.toLowerCase().includes(query) ||
-                faq.answer.toLowerCase().includes(query)
-            );
+            const normalize = (value: string) =>
+                value
+                    .toLowerCase()
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '');
+            const tokenized = normalize(query).split(/[^a-z0-9]+/).filter(Boolean);
+            const synonymMap: Record<string, string[]> = {
+                pet: ['pet', 'pets', 'animal', 'dog', 'cat'],
+                children: ['children', 'child', 'kids', 'kid', 'baby'],
+                safe: ['safe', 'safety', 'seguro', 'segura'],
+                products: ['product', 'products', 'chemicals', 'cleaners', 'detergent'],
+                cancellation: ['cancel', 'cancellation', 'reschedule', 'refund'],
+                guarantee: ['guarantee', 'warranty', 'satisfaction'],
+                payment: ['payment', 'pay', 'card', 'cash', 'invoice'],
+            };
+
+            const expandedTokens = new Set<string>();
+            for (const token of tokenized) {
+                expandedTokens.add(token);
+                for (const [key, values] of Object.entries(synonymMap)) {
+                    if (token === key || values.includes(token)) {
+                        values.forEach((val) => expandedTokens.add(val));
+                        expandedTokens.add(key);
+                    }
+                }
+            }
+
+            const scored = allFaqs.map((faq) => {
+                const haystack = `${normalize(faq.question || '')} ${normalize(faq.answer || '')}`;
+                let score = 0;
+
+                if (haystack.includes(normalize(query))) score += 50;
+                for (const token of Array.from(expandedTokens)) {
+                    if (token.length < 2) continue;
+                    if (haystack.includes(token)) score += 6;
+                }
+
+                return { faq, score };
+            });
+
+            const filtered = scored
+                .filter((item) => item.score > 0)
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 5)
+                .map((item) => item.faq);
+
+            const fallbackFaqs = filtered.length === 0
+                ? allFaqs.slice(0, 3)
+                : filtered;
 
             return {
-                faqs: filtered.map(faq => ({
+                faqs: fallbackFaqs.map(faq => ({
                     question: faq.question,
                     answer: faq.answer,
                 })),
                 searchQuery: query,
+                resultCount: filtered.length,
+                usedFallback: filtered.length === 0,
             };
         }
         case CHAT_TOOL.UPDATE_CONTACT: {
@@ -1046,33 +1086,7 @@ export async function runChatTool(
                 }
 
                 const ghlSettings = await chatDeps.storage.getIntegrationSettings('gohighlevel');
-                const chatSettings = await chatDeps.storage.getChatSettings();
-                const calendarProvider = chatSettings?.calendarProvider || 'gohighlevel';
-                const calendarIdOverride = chatSettings?.calendarId || '';
-                const effectiveCalendarId = calendarIdOverride || ghlSettings?.calendarId || '';
-                const useGhl = calendarProvider === 'gohighlevel' && !!(ghlSettings?.isEnabled && ghlSettings.apiKey && effectiveCalendarId);
-
-                if (!useGhl) {
-                    const error = 'GoHighLevel calendar is required for chat bookings.';
-                    if (conversationId) {
-                        await releaseTimeSlotLock(bookingDate, startTime, conversationId);
-                        await addInternalConversationMessage(
-                            conversationId,
-                            `[create_booking:${correlationId}] Failed: GHL not configured properly`,
-                            {
-                                type: 'booking_error',
-                                severity: 'error',
-                                step: 'ghl_config',
-                                error: { message: error }
-                            }
-                        );
-                    }
-                    return {
-                        success: false,
-                        error,
-                        userMessage: getErrorMessage('systemUnavailable', language),
-                    };
-                }
+                const useGhl = !!(ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.calendarId);
 
                 const company = await chatDeps.storage.getCompanySettings();
                 const timeZone = company?.timeZone || 'America/New_York';
@@ -1084,8 +1098,8 @@ export async function runChatTool(
                         bookingDate,
                         totalDuration,
                         useGhl,
-                        { ...ghlSettings, calendarId: effectiveCalendarId },
-                        { requireGhl: true, timeZone }
+                        ghlSettings,
+                        { requireGhl: useGhl, timeZone }
                     );
                 } catch (error: any) {
                     const errorMsg = error?.message || 'Failed to verify availability in GoHighLevel.';
@@ -1138,161 +1152,6 @@ export async function runChatTool(
                     totalPrice = minimumBookingValue;
                 }
 
-                let ghlContactId: string | undefined;
-                let ghlAppointmentId: string | undefined;
-                if (ghlSettings?.apiKey && ghlSettings.locationId && effectiveCalendarId) {
-                    const serviceNames = services.map(s => s.name).join(', ');
-                    const nameParts = customerName.split(' ');
-                    const firstName = nameParts[0] || '';
-                    const lastName = nameParts.slice(1).join(' ') || '';
-
-                    const contactResult = await chatDeps.ghl.getOrCreateGHLContact(ghlSettings.apiKey, ghlSettings.locationId, {
-                        email: customerEmail,
-                        firstName,
-                        lastName,
-                        phone: customerPhone,
-                        address: customerAddress,
-                    });
-
-                    if (!contactResult.success || !contactResult.contactId) {
-                        const errorMsg = contactResult.message || 'Failed to create contact in GoHighLevel.';
-
-                        // FALLBACK logic
-                        const fallbackBooking = await chatDeps.storage.createBooking({
-                            serviceIds: resolvedServiceIds,
-                            bookingDate,
-                            startTime,
-                            endTime,
-                            totalDurationMinutes: totalDuration,
-                            totalPrice: totalPrice.toFixed(2),
-                            customerName,
-                            customerEmail,
-                            customerPhone,
-                            customerAddress,
-                            paymentMethod,
-                            bookingItemsData,
-                        });
-
-                        await chatDeps.storage.updateBookingSyncStatus(fallbackBooking.id, 'failed', undefined, undefined);
-
-                        if (conversationId) {
-                            await releaseTimeSlotLock(bookingDate, startTime, conversationId);
-                            await chatDeps.storage.updateConversation(conversationId, {
-                                visitorName: customerName,
-                                visitorEmail: customerEmail,
-                                visitorPhone: customerPhone,
-                            });
-                            await addInternalConversationMessage(
-                                conversationId,
-                                `[FALLBACK] Booking saved locally but GHL contact creation failed: ${errorMsg}`,
-                                {
-                                    type: 'booking_fallback',
-                                    severity: 'warning',
-                                    step: 'contact_creation',
-                                    error: { message: errorMsg, details: contactResult },
-                                    bookingId: fallbackBooking.id,
-                                    requiresManualSync: true
-                                }
-                            );
-                            recordBookingCreation(conversationId);
-                        }
-
-                        return {
-                            success: true,
-                            bookingId: fallbackBooking.id,
-                            bookingDate,
-                            startTime,
-                            endTime,
-                            totalDurationMinutes: totalDuration,
-                            totalPrice: totalPrice.toFixed(2),
-                            services: services.map(s => ({ id: s.id, name: s.name })),
-                            minimumAdjustmentNote,
-                            warning: 'Your booking has been saved. You will receive a confirmation shortly.',
-                            pendingSync: true,
-                        };
-                    }
-                    ghlContactId = contactResult.contactId;
-
-                    const startTimeISO = formatDateTimeWithTimezone(bookingDate, startTime, timeZone);
-                    const endTimeISO = formatDateTimeWithTimezone(bookingDate, endTime, timeZone);
-
-                    const appointmentResult = await chatDeps.ghl.createGHLAppointment(
-                        ghlSettings.apiKey,
-                        effectiveCalendarId,
-                        ghlSettings.locationId,
-                        {
-                            contactId: contactResult.contactId,
-                            startTime: startTimeISO,
-                            endTime: endTimeISO,
-                            title: `Cleaning: ${serviceNames}`,
-                            address: customerAddress,
-                            description: `Services: ${serviceNames}\nCustomer: ${customerName}\nPhone: ${customerPhone}\nEmail: ${customerEmail}\nTotal: $${totalPrice.toFixed(2)}`,
-                            toNotify: true,
-                            ignoreFreeSlotValidation: false,
-                        }
-                    );
-
-                    if (!appointmentResult.success || !appointmentResult.appointmentId) {
-                        const errorMsg = appointmentResult.message || 'Failed to create appointment in GoHighLevel.';
-
-                        // FALLBACK logic
-                        const fallbackBooking = await chatDeps.storage.createBooking({
-                            serviceIds: resolvedServiceIds,
-                            bookingDate,
-                            startTime,
-                            endTime,
-                            totalDurationMinutes: totalDuration,
-                            totalPrice: totalPrice.toFixed(2),
-                            customerName,
-                            customerEmail,
-                            customerPhone,
-                            customerAddress,
-                            paymentMethod,
-                            bookingItemsData,
-                        });
-
-                        await chatDeps.storage.updateBookingSyncStatus(fallbackBooking.id, 'failed', ghlContactId || undefined, undefined);
-
-                        if (conversationId) {
-                            await releaseTimeSlotLock(bookingDate, startTime, conversationId);
-                            await chatDeps.storage.updateConversation(conversationId, {
-                                visitorName: customerName,
-                                visitorEmail: customerEmail,
-                                visitorPhone: customerPhone,
-                            });
-                            await addInternalConversationMessage(
-                                conversationId,
-                                `[FALLBACK] Booking saved locally but GHL sync failed: ${errorMsg}`,
-                                {
-                                    type: 'booking_fallback',
-                                    severity: 'warning',
-                                    step: 'appointment_creation',
-                                    error: { message: errorMsg, details: appointmentResult },
-                                    ghlContactId,
-                                    bookingId: fallbackBooking.id,
-                                    requiresManualSync: true
-                                }
-                            );
-                            recordBookingCreation(conversationId);
-                        }
-
-                        return {
-                            success: true,
-                            bookingId: fallbackBooking.id,
-                            bookingDate,
-                            startTime,
-                            endTime,
-                            totalDurationMinutes: totalDuration,
-                            totalPrice: totalPrice.toFixed(2),
-                            services: services.map(s => ({ id: s.id, name: s.name })),
-                            minimumAdjustmentNote,
-                            warning: 'Your booking has been saved. You will receive a confirmation shortly.',
-                            pendingSync: true,
-                        };
-                    }
-                    ghlAppointmentId = appointmentResult.appointmentId;
-                }
-
                 const booking = await chatDeps.storage.createBooking({
                     serviceIds: resolvedServiceIds,
                     bookingDate,
@@ -1308,31 +1167,9 @@ export async function runChatTool(
                     bookingItemsData,
                 });
 
-                const verifiedBooking = await chatDeps.storage.getBooking(booking.id);
-                if (!verifiedBooking) {
-                    if (conversationId) {
-                        await releaseTimeSlotLock(bookingDate, startTime, conversationId);
-                        await addInternalConversationMessage(
-                            conversationId,
-                            `[CRITICAL] Booking verification failed - ID ${booking.id} not found after creation`,
-                            {
-                                type: 'booking_error',
-                                severity: 'critical',
-                                step: 'verification',
-                                bookingId: booking.id
-                            }
-                        );
-                    }
-                    return {
-                        success: false,
-                        error: 'Booking verification failed',
-                        userMessage: getErrorMessage('systemUnavailable', language),
-                    };
-                }
-
-                if (ghlContactId && ghlAppointmentId) {
-                    await chatDeps.storage.updateBookingGHLSync(booking.id, ghlContactId, ghlAppointmentId, 'synced');
-                }
+                const serviceNames = services.map(s => s.name).join(', ');
+                const ghlSync = await syncBookingToGhl(booking, serviceNames);
+                const pendingSync = ghlSync.attempted && !ghlSync.synced;
 
                 if (conversationId) {
                     await chatDeps.storage.updateConversation(conversationId, {
@@ -1340,14 +1177,19 @@ export async function runChatTool(
                         visitorEmail: customerEmail,
                         visitorPhone: customerPhone,
                     });
+                    const ghlSyncLabel = ghlSync.synced
+                        ? `Contact ${ghlSync.contactId} | Appointment ${ghlSync.appointmentId}`
+                        : (ghlSync.attempted ? `GHL sync failed` : `GHL sync skipped`);
                     await addInternalConversationMessage(
                         conversationId,
-                        `[SUCCESS] GHL booking created: ${bookingDate} ${startTime}-${endTime} | ${services.map(s => s.name).join(', ')} | $${totalPrice.toFixed(2)} | Contact ${ghlContactId} | Appointment ${ghlAppointmentId}`,
+                        `[SUCCESS] Booking created: ${bookingDate} ${startTime}-${endTime} | ${services.map(s => s.name).join(', ')} | $${totalPrice.toFixed(2)} | ${ghlSyncLabel}`,
                         {
                             type: 'ghl_booking',
                             step: 'success',
-                            ghlContactId,
-                            ghlAppointmentId,
+                            ghlContactId: ghlSync.contactId,
+                            ghlAppointmentId: ghlSync.appointmentId,
+                            ghlSyncAttempted: ghlSync.attempted,
+                            ghlSynced: ghlSync.synced,
                             bookingDate,
                             startTime,
                             endTime,
@@ -1359,9 +1201,42 @@ export async function runChatTool(
                             customerAddress,
                         }
                     );
+
+                    if (pendingSync) {
+                        await addInternalConversationMessage(
+                            conversationId,
+                            `[WARNING] Booking created locally but GHL sync failed: ${ghlSync.reason || 'Unknown error'}`,
+                            {
+                                type: 'booking_fallback',
+                                severity: 'warning',
+                                step: 'ghl_sync',
+                                bookingId: booking.id,
+                                requiresManualSync: true,
+                                ghlContactId: ghlSync.contactId,
+                                ghlAppointmentId: ghlSync.appointmentId,
+                                error: { message: ghlSync.reason || 'Unknown error' },
+                            }
+                        );
+                    }
+
                     recordBookingCreation(conversationId);
-                    // Release lock after success (or keep it until booking time passes? No, booking is confirmed so strict lock not needed as slot is taken in GHL/DB)
                     await releaseTimeSlotLock(bookingDate, startTime, conversationId);
+                }
+
+                if (pendingSync) {
+                    return {
+                        success: true,
+                        bookingId: booking.id,
+                        bookingDate,
+                        startTime,
+                        endTime,
+                        totalDurationMinutes: totalDuration,
+                        totalPrice: totalPrice.toFixed(2),
+                        services: services.map(s => ({ id: s.id, name: s.name })),
+                        minimumAdjustmentNote,
+                        warning: 'Your booking has been saved. You will receive a confirmation shortly.',
+                        pendingSync: true,
+                    };
                 }
 
                 return {

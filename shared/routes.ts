@@ -92,13 +92,13 @@ export const api = {
       path: '/api/chat/conversations/:id/messages',
       responses: {
         200: z.object({
-          conversation: z.any(),
           messages: z.array(z.object({
             id: z.string(),
             role: z.string(),
             content: z.string(),
             createdAt: z.string().optional(),
           })),
+          hasMore: z.boolean(),
         }),
       },
     },

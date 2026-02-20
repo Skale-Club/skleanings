@@ -1,13 +1,33 @@
 
-import { Router } from "express";
+import { Request, Router } from "express";
+import crypto from "crypto";
 import { handleMessage } from "./message-handler";
-import { requireAdmin } from "../../lib/auth";
+import { requireAdmin, supabase } from "../../lib/auth";
 import { storage } from "../../storage";
 import { insertChatSettingsSchema } from "@shared/schema";
 import { conversationEvents } from "../../lib/chat-events";
 import { z } from "zod";
 
 const router = Router();
+const excludedUrlRuleSchema = z.object({
+    pattern: z.string().min(1),
+    match: z.enum(["contains", "starts_with", "equals"]),
+});
+
+async function isAuthenticatedAdminRequest(req: Request): Promise<boolean> {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) return false;
+
+    const token = authHeader.split("Bearer ")[1];
+    if (!token) return false;
+
+    try {
+        const { data: { user }, error } = await supabase.auth.getUser(token);
+        return !error && !!user;
+    } catch {
+        return false;
+    }
+}
 
 // ============================
 // Public Endpoints
@@ -38,6 +58,7 @@ router.get("/chat/config", async (_req, res) => {
 
         // @ts-ignore - uiSettings structure mismatch with generated types
         const ui = settings.uiSettings || {};
+        const parsedRules = z.array(excludedUrlRuleSchema).safeParse(settings.excludedUrlRules);
         res.json({
             enabled: settings.enabled ?? false,
             agentName: settings.agentName || ui.title || "Assistant",
@@ -47,7 +68,7 @@ router.get("/chat/config", async (_req, res) => {
             welcomeMessage: settings.welcomeMessage || ui.welcomeMessage || "Hi! How can I help?",
             languageSelectorEnabled: settings.languageSelectorEnabled ?? false,
             defaultLanguage: settings.defaultLanguage || "en",
-            excludedUrlRules: [],
+            excludedUrlRules: parsedRules.success ? parsedRules.data : [],
         });
     } catch (err) {
         res.status(500).json({ message: (err as Error).message });
@@ -61,7 +82,16 @@ router.get("/chat/conversations/:id/messages", async (req, res) => {
         const { id } = req.params;
         const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
         const before = req.query.before as string | undefined;
-        const includeInternal = req.query.includeInternal === "true";
+        const includeInternalRequested = req.query.includeInternal === "true";
+        let includeInternal = false;
+
+        if (includeInternalRequested) {
+            const isAdmin = await isAuthenticatedAdminRequest(req);
+            if (!isAdmin) {
+                return res.status(401).json({ message: "Authentication required to access internal messages." });
+            }
+            includeInternal = true;
+        }
 
         // Get all messages for the conversation
         const allMessages = await storage.getConversationMessages(id);
@@ -72,7 +102,6 @@ router.get("/chat/conversations/:id/messages", async (req, res) => {
             : allMessages.filter((m: any) => !m.metadata?.internal);
 
         // Cursor-based pagination: if 'before' is specified, only return messages before that ID
-        let startIndex = 0;
         if (before) {
             const idx = filtered.findIndex((m: any) => String(m.id) === before);
             if (idx > 0) {
@@ -182,6 +211,44 @@ router.get("/chat/conversations/:id", requireAdmin, async (req, res) => {
         }
         res.json(conversation);
     } catch (err) {
+        res.status(500).json({ message: (err as Error).message });
+    }
+});
+
+// POST /api/chat/conversations/:id/messages — send manual message as admin
+router.post("/chat/conversations/:id/messages", requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const body = z.object({
+            content: z.string().min(1).max(4000),
+            role: z.enum(["assistant", "visitor"]).optional().default("assistant"),
+        }).parse(req.body);
+
+        const conversation = await storage.getConversation(id);
+        if (!conversation) {
+            return res.status(404).json({ message: "Conversation not found" });
+        }
+
+        const created = await storage.addConversationMessage({
+            id: crypto.randomUUID(),
+            conversationId: id,
+            role: body.role,
+            content: body.content.trim(),
+        });
+        const updatedConversation = await storage.getConversation(id);
+
+        conversationEvents.emit("new_message", {
+            type: "new_message",
+            conversationId: id,
+            message: created,
+            conversation: updatedConversation,
+        });
+
+        res.status(201).json(created);
+    } catch (err) {
+        if (err instanceof z.ZodError) {
+            return res.status(400).json({ message: "Validation error", errors: err.errors });
+        }
         res.status(500).json({ message: (err as Error).message });
     }
 });

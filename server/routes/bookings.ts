@@ -7,11 +7,7 @@ import { insertBookingSchema, insertBookingSchemaBase } from "@shared/schema";
 import { checkAvailability } from "../lib/availability";
 import { canCreateBooking, recordBookingCreation } from "../lib/rate-limit";
 import { acquireTimeSlotLock, releaseTimeSlotLock } from "../lib/time-slot-lock";
-import {
-    createGHLAppointment,
-    getOrCreateGHLContact,
-    formatDateTimeWithTimezone
-} from "../integrations/ghl";
+import { syncBookingToGhl } from "../lib/booking-ghl-sync";
 import { sendBookingNotification } from "../integrations/twilio";
 
 const router = Router();
@@ -56,58 +52,10 @@ router.post('/', async (req, res) => {
 
         const booking = await storage.createBooking(validatedData);
 
-        // Sync to GHL if enabled
-        try {
-            const ghlSettings = await storage.getIntegrationSettings('gohighlevel');
-            if (ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.locationId && ghlSettings.calendarId) {
-
-                // 1. Create/Update Contact
-                const nameParts = booking.customerName.split(' ');
-                const firstName = nameParts[0] || '';
-                const lastName = nameParts.slice(1).join(' ') || '';
-
-                const contactResult = await getOrCreateGHLContact(
-                    ghlSettings.apiKey,
-                    ghlSettings.locationId,
-                    {
-                        email: booking.customerEmail || '',
-                        firstName,
-                        lastName,
-                        phone: booking.customerPhone,
-                        address: booking.customerAddress
-                    }
-                );
-
-                if (contactResult.success && contactResult.contactId) {
-                    // 2. Create Appointment
-                    const companySettings = await storage.getCompanySettings();
-                    const timeZone = companySettings?.timeZone || 'America/New_York';
-
-                    const appointmentResult = await createGHLAppointment(
-                        ghlSettings.apiKey,
-                        ghlSettings.calendarId,
-                        ghlSettings.locationId,
-                        {
-                            contactId: contactResult.contactId,
-                            startTime: formatDateTimeWithTimezone(booking.bookingDate, booking.startTime, timeZone),
-                            endTime: formatDateTimeWithTimezone(booking.bookingDate, booking.endTime, timeZone),
-                            title: `Cleaning: ${booking.customerName} - ${booking.totalDurationMinutes} mins`,
-                            address: booking.customerAddress
-                        }
-                    );
-
-                    // Update sync status
-                    await storage.updateBookingGHLSync(
-                        booking.id,
-                        contactResult.contactId,
-                        appointmentResult.appointmentId || '',
-                        appointmentResult.success ? 'synced' : 'failed'
-                    );
-                }
-            }
-        } catch (error) {
-            console.error("GHL Sync Error:", error);
-            // Don't fail the request, just log error
+        // Sync to GHL if enabled (non-blocking for booking creation)
+        const ghlSync = await syncBookingToGhl(booking);
+        if (ghlSync.attempted && !ghlSync.synced) {
+            console.error("GHL Sync Error:", ghlSync.reason || "Unknown error");
         }
 
         // Send SMS notification via Twilio
@@ -121,7 +69,8 @@ router.post('/', async (req, res) => {
             // Don't fail the request, just log error
         }
 
-        res.status(201).json(booking);
+        const latestBooking = await storage.getBooking(booking.id);
+        res.status(201).json(latestBooking || booking);
     } catch (err) {
         if (err instanceof z.ZodError) {
             return res.status(400).json({ message: 'Validation error', errors: err.errors });

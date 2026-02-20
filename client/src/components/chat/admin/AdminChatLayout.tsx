@@ -14,7 +14,7 @@ import { ConversationList } from "./ConversationList";
 import { ChatArea } from "./ChatArea";
 import { ChatSettings } from "./ChatSettings";
 import { ChatSettingsData, ConversationSummary, ConversationMessage } from "./types";
-import { apiRequest, authenticatedRequest } from "@/lib/queryClient";
+import { authenticatedRequest } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
 
 interface AdminChatLayoutProps {
@@ -118,8 +118,10 @@ export function AdminChatLayout({ getAccessToken }: AdminChatLayoutProps) {
     const loadMessages = async (id: string) => {
         setIsMessagesLoading(true);
         try {
+            const token = await getAccessToken();
+            if (!token) throw new Error("Authentication required");
             const url = `/api/chat/conversations/${id}/messages?includeInternal=true`;
-            const res = await apiRequest('GET', url);
+            const res = await authenticatedRequest('GET', url, token);
             const data = await res.json();
             setMessages(data.messages || []);
         } catch (error: any) {
@@ -178,7 +180,9 @@ export function AdminChatLayout({ getAccessToken }: AdminChatLayoutProps) {
 
     const handleDelete = async (id: string) => {
         try {
-            await apiRequest('DELETE', `/api/chat/conversations/${id}`);
+            const token = await getAccessToken();
+            if (!token) throw new Error("Authentication required");
+            await authenticatedRequest('DELETE', `/api/chat/conversations/${id}`, token);
             queryClient.invalidateQueries({ queryKey: ['/api/chat/conversations'] });
             if (selectedConversationId === id) {
                 setSelectedConversationId(null);

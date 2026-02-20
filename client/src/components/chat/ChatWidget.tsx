@@ -409,7 +409,7 @@ export function ChatWidget() {
     const payload = {
       conversationId: conversationId || undefined,
       message: content,
-      pageUrl: window.location.pathname,
+      pageUrl: window.location.href,
       userAgent: navigator.userAgent,
       language: language || config?.defaultLanguage,
     };

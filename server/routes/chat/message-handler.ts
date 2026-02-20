@@ -18,8 +18,11 @@ import {
     parseTimeFromText,
     parseZipFromText,
     parsePhoneFromText,
+    parseNameFromText,
     looksLikeName,
     looksLikeAddress,
+    detectMessageLanguage,
+    isLikelyDirectQuestion,
     isAffirmativeResponse,
     isServiceConfirmationPrompt,
     isBookingConfirmationPrompt,
@@ -27,6 +30,7 @@ import {
     getIntakeQuestion,
     getNextIntakeObjective,
     sanitizeAssistantResponse,
+    normalizeServiceName,
     getChatPromptTemplate,
     IntakeObjective,
     DEFAULT_INTAKE_OBJECTIVES,
@@ -66,7 +70,8 @@ function isUrlExcluded(url: string, rules: UrlRule[]): boolean {
     if (!url || !rules.length) return false;
 
     try {
-        const urlObj = new URL(url);
+        // Accept both absolute URLs and path-only values such as "/booking".
+        const urlObj = new URL(url, "http://localhost");
         const path = urlObj.pathname;
 
         return rules.some(rule => {
@@ -291,6 +296,28 @@ export async function handleMessage(req: Request, res: Response) {
             await chatDeps.storage.updateConversation(conversationId, { status: CONVERSATION_STATUS.OPEN });
         }
 
+        const normalizeLanguage = (value?: string | null): string | null => {
+            if (!value) return null;
+            const normalized = value.trim().toLowerCase();
+            if (normalized.startsWith('pt')) return 'pt-BR';
+            if (normalized.startsWith('es')) return 'es';
+            if (normalized.startsWith('en')) return 'en';
+            return null;
+        };
+        const messageLanguage = normalizeLanguage(input.language) || detectMessageLanguage(input.message);
+        const memoryLanguage = normalizeLanguage((conversation?.memory as any)?.language);
+        const responseLanguage = messageLanguage || memoryLanguage || 'en';
+
+        const conversationLanguageMemory = (conversation?.memory as any) && typeof conversation?.memory === 'object'
+            ? { ...(conversation?.memory as any) }
+            : {};
+        if (conversationLanguageMemory.language !== responseLanguage) {
+            conversationLanguageMemory.language = responseLanguage;
+            conversation = await chatDeps.storage.updateConversation(conversationId, {
+                memory: conversationLanguageMemory,
+            }) || conversation;
+        }
+
         // Check message limit (100 user/assistant messages per conversation, excluding internal debug messages)
         const existingMessages = await chatDeps.storage.getConversationMessages(conversationId);
         const userFacingMessages = existingMessages.filter(m => !(m.metadata as any)?.internal);
@@ -302,7 +329,7 @@ export async function handleMessage(req: Request, res: Response) {
         }
 
         const visitorMessageId = crypto.randomUUID();
-        await chatDeps.storage.addConversationMessage({
+        const createdVisitorMessage = await chatDeps.storage.addConversationMessage({
             id: visitorMessageId,
             conversationId,
             role: MESSAGE_ROLE.VISITOR,
@@ -311,32 +338,42 @@ export async function handleMessage(req: Request, res: Response) {
                 pageUrl: input.pageUrl,
                 userAgent: input.userAgent,
                 visitorId: input.visitorId,
-                language: input.language,
+                language: responseLanguage,
             },
         });
 
         // Emit SSE event for visitor message (so admin sees it in real-time)
         const visitorMsgConversation = await chatDeps.storage.getConversation(conversationId);
-        const visitorMsgAllMessages = await chatDeps.storage.getConversationMessages(conversationId);
         conversationEvents.emit('new_message', {
+            type: 'new_message',
             conversationId,
-            message: visitorMsgAllMessages[visitorMsgAllMessages.length - 1],
+            message: createdVisitorMessage,
             conversation: visitorMsgConversation,
         });
 
         const intakeObjectives = (settings.intakeObjectives as IntakeObjective[] | null) || [];
         const effectiveObjectives = intakeObjectives.length ? intakeObjectives : DEFAULT_INTAKE_OBJECTIVES;
-        const enabledObjectives = effectiveObjectives.filter(obj => obj.enabled);
+        const normalizedObjectives = [...effectiveObjectives];
+        // Keep ZIP code in the flow, but avoid asking it as the very first question.
+        const zipIdx = normalizedObjectives.findIndex((obj) => obj.id === "zipcode");
+        const detailsIdx = normalizedObjectives.findIndex((obj) => obj.id === "serviceDetails");
+        if (zipIdx === 0 && detailsIdx >= 0) {
+            const [zipObjective] = normalizedObjectives.splice(zipIdx, 1);
+            normalizedObjectives.splice(detailsIdx + 1, 0, zipObjective);
+        }
+        const enabledObjectives = normalizedObjectives.filter(obj => obj.enabled);
 
         const autoMessage = input.message.trim();
         const lastAssistantMessage = [...existingMessages]
             .reverse()
             .find((m) => m.role === 'assistant' && !(m.metadata as any)?.internal);
         const isAffirmative = isAffirmativeResponse(autoMessage);
+        const userAskedDirectQuestion = isLikelyDirectQuestion(autoMessage);
         const isConfirmPrompt = lastAssistantMessage ? isServiceConfirmationPrompt(lastAssistantMessage.content || '') : false;
         const isBookingConfirm = lastAssistantMessage ? isBookingConfirmationPrompt(lastAssistantMessage.content || '') : false;
         const shouldAutoAddServices = isAffirmative && lastAssistantMessage && isConfirmPrompt;
         const shouldAutoBook = isAffirmative && lastAssistantMessage && isBookingConfirm;
+        let autoLeadCaptured = false;
 
         console.log('[Chat AutoAdd] Message:', autoMessage, '| isAffirmative:', isAffirmative, '| lastMsg:', lastAssistantMessage?.content?.substring(0, 60), '| isConfirmPrompt:', isConfirmPrompt, '| shouldAutoAdd:', shouldAutoAddServices, '| isBookingConfirm:', isBookingConfirm);
 
@@ -366,16 +403,37 @@ export async function handleMessage(req: Request, res: Response) {
             });
 
             if (currentCart.length === 0) {
-                // Cart is empty despite user confirming - look for recent add_service tool calls that may have failed
-                const recentToolCalls = existingMessages
-                    .filter((m: any) => m.metadata?.type === 'tool_call' && m.metadata?.toolName === 'add_service' && m.metadata?.toolArgs?.service_id)
-                    .slice(-5); // Last 5 add_service attempts
+                // Cart is empty despite user confirming.
+                // Retry only the latest add_service call to avoid re-adding stale services.
+                const latestToolCall = [...existingMessages]
+                    .reverse()
+                    .find((m: any) =>
+                        m.metadata?.type === 'tool_call' &&
+                        m.metadata?.toolName === 'add_service' &&
+                        m.metadata?.toolArgs?.service_id
+                    );
 
-                const serviceIdsToRetry = recentToolCalls.map((m: any) => Number(m.metadata.toolArgs.service_id)).filter(Boolean);
-                // Deduplicate
-                const uniqueServiceIds = [...new Set(serviceIdsToRetry)];
+                const latestServiceId = latestToolCall
+                    ? Number((latestToolCall as any).metadata.toolArgs.service_id)
+                    : 0;
+                let uniqueServiceIds = latestServiceId ? [latestServiceId] : [];
 
-                console.log('[Chat AutoAdd] Cart empty, found', uniqueServiceIds.length, 'recent add_service tool calls to retry:', uniqueServiceIds);
+                if (uniqueServiceIds.length === 0 && lastAssistantMessage?.content) {
+                    const services = await getCachedServices();
+                    const normalizedLastAssistant = normalizeServiceName(lastAssistantMessage.content || '');
+                    const inferredService = services
+                        .filter((s) => {
+                            const normalizedServiceName = normalizeServiceName(s.name || '');
+                            return normalizedServiceName.length > 0 && normalizedLastAssistant.includes(normalizedServiceName);
+                        })
+                        .sort((a, b) => normalizeServiceName(b.name || '').length - normalizeServiceName(a.name || '').length)[0];
+
+                    if (inferredService?.id) {
+                        uniqueServiceIds = [Number(inferredService.id)];
+                    }
+                }
+
+                console.log('[Chat AutoAdd] Cart empty, inferred', uniqueServiceIds.length, 'service IDs to retry:', uniqueServiceIds);
 
                 if (uniqueServiceIds.length > 0) {
                     const services = await getCachedServices();
@@ -402,12 +460,12 @@ export async function handleMessage(req: Request, res: Response) {
                                 toolCallId,
                             },
                         });
-                        const toolResult = await runChatTool('add_service', toolArgs, conversationId, {
-                            allowFaqs: true,
-                            language: input.language,
-                            userMessage: autoMessage,
-                            userMessageId: visitorMessageId,
-                        });
+            const toolResult = await runChatTool('add_service', toolArgs, conversationId, {
+                allowFaqs: true,
+                language: responseLanguage,
+                userMessage: autoMessage,
+                userMessageId: visitorMessageId,
+            });
                         await chatDeps.storage.addConversationMessage({
                             id: crypto.randomUUID(),
                             conversationId,
@@ -446,7 +504,7 @@ export async function handleMessage(req: Request, res: Response) {
         if (shouldAutoBook) {
             const bookingAttempt = await attemptAutoBooking(conversationId, 'Creating booking on user confirmation', {
                 allowFaqs: true,
-                language: input.language,
+                language: responseLanguage,
                 userMessage: autoMessage,
                 userMessageId: visitorMessageId,
             });
@@ -464,42 +522,6 @@ export async function handleMessage(req: Request, res: Response) {
         const parsedTime = parseTimeFromText(autoMessage);
         const lastSuggestedDate = autoMemory.lastSuggestedDate;
         const lastSuggestedSlots = Array.isArray(autoMemory.lastSuggestedSlots) ? autoMemory.lastSuggestedSlots : [];
-
-        const runAutoUpdateMemory = async (toolArgs: Record<string, any>) => {
-            const toolCallId = crypto.randomUUID();
-            await chatDeps.storage.addConversationMessage({
-                id: crypto.randomUUID(),
-                conversationId,
-                role: MESSAGE_ROLE.ASSISTANT,
-                content: `[TOOL CALL] update_memory`,
-                metadata: {
-                    internal: true,
-                    type: 'tool_call',
-                    toolName: 'update_memory',
-                    toolArgs,
-                    toolCallId,
-                },
-            });
-            const toolResult = await runChatTool('update_memory', toolArgs, conversationId, {
-                allowFaqs: true,
-                language: input.language,
-                userMessage: autoMessage,
-                userMessageId: visitorMessageId,
-            });
-            await chatDeps.storage.addConversationMessage({
-                id: crypto.randomUUID(),
-                conversationId,
-                role: MESSAGE_ROLE.ASSISTANT,
-                content: `[TOOL RESULT] update_memory`,
-                metadata: {
-                    internal: true,
-                    type: 'tool_result',
-                    toolName: 'update_memory',
-                    toolResult,
-                    toolCallId,
-                },
-            });
-        };
         const runAutoUpdateContact = async (toolArgs: Record<string, any>) => {
             const toolCallId = crypto.randomUUID();
             await chatDeps.storage.addConversationMessage({
@@ -517,7 +539,7 @@ export async function handleMessage(req: Request, res: Response) {
             });
             const toolResult = await runChatTool('update_contact', toolArgs, conversationId, {
                 allowFaqs: true,
-                language: input.language,
+                language: responseLanguage,
                 userMessage: autoMessage,
                 userMessageId: visitorMessageId,
             });
@@ -574,60 +596,113 @@ export async function handleMessage(req: Request, res: Response) {
         const currentMemoryForCapture = (conversation?.memory as any) || { collectedData: {}, completedSteps: [] };
         const currentCollectedForCapture = currentMemoryForCapture.collectedData || {};
         const currentStepsForCapture = Array.isArray(currentMemoryForCapture.completedSteps) ? currentMemoryForCapture.completedSteps : [];
-        let capturedOutOfOrder = false;
+        const captureMemoryUpdates: Record<string, string> = {};
+        const captureContactUpdates: Record<string, string> = {};
+        const capturedFields: string[] = [];
+        const completedStepsSet = new Set<string>(currentStepsForCapture);
 
         // Capture zipcode
-        if (!currentStepsForCapture.includes('zipcode') && !currentCollectedForCapture.zipcode) {
+        if (!completedStepsSet.has('zipcode') && !currentCollectedForCapture.zipcode) {
             const zipcode = parseZipFromText(autoMessage);
             if (zipcode) {
-                await runAutoUpdateMemory({ zipcode, completed_step: 'zipcode' });
-                conversation = await chatDeps.storage.getConversation(conversationId);
-                capturedOutOfOrder = true;
+                captureMemoryUpdates.zipcode = zipcode;
+                completedStepsSet.add('zipcode');
+                capturedFields.push(`zipcode:${zipcode}`);
             }
         }
 
-        // Capture name
-        const hasEnoughHistory = existingMessages.filter((m: any) => !(m.metadata as any)?.internal).length >= 3;
-        if (!capturedOutOfOrder && hasEnoughHistory && !currentStepsForCapture.includes('name') && !currentCollectedForCapture.name) {
-            if (looksLikeName(autoMessage) && !parsePhoneFromText(autoMessage) && !looksLikeAddress(autoMessage)) {
-                await runAutoUpdateMemory({ name: autoMessage, completed_step: 'name' });
-                await runAutoUpdateContact({ name: autoMessage });
-                conversation = await chatDeps.storage.getConversation(conversationId);
-                capturedOutOfOrder = true;
+        // Capture name (supports explicit patterns like "my name is Carlos")
+        const hasEnoughHistory = existingMessages.filter((m: any) => !(m.metadata as any)?.internal).length >= AUTO_CAPTURE.MIN_HISTORY_FOR_NAME;
+        if (!completedStepsSet.has('name') && !currentCollectedForCapture.name) {
+            const parsedName = parseNameFromText(autoMessage);
+            const fallbackName = hasEnoughHistory && looksLikeName(autoMessage) && !parsePhoneFromText(autoMessage) && !looksLikeAddress(autoMessage)
+                ? autoMessage.trim()
+                : null;
+            const name = parsedName || fallbackName;
+            if (name) {
+                captureMemoryUpdates.name = name;
+                captureContactUpdates.name = name;
+                completedStepsSet.add('name');
+                capturedFields.push(`name:${name}`);
             }
         }
 
         // Capture phone
-        if (!capturedOutOfOrder && !currentStepsForCapture.includes('phone') && !currentCollectedForCapture.phone) {
+        let capturedPhone: string | null = null;
+        if (!completedStepsSet.has('phone') && !currentCollectedForCapture.phone) {
             const phone = parsePhoneFromText(autoMessage);
             if (phone) {
-                await runAutoUpdateMemory({ phone, completed_step: 'phone' });
-                await runAutoUpdateContact({ phone });
-                conversation = await chatDeps.storage.getConversation(conversationId);
-                capturedOutOfOrder = true;
-
-                // Check for duplicate open conversations
-                const existingConv = await chatDeps.storage.findOpenConversationByContact(phone, undefined, conversationId);
-                if (existingConv) {
-                    console.log(`[Chat Dedup] Found existing open conversation ${existingConv.id} for phone ${phone}, closing it in favor of current ${conversationId}`);
-                    await chatDeps.storage.updateConversation(existingConv.id, { status: CONVERSATION_STATUS.CLOSED });
-                    await chatDeps.storage.addConversationMessage({
-                        id: crypto.randomUUID(),
-                        conversationId: existingConv.id,
-                        role: MESSAGE_ROLE.ASSISTANT,
-                        content: `[SYSTEM] Conversation closed: customer started a new conversation (${conversationId})`,
-                        metadata: { internal: true, type: 'dedup', newConversationId: conversationId },
-                    });
-                }
+                captureMemoryUpdates.phone = phone;
+                captureContactUpdates.phone = phone;
+                completedStepsSet.add('phone');
+                capturedFields.push(`phone:${phone}`);
+                capturedPhone = phone;
             }
         }
 
         // Capture address
-        if (!capturedOutOfOrder && !currentStepsForCapture.includes('address') && !currentCollectedForCapture.address) {
+        if (!completedStepsSet.has('address') && !currentCollectedForCapture.address) {
             if (looksLikeAddress(autoMessage)) {
-                await runAutoUpdateMemory({ address: autoMessage, completed_step: 'address' });
-                conversation = await chatDeps.storage.getConversation(conversationId);
-                capturedOutOfOrder = true;
+                const cleanAddress = autoMessage.trim();
+                captureMemoryUpdates.address = cleanAddress;
+                completedStepsSet.add('address');
+                capturedFields.push('address');
+            }
+        }
+
+        if (Object.keys(captureMemoryUpdates).length > 0) {
+            const mergedCollected = {
+                ...currentCollectedForCapture,
+                ...captureMemoryUpdates,
+            };
+            const mergedMemory = {
+                ...currentMemoryForCapture,
+                collectedData: mergedCollected,
+                completedSteps: Array.from(completedStepsSet),
+            };
+
+            const conversationUpdates: any = {
+                memory: mergedMemory,
+            };
+            if (captureMemoryUpdates.zipcode) conversationUpdates.visitorZipcode = captureMemoryUpdates.zipcode;
+            if (captureMemoryUpdates.address) conversationUpdates.visitorAddress = captureMemoryUpdates.address;
+            if (captureMemoryUpdates.name) conversationUpdates.visitorName = captureMemoryUpdates.name;
+            if (captureMemoryUpdates.phone) conversationUpdates.visitorPhone = captureMemoryUpdates.phone;
+
+            await chatDeps.storage.updateConversation(conversationId, conversationUpdates);
+
+            await chatDeps.storage.addConversationMessage({
+                id: crypto.randomUUID(),
+                conversationId,
+                role: MESSAGE_ROLE.ASSISTANT,
+                content: `[INTAKE] Auto-captured: ${capturedFields.join(', ')}`,
+                metadata: {
+                    internal: true,
+                    type: 'intake_auto',
+                    captured: captureMemoryUpdates,
+                },
+            });
+
+            if (Object.keys(captureContactUpdates).length > 0) {
+                await runAutoUpdateContact(captureContactUpdates);
+                autoLeadCaptured = true;
+            }
+
+            conversation = await chatDeps.storage.getConversation(conversationId);
+        }
+
+        if (capturedPhone) {
+            const existingConv = await chatDeps.storage.findOpenConversationByContact(capturedPhone, undefined, conversationId);
+            if (existingConv) {
+                console.log(`[Chat Dedup] Found existing open conversation ${existingConv.id} for phone ${capturedPhone}, closing it in favor of current ${conversationId}`);
+                await chatDeps.storage.updateConversation(existingConv.id, { status: CONVERSATION_STATUS.CLOSED });
+                await chatDeps.storage.addConversationMessage({
+                    id: crypto.randomUUID(),
+                    conversationId: existingConv.id,
+                    role: MESSAGE_ROLE.ASSISTANT,
+                    content: `[SYSTEM] Conversation closed: customer started a new conversation (${conversationId})`,
+                    metadata: { internal: true, type: 'dedup', newConversationId: conversationId },
+                });
             }
         }
 
@@ -635,6 +710,7 @@ export async function handleMessage(req: Request, res: Response) {
         const history = await chatDeps.storage.getConversationMessages(conversationId);
         const historyMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = history
             .filter((m) => !(m.metadata as any)?.internal)
+            .slice(-24)
             .map((m) => ({
                 role: (m.role === 'assistant' ? 'assistant' : 'user') as 'assistant' | 'user',
                 content: m.content,
@@ -679,6 +755,8 @@ export async function handleMessage(req: Request, res: Response) {
         let intakeEnforcement: string;
         if (!nextObjective) {
             intakeEnforcement = 'All intake steps complete.';
+        } else if (userAskedDirectQuestion) {
+            intakeEnforcement = `NEXT REQUIRED STEP: ${nextObjective.label} (${nextObjective.id}). The user asked a direct question in this turn. Answer their question first with concrete information and only then ask for the next intake step.`;
         } else if (stepRepeatCount >= 3) {
             intakeEnforcement = `NEXT REQUIRED STEP: ${nextObjective.label} (${nextObjective.id}). IMPORTANT: You have already asked for this ${stepRepeatCount} times. The customer may not have this info right now. Acknowledge what they said, try rephrasing your question differently, or offer to skip this step and come back to it later. Do NOT repeat the same question verbatim.`;
         } else if (stepRepeatCount >= 1) {
@@ -734,8 +812,8 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
         const currentDateISO = getTodayStr(new Date(), timeZone);
 
         const allowFaqs = true;
-        const languageInstruction = input.language
-            ? `Respond in ${input.language}.`
+        const languageInstruction = responseLanguage
+            ? `Respond in ${responseLanguage}.`
             : '';
 
         const companyName = (company?.companyName || 'the business').trim();
@@ -793,7 +871,7 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
 
         // Shared variables for downstream logic
         let assistantResponse = 'Sorry, I could not process that request.';
-        let leadCaptured = false;
+        let leadCaptured = autoLeadCaptured;
         let bookingCompleted: { value: number; services: string[] } | null = null;
         let bookingAttempted = false;
         let bookingFailed = false;
@@ -821,11 +899,11 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
                     tool_choice: 'auto',
                 };
                 if (activeProvider === 'openai') {
-                    firstReq.max_completion_tokens = 800;
+                    firstReq.max_completion_tokens = OPENAI_CONFIG.MAX_COMPLETION_TOKENS;
                     firstReq.parallel_tool_calls = true;
                 } else {
                     // Gemini OpenAI-compatible endpoint may not accept `max_completion_tokens` / `parallel_tool_calls`.
-                    firstReq.max_tokens = 800;
+                    firstReq.max_tokens = OPENAI_CONFIG.MAX_COMPLETION_TOKENS;
                 }
 
                 const first = await aiClient.chat.completions.create(firstReq);
@@ -862,7 +940,7 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
 
                         const toolResult = await runChatTool(call.function.name, args, conversationId, {
                             allowFaqs,
-                            language: input.language,
+                            language: responseLanguage,
                             userMessage: input.message,
                             userMessageId: visitorMessageId,
                         });
@@ -926,9 +1004,9 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
                         messages: [...chatMessages, cleanedChoice, ...toolResponses],
                     };
                     if (activeProvider === 'openai') {
-                        secondReq.max_completion_tokens = 800;
+                        secondReq.max_completion_tokens = OPENAI_CONFIG.MAX_COMPLETION_TOKENS;
                     } else {
-                        secondReq.max_tokens = 800;
+                        secondReq.max_tokens = OPENAI_CONFIG.MAX_COMPLETION_TOKENS;
                     }
 
                     const second = await aiClient.chat.completions.create(secondReq);
@@ -983,7 +1061,7 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
                         });
                         const toolResult = await runChatTool('suggest_booking_dates', toolArgs, conversationId, {
                             allowFaqs,
-                            language: input.language,
+                            language: responseLanguage,
                             userMessage: input.message,
                             userMessageId: visitorMessageId,
                         });
@@ -1008,11 +1086,11 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
                 }
 
                 if (postToolNextObjective) {
-                    const shouldEnforce = !toolCallNames.some((name) =>
-                        ['search_faqs', 'get_business_policies', 'suggest_booking_dates', 'create_booking'].includes(name)
+                    const shouldEnforce = !userAskedDirectQuestion && !toolCallNames.some((name) =>
+                        ['search_faqs', 'get_business_policies', 'suggest_booking_dates', 'create_booking', 'list_services', 'get_service_details'].includes(name)
                     );
                     if (shouldEnforce && !responseMentionsObjective(assistantResponse, postToolNextObjective.id)) {
-                        assistantResponse = getIntakeQuestion(postToolNextObjective.id);
+                        assistantResponse = getIntakeQuestion(postToolNextObjective.id, responseLanguage);
                     }
                 }
 
@@ -1051,7 +1129,7 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
                         // ✅ DEDUPLICATED: Use helper function for auto-booking
                         const bookingAttempt = await attemptAutoBooking(conversationId, 'AI fabricated confirmation without calling create_booking', {
                             allowFaqs,
-                            language: input.language,
+                            language: responseLanguage,
                             userMessage: input.message,
                             userMessageId: visitorMessageId,
                         });
@@ -1076,7 +1154,7 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
         }
 
         const assistantMessageId = crypto.randomUUID();
-        await chatDeps.storage.addConversationMessage({
+        const createdAssistantMessage = await chatDeps.storage.addConversationMessage({
             id: assistantMessageId,
             conversationId,
             role: MESSAGE_ROLE.ASSISTANT,
@@ -1085,10 +1163,10 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
         await chatDeps.storage.updateConversation(conversationId, { lastMessageAt: new Date() });
 
         const updatedConversation = await chatDeps.storage.getConversation(conversationId);
-        const allMessages = await chatDeps.storage.getConversationMessages(conversationId);
         conversationEvents.emit('new_message', {
+            type: 'new_message',
             conversationId,
-            message: allMessages[allMessages.length - 1],
+            message: createdAssistantMessage,
             conversation: updatedConversation,
         });
 

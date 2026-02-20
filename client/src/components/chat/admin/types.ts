@@ -50,9 +50,9 @@ export type IntakeObjective = {
 };
 
 export const DEFAULT_CHAT_OBJECTIVES: IntakeObjective[] = [
-    { id: 'zipcode', label: 'Zip Code', description: 'Ask for zip code first to check service area', enabled: true },
     { id: 'serviceType', label: 'Service Type', description: 'Ask what kind of service they need', enabled: true },
     { id: 'serviceDetails', label: 'Details', description: 'Ask for specific details about the job', enabled: true },
+    { id: 'zipcode', label: 'ZIP Code', description: 'Ask for ZIP code to confirm service area', enabled: true },
     { id: 'date', label: 'Preferred Date', description: 'Ask when they would like the service', enabled: true },
     { id: 'name', label: 'Name', description: 'Ask for their name', enabled: true },
     { id: 'phone', label: 'Phone Number', description: 'Ask for phone number to contact them', enabled: true },
