@@ -43,7 +43,6 @@ Create a `.env` file with the following:
 # Required
 DATABASE_URL=postgresql://user:password@host:port/database
 SESSION_SECRET=your-session-secret
-CRON_SECRET=your-strong-random-cron-secret
 
 # Supabase Authentication (Required for admin login)
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co
@@ -59,11 +58,11 @@ ADMIN_PASSWORD_HASH=bcrypt-hashed-password
 ### GitHub Actions Keepalive
 
 The Supabase keepalive runs via GitHub Actions at `.github/workflows/supabase-keepalive.yml`.
+It connects directly to PostgreSQL/Supabase (no dependency on Vercel or app endpoints).
 
 Configure these repository secrets:
 
-- `APP_URL` - public base URL of the deployed app (example: `https://your-app.vercel.app`)
-- `CRON_SECRET` - same value configured in the server environment
+- `DATABASE_URL` - PostgreSQL connection string used for keepalive queries
 
 ### Installation
 

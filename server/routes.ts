@@ -1,12 +1,8 @@
 
 // Force restart: schema updated
 import type { Express } from "express";
-import { timingSafeEqual } from "crypto";
 import { type Server } from "http";
-import { sql } from "drizzle-orm";
-import { db } from "./db";
 import { seedDatabase, seedFaqs } from "./lib/seeds";
-import { systemHeartbeats } from "@shared/schema";
 
 // Import routers
 import chatRouter from "./routes/chat";
@@ -21,17 +17,6 @@ import serviceAreasRouter from "./routes/service-areas";
 import integrationRouter from "./routes/integrations";
 import userRoutes from "./routes/user-routes";
 import authRoutes from "./routes/auth-routes";
-
-function hasValidCronToken(authHeader: string | undefined, secret: string): boolean {
-  if (!authHeader?.startsWith("Bearer ")) return false;
-
-  const token = authHeader.slice("Bearer ".length).trim();
-  const tokenBuffer = Buffer.from(token);
-  const secretBuffer = Buffer.from(secret);
-
-  if (tokenBuffer.length !== secretBuffer.length) return false;
-  return timingSafeEqual(tokenBuffer, secretBuffer);
-}
 
 export async function registerRoutes(server: Server, app: Express) {
   // Mount routers
@@ -67,48 +52,6 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // Service Area routes (mounted at /api/service-areas)
   app.use("/api/service-areas", serviceAreasRouter);
-
-  app.get("/api/cron/supabase-keepalive", async (req, res) => {
-    const cronSecret = process.env.CRON_SECRET;
-    if (!cronSecret) {
-      return res.status(500).json({
-        ok: false,
-        message: "CRON_SECRET is not configured",
-      });
-    }
-
-    if (!hasValidCronToken(req.get("authorization"), cronSecret)) {
-      return res.status(401).json({
-        ok: false,
-        message: "Unauthorized",
-      });
-    }
-
-    try {
-      await db.execute(sql`select now()`);
-
-      const [heartbeat] = await db
-        .insert(systemHeartbeats)
-        .values({
-          source: "github-actions",
-          note: "",
-        })
-        .returning({
-          id: systemHeartbeats.id,
-        });
-
-      return res.status(200).json({
-        ok: true,
-        heartbeatId: heartbeat.id,
-      });
-    } catch (error) {
-      console.error("Supabase keepalive cron failed:", error);
-      return res.status(500).json({
-        ok: false,
-        message: "Failed to execute keepalive",
-      });
-    }
-  });
 
   // Seed Data
   await seedDatabase();

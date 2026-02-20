@@ -10,30 +10,31 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Call keepalive endpoint
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Run keepalive query directly on Supabase
         env:
-          APP_URL: ${{ secrets.APP_URL }}
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           set -euo pipefail
 
-          if [ -z "${APP_URL}" ]; then
-            echo "Missing required secret: APP_URL"
+          if [ -z "${DATABASE_URL}" ]; then
+            echo "Missing required secret: DATABASE_URL"
             exit 1
           fi
 
-          if [ -z "${CRON_SECRET}" ]; then
-            echo "Missing required secret: CRON_SECRET"
-            exit 1
-          fi
+          psql "${DATABASE_URL}" -v ON_ERROR_STOP=1 <<'SQL'
+          select now();
 
-          KEEPALIVE_URL="${APP_URL%/}/api/cron/supabase-keepalive"
-          echo "Calling keepalive endpoint: ${KEEPALIVE_URL}"
-
-          curl --fail --show-error --silent \
-            --retry 3 \
-            --retry-delay 5 \
-            --retry-connrefused \
-            --max-time 30 \
-            -H "Authorization: Bearer ${CRON_SECRET}" \
-            "${KEEPALIVE_URL}"
+          do $$
+          begin
+            if to_regclass('public.system_heartbeats') is not null then
+              insert into public.system_heartbeats (source, note)
+              values ('github-actions-direct', '');
+            end if;
+          end
+          $$;
+          SQL
