@@ -63,6 +63,10 @@ export function useAvailability(date: string | undefined, totalDurationMinutes: 
       return api.availability.check.responses[200].parse(await res.json());
     },
     enabled: !!date && totalDurationMinutes > 0,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -77,7 +81,10 @@ export function useMonthAvailability(year: number, month: number, totalDurationM
       return api.availability.month.responses[200].parse(await res.json()) as Record<string, boolean>;
     },
     enabled: year > 0 && month > 0 && totalDurationMinutes > 0,
-    staleTime: 60000, // Cache for 1 minute
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
   });
 }
 

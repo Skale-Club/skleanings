@@ -48,14 +48,16 @@ export default function BookingPage() {
   const [viewDate, setViewDate] = useState<Date>(new Date());
   
   // API Hooks
-  const { data: slots, isLoading: isLoadingSlots } = useAvailability(selectedDate, totalDuration);
+  const { data: slots, isLoading: isLoadingSlots, isFetching: isFetchingSlots } = useAvailability(selectedDate, totalDuration);
   const createBooking = useCreateBooking();
   const { data: companySettings } = useQuery<{ timeFormat?: string; minimumBookingValue?: string }>({ queryKey: ['/api/company-settings'] });
   
   // Fetch monthly availability to disable dates without slots
   const viewYear = viewDate.getFullYear();
   const viewMonth = viewDate.getMonth() + 1; // 1-12
-  const { data: monthAvailability, isLoading: isLoadingMonthAvailability } = useMonthAvailability(viewYear, viewMonth, totalDuration);
+  const { data: monthAvailability, isLoading: isLoadingMonthAvailability, isFetching: isFetchingMonthAvailability } = useMonthAvailability(viewYear, viewMonth, totalDuration);
+  const isSlotsPending = isLoadingSlots || isFetchingSlots;
+  const isMonthAvailabilityPending = isLoadingMonthAvailability || isFetchingMonthAvailability;
   const timeFormat = companySettings?.timeFormat || '12h';
   const minimumBookingValueStr = companySettings?.minimumBookingValue || '0';
   const minimumBookingValue = parseFloat(minimumBookingValueStr) || 0;
@@ -209,12 +211,12 @@ export default function BookingPage() {
 
                             // Check availability from the monthly availability API
                             // Never show a date as available until month availability is loaded.
-                            const isAvailable = monthAvailability ? monthAvailability[dateStr] === true : false;
+                            const isAvailable = !isMonthAvailabilityPending && monthAvailability ? monthAvailability[dateStr] === true : false;
 
                             days.push(
                               <div key={currentDay.toString()} className="flex justify-center items-center aspect-square p-0.5">
                                 <button
-                                  disabled={!isCurrentMonth || isPast || !isAvailable || isLoadingMonthAvailability}
+                                  disabled={!isCurrentMonth || isPast || !isAvailable || isMonthAvailabilityPending}
                                   onClick={() => {
                                     setSelectedDate(dateStr);
                                     setSelectedTime("");
@@ -250,7 +252,7 @@ export default function BookingPage() {
                   {/* Slots Column */}
                   <div className="relative max-h-[440px] overflow-y-auto">
                     <div className="space-y-3">
-                      {isLoadingSlots ? (
+                      {isSlotsPending ? (
                         [1, 2, 3, 4, 5].map(i => (
                           <div key={i} className="h-14 bg-slate-50 border border-slate-100 rounded-xl animate-pulse"></div>
                         ))

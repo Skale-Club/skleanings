@@ -213,10 +213,13 @@ export async function getGHLFreeSlots(
         // We need to iterate ALL dates and accumulate all slots
         for (const key of Object.keys(data)) {
           if (key !== 'traceId' && data[key]?.slots && Array.isArray(data[key].slots)) {
-            const dateSlots = data[key].slots.map((s: string) => ({
-              startTime: s,
-              endTime: s
-            }));
+            const dateSlots = data[key].slots.map((s: string) => {
+              const normalizedStart = typeof s === "string" && s.includes("T") ? s : `${key}T${s}`;
+              return {
+                startTime: normalizedStart,
+                endTime: normalizedStart,
+              };
+            });
             slotsArray = slotsArray.concat(dateSlots);
           }
         }
