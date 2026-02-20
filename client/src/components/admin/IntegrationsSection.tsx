@@ -1044,7 +1044,7 @@ export function IntegrationsSection({ getAccessToken }: { getAccessToken: () => 
       <TwilioSection getAccessToken={getAccessToken} />
 
       <div className="space-y-6">
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(260px,1fr))]">
           <Card className="border-0 bg-muted">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between gap-2">
