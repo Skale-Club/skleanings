@@ -27,7 +27,7 @@ router.get('/', requireAdmin, async (req, res) => {
     }
 });
 
-router.get('/:id', requireAdmin, async (req, res) => {
+router.get('/:id(\\d+)', requireAdmin, async (req, res) => {
     try {
         const booking = await storage.getBooking(Number(req.params.id));
         if (!booking) return res.status(404).json({ message: "Booking not found" });
@@ -130,7 +130,7 @@ router.post('/', async (req, res) => {
     }
 });
 
-router.put('/:id', requireAdmin, async (req, res) => {
+router.put('/:id(\\d+)', requireAdmin, async (req, res) => {
     try {
         const validatedData = insertBookingSchemaBase.partial().parse(req.body);
         const booking = await storage.updateBooking(Number(req.params.id), validatedData);
@@ -143,7 +143,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
     }
 });
 
-router.put('/:id/status', requireAdmin, async (req, res) => {
+router.put('/:id(\\d+)/status', requireAdmin, async (req, res) => {
     try {
         const { status } = req.body;
         if (!status) return res.status(400).json({ message: "Status is required" });
@@ -155,7 +155,7 @@ router.put('/:id/status', requireAdmin, async (req, res) => {
     }
 });
 
-router.delete('/:id', requireAdmin, async (req, res) => {
+router.delete('/:id(\\d+)', requireAdmin, async (req, res) => {
     try {
         await storage.deleteBooking(Number(req.params.id));
         res.json({ success: true });

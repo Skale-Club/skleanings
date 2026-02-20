@@ -12,6 +12,7 @@ import { systemHeartbeats } from "@shared/schema";
 import chatRouter from "./routes/chat";
 import authRouter from "./routes/auth";
 import catalogRouter from "./routes/catalog";
+import availabilityRouter from "./routes/availability";
 import bookingsRouter from "./routes/bookings";
 import companyRouter from "./routes/company";
 import blogRouter from "./routes/blog";
@@ -48,6 +49,9 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // Catalog routes (e.g. /api/categories, /api/services) - mounted at root because they use full paths
   app.use("/", catalogRouter);
+
+  // Availability routes (e.g. /api/availability, /api/availability/month)
+  app.use("/", availabilityRouter);
 
   // Company routes (e.g. /api/company-settings, /robots.txt, /sitemap.xml) - mounted at root because they use full paths
   app.use("/", companyRouter);

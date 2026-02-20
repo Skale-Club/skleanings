@@ -208,7 +208,8 @@ export default function BookingPage() {
                             const isPast = currentDay < new Date() && !isToday;
 
                             // Check availability from the monthly availability API
-                            const isAvailable = monthAvailability ? monthAvailability[dateStr] === true : (!isPast && isCurrentMonth);
+                            // Never show a date as available until month availability is loaded.
+                            const isAvailable = monthAvailability ? monthAvailability[dateStr] === true : false;
 
                             days.push(
                               <div key={currentDay.toString()} className="flex justify-center items-center aspect-square p-0.5">
