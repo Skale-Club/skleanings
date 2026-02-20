@@ -4,6 +4,7 @@ import { useCompanySettings } from "@/context/CompanySettingsContext";
 import { ShoppingBag, Menu, X, Phone } from "lucide-react";
 import { useState, useCallback } from "react";
 import { clsx } from "clsx";
+import { trackCallClick } from "@/lib/analytics";
 
 export function Navbar() {
   const [location] = useLocation();
@@ -72,7 +73,11 @@ export function Navbar() {
             <Link href="/faq" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors cursor-pointer">FAQ</Link>
 
             {displayPhone && (
-              <a href={`tel:${telPhone}`} className="px-4 py-2 bg-secondary text-secondary-foreground font-bold rounded-full hover-elevate transition-all text-sm flex items-center gap-2">
+              <a
+                href={`tel:${telPhone}`}
+                onClick={() => trackCallClick('header', displayPhone)}
+                className="px-4 py-2 bg-secondary text-secondary-foreground font-bold rounded-full hover-elevate transition-all text-sm flex items-center gap-2"
+              >
                 <Phone className="w-4 h-4 fill-current" />
                 {displayPhone}
               </a>

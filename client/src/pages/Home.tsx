@@ -9,7 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useCompanySettings } from "@/context/CompanySettingsContext";
 import type { BlogPost, HomepageContent } from "@shared/schema";
 import { format } from "date-fns";
-import { trackCTAClick } from "@/lib/analytics";
+import { trackCTAClick, trackCallClick } from "@/lib/analytics";
 import { DEFAULT_HOMEPAGE_CONTENT } from "@/lib/homepageDefaults";
 import { ServiceCard } from "@/components/ui/ServiceCard";
 
@@ -366,7 +366,7 @@ export default function Home() {
                   <a
                     href={`tel:${telPhone}`}
                     className="w-full sm:w-auto shrink-0 px-6 sm:px-8 py-3 sm:py-4 bg-transparent text-white font-bold rounded-full border border-white/30 hover:bg-white/10 hover:scale-105 transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
-                    onClick={() => trackCTAClick('hero', 'phone_call')}
+                    onClick={() => trackCallClick('hero', displayPhone)}
                     data-testid="button-hero-phone"
                   >
                     <Phone className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />

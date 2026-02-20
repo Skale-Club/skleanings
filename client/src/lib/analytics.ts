@@ -112,6 +112,7 @@ function injectFacebookPixel(pixelId: string) {
 
 export type AnalyticsEventName =
   | 'cta_click'
+  | 'click_call'
   | 'view_item_list'
   | 'view_item'
   | 'add_to_cart'
@@ -171,6 +172,7 @@ export function trackEvent(eventName: AnalyticsEventName, payload: AnalyticsEven
       'view_item': 'ViewContent',
       'view_item_list': 'ViewContent',
       'contact_click': 'Contact',
+      'click_call': 'Contact',
     };
 
     const fbEvent = fbEventMap[eventName];
@@ -260,6 +262,14 @@ export function trackPurchase(
 
 export function trackCTAClick(location: string, label: string) {
   trackEvent('cta_click', { location, label });
+}
+
+export function trackCallClick(location: string, phone?: string) {
+  trackEvent('click_call', {
+    location,
+    label: 'phone_call',
+    phone_number: phone,
+  });
 }
 
 export function trackViewServices(category?: string, items?: Array<{ id: number | string; name: string; price: number }>) {
