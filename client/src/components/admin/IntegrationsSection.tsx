@@ -789,10 +789,10 @@ export function IntegrationsSection({ getAccessToken }: { getAccessToken: () => 
                       value={openAIApiKey || (openAISettings.hasKey ? '********' : '')}
                       onChange={(e) => {
                         const val = e.target.value;
-                        if (val === '********' || (openAISettings.hasKey && val.length < 8 && !openAIApiKey)) {
+                        if (val === '********') {
                           setOpenAIApiKey('');
-                        } else if (val !== '********') {
-                          setOpenAIApiKey(val.replace(/^\*+/, ''));
+                        } else {
+                          setOpenAIApiKey(val);
                         }
                       }}
                       onFocus={(e) => {
@@ -881,10 +881,10 @@ export function IntegrationsSection({ getAccessToken }: { getAccessToken: () => 
                       value={geminiApiKey || (geminiSettings.hasKey ? '********' : '')}
                       onChange={(e) => {
                         const val = e.target.value;
-                        if (val === '********' || (geminiSettings.hasKey && val.length < 8 && !geminiApiKey)) {
+                        if (val === '********') {
                           setGeminiApiKey('');
-                        } else if (val !== '********') {
-                          setGeminiApiKey(val.replace(/^\*+/, ''));
+                        } else {
+                          setGeminiApiKey(val);
                         }
                       }}
                       onFocus={(e) => {
