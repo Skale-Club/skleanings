@@ -825,6 +825,7 @@ export function IntegrationsSection({ getAccessToken }: { getAccessToken: () => 
                         <SelectItem value="gpt-5-nano">gpt-5-nano</SelectItem>
                         <SelectItem value="gpt-4o-mini">gpt-4o-mini</SelectItem>
                         <SelectItem value="gpt-4o">gpt-4o</SelectItem>
+                        <SelectItem value="gpt-4.1">gpt-4.1</SelectItem>
                         <SelectItem value="gpt-4-turbo">gpt-4-turbo</SelectItem>
                         <SelectItem value="gpt-3.5-turbo">gpt-3.5-turbo</SelectItem>
                       </SelectContent>
