@@ -1,4 +1,3 @@
-
 import { Router } from "express";
 import { z } from "zod";
 import { storage } from "../storage";
@@ -81,51 +80,56 @@ router.get('/sitemap.xml', async (req, res) => {
         const settings = await storage.getCompanySettings();
         const categories = await storage.getCategories();
         const blogPostsList = await storage.getPublishedBlogPosts(100, 0);
-        const canonicalUrl = settings?.seoCanonicalUrl || `https://${req.get('host')}`;
+        // Remove trailing slash from canonical URL to prevent double slashes
+        const baseUrl = (settings?.seoCanonicalUrl || `https://${req.get('host')}`).replace(/\/$/, '');
         const lastMod = new Date().toISOString().split('T')[0];
 
-        let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>${canonicalUrl}/</loc>
-    <lastmod>${lastMod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>${canonicalUrl}/services</loc>
-    <lastmod>${lastMod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>${canonicalUrl}/blog</loc>
-    <lastmod>${lastMod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>${canonicalUrl}/cart</loc>
-    <lastmod>${lastMod}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>`;
+        // Static pages with their priorities and change frequencies
+        const staticPages = [
+            { url: '/', priority: '1.0', changefreq: 'weekly' },
+            { url: '/services', priority: '0.9', changefreq: 'weekly' },
+            { url: '/booking', priority: '0.9', changefreq: 'monthly' },
+            { url: '/service-areas', priority: '0.8', changefreq: 'monthly' },
+            { url: '/about', priority: '0.8', changefreq: 'monthly' },
+            { url: '/team', priority: '0.7', changefreq: 'monthly' },
+            { url: '/contact', priority: '0.8', changefreq: 'monthly' },
+            { url: '/faq', priority: '0.7', changefreq: 'monthly' },
+            { url: '/blog', priority: '0.8', changefreq: 'weekly' },
+            { url: '/privacy-policy', priority: '0.5', changefreq: 'yearly' },
+            { url: '/terms-of-service', priority: '0.5', changefreq: 'yearly' },
+        ];
 
+        let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
+
+        // Add static pages
+        for (const page of staticPages) {
+            sitemap += `
+  <url>
+    <loc>${baseUrl}${page.url}</loc>
+    <lastmod>${lastMod}</lastmod>
+    <changefreq>${page.changefreq}</changefreq>
+    <priority>${page.priority}</priority>
+  </url>`;
+        }
+
+        // Add category pages
         for (const category of categories) {
             sitemap += `
   <url>
-    <loc>${canonicalUrl}/services/${category.slug}</loc>
+    <loc>${baseUrl}/services/${category.slug}</loc>
     <lastmod>${lastMod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>`;
         }
 
+        // Add blog posts
         for (const post of blogPostsList) {
             const postDate = post.updatedAt ? new Date(post.updatedAt).toISOString().split('T')[0] : lastMod;
             sitemap += `
   <url>
-    <loc>${canonicalUrl}/blog/${post.slug}</loc>
+    <loc>${baseUrl}/blog/${post.slug}</loc>
     <lastmod>${postDate}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
