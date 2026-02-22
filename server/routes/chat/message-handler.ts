@@ -520,8 +520,34 @@ export async function handleMessage(req: Request, res: Response) {
         const autoCart = Array.isArray(autoMemory.cart) ? autoMemory.cart : [];
         const nextObjectiveForAuto = getNextIntakeObjective(enabledObjectives, conversation, autoCollected, autoCart);
         const parsedTime = parseTimeFromText(autoMessage);
+        const explicitDateMatch = autoMessage.match(/\b(20\d{2}-\d{2}-\d{2})\b/);
+        const explicitDateFromMessage = explicitDateMatch ? explicitDateMatch[1] : null;
         const lastSuggestedDate = autoMemory.lastSuggestedDate;
         const lastSuggestedSlots = Array.isArray(autoMemory.lastSuggestedSlots) ? autoMemory.lastSuggestedSlots : [];
+        const persistSuggestedSlotContext = async (suggestions: any[]) => {
+            if (!Array.isArray(suggestions) || suggestions.length === 0) return;
+            const normalized = suggestions
+                .map((item) => ({
+                    date: typeof item?.date === 'string' ? item.date : '',
+                    availableSlots: Array.isArray(item?.availableSlots)
+                        ? item.availableSlots.filter((slot: any) => typeof slot === 'string')
+                        : [],
+                }))
+                .filter((item) => /^\d{4}-\d{2}-\d{2}$/.test(item.date) && item.availableSlots.length > 0);
+            if (normalized.length === 0) return;
+
+            const currentConv = await chatDeps.storage.getConversation(conversationId);
+            const currentMem = (currentConv?.memory as any) || { collectedData: {}, completedSteps: [] };
+            const primary = normalized[0];
+            const updatedMemory = {
+                ...currentMem,
+                lastSuggestedDate: primary.date,
+                lastSuggestedSlots: primary.availableSlots,
+                lastSuggestedOptions: normalized.slice(0, 5),
+            };
+            await chatDeps.storage.updateConversation(conversationId, { memory: updatedMemory });
+            conversation = await chatDeps.storage.getConversation(conversationId);
+        };
         const runAutoUpdateContact = async (toolArgs: Record<string, any>) => {
             const toolCallId = crypto.randomUUID();
             await chatDeps.storage.addConversationMessage({
@@ -559,37 +585,74 @@ export async function handleMessage(req: Request, res: Response) {
         };
 
         // Handle date/time selection when availability was shown
-        if (nextObjectiveForAuto?.id === 'date' && parsedTime && lastSuggestedDate) {
-            const slotMatches = lastSuggestedSlots.length === 0 || lastSuggestedSlots.includes(parsedTime);
+        if (nextObjectiveForAuto?.id === 'date' && parsedTime && (lastSuggestedDate || explicitDateFromMessage)) {
+            const resolvedDate = explicitDateFromMessage || lastSuggestedDate;
+            const slotMatches = explicitDateFromMessage
+                ? true
+                : (lastSuggestedSlots.length === 0 || lastSuggestedSlots.includes(parsedTime));
             if (slotMatches) {
                 const completedSteps = Array.isArray(autoMemory.completedSteps) ? autoMemory.completedSteps : [];
                 const updatedMemory = {
                     ...autoMemory,
                     collectedData: {
                         ...autoCollected,
-                        preferredDate: autoCollected.preferredDate || lastSuggestedDate,
-                        selectedDate: lastSuggestedDate,
+                        preferredDate: autoCollected.preferredDate || resolvedDate,
+                        selectedDate: resolvedDate,
                         selectedTime: parsedTime,
                     },
                     completedSteps: completedSteps.includes('date') ? completedSteps : [...completedSteps, 'date'],
                     lastSuggestedDate: null,
                     lastSuggestedSlots: null,
+                    lastSuggestedOptions: null,
                 };
                 await chatDeps.storage.updateConversation(conversationId, { memory: updatedMemory });
                 await chatDeps.storage.addConversationMessage({
                     id: crypto.randomUUID(),
                     conversationId,
                     role: MESSAGE_ROLE.ASSISTANT,
-                    content: `[INTAKE] Auto-captured time ${parsedTime} for ${lastSuggestedDate}`,
+                    content: `[INTAKE] Auto-captured time ${parsedTime} for ${resolvedDate}`,
                     metadata: {
                         internal: true,
                         type: 'intake_auto',
                         selectedTime: parsedTime,
-                        selectedDate: lastSuggestedDate,
+                        selectedDate: resolvedDate,
                     },
                 });
                 conversation = await chatDeps.storage.getConversation(conversationId);
             }
+        }
+
+        if (nextObjectiveForAuto?.id === 'date' && !parsedTime && isAffirmative && lastSuggestedDate && lastSuggestedSlots.length > 0) {
+            const inferredTime = lastSuggestedSlots[0];
+            const completedSteps = Array.isArray(autoMemory.completedSteps) ? autoMemory.completedSteps : [];
+            const updatedMemory = {
+                ...autoMemory,
+                collectedData: {
+                    ...autoCollected,
+                    preferredDate: autoCollected.preferredDate || lastSuggestedDate,
+                    selectedDate: lastSuggestedDate,
+                    selectedTime: inferredTime,
+                },
+                completedSteps: completedSteps.includes('date') ? completedSteps : [...completedSteps, 'date'],
+                lastSuggestedDate: null,
+                lastSuggestedSlots: null,
+                lastSuggestedOptions: null,
+            };
+            await chatDeps.storage.updateConversation(conversationId, { memory: updatedMemory });
+            await chatDeps.storage.addConversationMessage({
+                id: crypto.randomUUID(),
+                conversationId,
+                role: MESSAGE_ROLE.ASSISTANT,
+                content: `[INTAKE] Auto-selected first suggested slot ${inferredTime} for ${lastSuggestedDate} after affirmative reply`,
+                metadata: {
+                    internal: true,
+                    type: 'intake_auto',
+                    selectedTime: inferredTime,
+                    selectedDate: lastSuggestedDate,
+                    inferredFromAffirmative: true,
+                },
+            });
+            conversation = await chatDeps.storage.getConversation(conversationId);
         }
 
         // Always try to capture out-of-order inputs
@@ -975,6 +1038,15 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
                                 };
                             } else {
                                 bookingFailed = true;
+                                if (Array.isArray(toolResult.availableSlots) && toolResult.availableSlots.length > 0) {
+                                    const bookingDateFromArgs = typeof args?.booking_date === 'string' ? args.booking_date : null;
+                                    if (bookingDateFromArgs && /^\d{4}-\d{2}-\d{2}$/.test(bookingDateFromArgs)) {
+                                        await persistSuggestedSlotContext([{
+                                            date: bookingDateFromArgs,
+                                            availableSlots: toolResult.availableSlots,
+                                        }]);
+                                    }
+                                }
                                 console.log('[Chat] Booking failed:', {
                                     conversationId,
                                     error: toolResult.error,
@@ -985,6 +1057,7 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
 
                         if (call.function.name === 'suggest_booking_dates' && toolResult.success && Array.isArray(toolResult.suggestions)) {
                             (toolResponses as any).availabilitySuggestions = toolResult.suggestions;
+                            await persistSuggestedSlotContext(toolResult.suggestions);
                         }
 
                         toolResponses.push({
@@ -1081,7 +1154,26 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
                         if (toolResult?.success && Array.isArray(toolResult.suggestions) && (toolResult.suggestions as any[]).length > 0) {
                             assistantResponse = formatAvailabilityResponse(toolResult.suggestions);
                             toolCallNames.push('suggest_booking_dates');
+                            await persistSuggestedSlotContext(toolResult.suggestions);
                         }
+                    }
+                }
+
+                if (!autoBookingResult && isAffirmative) {
+                    const bookingAttempt = await attemptAutoBooking(conversationId, 'Affirmative response with complete booking data', {
+                        allowFaqs,
+                        language: responseLanguage,
+                        userMessage: input.message,
+                        userMessageId: visitorMessageId,
+                    });
+                    if (bookingAttempt.success) {
+                        autoBookingResult = bookingAttempt.result;
+                        bookingAttempted = true;
+                        bookingCompleted = bookingAttempt.bookingCompleted || null;
+                        const serviceSummary = bookingCompleted?.services?.join(', ') || 'your service';
+                        const bookingDate = autoBookingResult.bookingDate || 'your scheduled date';
+                        const bookingTime = autoBookingResult.startTime || '';
+                        assistantResponse = `You're all set! ${serviceSummary} booked for ${bookingDate}${bookingTime ? ' at ' + bookingTime : ''}. You'll get a text confirmation.`;
                     }
                 }
 

@@ -676,7 +676,14 @@ export function isIntakeObjectiveComplete(
 ): boolean {
     switch (objectiveId) {
         case 'zipcode':
-            return !!(collectedData?.zipcode || conversation?.visitorZipcode);
+            // In the US flow, full address is enough to determine where the job will happen.
+            // Keep ZIP in intake, but do not block progress when address is already provided.
+            return !!(
+                collectedData?.zipcode ||
+                conversation?.visitorZipcode ||
+                collectedData?.address ||
+                conversation?.visitorAddress
+            );
         case 'serviceType':
             return Array.isArray(cart) && cart.length > 0;
         case 'serviceDetails':
