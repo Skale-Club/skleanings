@@ -139,6 +139,7 @@ function AdminContent() {
         <div className={activeSection === 'chat' ? 'min-h-0 p-0' : 'min-h-0 p-6 sm:p-6 md:p-8 pb-8'}>
           {activeSection === 'dashboard' && (
             <DashboardSection
+              getAccessToken={getAccessToken}
               goToBookings={() => {
                 if (!sectionsOrder.includes('bookings')) {
                   setSectionsOrder((prev) => [...prev, 'bookings']);
@@ -150,7 +151,7 @@ function AdminContent() {
           )}
           {activeSection === 'categories' && <CategoriesSection getAccessToken={getAccessToken} />}
           {activeSection === 'services' && <ServicesSection getAccessToken={getAccessToken} />}
-          {activeSection === 'bookings' && <BookingsSection />}
+          {activeSection === 'bookings' && <BookingsSection getAccessToken={getAccessToken} />}
           {activeSection === 'hero' && <HeroSettingsSection getAccessToken={getAccessToken} />}
           {activeSection === 'company' && <CompanySettingsSection getAccessToken={getAccessToken} />}
           {activeSection === 'seo' && <SEOSection getAccessToken={getAccessToken} />}

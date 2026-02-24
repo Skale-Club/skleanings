@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
 import type { Booking, Category, Service } from '@shared/schema';
+import { authenticatedRequest } from '@/lib/queryClient';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,10 +14,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Calendar, ChevronDown, DollarSign, FolderOpen, Loader2, Package } from 'lucide-react';
-export function DashboardSection({ goToBookings }: { goToBookings: () => void }) {
+export function DashboardSection({ goToBookings, getAccessToken }: { goToBookings: () => void; getAccessToken: () => Promise<string | null> }) {
   const { data: categories } = useQuery<Category[]>({ queryKey: ['/api/categories'] });
   const { data: services } = useQuery<Service[]>({ queryKey: ['/api/services'] });
-  const { data: bookings } = useQuery<Booking[]>({ queryKey: ['/api/bookings'] });
+  const { data: bookings } = useQuery<Booking[]>({
+    queryKey: ['/api/bookings'],
+    queryFn: async () => {
+      const token = await getAccessToken();
+      if (!token) throw new Error('Authentication required');
+      const res = await authenticatedRequest('GET', '/api/bookings', token);
+      return res.json();
+    },
+  });
   const dashboardMenuTitle = 'Dashboard';
   const [recentBookingsView, setRecentBookingsView] = useState<'upcoming' | 'past' | 'all'>('upcoming');
 

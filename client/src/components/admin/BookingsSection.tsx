@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
 import type { Booking, Service } from '@shared/schema';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, authenticatedRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -78,11 +78,13 @@ function getBookingStatusColor(status: string) {
   }
 }
 
-function useBookingItems(bookingId: number, enabled: boolean = true) {
+function useBookingItems(bookingId: number, getAccessToken: () => Promise<string | null>, enabled: boolean = true) {
   return useQuery<BookingItem[]>({
     queryKey: ['/api/bookings', bookingId, 'items'],
     queryFn: async () => {
-      const res = await fetch(`/api/bookings/${bookingId}/items`);
+      const token = await getAccessToken();
+      if (!token) throw new Error('Authentication required');
+      const res = await authenticatedRequest('GET', `/api/bookings/${bookingId}/items`, token);
       return res.json();
     },
     enabled
@@ -361,18 +363,19 @@ function BookingEditDialog({
   );
 }
 
-function BookingRow({ booking, services, onUpdate, onDelete, isSaving }: {
+function BookingRow({ booking, services, onUpdate, onDelete, isSaving, getAccessToken }: {
   booking: Booking;
   services: Service[];
   onUpdate: (id: number, updates: BookingUpdatePayload) => void;
   onDelete: (id: number) => void;
   isSaving: boolean;
+  getAccessToken: () => Promise<string | null>;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const { toast } = useToast();
 
-  const { data: bookingItems } = useBookingItems(booking.id, expanded || isEditOpen);
+  const { data: bookingItems } = useBookingItems(booking.id, getAccessToken, expanded || isEditOpen);
 
   const handleStatusChange = (status: string) => {
     onUpdate(booking.id, { status });
@@ -580,18 +583,20 @@ function BookingMobileCard({
   services,
   onUpdate,
   onDelete,
-  isSaving
+  isSaving,
+  getAccessToken
 }: {
   booking: Booking;
   services: Service[];
   onUpdate: (id: number, data: BookingUpdatePayload) => void;
   onDelete: (id: number) => void;
   isSaving: boolean;
+  getAccessToken: () => Promise<string | null>;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const { toast } = useToast();
-  const { data: items, isLoading: itemsLoading } = useBookingItems(booking.id, isExpanded || isEditOpen);
+  const { data: items, isLoading: itemsLoading } = useBookingItems(booking.id, getAccessToken, isExpanded || isEditOpen);
   const isItemsLoading = isExpanded && itemsLoading;
 
   const handleStatusChange = (status: string) => {
@@ -729,10 +734,16 @@ function BookingMobileCard({
   );
 }
 
-export function BookingsSection() {
+export function BookingsSection({ getAccessToken }: { getAccessToken: () => Promise<string | null> }) {
   const queryClient = useQueryClient();
   const { data: bookings, isLoading } = useQuery<Booking[]>({
-    queryKey: ['/api/bookings']
+    queryKey: ['/api/bookings'],
+    queryFn: async () => {
+      const token = await getAccessToken();
+      if (!token) throw new Error('Authentication required');
+      const res = await authenticatedRequest('GET', '/api/bookings', token);
+      return res.json();
+    },
   });
   const { data: services = [] } = useQuery<Service[]>({
     queryKey: ['/api/services']
@@ -760,7 +771,9 @@ export function BookingsSection() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: number; updates: BookingUpdatePayload }) => {
-      const res = await apiRequest('PATCH', `/api/bookings/${id}`, updates);
+      const token = await getAccessToken();
+      if (!token) throw new Error('Authentication required');
+      const res = await authenticatedRequest('PATCH', `/api/bookings/${id}`, token, updates);
       return res.json();
     },
     onSuccess: () => {
@@ -773,7 +786,9 @@ export function BookingsSection() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest('DELETE', `/api/bookings/${id}`);
+      const token = await getAccessToken();
+      if (!token) throw new Error('Authentication required');
+      await authenticatedRequest('DELETE', `/api/bookings/${id}`, token);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/bookings'] });
@@ -857,6 +872,7 @@ export function BookingsSection() {
                       onUpdate={handleUpdate}
                       onDelete={handleDelete}
                       isSaving={updateMutation.isPending}
+                      getAccessToken={getAccessToken}
                     />
                   ))}
                 </tbody>
@@ -873,6 +889,7 @@ export function BookingsSection() {
                 onUpdate={handleUpdate}
                 onDelete={handleDelete}
                 isSaving={updateMutation.isPending}
+                getAccessToken={getAccessToken}
               />
             ))}
           </div>

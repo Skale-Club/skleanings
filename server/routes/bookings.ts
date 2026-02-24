@@ -9,6 +9,7 @@ import { canCreateBooking, recordBookingCreation } from "../lib/rate-limit";
 import { acquireTimeSlotLock, releaseTimeSlotLock } from "../lib/time-slot-lock";
 import { syncBookingToGhl } from "../lib/booking-ghl-sync";
 import { sendBookingNotification } from "../integrations/twilio";
+import { calculateCartItemPrice } from "../lib/pricing";
 
 const router = Router();
 
@@ -33,16 +34,24 @@ router.get('/:id(\\d+)', requireAdmin, async (req, res) => {
     }
 });
 
+router.get('/:id(\\d+)/items', requireAdmin, async (req, res) => {
+    try {
+        const items = await storage.getBookingItems(Number(req.params.id));
+        res.json(items);
+    } catch (err) {
+        res.status(500).json({ message: (err as Error).message });
+    }
+});
+
 router.post('/', async (req, res) => {
     try {
         const validatedData = insertBookingSchema.parse(req.body);
-        const bookingSchemaData = validatedData;
 
         // Check local availability
         const isAvailable = await checkAvailability(
-            bookingSchemaData.bookingDate,
-            bookingSchemaData.startTime,
-            bookingSchemaData.endTime,
+            validatedData.bookingDate,
+            validatedData.startTime,
+            validatedData.endTime,
             undefined // No specific booking ID to exclude
         );
 
@@ -50,7 +59,36 @@ router.post('/', async (req, res) => {
             return res.status(409).json({ message: "Time slot is no longer available" });
         }
 
-        const booking = await storage.createBooking(validatedData);
+        // Convert cartItems to bookingItemsData (same format used by chat)
+        let bookingItemsData: any[] | undefined;
+        if (validatedData.cartItems && validatedData.cartItems.length > 0) {
+            bookingItemsData = [];
+            for (const cartItem of validatedData.cartItems) {
+                const service = await storage.getService(cartItem.serviceId);
+                if (!service) continue;
+                const options = await storage.getServiceOptions(service.id);
+                const frequencies = await storage.getServiceFrequencies(service.id);
+                const calculated = await calculateCartItemPrice(service, cartItem, options, frequencies);
+                bookingItemsData.push({
+                    serviceId: service.id,
+                    serviceName: service.name,
+                    price: calculated.price.toFixed(2),
+                    quantity: cartItem.quantity || 1,
+                    pricingType: service.pricingType || 'fixed_item',
+                    areaSize: calculated.areaSize,
+                    areaValue: calculated.areaValue?.toString(),
+                    selectedOptions: calculated.selectedOptions,
+                    selectedFrequency: calculated.selectedFrequency,
+                    customerNotes: cartItem.customerNotes,
+                    priceBreakdown: calculated.breakdown,
+                });
+            }
+        }
+
+        const booking = await storage.createBooking({
+            ...validatedData,
+            bookingItemsData,
+        });
 
         // Sync to GHL if enabled (non-blocking for booking creation)
         const ghlSync = await syncBookingToGhl(booking);
@@ -79,7 +117,7 @@ router.post('/', async (req, res) => {
     }
 });
 
-router.put('/:id(\\d+)', requireAdmin, async (req, res) => {
+async function handleBookingUpdate(req: any, res: any) {
     try {
         const validatedData = insertBookingSchemaBase.partial().parse(req.body);
         const booking = await storage.updateBooking(Number(req.params.id), validatedData);
@@ -90,7 +128,10 @@ router.put('/:id(\\d+)', requireAdmin, async (req, res) => {
         }
         res.status(400).json({ message: (err as Error).message });
     }
-});
+}
+
+router.put('/:id(\\d+)', requireAdmin, handleBookingUpdate);
+router.patch('/:id(\\d+)', requireAdmin, handleBookingUpdate);
 
 router.put('/:id(\\d+)/status', requireAdmin, async (req, res) => {
     try {
