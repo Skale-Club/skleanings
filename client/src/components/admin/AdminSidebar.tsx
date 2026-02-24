@@ -179,9 +179,9 @@ function SidebarSortableItem({
             setOpenMobile(false);
           }
         }}
-        className="w-full justify-start"
+        className="w-full justify-start group/item"
       >
-        <button type="button" {...attributes} {...listeners} className="mr-2 cursor-grab active:cursor-grabbing">
+        <button type="button" {...attributes} {...listeners} className="mr-2 cursor-grab active:cursor-grabbing opacity-0 group-hover/item:opacity-100 focus:opacity-100 transition-opacity">
           <GripVertical className="w-3.5 h-3.5 text-muted-foreground" />
         </button>
         <item.icon className="w-4 h-4" />

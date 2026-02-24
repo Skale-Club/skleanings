@@ -4,8 +4,8 @@ import { format } from 'date-fns';
 import { clsx } from 'clsx';
 import type { Booking, Category, Service } from '@shared/schema';
 import { authenticatedRequest } from '@/lib/queryClient';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -13,7 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Calendar, ChevronDown, DollarSign, FolderOpen, Loader2, Package } from 'lucide-react';
+import { Calendar, ChevronDown, Clock, DollarSign, FolderOpen, Loader2, MapPin, Package } from 'lucide-react';
+
 export function DashboardSection({ goToBookings, getAccessToken }: { goToBookings: () => void; getAccessToken: () => Promise<string | null> }) {
   const { data: categories } = useQuery<Category[]>({ queryKey: ['/api/categories'] });
   const { data: services } = useQuery<Service[]>({ queryKey: ['/api/services'] });
@@ -26,7 +27,6 @@ export function DashboardSection({ goToBookings, getAccessToken }: { goToBooking
       return res.json();
     },
   });
-  const dashboardMenuTitle = 'Dashboard';
   const [recentBookingsView, setRecentBookingsView] = useState<'upcoming' | 'past' | 'all'>('upcoming');
 
   const recentBookings = useMemo(() => {
@@ -50,44 +50,62 @@ export function DashboardSection({ goToBookings, getAccessToken }: { goToBooking
   }, [bookings, recentBookingsView]);
 
   const stats = [
-    { label: 'Total Categories', value: categories?.length || 0, icon: FolderOpen, color: 'text-blue-500' },
-    { label: 'Total Services', value: services?.length || 0, icon: Package, color: 'text-green-500' },
-    { label: 'Total Bookings', value: bookings?.length || 0, icon: Calendar, color: 'text-purple-500' },
-    { label: 'Revenue', value: `$${bookings?.reduce((sum, b) => sum + Number(b.totalPrice), 0).toFixed(2) || '0.00'}`, icon: DollarSign, color: 'text-orange-500' },
+    { label: 'Categories', value: categories?.length || 0, icon: FolderOpen, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+    { label: 'Services', value: services?.length || 0, icon: Package, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+    { label: 'Bookings', value: bookings?.length || 0, icon: Calendar, color: 'text-violet-500', bg: 'bg-violet-500/10' },
+    {
+      label: 'Total Revenue',
+      value: `$${bookings?.reduce((sum, b) => sum + Number(b.totalPrice), 0).toFixed(2) || '0.00'}`,
+      icon: DollarSign,
+      color: 'text-orange-500',
+      bg: 'bg-orange-500/10'
+    },
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">{dashboardMenuTitle}</h1>
+        <h1 className="text-2xl font-bold">Dashboard</h1>
         <p className="text-muted-foreground">Overview of your cleaning business</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Stats grid */}
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
-          <div key={stat.label} className="bg-muted p-6 rounded-lg transition-all hover:bg-muted/80">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">{stat.label}</p>
-                <p className="text-xl font-semibold text-foreground">{stat.value}</p>
+          <Card key={stat.label} className="border border-border/60 shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-4 sm:p-5">
+              <div className="flex items-center justify-between gap-2 sm:gap-4">
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm text-muted-foreground mb-1 truncate">{stat.label}</p>
+                  <p className="text-lg sm:text-2xl font-bold text-foreground truncate">{stat.value}</p>
+                </div>
+                <div className={clsx('w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0', stat.bg)}>
+                  <stat.icon className={clsx('w-5 h-5 sm:w-6 sm:h-6', stat.color)} />
+                </div>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-card/70 flex items-center justify-center">
-                <stat.icon className={clsx("w-6 h-6", stat.color)} />
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
-      <div className="bg-muted rounded-lg overflow-hidden">
-        <div className="p-6 pb-4 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+      {/* Recent Bookings */}
+      <div className="space-y-3">
+        {/* Section header */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
             <Calendar className="w-5 h-5 text-primary" />
             Recent Bookings
           </h2>
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-            <Select value={recentBookingsView} onValueChange={(value) => setRecentBookingsView(value as 'upcoming' | 'past' | 'all')}>
-              <SelectTrigger className="h-9 w-full sm:w-[140px] text-xs bg-card/70 border-0 font-semibold" data-testid="select-recent-bookings-view">
+          <div className="flex items-center gap-2">
+            <Select
+              value={recentBookingsView}
+              onValueChange={(value) => setRecentBookingsView(value as 'upcoming' | 'past' | 'all')}
+            >
+              <SelectTrigger
+                className="h-9 w-[140px] text-xs border-0 bg-muted font-semibold"
+                data-testid="select-recent-bookings-view"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -96,115 +114,33 @@ export function DashboardSection({ goToBookings, getAccessToken }: { goToBooking
                 <SelectItem value="all">All</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={goToBookings}>
+            <Button variant="outline" size="sm" onClick={goToBookings}>
               Go to Bookings
             </Button>
           </div>
         </div>
-        <div className="px-6 pb-6">
-          {bookings?.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">No bookings yet</p>
-          ) : recentBookings.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">No bookings in this view</p>
-          ) : (
-            <div className="space-y-4">
-              {recentBookings.map((booking) => (
-                <RecentBookingCard key={booking.id} booking={booking} />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
 
-
-interface RecentBookingItem {
-  id: number;
-  serviceName: string;
-  quantity?: number;
-  price: string;
-}
-
-function useBookingItems(bookingId: number, enabled: boolean = true) {
-  return useQuery<RecentBookingItem[]>({
-    queryKey: ['/api/bookings', bookingId, 'items'],
-    queryFn: async () => {
-      const res = await fetch(`/api/bookings/${bookingId}/items`);
-      return res.json();
-    },
-    enabled,
-  });
-}
-function RecentBookingCard({ booking }: { booking: Booking }) {
-  const [expanded, setExpanded] = useState(false);
-  const { data: bookingItems, isLoading } = useBookingItems(booking.id, expanded);
-
-  return (
-    <div className="rounded-lg bg-card/70 dark:bg-slate-900/70 p-3">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <p className="font-medium truncate">{booking.customerName}</p>
-          <p className="text-xs text-muted-foreground">
-            {format(new Date(booking.bookingDate), "MMM dd, yyyy")} • {booking.startTime} - {booking.endTime}
-          </p>
-          <p className="text-xs text-muted-foreground truncate">{booking.customerAddress}</p>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="mt-1 h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-            onClick={() => setExpanded((prev) => !prev)}
-            data-testid={`button-toggle-recent-booking-${booking.id}`}
-          >
-            <ChevronDown className={clsx("w-3.5 h-3.5 mr-1 transition-transform", expanded && "rotate-180")} />
-            {expanded ? 'Hide services' : 'Show services'}
-          </Button>
-        </div>
-        <div className="flex flex-col items-start gap-2 sm:items-end sm:text-right">
-          <p className="text-2xl sm:text-xl font-bold">${booking.totalPrice}</p>
-          <div className="flex items-center gap-2 flex-wrap sm:justify-end">
-            <Badge
-              variant={booking.status === 'confirmed' ? 'default' : booking.status === 'completed' ? 'secondary' : 'destructive'}
-              className="text-xs font-semibold leading-5 px-3 py-1 min-w-[88px] justify-center capitalize"
-            >
-              {booking.status}
-            </Badge>
-            <Badge
-              className={`text-xs font-semibold leading-5 px-3 py-1 min-w-[88px] justify-center border ${booking.paymentStatus === 'paid'
-                ? 'border-primary/30 bg-primary/10 text-primary dark:border-primary/40 dark:bg-primary/20'
-                : 'border-border bg-muted text-muted-foreground'
-                }`}
-            >
-              {booking.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
-            </Badge>
+        {/* Booking cards */}
+        {bookings?.length === 0 ? (
+          <div className="p-10 text-center rounded-lg bg-card border border-border">
+            <Calendar className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground">No bookings yet</p>
           </div>
-        </div>
+        ) : recentBookings.length === 0 ? (
+          <div className="p-10 text-center rounded-lg bg-card border border-border">
+            <Calendar className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground">No bookings in this view</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {recentBookings.map((booking) => (
+              <SharedBookingCard key={booking.id} booking={booking} getAccessToken={getAccessToken} variant="readonly" />
+            ))}
+          </div>
+        )}
       </div>
-      {expanded && (
-        <div className="mt-3 pt-3 border-t border-border/60">
-          {isLoading ? (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              Loading services...
-            </div>
-          ) : bookingItems && bookingItems.length > 0 ? (
-            <ul className="space-y-1">
-              {bookingItems.map((item) => (
-                <li key={item.id} className="text-xs flex items-center justify-between">
-                  <span className="truncate">{item.serviceName}{item.quantity && item.quantity > 1 ? ` x${item.quantity}` : ''}</span>
-                  <span className="font-medium text-foreground">${item.price}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-xs text-muted-foreground italic">No services listed</p>
-          )}
-        </div>
-      )}
     </div>
   );
 }
 
-
+import { SharedBookingCard } from '@/components/admin/shared/SharedBookingCard';
