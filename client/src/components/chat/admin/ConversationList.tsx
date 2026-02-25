@@ -94,8 +94,10 @@ export function ConversationList({
                             <div
                                 key={conv.id}
                                 className={cn(
-                                    "flex cursor-pointer flex-col gap-2 rounded-lg border p-3 text-left transition-all hover:bg-accent",
-                                    selectedId === conv.id ? "bg-accent border-primary/20" : "bg-card border-transparent"
+                                    "flex cursor-pointer flex-col gap-2 rounded-lg border p-3 text-left transition-all hover:bg-slate-100 dark:hover:bg-slate-800/70",
+                                    selectedId === conv.id
+                                        ? "bg-slate-100 border-slate-300 dark:bg-slate-800/80 dark:border-slate-700"
+                                        : "bg-card border-transparent"
                                 )}
                                 onClick={() => onSelect(conv.id)}
                             >

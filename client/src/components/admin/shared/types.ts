@@ -95,6 +95,13 @@ export interface GeminiSettings {
   hasKey: boolean;
 }
 
+export interface OpenRouterSettings {
+  provider: 'openrouter';
+  enabled: boolean;
+  model: string;
+  hasKey: boolean;
+}
+
 export interface AnalyticsSettings {
   gtmContainerId: string;
   ga4MeasurementId: string;
@@ -110,6 +117,13 @@ export interface TwilioSettingsForm {
   authToken: string;
   fromPhoneNumber: string;
   toPhoneNumbers: string[];
+  notifyOnNewChat: boolean;
+}
+
+export interface TelegramSettingsForm {
+  enabled: boolean;
+  botToken: string;
+  chatIds: string[];
   notifyOnNewChat: boolean;
 }
 

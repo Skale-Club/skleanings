@@ -178,6 +178,17 @@ export const twilioSettings = pgTable("twilio_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Telegram Integration Settings
+export const telegramSettings = pgTable("telegram_settings", {
+  id: serial("id").primaryKey(),
+  enabled: boolean("enabled").default(false),
+  botToken: text("bot_token"),
+  chatIds: text("chat_ids").array().notNull().default(sql`ARRAY[]::text[]`),
+  notifyOnNewChat: boolean("notify_on_new_chat").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Heartbeat log table for keep-alive cron runs
 export const systemHeartbeats = pgTable("system_heartbeats", {
   id: serial("id").primaryKey(),
@@ -361,6 +372,13 @@ export const insertTwilioSettingsSchema = createInsertSchema(twilioSettings).omi
 }).extend({
   toPhoneNumbers: z.array(z.string().regex(/^\+[1-9]\d{1,14}$/, "Phone number must be in E.164 format (e.g., +15551234567)")).min(1, "At least one phone number is required"),
 });
+export const insertTelegramSettingsSchema = createInsertSchema(telegramSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  chatIds: z.array(z.string().min(1, "Chat ID cannot be empty")).default([]),
+});
 export const insertConversationSchema = createInsertSchema(conversations).omit({
   createdAt: true,
   updatedAt: true,
@@ -384,6 +402,7 @@ export type IntegrationSettings = typeof integrationSettings.$inferSelect;
 export type ChatSettings = typeof chatSettings.$inferSelect;
 export type ChatIntegrations = typeof chatIntegrations.$inferSelect;
 export type TwilioSettings = typeof twilioSettings.$inferSelect;
+export type TelegramSettings = typeof telegramSettings.$inferSelect;
 export type SystemHeartbeat = typeof systemHeartbeats.$inferSelect;
 export type Conversation = typeof conversations.$inferSelect;
 export type ConversationMessage = typeof conversationMessages.$inferSelect;
@@ -398,6 +417,7 @@ export type InsertIntegrationSettings = z.infer<typeof insertIntegrationSettings
 export type InsertChatSettings = z.infer<typeof insertChatSettingsSchema>;
 export type InsertChatIntegrations = z.infer<typeof insertChatIntegrationsSchema>;
 export type InsertTwilioSettings = z.infer<typeof insertTwilioSettingsSchema>;
+export type InsertTelegramSettings = z.infer<typeof insertTelegramSettingsSchema>;
 export type InsertConversation = z.infer<typeof insertConversationSchema>;
 export type InsertConversationMessage = z.infer<typeof insertConversationMessageSchema>;
 

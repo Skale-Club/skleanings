@@ -39,6 +39,7 @@ import {
 } from "./utils";
 import { DEFAULT_CHAT_MODEL } from "../../lib/openai";
 import { DEFAULT_GEMINI_CHAT_MODEL } from "../../lib/gemini";
+import { DEFAULT_OPENROUTER_CHAT_MODEL } from "../../lib/openrouter";
 import {
     buildChatTools,
     runChatTool,
@@ -52,6 +53,8 @@ import {
     OPENAI_CONFIG,
     CHAT_TOOL
 } from "./constants";
+
+type AIProvider = "openai" | "gemini" | "openrouter";
 
 // Chat input schema
 const chatMessageSchema = z.object({
@@ -229,44 +232,58 @@ export async function handleMessage(req: Request, res: Response) {
             return res.status(403).json({ message: 'Chat is not available on this page.' });
         }
 
-        const openaiIntegration = await chatDeps.storage.getChatIntegration('openai');
-        const geminiIntegration = await chatDeps.storage.getChatIntegration('gemini');
-        
+        const [openaiIntegration, geminiIntegration, openrouterIntegration] = await Promise.all([
+            chatDeps.storage.getChatIntegration("openai"),
+            chatDeps.storage.getChatIntegration("gemini"),
+            chatDeps.storage.getChatIntegration("openrouter"),
+        ]);
+
+        const integrationsByProvider: Record<AIProvider, typeof openaiIntegration> = {
+            openai: openaiIntegration,
+            gemini: geminiIntegration,
+            openrouter: openrouterIntegration,
+        };
+
         // Determine active provider based on settings and availability
-        let activeProvider: 'openai' | 'gemini' | null = (settings.activeProvider as 'openai' | 'gemini') || 'openai';
-        
-        // Verify the selected provider is actually enabled
-        if (activeProvider === 'gemini' && !geminiIntegration?.enabled) {
-            // Fallback to OpenAI if Gemini is selected but disabled
-            activeProvider = openaiIntegration?.enabled ? 'openai' : null;
-        } else if (activeProvider === 'openai' && !openaiIntegration?.enabled) {
-            // Fallback to Gemini if OpenAI is selected but disabled
-            activeProvider = geminiIntegration?.enabled ? 'gemini' : null;
+        let activeProvider: AIProvider | null = (settings.activeProvider as AIProvider) || "openai";
+
+        if (!integrationsByProvider[activeProvider]?.enabled) {
+            const fallback = (["openai", "gemini", "openrouter"] as AIProvider[]).find(
+                (provider) => integrationsByProvider[provider]?.enabled
+            );
+            activeProvider = fallback || null;
         }
 
-        // If explicitly null (neither fallback worked), check if ANY is enabled as last resort
-        if (!activeProvider) {
-             if (geminiIntegration?.enabled) activeProvider = 'gemini';
-             else if (openaiIntegration?.enabled) activeProvider = 'openai';
-        }
-
-        const integration = activeProvider === 'gemini' ? geminiIntegration : openaiIntegration;
-        if (!activeProvider) {
-            return res.status(503).json({ message: 'No AI integration is enabled. Please enable OpenAI or Gemini in Admin -> Integrations.' });
-        }
-
-        const apiKey = activeProvider === 'gemini'
-            ? (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || integration?.apiKey)
-            : (process.env.OPENAI_API_KEY || integration?.apiKey);
-        if (!apiKey) {
+        const integration = activeProvider ? integrationsByProvider[activeProvider] : null;
+        if (!activeProvider || !integration) {
             return res.status(503).json({
-                message: activeProvider === 'gemini'
-                    ? 'Gemini API key is missing. Please configure it in Admin -> Integrations.'
-                    : 'OpenAI API key is missing. Please configure it in Admin -> Integrations.'
+                message: "No AI integration is enabled. Please enable OpenAI, Gemini, or OpenRouter in Admin -> Integrations.",
             });
         }
 
-        const model = integration?.model || (activeProvider === 'gemini' ? DEFAULT_GEMINI_CHAT_MODEL : DEFAULT_CHAT_MODEL);
+        let apiKey = "";
+        if (activeProvider === "openai") {
+            apiKey = process.env.OPENAI_API_KEY || integration.apiKey || "";
+        } else if (activeProvider === "gemini") {
+            apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || integration.apiKey || "";
+        } else {
+            apiKey = process.env.OPENROUTER_API_KEY || integration.apiKey || "";
+        }
+
+        if (!apiKey) {
+            const providerName = activeProvider === "openai" ? "OpenAI" : activeProvider === "gemini" ? "Gemini" : "OpenRouter";
+            return res.status(503).json({
+                message: `${providerName} API key is missing. Please configure it in Admin -> Integrations.`,
+            });
+        }
+
+        const model =
+            integration.model ||
+            (activeProvider === "openai"
+                ? DEFAULT_CHAT_MODEL
+                : activeProvider === "gemini"
+                    ? DEFAULT_GEMINI_CHAT_MODEL
+                    : DEFAULT_OPENROUTER_CHAT_MODEL);
         const conversationId = input.conversationId || crypto.randomUUID();
 
         let conversation = await chatDeps.storage.getConversation(conversationId);
@@ -281,11 +298,21 @@ export async function handleMessage(req: Request, res: Response) {
                 visitorPhone: input.visitorPhone,
             });
 
-            // Send Twilio notification for new chat
-            const twilioSettings = await chatDeps.storage.getTwilioSettings();
+            // Send notification for new chat (non-blocking)
+            const [twilioSettings, telegramSettings] = await Promise.all([
+                chatDeps.storage.getTwilioSettings(),
+                chatDeps.storage.getTelegramSettings(),
+            ]);
+
             if (twilioSettings && isNewConversation) {
                 chatDeps.twilio.sendNewChatNotification(twilioSettings, conversationId, input.pageUrl).catch(err => {
                     console.error('Failed to send Twilio notification:', err);
+                });
+            }
+
+            if (telegramSettings && isNewConversation) {
+                chatDeps.telegram.sendNewChatNotification(telegramSettings, conversationId, input.pageUrl).catch(err => {
+                    console.error('Failed to send Telegram notification:', err);
                 });
             }
         } else {
@@ -925,9 +952,11 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
             ...historyMessages,
         ];
 
-        const aiClient = activeProvider === 'gemini'
+        const aiClient = activeProvider === "gemini"
             ? chatDeps.getGeminiClient(apiKey)
-            : chatDeps.getOpenAIClient(apiKey);
+            : activeProvider === "openrouter"
+                ? chatDeps.getOpenRouterClient(apiKey)
+                : chatDeps.getOpenAIClient(apiKey);
         if (!aiClient) {
             return res.status(503).json({ message: 'Chat is currently unavailable.' });
         }

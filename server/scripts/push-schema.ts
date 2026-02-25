@@ -243,6 +243,16 @@ async function createTables() {
         updated_at TIMESTAMP DEFAULT NOW()
       );
 
+      CREATE TABLE IF NOT EXISTS telegram_settings (
+        id SERIAL PRIMARY KEY,
+        enabled BOOLEAN DEFAULT false,
+        bot_token TEXT,
+        chat_ids TEXT[] DEFAULT ARRAY[]::TEXT[],
+        notify_on_new_chat BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+
       CREATE TABLE IF NOT EXISTS time_slot_locks (
         id SERIAL PRIMARY KEY,
         booking_date DATE NOT NULL,

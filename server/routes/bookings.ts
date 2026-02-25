@@ -9,6 +9,7 @@ import { canCreateBooking, recordBookingCreation } from "../lib/rate-limit";
 import { acquireTimeSlotLock, releaseTimeSlotLock } from "../lib/time-slot-lock";
 import { syncBookingToGhl } from "../lib/booking-ghl-sync";
 import { sendBookingNotification } from "../integrations/twilio";
+import { sendBookingNotification as sendTelegramBookingNotification } from "../integrations/telegram";
 import { calculateCartItemPrice } from "../lib/pricing";
 
 const router = Router();
@@ -96,15 +97,35 @@ router.post('/', async (req, res) => {
             console.error("GHL Sync Error:", ghlSync.reason || "Unknown error");
         }
 
-        // Send SMS notification via Twilio
+        // Send booking notifications (non-blocking)
         try {
-            const twilioSettings = await storage.getTwilioSettings();
+            const bookingItems = await storage.getBookingItems(booking.id);
+            const serviceNames = bookingItems
+                .map((item) => item.serviceName?.trim())
+                .filter((name): name is string => Boolean(name));
+
+            const [twilioSettings, telegramSettings] = await Promise.all([
+                storage.getTwilioSettings(),
+                storage.getTelegramSettings(),
+            ]);
+
             if (twilioSettings?.enabled && twilioSettings.authToken && twilioSettings.fromPhoneNumber) {
-                await sendBookingNotification(booking, twilioSettings);
+                try {
+                    await sendBookingNotification(booking, serviceNames, twilioSettings);
+                } catch (twilioError) {
+                    console.error("Twilio Notification Error:", twilioError);
+                }
+            }
+
+            if (telegramSettings?.enabled && telegramSettings.botToken && telegramSettings.chatIds.length > 0) {
+                try {
+                    await sendTelegramBookingNotification(booking, serviceNames, telegramSettings);
+                } catch (telegramError) {
+                    console.error("Telegram Notification Error:", telegramError);
+                }
             }
         } catch (error) {
-            console.error("Twilio Notification Error:", error);
-            // Don't fail the request, just log error
+            console.error("Booking Notification Error:", error);
         }
 
         const latestBooking = await storage.getBooking(booking.id);

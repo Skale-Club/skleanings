@@ -16,13 +16,31 @@ import {
     getRuntimeGeminiKey
 } from "../lib/gemini";
 import {
+    getOpenRouterClient,
+    setRuntimeOpenRouterKey,
+    DEFAULT_OPENROUTER_CHAT_MODEL,
+    getRuntimeOpenRouterKey,
+    listOpenRouterModels
+} from "../lib/openrouter";
+import {
     testGHLConnection,
     getGHLFreeSlots,
     getOrCreateGHLContact,
     createGHLAppointment,
     formatDateTimeWithTimezone
 } from "../integrations/ghl";
-import { insertChatIntegrationsSchema, insertIntegrationSettingsSchema } from "@shared/schema";
+import {
+    insertChatIntegrationsSchema,
+    insertIntegrationSettingsSchema,
+    insertTelegramSettingsSchema,
+} from "@shared/schema";
+import {
+    hasTelegramCredentials,
+    isMaskedToken,
+    isValidTelegramBotToken,
+    maskToken,
+    sendTelegramTestMessage,
+} from "../integrations/telegram";
 
 const router = Router();
 
@@ -296,6 +314,163 @@ router.post("/gemini/test", requireAdmin, async (req, res) => {
         res.status(500).json({ success: false, message: err?.message || "Failed to test Gemini connection" }); 
     } 
 }); 
+
+// ===============================
+// OpenRouter Integration Routes
+// ===============================
+
+router.get("/openrouter", requireAdmin, async (_req, res) => {
+    try {
+        const integration = await storage.getChatIntegration("openrouter");
+        res.json({
+            provider: "openrouter",
+            enabled: integration?.enabled || false,
+            model: integration?.model || DEFAULT_OPENROUTER_CHAT_MODEL,
+            hasKey: !!(getRuntimeOpenRouterKey() || process.env.OPENROUTER_API_KEY || integration?.apiKey),
+        });
+    } catch (err) {
+        res.status(500).json({ message: (err as Error).message });
+    }
+});
+
+router.put("/openrouter", requireAdmin, async (req, res) => {
+    try {
+        const existing = await storage.getChatIntegration("openrouter");
+        const payload = insertChatIntegrationsSchema
+            .partial()
+            .extend({
+                apiKey: z.string().min(10).optional(),
+            })
+            .parse({ ...req.body, provider: "openrouter" });
+
+        let keyToPersist = existing?.apiKey;
+        if (payload.apiKey && payload.apiKey !== "********") {
+            keyToPersist = payload.apiKey;
+        }
+
+        if (!keyToPersist) {
+            keyToPersist = getRuntimeOpenRouterKey() || process.env.OPENROUTER_API_KEY;
+        }
+
+        if (keyToPersist) {
+            setRuntimeOpenRouterKey(keyToPersist);
+        }
+
+        const willEnable = payload.enabled ?? false;
+        const keyAvailable = !!keyToPersist;
+        if (willEnable && !keyAvailable) {
+            return res.status(400).json({ message: "Provide a valid API key and test it before enabling." });
+        }
+
+        const updated = await storage.upsertChatIntegration({
+            provider: "openrouter",
+            enabled: payload.enabled ?? existing?.enabled ?? false,
+            model: payload.model || existing?.model || DEFAULT_OPENROUTER_CHAT_MODEL,
+            apiKey: keyToPersist,
+        });
+
+        res.json({
+            ...updated,
+            hasKey: !!keyToPersist,
+            apiKey: undefined,
+        });
+    } catch (err) {
+        if (err instanceof z.ZodError) {
+            return res.status(400).json({ message: "Validation error", errors: err.errors });
+        }
+        res.status(500).json({ message: (err as Error).message });
+    }
+});
+
+router.post("/openrouter/test", requireAdmin, async (req, res) => {
+    try {
+        const bodySchema = z.object({
+            apiKey: z.string().min(10).optional(),
+            model: z.string().optional(),
+        });
+        const { apiKey, model } = bodySchema.parse(req.body);
+        const existing = await storage.getChatIntegration("openrouter");
+        const keyToUse =
+            (apiKey && apiKey !== "********" ? apiKey : undefined) ||
+            getRuntimeOpenRouterKey() ||
+            process.env.OPENROUTER_API_KEY ||
+            existing?.apiKey;
+
+        if (!keyToUse) {
+            return res.status(400).json({ success: false, message: "API key is required" });
+        }
+
+        const client = getOpenRouterClient(keyToUse);
+        if (!client) {
+            return res.status(400).json({ success: false, message: "Invalid API key" });
+        }
+
+        try {
+            await client.chat.completions.create({
+                model: model || DEFAULT_OPENROUTER_CHAT_MODEL,
+                messages: [{ role: "user", content: "Say pong" }],
+                max_tokens: 5,
+            });
+        } catch (err: any) {
+            const message = err?.message || "Failed to test OpenRouter connection";
+            const status = err?.status || err?.response?.status;
+            console.error("OpenRouter test error", {
+                status,
+                message,
+                model: model || DEFAULT_OPENROUTER_CHAT_MODEL,
+                hasKey: Boolean(keyToUse),
+                requestId: err?.response?.headers?.get?.("x-request-id"),
+                errorType: err?.type || err?.code,
+            });
+            return res.status(500).json({
+                success: false,
+                message: status ? `OpenRouter error (${status}): ${message}` : message,
+            });
+        }
+
+        setRuntimeOpenRouterKey(keyToUse);
+        await storage.upsertChatIntegration({
+            provider: "openrouter",
+            enabled: existing?.enabled ?? false,
+            model: model || existing?.model || DEFAULT_OPENROUTER_CHAT_MODEL,
+            apiKey: keyToUse,
+        });
+
+        res.json({ success: true, message: "Connection successful" });
+    } catch (err: any) {
+        console.error("OpenRouter test route error", {
+            message: err?.message,
+            errorType: err?.type || err?.code,
+        });
+        res.status(500).json({ success: false, message: err?.message || "Failed to test OpenRouter connection" });
+    }
+});
+
+router.get("/openrouter/models", requireAdmin, async (_req, res) => {
+    try {
+        const existing = await storage.getChatIntegration("openrouter");
+        const keyToUse =
+            getRuntimeOpenRouterKey() ||
+            process.env.OPENROUTER_API_KEY ||
+            existing?.apiKey;
+
+        if (!keyToUse) {
+            return res.status(400).json({
+                message: "API key is required. Save and test OpenRouter first.",
+            });
+        }
+
+        const models = await listOpenRouterModels(keyToUse);
+        res.json({
+            count: models.length,
+            models,
+        });
+    } catch (err: any) {
+        res.status(500).json({
+            message: err?.message || "Failed to fetch OpenRouter models",
+        });
+    }
+});
  
 // =============================== 
 // GoHighLevel Integration Routes 
@@ -615,6 +790,145 @@ router.post("/twilio/test", requireAdmin, async (req, res) => {
         res.status(500).json({
             success: false,
             message: err?.message || "Failed to send test SMS"
+        });
+    }
+});
+
+// ===============================
+// Telegram Integration Routes
+// ===============================
+
+// Get Telegram settings
+router.get("/telegram", requireAdmin, async (_req, res) => {
+    try {
+        const settings = await storage.getTelegramSettings();
+        if (!settings) {
+            return res.json({
+                enabled: false,
+                botToken: "",
+                chatIds: [],
+                notifyOnNewChat: true,
+            });
+        }
+
+        res.json({
+            ...settings,
+            botToken: maskToken(settings.botToken),
+        });
+    } catch (err) {
+        res.status(500).json({ message: (err as Error).message });
+    }
+});
+
+// Save Telegram settings
+router.put("/telegram", requireAdmin, async (req, res) => {
+    try {
+        const payload = insertTelegramSettingsSchema.partial().parse(req.body);
+        const existingSettings = await storage.getTelegramSettings();
+
+        const incomingToken = payload.botToken?.trim();
+        if (incomingToken && !isMaskedToken(incomingToken) && !isValidTelegramBotToken(incomingToken)) {
+            return res.status(400).json({
+                message: "Bot token format is invalid. Expected format: <digits>:<token>",
+            });
+        }
+
+        const normalizedChatIds = payload.chatIds
+            ? Array.from(new Set(payload.chatIds.map((chatId) => chatId.trim()).filter(Boolean)))
+            : (existingSettings?.chatIds || []);
+
+        const settingsToSave: any = {
+            enabled: payload.enabled ?? existingSettings?.enabled ?? false,
+            chatIds: normalizedChatIds,
+            notifyOnNewChat: payload.notifyOnNewChat ?? existingSettings?.notifyOnNewChat ?? true,
+        };
+
+        if (incomingToken && !isMaskedToken(incomingToken)) {
+            settingsToSave.botToken = incomingToken;
+        } else if (existingSettings?.botToken) {
+            settingsToSave.botToken = existingSettings.botToken;
+        }
+
+        const settings = await storage.saveTelegramSettings(settingsToSave);
+        res.json({
+            ...settings,
+            botToken: maskToken(settings.botToken),
+        });
+    } catch (err) {
+        if (err instanceof z.ZodError) {
+            return res.status(400).json({ message: "Validation error", errors: err.errors });
+        }
+        res.status(400).json({ message: (err as Error).message });
+    }
+});
+
+// Test Telegram connection
+router.post("/telegram/test", requireAdmin, async (req, res) => {
+    try {
+        const bodySchema = z.object({
+            botToken: z.string().optional(),
+            chatIds: z.array(z.string()).optional(),
+        });
+        const { botToken, chatIds } = bodySchema.parse(req.body || {});
+        const existingSettings = await storage.getTelegramSettings();
+
+        const incomingToken = botToken?.trim();
+        if (incomingToken && !isMaskedToken(incomingToken) && !isValidTelegramBotToken(incomingToken)) {
+            return res.status(400).json({
+                success: false,
+                message: "Bot token format is invalid. Expected format: <digits>:<token>",
+            });
+        }
+
+        const tokenToTest =
+            incomingToken && !isMaskedToken(incomingToken)
+                ? incomingToken
+                : existingSettings?.botToken;
+
+        const chatIdsToTest = chatIds
+            ? Array.from(new Set(chatIds.map((chatId) => chatId.trim()).filter(Boolean)))
+            : (existingSettings?.chatIds || []);
+
+        const settingsToTest = {
+            enabled: true,
+            botToken: tokenToTest || "",
+            chatIds: chatIdsToTest,
+            notifyOnNewChat: existingSettings?.notifyOnNewChat ?? true,
+            id: existingSettings?.id ?? 0,
+            createdAt: existingSettings?.createdAt ?? new Date(),
+            updatedAt: existingSettings?.updatedAt ?? new Date(),
+        };
+
+        if (!hasTelegramCredentials(settingsToTest)) {
+            return res.status(400).json({
+                success: false,
+                message: "Bot token and at least one chat ID are required",
+            });
+        }
+
+        const result = await sendTelegramTestMessage(settingsToTest);
+        if (!result.success) {
+            return res.status(500).json({
+                success: false,
+                message: result.message || "Failed to send Telegram test message",
+            });
+        }
+
+        res.json({
+            success: true,
+            message: "Test message sent successfully",
+        });
+    } catch (err: any) {
+        if (err instanceof z.ZodError) {
+            return res.status(400).json({
+                success: false,
+                message: "Validation error",
+                errors: err.errors,
+            });
+        }
+        res.status(500).json({
+            success: false,
+            message: err?.message || "Failed to send Telegram test message",
         });
     }
 });

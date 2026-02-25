@@ -14,6 +14,7 @@ import {
   chatSettings,
   chatIntegrations,
   twilioSettings,
+  telegramSettings,
   conversations,
   conversationMessages,
   companySettings,
@@ -38,6 +39,7 @@ import {
   type ChatSettings,
   type ChatIntegrations,
   type TwilioSettings,
+  type TelegramSettings,
   type Conversation,
   type ConversationMessage,
   type Faq,
@@ -57,6 +59,7 @@ import {
   type InsertChatSettings,
   type InsertChatIntegrations,
   type InsertTwilioSettings,
+  type InsertTelegramSettings,
   type InsertConversation,
   type InsertConversationMessage,
   type InsertFaq,
@@ -216,6 +219,8 @@ export interface IStorage {
   // Twilio Integration
   getTwilioSettings(): Promise<TwilioSettings | undefined>;
   saveTwilioSettings(settings: InsertTwilioSettings): Promise<TwilioSettings>;
+  getTelegramSettings(): Promise<TelegramSettings | undefined>;
+  saveTelegramSettings(settings: InsertTelegramSettings): Promise<TelegramSettings>;
   updateConversation(id: string, updates: Partial<Conversation>): Promise<Conversation | undefined>;
   deleteConversation(id: string): Promise<void>;
   createConversation(conversation: InsertConversation): Promise<Conversation>;
@@ -1029,6 +1034,31 @@ export class DatabaseStorage implements IStorage {
     }
 
     const [created] = await db.insert(twilioSettings).values(settings).returning();
+    return created;
+  }
+
+  async getTelegramSettings(): Promise<TelegramSettings | undefined> {
+    const [settings] = await db.select().from(telegramSettings).limit(1);
+    return settings;
+  }
+
+  async saveTelegramSettings(settings: InsertTelegramSettings): Promise<TelegramSettings> {
+    const existing = await this.getTelegramSettings();
+    if (existing) {
+      const payload = {
+        ...settings,
+        botToken: settings.botToken ?? existing.botToken,
+        updatedAt: new Date(),
+      };
+      const [updated] = await db
+        .update(telegramSettings)
+        .set(payload)
+        .where(eq(telegramSettings.id, existing.id))
+        .returning();
+      return updated;
+    }
+
+    const [created] = await db.insert(telegramSettings).values(settings).returning();
     return created;
   }
 
