@@ -186,17 +186,21 @@ export async function sendBookingNotification(
 }
 
 export async function sendTelegramTestMessage(
-  settings: TelegramSettings
+  settings: TelegramSettings,
+  companyName?: string
 ): Promise<{ success: boolean; message?: string }> {
   if (!hasTelegramCredentials(settings)) {
     return { success: false, message: "Bot token and at least one chat ID are required" };
   }
 
   const forcedSettings: TelegramSettings = { ...settings, enabled: true };
-  const message =
-    `<b>Telegram integration test</b>\n` +
-    `Your bot token and chat IDs are configured correctly.\n` +
-    `<b>Time:</b> ${escapeHtml(new Date().toISOString())}`;
+  const resolvedCompanyName = (companyName || "").trim() || "Skleanings";
+  const message = [
+    `<b>Telegram integration test - ${escapeHtml(resolvedCompanyName)}</b>`,
+    `Your bot token and chat IDs are configured correctly.`,
+    `<b>Time:</b> ${escapeHtml(new Date().toISOString())}`,
+    `<b>Company:</b> ${escapeHtml(resolvedCompanyName)}`,
+  ].join("\n");
 
   return sendMessageToAll(forcedSettings, message, "HTML");
 }

@@ -191,7 +191,12 @@ export function TwilioSection({ getAccessToken }: { getAccessToken: () => Promis
     setSettings(newSettings);
     setIsSaving(true);
     try {
-      await apiRequest('PUT', '/api/integrations/twilio', newSettings);
+      const token = await getAccessToken();
+      if (!token) {
+        toast({ title: 'Failed to update settings', description: 'Authentication required', variant: 'destructive' });
+        return;
+      }
+      await authenticatedRequest('PUT', '/api/integrations/twilio', token, newSettings);
       queryClient.invalidateQueries({ queryKey: ['/api/integrations/twilio'] });
       toast({ title: checked ? 'Twilio enabled' : 'Twilio disabled' });
     } catch (error: any) {

@@ -3,12 +3,12 @@ import { Router } from "express";
 import { z } from "zod";
 import { storage } from "../storage";
 import { requireAdmin } from "../lib/auth";
-import { 
-    getOpenAIClient, 
-    setRuntimeOpenAiKey, 
-    DEFAULT_CHAT_MODEL, 
-    getRuntimeOpenAiKey 
-} from "../lib/openai"; 
+import {
+    getOpenAIClient,
+    setRuntimeOpenAiKey,
+    DEFAULT_CHAT_MODEL,
+    getRuntimeOpenAiKey
+} from "../lib/openai";
 import {
     getGeminiClient,
     setRuntimeGeminiKey,
@@ -118,8 +118,8 @@ router.put("/openai", requireAdmin, async (req, res) => {
     }
 });
 
-router.post("/openai/test", requireAdmin, async (req, res) => { 
-    try { 
+router.post("/openai/test", requireAdmin, async (req, res) => {
+    try {
         const bodySchema = z.object({
             apiKey: z.string().min(10).optional(),
             model: z.string().optional(),
@@ -181,139 +181,139 @@ router.post("/openai/test", requireAdmin, async (req, res) => {
         });
         res.status(500).json({ success: false, message: err?.message || "Failed to test OpenAI connection" });
     }
-}); 
- 
+});
+
 // =============================== 
 // Gemini Integration Routes 
 // =============================== 
- 
-router.get("/gemini", requireAdmin, async (_req, res) => { 
-    try { 
-        const integration = await storage.getChatIntegration("gemini"); 
-        res.json({ 
-            provider: "gemini", 
-            enabled: integration?.enabled || false, 
-            model: integration?.model || DEFAULT_GEMINI_CHAT_MODEL, 
-            hasKey: !!(getRuntimeGeminiKey() || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || integration?.apiKey), 
-        }); 
-    } catch (err) { 
-        res.status(500).json({ message: (err as Error).message }); 
-    } 
-}); 
- 
-router.put("/gemini", requireAdmin, async (req, res) => { 
-    try { 
-        const existing = await storage.getChatIntegration("gemini"); 
-        const payload = insertChatIntegrationsSchema 
-            .partial() 
-            .extend({ 
-                apiKey: z.string().min(10).optional(), 
-            }) 
-            .parse({ ...req.body, provider: "gemini" }); 
- 
-        let keyToPersist = existing?.apiKey; 
-        if (payload.apiKey && payload.apiKey !== "********") { 
-            keyToPersist = payload.apiKey; 
-        } 
- 
-        if (!keyToPersist) { 
-            keyToPersist = getRuntimeGeminiKey() || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY; 
-        } 
- 
-        if (keyToPersist) { 
-            setRuntimeGeminiKey(keyToPersist); 
-        } 
- 
-        const willEnable = payload.enabled ?? false; 
-        const keyAvailable = !!keyToPersist; 
-        if (willEnable && !keyAvailable) { 
-            return res.status(400).json({ message: "Provide a valid API key and test it before enabling." }); 
-        } 
- 
-        const updated = await storage.upsertChatIntegration({ 
-            provider: "gemini", 
-            enabled: payload.enabled ?? existing?.enabled ?? false, 
-            model: payload.model || existing?.model || DEFAULT_GEMINI_CHAT_MODEL, 
-            apiKey: keyToPersist, 
-        }); 
- 
-        res.json({ 
-            ...updated, 
-            hasKey: !!keyToPersist, 
-            apiKey: undefined, 
-        }); 
-    } catch (err) { 
-        if (err instanceof z.ZodError) { 
-            return res.status(400).json({ message: "Validation error", errors: err.errors }); 
-        } 
-        res.status(500).json({ message: (err as Error).message }); 
-    } 
-}); 
- 
-router.post("/gemini/test", requireAdmin, async (req, res) => { 
-    try { 
-        const bodySchema = z.object({ 
-            apiKey: z.string().min(10).optional(), 
-            model: z.string().optional(), 
-        }); 
-        const { apiKey, model } = bodySchema.parse(req.body); 
-        const existing = await storage.getChatIntegration("gemini"); 
-        const keyToUse = 
-            (apiKey && apiKey !== "********" ? apiKey : undefined) || 
-            getRuntimeGeminiKey() || 
-            process.env.GEMINI_API_KEY || 
-            process.env.GOOGLE_API_KEY || 
-            existing?.apiKey; 
- 
-        if (!keyToUse) { 
-            return res.status(400).json({ success: false, message: "API key is required" }); 
-        } 
- 
-        const client = getGeminiClient(keyToUse); 
-        if (!client) { 
-            return res.status(400).json({ success: false, message: "Invalid API key" }); 
-        } 
- 
-        try { 
-            await (client as any).chat.completions.create({ 
-                model: model || DEFAULT_GEMINI_CHAT_MODEL, 
-                messages: [{ role: "user", content: "Say pong" }], 
-                max_tokens: 5, 
-            }); 
-        } catch (err: any) { 
-            const message = err?.message || "Failed to test Gemini connection"; 
-            const status = err?.status || err?.response?.status; 
-            console.error("Gemini test error", { 
-                status, 
-                message, 
-                model: model || DEFAULT_GEMINI_CHAT_MODEL, 
-                hasKey: Boolean(keyToUse), 
-                requestId: err?.response?.headers?.get?.("x-request-id"), 
-                errorType: err?.type || err?.code, 
-            }); 
-            return res.status(500).json({ 
-                success: false, 
-                message: status ? `Gemini error (${status}): ${message}` : message, 
-            }); 
-        } 
- 
-        setRuntimeGeminiKey(keyToUse); 
-        await storage.upsertChatIntegration({ 
-            provider: "gemini", 
-            enabled: existing?.enabled ?? false, 
-            model: model || existing?.model || DEFAULT_GEMINI_CHAT_MODEL, 
-            apiKey: keyToUse, 
-        }); 
- 
-        res.json({ success: true, message: "Connection successful" }); 
-    } catch (err: any) { 
-        console.error("Gemini test route error", { 
-            message: err?.message, 
-            errorType: err?.type || err?.code, 
-        }); 
-        res.status(500).json({ success: false, message: err?.message || "Failed to test Gemini connection" }); 
-    } 
-}); 
+
+router.get("/gemini", requireAdmin, async (_req, res) => {
+    try {
+        const integration = await storage.getChatIntegration("gemini");
+        res.json({
+            provider: "gemini",
+            enabled: integration?.enabled || false,
+            model: integration?.model || DEFAULT_GEMINI_CHAT_MODEL,
+            hasKey: !!(getRuntimeGeminiKey() || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || integration?.apiKey),
+        });
+    } catch (err) {
+        res.status(500).json({ message: (err as Error).message });
+    }
+});
+
+router.put("/gemini", requireAdmin, async (req, res) => {
+    try {
+        const existing = await storage.getChatIntegration("gemini");
+        const payload = insertChatIntegrationsSchema
+            .partial()
+            .extend({
+                apiKey: z.string().min(10).optional(),
+            })
+            .parse({ ...req.body, provider: "gemini" });
+
+        let keyToPersist = existing?.apiKey;
+        if (payload.apiKey && payload.apiKey !== "********") {
+            keyToPersist = payload.apiKey;
+        }
+
+        if (!keyToPersist) {
+            keyToPersist = getRuntimeGeminiKey() || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+        }
+
+        if (keyToPersist) {
+            setRuntimeGeminiKey(keyToPersist);
+        }
+
+        const willEnable = payload.enabled ?? false;
+        const keyAvailable = !!keyToPersist;
+        if (willEnable && !keyAvailable) {
+            return res.status(400).json({ message: "Provide a valid API key and test it before enabling." });
+        }
+
+        const updated = await storage.upsertChatIntegration({
+            provider: "gemini",
+            enabled: payload.enabled ?? existing?.enabled ?? false,
+            model: payload.model || existing?.model || DEFAULT_GEMINI_CHAT_MODEL,
+            apiKey: keyToPersist,
+        });
+
+        res.json({
+            ...updated,
+            hasKey: !!keyToPersist,
+            apiKey: undefined,
+        });
+    } catch (err) {
+        if (err instanceof z.ZodError) {
+            return res.status(400).json({ message: "Validation error", errors: err.errors });
+        }
+        res.status(500).json({ message: (err as Error).message });
+    }
+});
+
+router.post("/gemini/test", requireAdmin, async (req, res) => {
+    try {
+        const bodySchema = z.object({
+            apiKey: z.string().min(10).optional(),
+            model: z.string().optional(),
+        });
+        const { apiKey, model } = bodySchema.parse(req.body);
+        const existing = await storage.getChatIntegration("gemini");
+        const keyToUse =
+            (apiKey && apiKey !== "********" ? apiKey : undefined) ||
+            getRuntimeGeminiKey() ||
+            process.env.GEMINI_API_KEY ||
+            process.env.GOOGLE_API_KEY ||
+            existing?.apiKey;
+
+        if (!keyToUse) {
+            return res.status(400).json({ success: false, message: "API key is required" });
+        }
+
+        const client = getGeminiClient(keyToUse);
+        if (!client) {
+            return res.status(400).json({ success: false, message: "Invalid API key" });
+        }
+
+        try {
+            await (client as any).chat.completions.create({
+                model: model || DEFAULT_GEMINI_CHAT_MODEL,
+                messages: [{ role: "user", content: "Say pong" }],
+                max_tokens: 5,
+            });
+        } catch (err: any) {
+            const message = err?.message || "Failed to test Gemini connection";
+            const status = err?.status || err?.response?.status;
+            console.error("Gemini test error", {
+                status,
+                message,
+                model: model || DEFAULT_GEMINI_CHAT_MODEL,
+                hasKey: Boolean(keyToUse),
+                requestId: err?.response?.headers?.get?.("x-request-id"),
+                errorType: err?.type || err?.code,
+            });
+            return res.status(500).json({
+                success: false,
+                message: status ? `Gemini error (${status}): ${message}` : message,
+            });
+        }
+
+        setRuntimeGeminiKey(keyToUse);
+        await storage.upsertChatIntegration({
+            provider: "gemini",
+            enabled: existing?.enabled ?? false,
+            model: model || existing?.model || DEFAULT_GEMINI_CHAT_MODEL,
+            apiKey: keyToUse,
+        });
+
+        res.json({ success: true, message: "Connection successful" });
+    } catch (err: any) {
+        console.error("Gemini test route error", {
+            message: err?.message,
+            errorType: err?.type || err?.code,
+        });
+        res.status(500).json({ success: false, message: err?.message || "Failed to test Gemini connection" });
+    }
+});
 
 // ===============================
 // OpenRouter Integration Routes
@@ -471,7 +471,7 @@ router.get("/openrouter/models", requireAdmin, async (_req, res) => {
         });
     }
 });
- 
+
 // =============================== 
 // GoHighLevel Integration Routes 
 // =============================== 
@@ -871,6 +871,7 @@ router.post("/telegram/test", requireAdmin, async (req, res) => {
         });
         const { botToken, chatIds } = bodySchema.parse(req.body || {});
         const existingSettings = await storage.getTelegramSettings();
+        const companySettings = await storage.getCompanySettings();
 
         const incomingToken = botToken?.trim();
         if (incomingToken && !isMaskedToken(incomingToken) && !isValidTelegramBotToken(incomingToken)) {
@@ -906,7 +907,14 @@ router.post("/telegram/test", requireAdmin, async (req, res) => {
             });
         }
 
-        const result = await sendTelegramTestMessage(settingsToTest);
+        const companyNameForTest =
+            (companySettings?.companyName || "").trim() ||
+            (companySettings?.ogSiteName || "").trim() ||
+            (process.env.WHITE_LABEL_NAME || "").trim() ||
+            (process.env.COMPANY_NAME || "").trim() ||
+            "Skleanings";
+
+        const result = await sendTelegramTestMessage(settingsToTest, companyNameForTest);
         if (!result.success) {
             return res.status(500).json({
                 success: false,
@@ -917,6 +925,7 @@ router.post("/telegram/test", requireAdmin, async (req, res) => {
         res.json({
             success: true,
             message: "Test message sent successfully",
+            companyNameUsed: companyNameForTest,
         });
     } catch (err: any) {
         if (err instanceof z.ZodError) {

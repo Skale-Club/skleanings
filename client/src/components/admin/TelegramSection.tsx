@@ -80,7 +80,6 @@ export function TelegramSection({ getAccessToken }: { getAccessToken: () => Prom
 
     setSettings((prev) => ({ ...prev, chatIds: [...prev.chatIds, trimmed] }));
     setNewChatId('');
-    setTelegramTestPassed(false);
     setTestResult('idle');
     setTestMessage(null);
   };
@@ -90,7 +89,6 @@ export function TelegramSection({ getAccessToken }: { getAccessToken: () => Prom
       ...prev,
       chatIds: prev.chatIds.filter((id) => id !== chatId),
     }));
-    setTelegramTestPassed(false);
     setTestResult('idle');
     setTestMessage(null);
   };
@@ -253,7 +251,6 @@ export function TelegramSection({ getAccessToken }: { getAccessToken: () => Prom
               value={settings.botToken}
               onChange={(e) => {
                 setSettings((prev) => ({ ...prev, botToken: e.target.value }));
-                setTelegramTestPassed(false);
                 setTestResult('idle');
                 setTestMessage(null);
               }}
@@ -348,11 +345,10 @@ export function TelegramSection({ getAccessToken }: { getAccessToken: () => Prom
 
           {testMessage && (
             <div
-              className={`p-3 rounded-lg text-sm ${
-                testResult === 'success'
-                  ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800'
-                  : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800'
-              }`}
+              className={`p-3 rounded-lg text-sm ${testResult === 'success'
+                ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800'
+                : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800'
+                }`}
             >
               {testMessage}
             </div>
