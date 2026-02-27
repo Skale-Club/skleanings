@@ -7,7 +7,10 @@ import {
     MessageSquare,
     Plus,
     Trash2,
-    AlertCircle
+    AlertCircle,
+    Settings,
+    Globe,
+    MessageCircle
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -42,6 +45,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { ChatSettingsData, DEFAULT_CHAT_OBJECTIVES, IntakeObjective, UrlRule } from "./types";
 import { cn } from "@/lib/utils";
@@ -239,126 +243,156 @@ export function ChatSettings({
         : (companyLogo || '/favicon.png');
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6 pb-12">
-            <div className="flex items-center justify-between">
+        <div className="flex flex-col h-full">
+            {/* Header with save status */}
+            <div className="flex items-start justify-between gap-4 pb-4 border-b mb-4 shrink-0">
                 <div>
-                    <h3 className="text-lg font-medium">Chat Settings</h3>
+                    <h3 className="text-lg font-semibold">Chat Settings</h3>
                     <p className="text-sm text-muted-foreground">Configure your assistant's behavior and appearance.</p>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     {isSaving ? (
                         <>
                             <Loader2 className="h-4 w-4 animate-spin" />
-                            <span>Saving...</span>
+                            <span className="hidden sm:inline">Saving...</span>
                         </>
                     ) : lastSaved ? (
                         <>
                             <Check className="h-4 w-4 text-green-500" />
-                            <span>Saved</span>
+                            <span className="hidden sm:inline">Saved</span>
                         </>
                     ) : null}
                 </div>
             </div>
 
-            <div className="grid gap-6">
-                <Card>
-                    <CardHeader>
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                            <CardTitle>General</CardTitle>
-                            <div className="flex items-center gap-6">
-                                <div className="flex items-center gap-2">
-                                    <Label className="text-sm">
-                                        {settingsDraft.enabled ? 'Enabled' : 'Disabled'}
-                                    </Label>
-                                    <Switch
-                                        checked={settingsDraft.enabled}
-                                        onCheckedChange={(checked) => updateField('enabled', checked)}
-                                        disabled={isLoading || isSaving}
-                                    />
-                                </div>
-                                <div className="flex items-center gap-3 pl-6 border-l border-border/50">
-                                    <div className="flex flex-col gap-0.5">
-                                        <Label className="text-sm text-foreground/80 font-medium whitespace-nowrap">
-                                            Show in Production
-                                        </Label>
-                                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">If off, chat only shows on localhost</span>
-                                    </div>
-                                    <Switch
-                                        checked={!!settingsDraft.showInProd}
-                                        onCheckedChange={(c) => updateField("showInProd", c)}
-                                        disabled={isLoading || isSaving}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-4 p-4 border rounded-lg bg-muted/40">
-                                <div className="relative h-16 w-16 rounded-full overflow-hidden bg-white dark:bg-slate-800 flex items-center justify-center border cursor-pointer group">
-                                    {assistantAvatar ? (
-                                        <img src={assistantAvatar} alt={assistantName} className="h-full w-full object-cover" />
-                                    ) : (
-                                        <MessageSquare className="w-6 h-6 text-muted-foreground" />
-                                    )}
-                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                        <Plus className="w-5 h-5 text-white" />
-                                    </div>
-                                    <input
-                                        ref={avatarFileInputRef}
-                                        type="file"
-                                        accept="image/*"
-                                        className="opacity-0 absolute inset-0 cursor-pointer"
-                                        onChange={handleAvatarUpload}
-                                    />
-                                </div>
-                                <div className="flex-1 space-y-1">
-                                    <h4 className="font-semibold">{assistantName}</h4>
-                                    <p className="text-xs text-muted-foreground">This is how your assistant appears to visitors.</p>
-                                </div>
-                            </div>
+            {/* Main settings toggles */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 pb-4 mb-4 border-b shrink-0">
+                <div className="flex items-center gap-3">
+                    <Label className="text-sm font-medium">Chat Status</Label>
+                    <Switch
+                        checked={settingsDraft.enabled}
+                        onCheckedChange={(checked) => updateField('enabled', checked)}
+                        disabled={isLoading || isSaving}
+                    />
+                    <span className="text-xs text-muted-foreground">
+                        {settingsDraft.enabled ? 'Enabled' : 'Disabled'}
+                    </span>
+                </div>
+                <div className="flex items-center gap-3 sm:pl-4 sm:border-l">
+                    <Label className="text-sm font-medium">Show in Production</Label>
+                    <Switch
+                        checked={!!settingsDraft.showInProd}
+                        onCheckedChange={(c) => updateField("showInProd", c)}
+                        disabled={isLoading || isSaving}
+                    />
+                    <span className="text-xs text-muted-foreground">
+                        {settingsDraft.showInProd ? 'Yes' : 'Localhost only'}
+                    </span>
+                </div>
+            </div>
 
-                            <div className="space-y-2">
-                                <Label>Agent Name</Label>
-                                <Input
-                                    value={settingsDraft.agentName}
-                                    onChange={(e) => updateField('agentName', e.target.value)}
-                                    placeholder={companyName || "Assistant"}
+            {/* Tabs for different sections */}
+            <Tabs defaultValue="general" className="flex-1 flex flex-col min-h-0">
+                <TabsList className="grid w-full grid-cols-3 shrink-0">
+                    <TabsTrigger value="general" className="flex items-center gap-2">
+                        <Settings className="h-4 w-4" />
+                        <span className="hidden sm:inline">General</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="exclusions" className="flex items-center gap-2">
+                        <Globe className="h-4 w-4" />
+                        <span className="hidden sm:inline">URL Rules</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="intake" className="flex items-center gap-2">
+                        <MessageCircle className="h-4 w-4" />
+                        <span className="hidden sm:inline">Intake</span>
+                    </TabsTrigger>
+                </TabsList>
+
+                {/* General Tab */}
+                <TabsContent value="general" className="flex-1 overflow-y-auto space-y-6 mt-4 pr-2">
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-4 p-4 border rounded-lg bg-muted/40">
+                            <div className="relative h-16 w-16 rounded-full overflow-hidden bg-white dark:bg-slate-800 flex items-center justify-center border cursor-pointer group">
+                                {assistantAvatar ? (
+                                    <img src={assistantAvatar} alt={assistantName} className="h-full w-full object-cover" />
+                                ) : (
+                                    <MessageSquare className="w-6 h-6 text-muted-foreground" />
+                                )}
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <Plus className="w-5 h-5 text-white" />
+                                </div>
+                                <input
+                                    ref={avatarFileInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    className="opacity-0 absolute inset-0 cursor-pointer"
+                                    onChange={handleAvatarUpload}
                                 />
                             </div>
-
-                            <div className="space-y-2">
-                                <Label>Welcome Message</Label>
-                                <Textarea
-                                    value={settingsDraft.welcomeMessage}
-                                    onChange={(e) => updateField('welcomeMessage', e.target.value)}
-                                    rows={2}
-                                />
+                            <div className="flex-1 space-y-1">
+                                <h4 className="font-semibold">{assistantName}</h4>
+                                <p className="text-xs text-muted-foreground">This is how your assistant appears to visitors.</p>
                             </div>
                         </div>
-                    </CardContent>
-                </Card>
 
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle>URL Exclusions</CardTitle>
-                                <p className="text-sm text-muted-foreground mt-1">Hide the chat widget on specific pages.</p>
-                            </div>
-                            <Button size="sm" variant="outline" onClick={addRule}>
-                                <Plus className="w-4 h-4 mr-1" /> Add Rule
-                            </Button>
+                        <div className="space-y-2">
+                            <Label>Agent Name</Label>
+                            <Input
+                                value={settingsDraft.agentName}
+                                onChange={(e) => updateField('agentName', e.target.value)}
+                                placeholder={companyName || "Assistant"}
+                            />
                         </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                        {(!settingsDraft.excludedUrlRules || settingsDraft.excludedUrlRules.length === 0) && (
-                            <div className="text-sm text-muted-foreground p-4 text-center border border-dashed rounded-lg">
-                                No exclusion rules. The chat widget will appear on all pages.
+
+                        <div className="space-y-2">
+                            <Label>Welcome Message</Label>
+                            <Textarea
+                                value={settingsDraft.welcomeMessage}
+                                onChange={(e) => updateField('welcomeMessage', e.target.value)}
+                                rows={3}
+                                className="resize-none"
+                            />
+                        </div>
+
+                        {(!openaiEnabled || !openaiHasKey) && (
+                            <div className="border-amber-200 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4">
+                                <div className="flex items-start gap-3">
+                                    <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+                                    <div>
+                                        <p className="font-medium text-amber-800 dark:text-amber-200">OpenAI not configured</p>
+                                        <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                                            {!openaiHasKey
+                                                ? 'Add your OpenAI API key in Integrations to enable AI responses.'
+                                                : 'Enable the OpenAI integration in Integrations.'}
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         )}
+                    </div>
+                </TabsContent>
+
+                {/* URL Exclusions Tab */}
+                <TabsContent value="exclusions" className="flex-1 overflow-y-auto space-y-4 mt-4 pr-2">
+                    <div className="flex items-center justify-between mb-4">
+                        <div>
+                            <h4 className="font-medium">URL Exclusion Rules</h4>
+                            <p className="text-sm text-muted-foreground mt-1">Hide the chat widget on specific pages.</p>
+                        </div>
+                        <Button size="sm" variant="outline" onClick={addRule}>
+                            <Plus className="w-4 h-4 mr-1" /> Add Rule
+                        </Button>
+                    </div>
+
+                    {(!settingsDraft.excludedUrlRules || settingsDraft.excludedUrlRules.length === 0) && (
+                        <div className="text-sm text-muted-foreground p-6 text-center border border-dashed rounded-lg bg-muted/30">
+                            No exclusion rules. The chat widget will appear on all pages.
+                        </div>
+                    )}
+
+                    <div className="space-y-3">
                         {settingsDraft.excludedUrlRules?.map((rule, idx) => (
-                            <div key={idx} className="flex gap-2 items-center">
+                            <div key={idx} className="flex gap-2 items-center p-3 border rounded-lg bg-card">
                                 <Input
                                     value={rule.pattern}
                                     onChange={(e) => updateRule(idx, 'pattern', e.target.value)}
@@ -369,7 +403,7 @@ export function ChatSettings({
                                     value={rule.match}
                                     onValueChange={(val) => updateRule(idx, 'match', val as UrlRule['match'])}
                                 >
-                                    <SelectTrigger className="w-[130px]">
+                                    <SelectTrigger className="w-[140px]">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -381,59 +415,41 @@ export function ChatSettings({
                                 <Button
                                     size="icon"
                                     variant="ghost"
-                                    className="text-muted-foreground hover:text-destructive"
+                                    className="text-muted-foreground hover:text-destructive shrink-0"
                                     onClick={() => removeRule(idx)}
                                 >
                                     <Trash2 className="w-4 h-4" />
                                 </Button>
                             </div>
                         ))}
-                    </CardContent>
-                </Card>
+                    </div>
+                </TabsContent>
 
-                {(!openaiEnabled || !openaiHasKey) && (
-                    <Card className="border-amber-200 bg-amber-50 dark:bg-amber-900/20">
-                        <CardContent className="pt-4">
-                            <div className="flex items-start gap-3">
-                                <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
-                                <div>
-                                    <p className="font-medium text-amber-800 dark:text-amber-200">OpenAI not configured</p>
-                                    <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                                        {!openaiHasKey
-                                            ? 'Add your OpenAI API key in Integrations to enable AI responses.'
-                                            : 'Enable the OpenAI integration in Integrations.'}
-                                    </p>
-                                </div>
+                {/* Intake Questions Tab */}
+                <TabsContent value="intake" className="flex-1 overflow-y-auto space-y-4 mt-4 pr-2">
+                    <div className="mb-4">
+                        <h4 className="font-medium">Intake Questions</h4>
+                        <p className="text-sm text-muted-foreground mt-1">Drag to reorder the questions asked before connecting to a human.</p>
+                    </div>
+
+                    <DndContext sensors={objectivesSensors} collisionDetection={closestCenter} onDragEnd={handleObjectivesDragEnd}>
+                        <SortableContext
+                            items={(settingsDraft.intakeObjectives || DEFAULT_CHAT_OBJECTIVES).map((o) => o.id)}
+                            strategy={verticalListSortingStrategy}
+                        >
+                            <div className="space-y-2">
+                                {(settingsDraft.intakeObjectives || DEFAULT_CHAT_OBJECTIVES).map((objective) => (
+                                    <ObjectiveRow
+                                        key={objective.id}
+                                        objective={objective}
+                                        onToggle={toggleObjective}
+                                    />
+                                ))}
                             </div>
-                        </CardContent>
-                    </Card>
-                )}
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Intake Questions</CardTitle>
-                        <p className="text-sm text-muted-foreground">Drag to reorder the questions asked before connecting to a human.</p>
-                    </CardHeader>
-                    <CardContent>
-                        <DndContext sensors={objectivesSensors} collisionDetection={closestCenter} onDragEnd={handleObjectivesDragEnd}>
-                            <SortableContext
-                                items={(settingsDraft.intakeObjectives || DEFAULT_CHAT_OBJECTIVES).map((o) => o.id)}
-                                strategy={verticalListSortingStrategy}
-                            >
-                                <div className="space-y-2">
-                                    {(settingsDraft.intakeObjectives || DEFAULT_CHAT_OBJECTIVES).map((objective) => (
-                                        <ObjectiveRow
-                                            key={objective.id}
-                                            objective={objective}
-                                            onToggle={toggleObjective}
-                                        />
-                                    ))}
-                                </div>
-                            </SortableContext>
-                        </DndContext>
-                    </CardContent>
-                </Card>
-            </div>
+                        </SortableContext>
+                    </DndContext>
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }
