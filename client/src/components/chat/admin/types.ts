@@ -35,6 +35,7 @@ export interface ChatSettingsData {
     intakeObjectives?: IntakeObjective[];
     excludedUrlRules: UrlRule[];
     useFaqs?: boolean;
+    showInProd?: boolean;
 }
 
 export type UrlRule = {

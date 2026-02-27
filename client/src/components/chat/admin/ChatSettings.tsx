@@ -256,17 +256,32 @@ export function ChatSettings({
             <div className="grid gap-6">
                 <Card>
                     <CardHeader>
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                             <CardTitle>General</CardTitle>
-                            <div className="flex items-center gap-2">
-                                <Label className="text-sm">
-                                    {settingsDraft.enabled ? 'Enabled' : 'Disabled'}
-                                </Label>
-                                <Switch
-                                    checked={settingsDraft.enabled}
-                                    onCheckedChange={(checked) => updateField('enabled', checked)}
-                                    disabled={isLoading || isSaving}
-                                />
+                            <div className="flex items-center gap-6">
+                                <div className="flex items-center gap-2">
+                                    <Label className="text-sm">
+                                        {settingsDraft.enabled ? 'Enabled' : 'Disabled'}
+                                    </Label>
+                                    <Switch
+                                        checked={settingsDraft.enabled}
+                                        onCheckedChange={(checked) => updateField('enabled', checked)}
+                                        disabled={isLoading || isSaving}
+                                    />
+                                </div>
+                                <div className="flex items-center gap-3 pl-6 border-l border-border/50">
+                                    <div className="flex flex-col gap-0.5">
+                                        <Label className="text-sm text-foreground/80 font-medium whitespace-nowrap">
+                                            Show in Production
+                                        </Label>
+                                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">If off, chat only shows on localhost</span>
+                                    </div>
+                                    <Switch
+                                        checked={!!settingsDraft.showInProd}
+                                        onCheckedChange={(c) => updateField("showInProd", c)}
+                                        disabled={isLoading || isSaving}
+                                    />
+                                </div>
                             </div>
                         </div>
                     </CardHeader>
