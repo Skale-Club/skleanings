@@ -151,6 +151,7 @@ export const chatSettings = pgTable("chat_settings", {
   excludedUrlRules: jsonb("excluded_url_rules").default([]),
   useKnowledgeBase: boolean("use_knowledge_base").default(true),
   useFaqs: boolean("use_faqs").default(true),
+  showInProd: boolean("show_in_prod").default(false),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 

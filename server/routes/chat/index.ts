@@ -53,6 +53,7 @@ router.get("/chat/config", async (_req, res) => {
                 languageSelectorEnabled: false,
                 defaultLanguage: "en",
                 excludedUrlRules: [],
+                showInProd: false,
             });
         }
 
@@ -69,6 +70,7 @@ router.get("/chat/config", async (_req, res) => {
             languageSelectorEnabled: settings.languageSelectorEnabled ?? false,
             defaultLanguage: settings.defaultLanguage || "en",
             excludedUrlRules: parsedRules.success ? parsedRules.data : [],
+            showInProd: settings.showInProd ?? false,
         });
     } catch (err) {
         res.status(500).json({ message: (err as Error).message });

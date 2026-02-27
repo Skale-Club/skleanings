@@ -28,10 +28,12 @@ type ChatConfig = {
   agentAvatarUrl?: string;
   companyLogo?: string;
   fallbackAvatarUrl?: string;
+  companyLogo?: string;
   welcomeMessage: string;
   languageSelectorEnabled?: boolean;
   defaultLanguage?: string;
   excludedUrlRules: UrlRule[];
+  showInProd?: boolean;
 };
 
 type MessageStatus = "sending" | "sent" | "error";
@@ -546,8 +548,8 @@ export function ChatWidget() {
         <Button
           variant={launcherHasAvatar ? "ghost" : "default"}
           className={`group rounded-full h-14 w-14 p-0 relative ${launcherHasAvatar
-              ? "bg-transparent hover:bg-transparent border-transparent shadow-none"
-              : "bg-primary text-white shadow-[2px_2px_6px_rgba(15,23,42,0.12)]"
+            ? "bg-transparent hover:bg-transparent border-transparent shadow-none"
+            : "bg-primary text-white shadow-[2px_2px_6px_rgba(15,23,42,0.12)]"
             }`}
           onClick={toggleOpen}
           data-testid="button-open-chat"
@@ -587,6 +589,10 @@ export function ChatWidget() {
   };
 
   if (!config?.enabled || excluded) {
+    return null;
+  }
+
+  if (!config?.showInProd && import.meta.env.PROD) {
     return null;
   }
 

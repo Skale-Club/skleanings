@@ -90,15 +90,30 @@ export function ChatGeneralSettings({
                             ) : null}
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Label className="text-sm">
-                            {settingsDraft.enabled ? "Enabled" : "Disabled"}
-                        </Label>
-                        <Switch
-                            checked={settingsDraft.enabled}
-                            onCheckedChange={handleToggleChat}
-                            disabled={loadingSettings || isSaving}
-                        />
+                    <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-2">
+                            <Label className="text-sm text-foreground/80 font-medium">
+                                Chat Enabled
+                            </Label>
+                            <Switch
+                                checked={settingsDraft.enabled}
+                                onCheckedChange={handleToggleChat}
+                                disabled={loadingSettings || isSaving}
+                            />
+                        </div>
+                        <div className="flex items-center gap-3 pl-6 border-l border-border/50">
+                            <div className="flex flex-col gap-0.5">
+                                <Label className="text-sm text-foreground/80 font-medium whitespace-nowrap">
+                                    Show in Production
+                                </Label>
+                                <span className="text-[10px] text-muted-foreground whitespace-nowrap">If off, chat only shows on localhost</span>
+                            </div>
+                            <Switch
+                                checked={!!settingsDraft.showInProd}
+                                onCheckedChange={(c) => updateField("showInProd", c)}
+                                disabled={loadingSettings || isSaving}
+                            />
+                        </div>
                     </div>
                 </div>
             </CardHeader>
