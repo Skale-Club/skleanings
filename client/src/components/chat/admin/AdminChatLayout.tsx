@@ -28,6 +28,8 @@ export function AdminChatLayout({ getAccessToken }: AdminChatLayoutProps) {
     const [messages, setMessages] = useState<ConversationMessage[]>([]);
     const [isMessagesLoading, setIsMessagesLoading] = useState(false);
     const [isMobileListVisible, setIsMobileListVisible] = useState(true);
+    const [settingsPanelWidth, setSettingsPanelWidth] = useState(600);
+    const [isResizing, setIsResizing] = useState(false);
 
     // Queries
     const { data: conversations, isLoading: loadingConversations, refetch: refetchConversations } = useQuery<ConversationSummary[]>({
@@ -211,6 +213,42 @@ export function AdminChatLayout({ getAccessToken }: AdminChatLayoutProps) {
         }
     };
 
+    // Resize handlers for settings panel
+    const handleMouseDown = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setIsResizing(true);
+    };
+
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!isResizing) return;
+
+            const newWidth = window.innerWidth - e.clientX;
+            // Constrain between 400px and 1000px
+            if (newWidth >= 400 && newWidth <= 1000) {
+                setSettingsPanelWidth(newWidth);
+            }
+        };
+
+        const handleMouseUp = () => {
+            setIsResizing(false);
+        };
+
+        if (isResizing) {
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+            document.body.style.cursor = 'ew-resize';
+            document.body.style.userSelect = 'none';
+        }
+
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        };
+    }, [isResizing]);
+
     return (
         <div className="flex h-[calc(100vh-theme(spacing.16))] w-full flex-col overflow-hidden bg-background md:h-screen md:flex-row">
             {/* Mobile Settings Trigger - floating or in header? putting it in sidebar usually but here we are full screen */}
@@ -220,18 +258,35 @@ export function AdminChatLayout({ getAccessToken }: AdminChatLayoutProps) {
                     <SheetTrigger asChild>
                         <Button variant="ghost" size="icon"><Settings className="h-5 w-5" /></Button>
                     </SheetTrigger>
-                    <SheetContent side="right" className="w-full sm:w-[540px] overflow-y-auto">
-                        <ChatSettings
-                            settings={settings || {} as ChatSettingsData}
-                            onSave={handleSaveSettings}
-                            isLoading={loadingSettings}
-                            companyName={companySettings?.companyName}
-                            companyLogo={companySettings?.logoIcon}
-                            openaiEnabled={openaiSettings?.enabled}
-                            openaiHasKey={openaiSettings?.hasKey}
-                            getAccessToken={getAccessToken}
-                            authenticatedRequest={authenticatedRequest}
+                    <SheetContent
+                        side="right"
+                        className="w-full p-0 overflow-hidden flex sm:max-w-none"
+                        style={{ width: window.innerWidth < 640 ? '100%' : `${settingsPanelWidth}px` }}
+                    >
+                        {/* Resize handle (hidden on mobile) */}
+                        <div
+                            onMouseDown={handleMouseDown}
+                            className={cn(
+                                "hidden sm:block w-1 hover:w-1.5 bg-border hover:bg-primary transition-all cursor-ew-resize shrink-0",
+                                isResizing && "w-1.5 bg-primary"
+                            )}
+                            title="Drag to resize"
                         />
+
+                        {/* Content area */}
+                        <div className="flex-1 overflow-y-auto p-6">
+                            <ChatSettings
+                                settings={settings || {} as ChatSettingsData}
+                                onSave={handleSaveSettings}
+                                isLoading={loadingSettings}
+                                companyName={companySettings?.companyName}
+                                companyLogo={companySettings?.logoIcon}
+                                openaiEnabled={openaiSettings?.enabled}
+                                openaiHasKey={openaiSettings?.hasKey}
+                                getAccessToken={getAccessToken}
+                                authenticatedRequest={authenticatedRequest}
+                            />
+                        </div>
                     </SheetContent>
                 </Sheet>
             </div>
@@ -249,18 +304,35 @@ export function AdminChatLayout({ getAccessToken }: AdminChatLayoutProps) {
                                             <Settings className="h-4 w-4" />
                                         </Button>
                                     </SheetTrigger>
-                                    <SheetContent side="right" className="w-[600px] sm:w-[600px] overflow-y-auto">
-                                        <ChatSettings
-                                            settings={settings || {} as ChatSettingsData}
-                                            onSave={handleSaveSettings}
-                                            isLoading={loadingSettings}
-                                            companyName={companySettings?.companyName}
-                                            companyLogo={companySettings?.logoIcon}
-                                            openaiEnabled={openaiSettings?.enabled}
-                                            openaiHasKey={openaiSettings?.hasKey}
-                                            getAccessToken={getAccessToken}
-                                            authenticatedRequest={authenticatedRequest}
+                                    <SheetContent
+                                        side="right"
+                                        className="p-0 overflow-hidden flex"
+                                        style={{ width: `${settingsPanelWidth}px` }}
+                                    >
+                                        {/* Resize handle */}
+                                        <div
+                                            onMouseDown={handleMouseDown}
+                                            className={cn(
+                                                "w-1 hover:w-1.5 bg-border hover:bg-primary transition-all cursor-ew-resize shrink-0",
+                                                isResizing && "w-1.5 bg-primary"
+                                            )}
+                                            title="Drag to resize"
                                         />
+
+                                        {/* Content area */}
+                                        <div className="flex-1 overflow-y-auto p-6">
+                                            <ChatSettings
+                                                settings={settings || {} as ChatSettingsData}
+                                                onSave={handleSaveSettings}
+                                                isLoading={loadingSettings}
+                                                companyName={companySettings?.companyName}
+                                                companyLogo={companySettings?.logoIcon}
+                                                openaiEnabled={openaiSettings?.enabled}
+                                                openaiHasKey={openaiSettings?.hasKey}
+                                                getAccessToken={getAccessToken}
+                                                authenticatedRequest={authenticatedRequest}
+                                            />
+                                        </div>
                                     </SheetContent>
                                 </Sheet>
                             </div>
