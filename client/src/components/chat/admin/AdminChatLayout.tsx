@@ -216,6 +216,8 @@ export function AdminChatLayout({ getAccessToken }: AdminChatLayoutProps) {
     // Resize handlers for settings panel
     const handleMouseDown = (e: React.MouseEvent) => {
         e.preventDefault();
+        e.stopPropagation();
+        console.log('Mouse down on resize handle');
         setIsResizing(true);
     };
 
@@ -224,6 +226,7 @@ export function AdminChatLayout({ getAccessToken }: AdminChatLayoutProps) {
             if (!isResizing) return;
 
             const newWidth = window.innerWidth - e.clientX;
+            console.log('Mouse move, new width:', newWidth);
             // Constrain between 400px and 1000px
             if (newWidth >= 400 && newWidth <= 1000) {
                 setSettingsPanelWidth(newWidth);
@@ -231,10 +234,12 @@ export function AdminChatLayout({ getAccessToken }: AdminChatLayoutProps) {
         };
 
         const handleMouseUp = () => {
+            console.log('Mouse up, stopping resize');
             setIsResizing(false);
         };
 
         if (isResizing) {
+            console.log('Resizing started, adding event listeners');
             document.addEventListener('mousemove', handleMouseMove);
             document.addEventListener('mouseup', handleMouseUp);
             document.body.style.cursor = 'ew-resize';
@@ -267,9 +272,13 @@ export function AdminChatLayout({ getAccessToken }: AdminChatLayoutProps) {
                         <div
                             onMouseDown={handleMouseDown}
                             className={cn(
-                                "hidden sm:block w-1 hover:w-1.5 bg-border hover:bg-primary transition-all cursor-ew-resize shrink-0",
-                                isResizing && "w-1.5 bg-primary"
+                                "hidden sm:block w-1.5 hover:w-2 bg-border hover:bg-primary transition-all cursor-ew-resize shrink-0 relative z-50",
+                                isResizing && "w-2 bg-primary"
                             )}
+                            style={{
+                                pointerEvents: 'auto',
+                                touchAction: 'none'
+                            }}
                             title="Drag to resize"
                         />
 
@@ -313,9 +322,13 @@ export function AdminChatLayout({ getAccessToken }: AdminChatLayoutProps) {
                                         <div
                                             onMouseDown={handleMouseDown}
                                             className={cn(
-                                                "w-1 hover:w-1.5 bg-border hover:bg-primary transition-all cursor-ew-resize shrink-0",
-                                                isResizing && "w-1.5 bg-primary"
+                                                "w-1.5 hover:w-2 bg-border hover:bg-primary transition-all cursor-ew-resize shrink-0 relative z-50",
+                                                isResizing && "w-2 bg-primary"
                                             )}
+                                            style={{
+                                                pointerEvents: 'auto',
+                                                touchAction: 'none'
+                                            }}
                                             title="Drag to resize"
                                         />
 
