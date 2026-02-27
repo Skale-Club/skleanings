@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     ResizableHandle,
@@ -214,45 +214,34 @@ export function AdminChatLayout({ getAccessToken }: AdminChatLayoutProps) {
     };
 
     // Resize handlers for settings panel
-    const handleMouseDown = (e: React.MouseEvent) => {
+    const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
         e.preventDefault();
         e.stopPropagation();
-        console.log('Mouse down on resize handle');
+
+        const target = e.currentTarget;
+        target.setPointerCapture(e.pointerId);
         setIsResizing(true);
-    };
+        document.body.style.cursor = 'ew-resize';
+        document.body.style.userSelect = 'none';
 
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            if (!isResizing) return;
-
-            const newWidth = window.innerWidth - e.clientX;
-            console.log('Mouse move, new width:', newWidth);
-            // Constrain between 400px and 1000px
-            if (newWidth >= 400 && newWidth <= 1000) {
-                setSettingsPanelWidth(newWidth);
-            }
+        const handlePointerMove = (moveEvent: PointerEvent) => {
+            const newWidth = window.innerWidth - moveEvent.clientX;
+            const clamped = Math.min(1000, Math.max(400, newWidth));
+            setSettingsPanelWidth(clamped);
         };
 
-        const handleMouseUp = () => {
-            console.log('Mouse up, stopping resize');
+        const handlePointerUp = () => {
+            target.releasePointerCapture(e.pointerId);
             setIsResizing(false);
-        };
-
-        if (isResizing) {
-            console.log('Resizing started, adding event listeners');
-            document.addEventListener('mousemove', handleMouseMove);
-            document.addEventListener('mouseup', handleMouseUp);
-            document.body.style.cursor = 'ew-resize';
-            document.body.style.userSelect = 'none';
-        }
-
-        return () => {
-            document.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('mouseup', handleMouseUp);
             document.body.style.cursor = '';
             document.body.style.userSelect = '';
+            target.removeEventListener('pointermove', handlePointerMove);
+            target.removeEventListener('pointerup', handlePointerUp);
         };
-    }, [isResizing]);
+
+        target.addEventListener('pointermove', handlePointerMove);
+        target.addEventListener('pointerup', handlePointerUp);
+    }, []);
 
     return (
         <div className="flex h-[calc(100vh-theme(spacing.16))] w-full flex-col overflow-hidden bg-background md:h-screen md:flex-row">
@@ -266,11 +255,11 @@ export function AdminChatLayout({ getAccessToken }: AdminChatLayoutProps) {
                     <SheetContent
                         side="right"
                         className="w-full p-0 overflow-hidden flex sm:max-w-none"
-                        style={{ width: window.innerWidth < 640 ? '100%' : `${settingsPanelWidth}px` }}
+                        style={{ width: window.innerWidth < 640 ? '100%' : `${settingsPanelWidth}px`, maxWidth: window.innerWidth < 640 ? '100%' : `${settingsPanelWidth}px` }}
                     >
                         {/* Resize handle (hidden on mobile) */}
                         <div
-                            onMouseDown={handleMouseDown}
+                            onPointerDown={handlePointerDown}
                             className={cn(
                                 "hidden sm:block w-1.5 hover:w-2 bg-border hover:bg-primary transition-all cursor-ew-resize shrink-0 relative z-50",
                                 isResizing && "w-2 bg-primary"
@@ -315,12 +304,12 @@ export function AdminChatLayout({ getAccessToken }: AdminChatLayoutProps) {
                                     </SheetTrigger>
                                     <SheetContent
                                         side="right"
-                                        className="p-0 overflow-hidden flex"
-                                        style={{ width: `${settingsPanelWidth}px` }}
+                                        className="p-0 overflow-hidden flex sm:max-w-none"
+                                        style={{ width: `${settingsPanelWidth}px`, maxWidth: `${settingsPanelWidth}px` }}
                                     >
                                         {/* Resize handle */}
                                         <div
-                                            onMouseDown={handleMouseDown}
+                                            onPointerDown={handlePointerDown}
                                             className={cn(
                                                 "w-1.5 hover:w-2 bg-border hover:bg-primary transition-all cursor-ew-resize shrink-0 relative z-50",
                                                 isResizing && "w-2 bg-primary"
