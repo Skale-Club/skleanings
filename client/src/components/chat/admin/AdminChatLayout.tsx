@@ -55,6 +55,9 @@ export function AdminChatLayout({ getAccessToken }: AdminChatLayoutProps) {
             if (!res.ok) throw new Error('Failed to fetch chat settings');
             return res.json();
         },
+        retry: 3,
+        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+        staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
     });
 
     const { data: companySettings } = useQuery<any>({

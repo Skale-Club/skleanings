@@ -9,7 +9,7 @@ import {
     Trash2,
     AlertCircle
 } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     DndContext,
@@ -115,6 +115,13 @@ export function ChatSettings({
             coordinateGetter: sortableKeyboardCoordinates,
         })
     );
+
+    // Sync settingsDraft with settings prop when it changes (e.g., after refetch)
+    useEffect(() => {
+        if (settings && Object.keys(settings).length > 0) {
+            setSettingsDraft(settings);
+        }
+    }, [settings]);
 
     const handleSave = useCallback(async (dataToSave: Partial<ChatSettingsData>) => {
         setIsSaving(true);

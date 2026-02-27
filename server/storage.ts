@@ -284,19 +284,37 @@ export class DatabaseStorage implements IStorage {
   private async ensureChatSchema(): Promise<void> {
     if (this.chatSchemaEnsured) return;
     try {
+      // Core settings
+      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "enabled" boolean DEFAULT false`);
+      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "agent_name" text DEFAULT 'Assistant'`);
       await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "agent_avatar_url" text DEFAULT ''`);
-      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "avg_response_time" text DEFAULT ''`);
+      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "active_provider" text DEFAULT 'openai'`);
       await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "language_selector_enabled" boolean DEFAULT false`);
       await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "default_language" text DEFAULT 'en'`);
+
+      // Messages and prompts
+      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "welcome_message" text DEFAULT 'Hi! How can I help you today?'`);
       await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "system_prompt" text DEFAULT 'You are our helpful chat assistant. Provide concise, friendly answers. Use the provided tools to fetch services, details, and availability. Do not guess prices or availability; always use tool data when relevant. If booking is requested, gather details and direct the user to the booking page at /booking.'`);
-      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "intake_objectives" jsonb DEFAULT '[]'`);
-      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "avg_response_time" text DEFAULT ''`);
+
+      // Calendar integration
       await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "calendar_provider" text DEFAULT 'gohighlevel'`);
       await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "calendar_id" text DEFAULT ''`);
       await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "calendar_staff" jsonb DEFAULT '[]'`);
+
+      // Intake and objectives
+      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "intake_objectives" jsonb DEFAULT '[]'`);
+
+      // URL exclusions and visibility
+      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "excluded_url_rules" jsonb DEFAULT '[]'`);
+      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "show_in_prod" boolean DEFAULT false`);
+
+      // Knowledge base settings
       await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "use_knowledge_base" boolean DEFAULT true`);
       await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "use_faqs" boolean DEFAULT true`);
-      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "active_provider" text DEFAULT 'openai'`);
+
+      // Timestamps
+      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "updated_at" timestamp DEFAULT now()`);
+
       this.chatSchemaEnsured = true;
     } catch (err) {
       console.error("ensureChatSchema error:", err);
@@ -932,18 +950,41 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getChatSettings(): Promise<ChatSettings> {
+    // First attempt: try to read existing settings
     try {
       await this.ensureChatSchema();
-      const [settings] = await db.select().from(chatSettings);
+      const [settings] = await db.select().from(chatSettings).limit(1);
       if (settings) return settings;
     } catch (err) {
       console.error("getChatSettings initial read failed, retrying after ensuring schema:", err);
       this.chatSchemaEnsured = false;
       await this.ensureChatSchema();
+
+      // Retry after schema repair
+      try {
+        const [settings] = await db.select().from(chatSettings).limit(1);
+        if (settings) return settings;
+      } catch (retryErr) {
+        console.error("getChatSettings retry failed:", retryErr);
+      }
     }
 
-    const [created] = await db.insert(chatSettings).values({}).returning();
-    return created;
+    // No settings found - create default row (singleton pattern)
+    try {
+      const [created] = await db.insert(chatSettings).values({}).returning();
+      if (!created) {
+        throw new Error("Failed to create default chat settings");
+      }
+      console.log("Created default chat settings row");
+      return created;
+    } catch (insertErr: any) {
+      // If insert fails due to existing row (race condition), try to fetch again
+      if (insertErr.message?.includes("duplicate") || insertErr.code === '23505') {
+        const [settings] = await db.select().from(chatSettings).limit(1);
+        if (settings) return settings;
+      }
+      throw insertErr;
+    }
   }
 
   async updateChatSettings(settings: Partial<InsertChatSettings>): Promise<ChatSettings> {
