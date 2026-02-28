@@ -13,12 +13,15 @@ import {
 import {
     formatBusinessHoursSummary,
     formatAvailabilityResponse,
+    formatDateLabel,
+    formatTimeLabel,
     detectDateWindowFromText,
     parseRelativeDateFromText,
     parseTimeFromText,
     parseZipFromText,
     parsePhoneFromText,
     parseNameFromText,
+    parseAddressFromText,
     looksLikeName,
     looksLikeAddress,
     detectMessageLanguage,
@@ -208,18 +211,65 @@ async function attemptAutoBooking(
     return { success: false, result: autoBookingResult };
 }
 
+async function buildFinalBookingSummary(conversationId: string): Promise<string | null> {
+    const conversation = await chatDeps.storage.getConversation(conversationId);
+    if (!conversation) return null;
+
+    const memory = (conversation.memory as any) || {};
+    const collectedData = memory.collectedData || {};
+    const cart = Array.isArray(memory.cart) ? memory.cart : [];
+
+    const bookingDate = collectedData.selectedDate || collectedData.preferredDate;
+    const bookingTime = collectedData.selectedTime;
+    const customerName = collectedData.name || conversation.visitorName;
+    const customerPhone = collectedData.phone || conversation.visitorPhone;
+    const customerAddress = collectedData.address || conversation.visitorAddress;
+
+    if (!cart.length || !bookingDate || !bookingTime || !customerName || !customerPhone || !customerAddress) {
+        return null;
+    }
+
+    const lineItems = cart.map((item: any) => {
+        const qty = Math.max(Number(item?.quantity) || 1, 1);
+        const lineTotal = Number(item?.price || 0);
+        const priceLabel = Number.isInteger(lineTotal) ? String(lineTotal) : lineTotal.toFixed(2);
+        return `- ${item?.serviceName || 'Service'}${qty > 1 ? ` x${qty}` : ''}: $${priceLabel}`;
+    });
+
+    const total = cart.reduce((sum: number, item: any) => sum + Number(item?.price || 0), 0);
+    const totalLabel = Number.isInteger(total) ? String(total) : total.toFixed(2);
+    const dateLabel = /^\d{4}-\d{2}-\d{2}$/.test(String(bookingDate))
+        ? formatDateLabel(String(bookingDate), true)
+        : String(bookingDate);
+    const timeLabel = typeof bookingTime === 'string' && /^\d{2}:\d{2}$/.test(bookingTime)
+        ? formatTimeLabel(bookingTime)
+        : String(bookingTime);
+
+    return [
+        'Booking summary:',
+        ...lineItems,
+        `Total: $${totalLabel}`,
+        `${dateLabel} at ${timeLabel}`,
+        `Name: ${customerName}`,
+        `Phone: ${customerPhone}`,
+        `Address: ${customerAddress}`,
+        'Sound good?',
+    ].join('\n');
+}
+
 export async function handleMessage(req: Request, res: Response) {
     try {
-        const ipKey = (req.ip || 'unknown').toString();
-        if (isRateLimited(ipKey)) {
-            return res.status(429).json({ message: 'Too many requests, please slow down.' });
-        }
-
         const parsed = chatMessageSchema.safeParse(req.body);
         if (!parsed.success) {
             return res.status(400).json({ message: 'Invalid input', errors: parsed.error.errors });
         }
         const input = parsed.data;
+
+        const ipKey = (req.ip || 'unknown').toString();
+        const rateLimitKey = `${ipKey}:${input.conversationId || "new"}`;
+        if (isRateLimited(rateLimitKey)) {
+            return res.status(429).json({ message: 'Too many requests, please slow down.' });
+        }
 
         const settings = await chatDeps.storage.getChatSettings();
         const excludedRules = (settings.excludedUrlRules as UrlRule[]) || [];
@@ -299,19 +349,30 @@ export async function handleMessage(req: Request, res: Response) {
             });
 
             // Send notification for new chat (non-blocking)
-            const [twilioSettings, telegramSettings] = await Promise.all([
+            const [twilioSettings, telegramSettings, companySettings] = await Promise.all([
                 chatDeps.storage.getTwilioSettings(),
                 chatDeps.storage.getTelegramSettings(),
+                chatDeps.storage.getCompanySettings(),
             ]);
 
             if (twilioSettings && isNewConversation) {
-                chatDeps.twilio.sendNewChatNotification(twilioSettings, conversationId, input.pageUrl).catch(err => {
+                chatDeps.twilio.sendNewChatNotification(
+                    twilioSettings,
+                    conversationId,
+                    input.pageUrl,
+                    companySettings?.companyName || 'the business'
+                ).catch(err => {
                     console.error('Failed to send Twilio notification:', err);
                 });
             }
 
             if (telegramSettings && isNewConversation) {
-                chatDeps.telegram.sendNewChatNotification(telegramSettings, conversationId, input.pageUrl).catch(err => {
+                chatDeps.telegram.sendNewChatNotification(
+                    telegramSettings,
+                    conversationId,
+                    input.pageUrl,
+                    companySettings?.companyName || 'the business'
+                ).catch(err => {
                     console.error('Failed to send Telegram notification:', err);
                 });
             }
@@ -398,7 +459,7 @@ export async function handleMessage(req: Request, res: Response) {
         const userAskedDirectQuestion = isLikelyDirectQuestion(autoMessage);
         const isConfirmPrompt = lastAssistantMessage ? isServiceConfirmationPrompt(lastAssistantMessage.content || '') : false;
         const isBookingConfirm = lastAssistantMessage ? isBookingConfirmationPrompt(lastAssistantMessage.content || '') : false;
-        const shouldAutoAddServices = isAffirmative && lastAssistantMessage && isConfirmPrompt;
+        const shouldAutoAddServices = isAffirmative && lastAssistantMessage && isConfirmPrompt && !isBookingConfirm;
         const shouldAutoBook = isAffirmative && lastAssistantMessage && isBookingConfirm;
         let autoLeadCaptured = false;
 
@@ -513,6 +574,7 @@ export async function handleMessage(req: Request, res: Response) {
                         if (updatedConversation) {
                             const currentMemory = (updatedConversation.memory as any) || { collectedData: {}, completedSteps: [] };
                             currentMemory.autoAddedServiceIds = matchedServices.map((s) => s.id);
+                            currentMemory.autoAddedServices = matchedServices.map((s) => normalizeServiceName(s.name || ''));
                             currentMemory.autoAddedMessageId = visitorMessageId;
                             await chatDeps.storage.updateConversation(conversationId, { memory: currentMemory });
                         }
@@ -528,7 +590,11 @@ export async function handleMessage(req: Request, res: Response) {
 
         // ✅ DEDUPLICATED: Auto-book when user confirms after a booking confirmation prompt
         let autoBookingResult: any = null;
+        let autoBookingAttempted = false;
+        let autoBookingFailureResult: any = null;
+        let autoBookingFailureSuggestions: Array<{ date: string; availableSlots: string[] }> | null = null;
         if (shouldAutoBook) {
+            autoBookingAttempted = true;
             const bookingAttempt = await attemptAutoBooking(conversationId, 'Creating booking on user confirmation', {
                 allowFaqs: true,
                 language: responseLanguage,
@@ -539,6 +605,18 @@ export async function handleMessage(req: Request, res: Response) {
             if (bookingAttempt.success) {
                 autoBookingResult = bookingAttempt.result;
                 conversation = await chatDeps.storage.getConversation(conversationId);
+            } else {
+                autoBookingFailureResult = bookingAttempt.result;
+                if (Array.isArray(bookingAttempt.result?.availableSlots) && bookingAttempt.result.availableSlots.length > 0) {
+                    const memoryCollectedForFailure = ((conversation?.memory as any)?.collectedData || {}) as Record<string, any>;
+                    const failedBookingDate = (bookingAttempt.result?.bookingDate || bookingAttempt.result?.booking_date || memoryCollectedForFailure.selectedDate || memoryCollectedForFailure.preferredDate) as string | undefined;
+                    if (failedBookingDate && /^\d{4}-\d{2}-\d{2}$/.test(failedBookingDate)) {
+                        autoBookingFailureSuggestions = [{
+                            date: failedBookingDate,
+                            availableSlots: bookingAttempt.result.availableSlots,
+                        }];
+                    }
+                }
             }
         }
 
@@ -551,6 +629,7 @@ export async function handleMessage(req: Request, res: Response) {
         const explicitDateFromMessage = explicitDateMatch ? explicitDateMatch[1] : null;
         const lastSuggestedDate = autoMemory.lastSuggestedDate;
         const lastSuggestedSlots = Array.isArray(autoMemory.lastSuggestedSlots) ? autoMemory.lastSuggestedSlots : [];
+        const lastSuggestedOptions = Array.isArray(autoMemory.lastSuggestedOptions) ? autoMemory.lastSuggestedOptions : [];
         const persistSuggestedSlotContext = async (suggestions: any[]) => {
             if (!Array.isArray(suggestions) || suggestions.length === 0) return;
             const normalized = suggestions
@@ -613,11 +692,18 @@ export async function handleMessage(req: Request, res: Response) {
 
         // Handle date/time selection when availability was shown
         if (nextObjectiveForAuto?.id === 'date' && parsedTime && (lastSuggestedDate || explicitDateFromMessage)) {
-            const resolvedDate = explicitDateFromMessage || lastSuggestedDate;
-            const slotMatches = explicitDateFromMessage
-                ? true
-                : (lastSuggestedSlots.length === 0 || lastSuggestedSlots.includes(parsedTime));
-            if (slotMatches) {
+            const suggestedMatches = explicitDateFromMessage
+                ? []
+                : lastSuggestedOptions.filter((item: any) =>
+                    item?.date &&
+                    Array.isArray(item?.availableSlots) &&
+                    item.availableSlots.includes(parsedTime)
+                );
+            const resolvedDate = explicitDateFromMessage ||
+                (suggestedMatches.length === 1 ? suggestedMatches[0].date : null) ||
+                (lastSuggestedSlots.length === 0 || lastSuggestedSlots.includes(parsedTime) ? lastSuggestedDate : null);
+
+            if (resolvedDate) {
                 const completedSteps = Array.isArray(autoMemory.completedSteps) ? autoMemory.completedSteps : [];
                 const updatedMemory = {
                     ...autoMemory,
@@ -650,36 +736,50 @@ export async function handleMessage(req: Request, res: Response) {
         }
 
         if (nextObjectiveForAuto?.id === 'date' && !parsedTime && isAffirmative && lastSuggestedDate && lastSuggestedSlots.length > 0) {
-            const inferredTime = lastSuggestedSlots[0];
-            const completedSteps = Array.isArray(autoMemory.completedSteps) ? autoMemory.completedSteps : [];
-            const updatedMemory = {
-                ...autoMemory,
-                collectedData: {
-                    ...autoCollected,
-                    preferredDate: autoCollected.preferredDate || lastSuggestedDate,
-                    selectedDate: lastSuggestedDate,
-                    selectedTime: inferredTime,
-                },
-                completedSteps: completedSteps.includes('date') ? completedSteps : [...completedSteps, 'date'],
-                lastSuggestedDate: null,
-                lastSuggestedSlots: null,
-                lastSuggestedOptions: null,
-            };
-            await chatDeps.storage.updateConversation(conversationId, { memory: updatedMemory });
-            await chatDeps.storage.addConversationMessage({
-                id: crypto.randomUUID(),
-                conversationId,
-                role: MESSAGE_ROLE.ASSISTANT,
-                content: `[INTAKE] Auto-selected first suggested slot ${inferredTime} for ${lastSuggestedDate} after affirmative reply`,
-                metadata: {
-                    internal: true,
-                    type: 'intake_auto',
-                    selectedTime: inferredTime,
-                    selectedDate: lastSuggestedDate,
-                    inferredFromAffirmative: true,
-                },
-            });
-            conversation = await chatDeps.storage.getConversation(conversationId);
+            const assistantSuggestedTime = parseTimeFromText(lastAssistantMessage?.content || '');
+            const suggestedMatches = assistantSuggestedTime
+                ? lastSuggestedOptions.filter((item: any) =>
+                    item?.date &&
+                    Array.isArray(item?.availableSlots) &&
+                    item.availableSlots.includes(assistantSuggestedTime)
+                )
+                : [];
+            const resolvedDate =
+                suggestedMatches.length === 1
+                    ? suggestedMatches[0].date
+                    : (assistantSuggestedTime && lastSuggestedSlots.includes(assistantSuggestedTime) ? lastSuggestedDate : null);
+
+            if (assistantSuggestedTime && resolvedDate) {
+                const completedSteps = Array.isArray(autoMemory.completedSteps) ? autoMemory.completedSteps : [];
+                const updatedMemory = {
+                    ...autoMemory,
+                    collectedData: {
+                        ...autoCollected,
+                        preferredDate: autoCollected.preferredDate || resolvedDate,
+                        selectedDate: resolvedDate,
+                        selectedTime: assistantSuggestedTime,
+                    },
+                    completedSteps: completedSteps.includes('date') ? completedSteps : [...completedSteps, 'date'],
+                    lastSuggestedDate: null,
+                    lastSuggestedSlots: null,
+                    lastSuggestedOptions: null,
+                };
+                await chatDeps.storage.updateConversation(conversationId, { memory: updatedMemory });
+                await chatDeps.storage.addConversationMessage({
+                    id: crypto.randomUUID(),
+                    conversationId,
+                    role: MESSAGE_ROLE.ASSISTANT,
+                    content: `[INTAKE] Auto-selected confirmed slot ${assistantSuggestedTime} for ${resolvedDate} after affirmative reply`,
+                    metadata: {
+                        internal: true,
+                        type: 'intake_auto',
+                        selectedTime: assistantSuggestedTime,
+                        selectedDate: resolvedDate,
+                        inferredFromAffirmative: true,
+                    },
+                });
+                conversation = await chatDeps.storage.getConversation(conversationId);
+            }
         }
 
         // Always try to capture out-of-order inputs
@@ -705,7 +805,11 @@ export async function handleMessage(req: Request, res: Response) {
         const hasEnoughHistory = existingMessages.filter((m: any) => !(m.metadata as any)?.internal).length >= AUTO_CAPTURE.MIN_HISTORY_FOR_NAME;
         if (!completedStepsSet.has('name') && !currentCollectedForCapture.name) {
             const parsedName = parseNameFromText(autoMessage);
-            const fallbackName = hasEnoughHistory && looksLikeName(autoMessage) && !parsePhoneFromText(autoMessage) && !looksLikeAddress(autoMessage)
+            const fallbackName = hasEnoughHistory &&
+                nextObjectiveForAuto?.id === 'name' &&
+                looksLikeName(autoMessage) &&
+                !parsePhoneFromText(autoMessage) &&
+                !looksLikeAddress(autoMessage)
                 ? autoMessage.trim()
                 : null;
             const name = parsedName || fallbackName;
@@ -732,8 +836,9 @@ export async function handleMessage(req: Request, res: Response) {
 
         // Capture address
         if (!completedStepsSet.has('address') && !currentCollectedForCapture.address) {
-            if (looksLikeAddress(autoMessage)) {
-                const cleanAddress = autoMessage.trim();
+            const extractedAddress = parseAddressFromText(autoMessage);
+            if (extractedAddress || looksLikeAddress(autoMessage)) {
+                const cleanAddress = extractedAddress || autoMessage.trim();
                 captureMemoryUpdates.address = cleanAddress;
                 completedStepsSet.add('address');
                 capturedFields.push('address');
@@ -962,11 +1067,13 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
         }
 
         // Shared variables for downstream logic
-        let assistantResponse = 'Sorry, I could not process that request.';
+        const DEFAULT_ASSISTANT_FALLBACK = 'Sorry, I could not process that request.';
+        let assistantResponse = DEFAULT_ASSISTANT_FALLBACK;
         let leadCaptured = autoLeadCaptured;
         let bookingCompleted: { value: number; services: string[] } | null = null;
-        let bookingAttempted = false;
-        let bookingFailed = false;
+        let bookingAttempted = autoBookingAttempted;
+        let bookingFailed = autoBookingAttempted && !!autoBookingFailureResult;
+        let bookingFailureSuggestions: Array<{ date: string; availableSlots: string[] }> | null = autoBookingFailureSuggestions;
         const toolCallNames: string[] = [];
 
         if (autoBookingResult?.success) {
@@ -982,7 +1089,17 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
             console.log('[Chat] Auto-booking succeeded in pre-processing, using confirmation response');
         }
 
-        if (!autoBookingResult?.success) {
+        if (autoBookingAttempted && !autoBookingResult?.success) {
+            if (bookingFailureSuggestions && bookingFailureSuggestions.length > 0) {
+                assistantResponse = `That time is no longer available. ${formatAvailabilityResponse(bookingFailureSuggestions)}`;
+            } else if (autoBookingFailureResult?.userMessage) {
+                assistantResponse = autoBookingFailureResult.userMessage;
+            } else if (autoBookingFailureResult?.error) {
+                assistantResponse = `Sorry, I couldn't complete your booking: ${autoBookingFailureResult.error}`;
+            }
+        }
+
+        if (!autoBookingResult?.success && !autoBookingAttempted) {
             try {
                 const firstReq: any = {
                     model,
@@ -1003,6 +1120,7 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
                 let choice = first.choices[0].message;
                 const toolCalls = choice.tool_calls || [];
                 toolCallNames.push(...toolCalls.map((call) => call.function.name));
+                const toolOutcomes: Array<{ name: string; result: any }> = [];
 
                 let postToolNextObjective = nextObjective;
 
@@ -1030,12 +1148,51 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
                             },
                         });
 
-                        const toolResult = await runChatTool(call.function.name, args, conversationId, {
-                            allowFaqs,
-                            language: responseLanguage,
-                            userMessage: input.message,
-                            userMessageId: visitorMessageId,
-                        });
+                        let toolResult: any;
+                        if (call.function.name === 'create_booking' && !shouldAutoBook) {
+                            toolResult = {
+                                success: false,
+                                error: 'Final confirmation required before booking.',
+                                userMessage: 'Show the booking summary and wait for the customer to confirm before creating the booking.',
+                            };
+                        }
+
+                        if (call.function.name === 'add_service' && shouldAutoAddServices) {
+                            const liveConversationForAdd = await chatDeps.storage.getConversation(conversationId);
+                            const liveMemoryForAdd = (liveConversationForAdd?.memory as any) || {};
+                            const liveCartForAdd = Array.isArray(liveMemoryForAdd.cart) ? liveMemoryForAdd.cart : [];
+                            const requestedServiceId = Number(args?.service_id) || 0;
+                            const requestedServiceName = typeof args?.service_name === 'string'
+                                ? normalizeServiceName(args.service_name)
+                                : '';
+                            const alreadyInCart = liveCartForAdd.some((item: any) => {
+                                const cartServiceId = Number(item?.serviceId) || 0;
+                                const cartServiceName = normalizeServiceName(item?.serviceName || '');
+                                return (
+                                    (requestedServiceId > 0 && cartServiceId === requestedServiceId) ||
+                                    (!!requestedServiceName && cartServiceName === requestedServiceName)
+                                );
+                            });
+
+                            if (alreadyInCart) {
+                                toolResult = {
+                                    success: true,
+                                    deduplicated: true,
+                                    cart: liveCartForAdd,
+                                    total: liveCartForAdd.reduce((sum: number, item: any) => sum + Number(item?.price || 0), 0),
+                                    message: 'Service already in cart.',
+                                };
+                            }
+                        }
+
+                        if (!toolResult) {
+                            toolResult = await runChatTool(call.function.name, args, conversationId, {
+                                allowFaqs,
+                                language: responseLanguage,
+                                userMessage: input.message,
+                                userMessageId: visitorMessageId,
+                            });
+                        }
 
                         await chatDeps.storage.addConversationMessage({
                             id: crypto.randomUUID(),
@@ -1070,6 +1227,10 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
                                 if (Array.isArray(toolResult.availableSlots) && toolResult.availableSlots.length > 0) {
                                     const bookingDateFromArgs = typeof args?.booking_date === 'string' ? args.booking_date : null;
                                     if (bookingDateFromArgs && /^\d{4}-\d{2}-\d{2}$/.test(bookingDateFromArgs)) {
+                                        bookingFailureSuggestions = [{
+                                            date: bookingDateFromArgs,
+                                            availableSlots: toolResult.availableSlots,
+                                        }];
                                         await persistSuggestedSlotContext([{
                                             date: bookingDateFromArgs,
                                             availableSlots: toolResult.availableSlots,
@@ -1089,6 +1250,7 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
                             await persistSuggestedSlotContext(toolResult.suggestions);
                         }
 
+                        toolOutcomes.push({ name: call.function.name, result: toolResult });
                         toolResponses.push({
                             role: 'tool' as const,
                             tool_call_id: call.id,
@@ -1113,7 +1275,7 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
 
                     const second = await aiClient.chat.completions.create(secondReq);
 
-                    assistantResponse = second.choices[0].message.content || assistantResponse;
+                    assistantResponse = second.choices[0].message.content?.trim() || '';
                     assistantResponse = sanitizeAssistantResponse(assistantResponse);
 
                     const availabilitySuggestions = (toolResponses as any).availabilitySuggestions;
@@ -1123,8 +1285,54 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
                             assistantResponse = formatAvailabilityResponse(availabilitySuggestions);
                         }
                     }
+
+                    if (!assistantResponse.trim() || assistantResponse === DEFAULT_ASSISTANT_FALLBACK) {
+                        const latestSuccessfulSuggestions = [...toolOutcomes]
+                            .reverse()
+                            .find((outcome) =>
+                                outcome.name === 'suggest_booking_dates' &&
+                                Array.isArray(outcome.result?.suggestions) &&
+                                outcome.result.suggestions.length > 0
+                            );
+                        if (latestSuccessfulSuggestions) {
+                            assistantResponse = formatAvailabilityResponse(latestSuccessfulSuggestions.result.suggestions);
+                        } else {
+                            const nonDedupAdd = [...toolOutcomes]
+                                .reverse()
+                                .find((outcome) =>
+                                    outcome.name === 'add_service' &&
+                                    outcome.result?.success === true &&
+                                    !outcome.result?.deduplicated &&
+                                    typeof outcome.result?.message === 'string'
+                                );
+                            const fallbackAdd = [...toolOutcomes]
+                                .reverse()
+                                .find((outcome) =>
+                                    outcome.name === 'add_service' &&
+                                    outcome.result?.success === true &&
+                                    typeof outcome.result?.message === 'string'
+                                );
+                            if (nonDedupAdd?.result?.message) {
+                                assistantResponse = nonDedupAdd.result.message;
+                            } else if (fallbackAdd?.result?.message) {
+                                assistantResponse = fallbackAdd.result.message;
+                            }
+                        }
+                    }
+
+                    const latestServiceClarification = [...toolOutcomes]
+                        .reverse()
+                        .find((outcome) =>
+                            outcome.name === 'list_services' &&
+                            typeof outcome.result?.clarificationQuestion === 'string' &&
+                            outcome.result.clarificationQuestion.trim()
+                        );
+
+                    if (latestServiceClarification && !toolCallNames.includes('add_service')) {
+                        assistantResponse = latestServiceClarification.result.clarificationQuestion.trim();
+                    }
                 } else {
-                    assistantResponse = choice.content || assistantResponse;
+                    assistantResponse = choice.content?.trim() || '';
                     assistantResponse = sanitizeAssistantResponse(assistantResponse);
                 }
 
@@ -1145,8 +1353,36 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
                     const inferredDate = parseRelativeDateFromText(input.message, currentDateISO);
                     const windowHint = detectDateWindowFromText(input.message);
                     if (inferredDate || windowHint) {
-                        const toolArgs: any = {};
-                        if (inferredDate) toolArgs.specific_date = inferredDate;
+                        const liveConversation = await chatDeps.storage.getConversation(conversationId);
+                        const liveMemory = (liveConversation?.memory as any) || { collectedData: {} };
+                        const liveCart = Array.isArray(liveMemory.cart) ? liveMemory.cart : [];
+                        const fallbackServiceId =
+                            Number(liveCart?.[0]?.serviceId) ||
+                            Number(liveMemory?.selectedService?.id) ||
+                            0;
+
+                        if (!fallbackServiceId) {
+                            await chatDeps.storage.addConversationMessage({
+                                id: crypto.randomUUID(),
+                                conversationId,
+                                role: MESSAGE_ROLE.ASSISTANT,
+                                content: `[DEBUG] Skipping suggest_booking_dates fallback: missing service_id`,
+                                metadata: {
+                                    internal: true,
+                                    type: 'debug',
+                                    reason: 'missing_service_id_for_date_fallback',
+                                },
+                            });
+                        } else {
+                            const toolArgs: any = { service_id: fallbackServiceId };
+                            if (inferredDate) {
+                                toolArgs.specific_date = inferredDate;
+                            } else if (windowHint) {
+                                const hintedDate = new Date(`${currentDateISO}T12:00:00`);
+                                hintedDate.setDate(hintedDate.getDate() + windowHint.startOffsetDays);
+                                toolArgs.specific_date = hintedDate.toISOString().split('T')[0];
+                                toolArgs.max_suggestions = windowHint.maxSuggestions;
+                            }
                         const toolCallId = crypto.randomUUID();
                         await chatDeps.storage.addConversationMessage({
                             id: crypto.randomUUID(),
@@ -1185,10 +1421,11 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
                             toolCallNames.push('suggest_booking_dates');
                             await persistSuggestedSlotContext(toolResult.suggestions);
                         }
+                        }
                     }
                 }
 
-                if (!autoBookingResult && isAffirmative) {
+                if (!autoBookingResult && isAffirmative && !bookingAttempted && isBookingConfirm) {
                     const bookingAttempt = await attemptAutoBooking(conversationId, 'Affirmative response with complete booking data', {
                         allowFaqs,
                         language: responseLanguage,
@@ -1206,12 +1443,37 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
                     }
                 }
 
+                if (!postToolNextObjective && !bookingAttempted && !bookingCompleted && !isBookingConfirm) {
+                    const finalSummary = await buildFinalBookingSummary(conversationId);
+                    if (finalSummary) {
+                        assistantResponse = finalSummary;
+                    }
+                }
+
                 if (postToolNextObjective) {
                     const shouldEnforce = !userAskedDirectQuestion && !toolCallNames.some((name) =>
                         ['search_faqs', 'get_business_policies', 'suggest_booking_dates', 'create_booking', 'list_services', 'get_service_details'].includes(name)
                     );
                     if (shouldEnforce && !responseMentionsObjective(assistantResponse, postToolNextObjective.id)) {
-                        assistantResponse = getIntakeQuestion(postToolNextObjective.id, responseLanguage);
+                        const intakeQuestion = getIntakeQuestion(postToolNextObjective.id, responseLanguage);
+                        const hasQuestionAlready = assistantResponse.includes('?');
+                        const isDefaultFallbackResponse = assistantResponse.trim() === DEFAULT_ASSISTANT_FALLBACK;
+                        if (!assistantResponse.trim() || isDefaultFallbackResponse) {
+                            assistantResponse = intakeQuestion;
+                        } else if (hasQuestionAlready) {
+                            const nonQuestionSentences = (assistantResponse.match(/[^.!?]+[.!?]*/g) || [])
+                                .filter((part) => !part.includes('?'))
+                                .filter((part) => !/\b(sorry|apologize|mistake)\b/i.test(part))
+                                .join(' ')
+                                .replace(/\s+/g, ' ')
+                                .trim();
+                            assistantResponse = nonQuestionSentences
+                                ? `${nonQuestionSentences} ${intakeQuestion}`.trim()
+                                : intakeQuestion;
+                        } else if (!hasQuestionAlready) {
+                            // Keep intake as a guide: preserve useful response and add a gentle follow-up.
+                            assistantResponse = `${assistantResponse.trim()} ${intakeQuestion}`.trim();
+                        }
                     }
                 }
 
@@ -1228,7 +1490,11 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
                             conversationId,
                             originalResponse: assistantResponse.substring(0, 200),
                         });
-                        assistantResponse = 'Sorry, there was a problem processing your booking. Please try again or contact us by phone.';
+                        if (bookingFailureSuggestions && bookingFailureSuggestions.length > 0) {
+                            assistantResponse = `That time is no longer available. ${formatAvailabilityResponse(bookingFailureSuggestions)}`;
+                        } else {
+                            assistantResponse = 'Sorry, there was a problem processing your booking. Please try again or contact us by phone.';
+                        }
                     }
                 }
 
@@ -1240,8 +1506,9 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
                     ];
                     const responseLC = assistantResponse.toLowerCase();
                     const soundsLikeSuccess = successIndicators.some(word => responseLC.includes(word));
+                    const isAskingForBookingConfirmation = isBookingConfirmationPrompt(assistantResponse);
 
-                    if (soundsLikeSuccess) {
+                    if (soundsLikeSuccess && !isAskingForBookingConfirmation) {
                         console.error('[Chat] CRITICAL SAFETY NET: AI fabricated booking confirmation without calling create_booking', {
                             conversationId,
                             originalResponse: assistantResponse.substring(0, 200),
@@ -1275,6 +1542,9 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
         }
 
         const assistantMessageId = crypto.randomUUID();
+        if (!assistantResponse.trim()) {
+            assistantResponse = DEFAULT_ASSISTANT_FALLBACK;
+        }
         const createdAssistantMessage = await chatDeps.storage.addConversationMessage({
             id: assistantMessageId,
             conversationId,

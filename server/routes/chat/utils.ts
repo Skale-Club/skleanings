@@ -413,42 +413,83 @@ export function looksLikeName(text: string): boolean {
     if (!text) return false;
     const trimmed = text.trim();
     if (trimmed.length < 2 || trimmed.length > 60) return false;
+    if (!/^[a-zA-Z][a-zA-Z' -]*$/.test(trimmed)) return false;
     // Must contain letters
     if (!/[a-zA-Z]/.test(trimmed)) return false;
     // Reject pure numbers
     if (/^\d+$/.test(trimmed)) return false;
-    // Reject common chat words, greetings, and service-related terms
-    const rejectWords = /^(hi|hey|hello|yes|no|yep|yeah|yup|nope|ok|okay|sure|thanks|thank you|please|help|a|the|i|my|me|we|it|so|or|and|but|sofa|couch|rug|carpet|clean|cleaning|mattress|ottoman|chair|armchair|loveseat|sectional|curtain|drape|upholstery|booking|book|schedule|appointment|price|cost|how much|what|when|where|why|how|can you|do you|is there|tomorrow|today|next week|monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i;
-    if (rejectWords.test(trimmed)) return false;
-    // Reject if it looks like a sentence (4+ words usually isn't a name)
+    // Reject if it looks like a sentence (3+ words is already high risk for false positives).
     const words = trimmed.split(/\s+/);
-    if (words.length > 4) return false;
+    if (words.length > 3) return false;
     // Each word should start with a letter (names don't start with numbers)
     if (!/^[a-zA-Z]/.test(trimmed)) return false;
-    // At least one word should be 2+ letters
-    if (!words.some(w => /^[a-zA-Z]{2,}/.test(w))) return false;
+    if (!words.every((w) => /^[a-zA-Z][a-zA-Z'-]{1,29}$/.test(w))) return false;
+
+    const blockedTokens = new Set([
+        'hi', 'hey', 'hello', 'yes', 'no', 'yep', 'yeah', 'yup', 'nope', 'ok', 'okay', 'sure',
+        'thanks', 'thank', 'please', 'help', 'my', 'me', 'we', 'it', 'and', 'but', 'or', 'all',
+        'thats', "that's", 'sofa', 'couch', 'rug', 'carpet', 'clean', 'cleaning', 'mattress',
+        'ottoman', 'chair', 'armchair', 'loveseat', 'sectional', 'curtain', 'drape', 'upholstery',
+        'booking', 'book', 'schedule', 'appointment', 'price', 'cost', 'what', 'when', 'where',
+        'why', 'how', 'tomorrow', 'today', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday',
+        'saturday', 'sunday', 'need', 'want', 'have',
+    ]);
+    if (words.some((w) => blockedTokens.has(w.toLowerCase()))) return false;
+
     return true;
 }
 
 export function looksLikeAddress(text: string): boolean {
     if (!text) return false;
     const trimmed = text.trim();
-    if (trimmed.length < 6) return false;
+    if (trimmed.length < 8 || trimmed.length > 140) return false;
+    if (trimmed.includes('?')) return false;
     if (!/\d/.test(trimmed)) return false;
     if (!/[a-z]/i.test(trimmed)) return false;
-    return true;
+
+    const normalized = trimmed.toLowerCase();
+    // Reject common service/request phrases that may include numbers.
+    if (/\b(clean|cleaning|seater|sofa|carpet|mattress|service|book|booking|schedule|need|want)\b/.test(normalized)) {
+        return false;
+    }
+
+    // Require at least one common address token to avoid false positives.
+    const addressToken =
+        /\b(st|street|ave|avenue|rd|road|dr|drive|blvd|boulevard|ln|lane|ct|court|way|pl|place|apt|suite|unit)\b/i;
+    const hasCommaSeparatedParts = trimmed.split(',').length >= 2;
+    return addressToken.test(trimmed) || hasCommaSeparatedParts;
+}
+
+export function parseAddressFromText(text: string): string | null {
+    if (!text) return null;
+    const compact = text.replace(/\s+/g, ' ').trim();
+
+    const explicitMarker = compact.match(/\b(?:address is|my address is|address:)\s*(.+)$/i);
+    const candidateFromMarker = explicitMarker?.[1]?.trim();
+    if (candidateFromMarker && looksLikeAddress(candidateFromMarker)) {
+        return candidateFromMarker.replace(/[.,;!?]+$/, '').trim();
+    }
+
+    // Fallback: try to extract from first street-number token through end.
+    const streetStart = compact.search(/\b\d{1,6}\s+[A-Za-z0-9.'-]+\b/);
+    if (streetStart === -1) return null;
+    const tail = compact.slice(streetStart).trim();
+    if (!looksLikeAddress(tail)) return null;
+    return tail.replace(/[.,;!?]+$/, '').trim();
 }
 
 export function isAffirmativeResponse(text: string): boolean {
     if (!text) return false;
-    const normalized = text.toLowerCase().trim();
+    const normalized = text
+        .toLowerCase()
+        .trim();
 
     // Avoid treating explicit negatives as confirmation.
     if (/\b(no|nope|not now|don't|do not|cancel)\b/.test(normalized)) {
         return false;
     }
 
-    if (/^(yes|yep|yeah|yup|correct|right|sure|ok|okay|confirm|sounds good|sounds right|that\'s right|that is right|please do|go ahead)$/.test(normalized)) {
+    if (/^(yes|yep|yeah|yup|correct|right|sure|ok|okay|confirm|sounds good|sounds right|that's right|that is right|please do|go ahead)$/.test(normalized)) {
         return true;
     }
 
@@ -528,14 +569,10 @@ export function detectDateWindowFromText(text: string): { startOffsetDays: numbe
 }
 
 export function pickRandomSlots(slots: string[], maxSlots: number): string[] {
-    if (!slots || slots.length <= maxSlots) return slots || [];
-    const shuffled = [...slots];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    const selected = shuffled.slice(0, maxSlots);
-    return selected.sort((a, b) => a.localeCompare(b));
+    if (!slots || slots.length === 0) return [];
+    return [...slots]
+        .sort((a, b) => a.localeCompare(b))
+        .slice(0, Math.max(1, maxSlots));
 }
 
 export function formatBusinessHoursSummary(businessHours?: BusinessHours | null): string {
@@ -596,7 +633,7 @@ export function getIntakeQuestion(objectiveId: IntakeObjective['id'], language: 
             zipcode: "What's your ZIP code?",
             serviceType: 'What service do you need?',
             serviceDetails: 'Any size, material, or special details I should know?',
-            date: 'What day would you like to schedule?',
+            date: 'What day and time would you like to schedule?',
             name: "What's your full name?",
             phone: "What's the best phone number to reach you?",
             address: "What's the full address?",
@@ -689,7 +726,7 @@ export function isIntakeObjectiveComplete(
         case 'serviceDetails':
             return !!(collectedData?.serviceDetails || (Array.isArray(cart) && cart.length > 0));
         case 'date':
-            return !!(collectedData?.selectedDate || collectedData?.preferredDate);
+            return !!((collectedData?.selectedDate || collectedData?.preferredDate) && collectedData?.selectedTime);
         case 'name':
             return !!(collectedData?.name || conversation?.visitorName);
         case 'phone':
@@ -738,7 +775,7 @@ export function getChatPromptTemplate(): string {
     }
 
     if (chatPromptTemplate) {
-        // Extract the prompt content including few-shot examples (skip only the header)
+        // Extract the base prompt content (skip only the markdown header)
         const promptStart = chatPromptTemplate.indexOf('You are a friendly booking assistant');
         const promptEnd = chatPromptTemplate.indexOf('# ANTI-PATTERNS');
 

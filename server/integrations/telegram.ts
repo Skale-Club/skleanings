@@ -1,26 +1,15 @@
 import type { TelegramSettings } from "@shared/schema";
+import {
+  type BookingNotificationPayload,
+  buildBookingNotification,
+  buildNewChatNotification,
+  renderNotificationHtml,
+} from "../lib/notification-templates";
 
 const TELEGRAM_API_BASE = "https://api.telegram.org";
 const TELEGRAM_MAX_MESSAGE_LENGTH = 4096;
 const TELEGRAM_MASK = "********";
 const TELEGRAM_BOT_TOKEN_REGEX = /^\d+:[A-Za-z0-9_-]+$/;
-
-type BookingNotificationPayload = {
-  customerName?: string;
-  customerPhone?: string;
-  customerEmail?: string | null;
-  customerAddress?: string;
-  bookingDate?: string;
-  startTime?: string;
-  totalPrice?: string | number;
-};
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
 
 function splitForTelegram(text: string): string[] {
   if (text.length <= TELEGRAM_MAX_MESSAGE_LENGTH) {
@@ -147,16 +136,16 @@ export async function sendMessageToAll(
 export async function sendNewChatNotification(
   settings: TelegramSettings,
   conversationId: string,
-  pageUrl?: string
+  pageUrl?: string,
+  companyName?: string
 ): Promise<{ success: boolean; message?: string }> {
   if (!settings.enabled || !settings.notifyOnNewChat) {
     return { success: false, message: "Telegram new chat notifications are disabled" };
   }
 
-  const message =
-    `<b>New chat started</b>\n` +
-    `<b>Conversation:</b> <code>${escapeHtml(conversationId.slice(0, 8))}...</code>\n` +
-    `<b>Page:</b> ${escapeHtml(pageUrl || "Unknown")}`;
+  const message = renderNotificationHtml(
+    buildNewChatNotification(conversationId, pageUrl, companyName)
+  );
 
   return sendMessageToAll(settings, message, "HTML");
 }
@@ -164,23 +153,16 @@ export async function sendNewChatNotification(
 export async function sendBookingNotification(
   booking: BookingNotificationPayload,
   serviceNames: string[],
-  settings: TelegramSettings
+  settings: TelegramSettings,
+  companyName?: string
 ): Promise<{ success: boolean; message?: string }> {
   if (!settings.enabled) {
     return { success: false, message: "Telegram notifications are disabled" };
   }
 
-  const serviceList = serviceNames.length > 0 ? serviceNames.map((name) => `- ${escapeHtml(name)}`).join("\n") : "- N/A";
-  const message =
-    `<b>New booking confirmed</b>\n` +
-    `<b>Customer:</b> ${escapeHtml(booking.customerName || "N/A")}\n` +
-    `<b>Phone:</b> ${escapeHtml(booking.customerPhone || "N/A")}\n` +
-    `<b>Email:</b> ${escapeHtml(booking.customerEmail || "N/A")}\n` +
-    `<b>Date:</b> ${escapeHtml(booking.bookingDate || "N/A")}\n` +
-    `<b>Time:</b> ${escapeHtml(booking.startTime || "N/A")}\n` +
-    `<b>Address:</b> ${escapeHtml(booking.customerAddress || "N/A")}\n` +
-    `<b>Total:</b> $${escapeHtml(String(booking.totalPrice ?? "N/A"))}\n\n` +
-    `<b>Service(s):</b>\n${serviceList}`;
+  const message = renderNotificationHtml(
+    buildBookingNotification(booking, serviceNames, companyName)
+  );
 
   return sendMessageToAll(settings, message, "HTML");
 }
@@ -194,12 +176,16 @@ export async function sendTelegramTestMessage(
   }
 
   const forcedSettings: TelegramSettings = { ...settings, enabled: true };
-  const resolvedCompanyName = (companyName || "").trim() || "Skleanings";
+  const resolvedCompanyName = (companyName || "the business").trim() || "the business";
+  const escapedCompanyName = resolvedCompanyName
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
   const message = [
-    `<b>Telegram integration test - ${escapeHtml(resolvedCompanyName)}</b>`,
+    `<b>Telegram integration test - ${escapedCompanyName}</b>`,
     `Your bot token and chat IDs are configured correctly.`,
-    `<b>Time:</b> ${escapeHtml(new Date().toISOString())}`,
-    `<b>Company:</b> ${escapeHtml(resolvedCompanyName)}`,
+    `<b>Time:</b> ${new Date().toISOString()}`,
+    `<b>Company:</b> ${escapedCompanyName}`,
   ].join("\n");
 
   return sendMessageToAll(forcedSettings, message, "HTML");

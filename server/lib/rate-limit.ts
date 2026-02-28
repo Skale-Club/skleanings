@@ -1,7 +1,8 @@
 
 const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+const DEFAULT_CHAT_RATE_LIMIT = 20;
 
-export function isRateLimited(key: string, limit = 8, windowMs = 60_000): boolean {
+export function isRateLimited(key: string, limit = DEFAULT_CHAT_RATE_LIMIT, windowMs = 60_000): boolean {
     const now = Date.now();
     const entry = rateLimitStore.get(key);
     if (!entry || now > entry.resetAt) {

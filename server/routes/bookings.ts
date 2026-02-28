@@ -104,14 +104,20 @@ router.post('/', async (req, res) => {
                 .map((item) => item.serviceName?.trim())
                 .filter((name): name is string => Boolean(name));
 
-            const [twilioSettings, telegramSettings] = await Promise.all([
+            const [twilioSettings, telegramSettings, companySettings] = await Promise.all([
                 storage.getTwilioSettings(),
                 storage.getTelegramSettings(),
+                storage.getCompanySettings(),
             ]);
 
             if (twilioSettings?.enabled && twilioSettings.authToken && twilioSettings.fromPhoneNumber) {
                 try {
-                    await sendBookingNotification(booking, serviceNames, twilioSettings);
+                    await sendBookingNotification(
+                        booking,
+                        serviceNames,
+                        twilioSettings,
+                        companySettings?.companyName || 'the business'
+                    );
                 } catch (twilioError) {
                     console.error("Twilio Notification Error:", twilioError);
                 }
@@ -119,7 +125,12 @@ router.post('/', async (req, res) => {
 
             if (telegramSettings?.enabled && telegramSettings.botToken && telegramSettings.chatIds.length > 0) {
                 try {
-                    await sendTelegramBookingNotification(booking, serviceNames, telegramSettings);
+                    await sendTelegramBookingNotification(
+                        booking,
+                        serviceNames,
+                        telegramSettings,
+                        companySettings?.companyName || 'the business'
+                    );
                 } catch (telegramError) {
                     console.error("Telegram Notification Error:", telegramError);
                 }

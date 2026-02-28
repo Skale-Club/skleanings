@@ -47,4 +47,9 @@ export const pool = new Pool({
   connectionTimeoutMillis: 30000, // 30 segundos para serverless cold start
 });
 
+// Avoid process crashes on transient idle-client disconnects (e.g. ECONNRESET from pooler/network).
+pool.on("error", (error) => {
+  console.error("[DB] Pool idle client error:", error);
+});
+
 export const db = drizzle(pool, { schema });

@@ -65,12 +65,168 @@ export async function addInternalConversationMessage(
 }
 
 function formatServiceForTool(service: any) {
+    const semantic = getServiceSemanticProfile(service);
     return {
         id: service.id,
         name: service.name,
         description: service.description,
         price: service.price?.toString?.() || service.price,
+        serviceFamily: semantic.family,
+        matchHints: semantic.matchHints,
     };
+}
+
+function normalizeSemanticText(value: string): string {
+    return (value || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+}
+
+function getServiceSemanticProfile(service: any): { family: string; matchHints: string[] } {
+    const source = normalizeSemanticText(`${service?.name || ''} ${service?.description || ''}`);
+    const hints = new Set<string>();
+    let family = 'general';
+
+    const addSeatHints = (text: string) => {
+        const seatMatch = text.match(/(\d+)(?:\s*-\s*(\d+)|\+)?\s*seater/);
+        if (!seatMatch) return;
+        if (seatMatch[2]) {
+            hints.add(`${seatMatch[1]}-${seatMatch[2]} seater`);
+            hints.add(`${seatMatch[1]} to ${seatMatch[2]} seats`);
+        } else if (seatMatch[0].includes('+')) {
+            hints.add(`${seatMatch[1]}+ seater`);
+            hints.add(`${seatMatch[1]} or more seats`);
+        } else {
+            hints.add(`${seatMatch[1]} seater`);
+            hints.add(`${seatMatch[1]} seats`);
+        }
+    };
+
+    if (/\b(sofa|couch|loveseat|sectional|settee|l-shaped|l shaped)\b/.test(source)) {
+        family = 'sofa';
+        hints.add('sofa');
+        hints.add('couch');
+        hints.add('upholstery');
+        addSeatHints(source);
+        if (/\bloveseat\b/.test(source)) {
+            hints.add('loveseat');
+            hints.add('small sofa');
+            hints.add('2 seater');
+        }
+        if (/\b(l-shaped|l shaped|corner)\b/.test(source)) {
+            hints.add('l-shaped');
+            hints.add('corner sofa');
+        }
+        if (/\bsectional|modular\b/.test(source)) {
+            hints.add('sectional');
+            hints.add('modular sofa');
+        }
+    } else if (/\b(mattress|bed frame|headboard|bed)\b/.test(source)) {
+        family = 'bed';
+        if (/\bmattress\b/.test(source)) {
+            hints.add('mattress');
+            hints.add('bed');
+        }
+        if (/\bheadboard\b/.test(source)) hints.add('headboard');
+        if (/\bbed frame\b/.test(source)) hints.add('bed frame');
+        for (const size of ['twin', 'full', 'queen', 'king']) {
+            if (source.includes(size)) hints.add(size);
+        }
+    } else if (/\b(carpet|rug|hallway|stairs|basement|attic|room)\b/.test(source)) {
+        family = 'carpet';
+        hints.add('carpet');
+        hints.add('rug');
+        hints.add('floor cleaning');
+        for (const area of ['small room', 'medium room', 'large room', 'hallway', 'stairs', 'basement', 'attic', 'home']) {
+            if (source.includes(area)) hints.add(area);
+        }
+    } else if (/\b(chair|armchair|recliner|chaise lounge|chaise|office chair|dining chair)\b/.test(source)) {
+        family = 'chair';
+        hints.add('chair');
+        for (const kind of ['armchair', 'recliner', 'office chair', 'dining chair', 'chaise lounge']) {
+            if (source.includes(kind)) hints.add(kind);
+        }
+    } else if (/\b(curtain|drape)\b/.test(source)) {
+        family = 'curtain';
+        hints.add('curtain');
+        hints.add('drape');
+        hints.add('window treatment');
+    }
+
+    return {
+        family,
+        matchHints: Array.from(hints),
+    };
+}
+
+function buildClarificationQuestion(query: string, candidateServices: any[]): string | null {
+    if (!query || candidateServices.length < 2) return null;
+
+    const normalizedQuery = normalizeSemanticText(query);
+    const profiles = candidateServices.map((service) => getServiceSemanticProfile(service));
+    const familyCounts = profiles.reduce((acc, profile) => {
+        acc.set(profile.family, (acc.get(profile.family) || 0) + 1);
+        return acc;
+    }, new Map<string, number>());
+    const topFamily = [...familyCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+
+    if (!topFamily || (familyCounts.get(topFamily) || 0) < 2) return null;
+
+    const hasSeatCount = /\b\d+\s*(?:-|to)?\s*\d*\s*seater\b|\b\d+\s*seat\b/.test(normalizedQuery);
+    const hasMattressSize = /\b(twin|full|queen|king)\b/.test(normalizedQuery);
+    const hasCarpetArea = /\b(small|medium|large|hallway|stairs|basement|attic|home|room|runner)\b/.test(normalizedQuery);
+    const hasChairSubtype = /\b(armchair|recliner|office|dining|chaise)\b/.test(normalizedQuery);
+
+    if (topFamily === 'sofa') {
+        const mentionsSpecificShape = /\b(l-shaped|l shaped|corner|sectional|loveseat|modular)\b/.test(normalizedQuery);
+        if (mentionsSpecificShape && !hasSeatCount && /\b(sectional|l-shaped|l shaped|corner|modular)\b/.test(normalizedQuery)) {
+            return 'How many people does the sofa seat?';
+        }
+        if (!mentionsSpecificShape || !hasSeatCount) {
+            return 'How many people does the sofa seat, and is it a straight sofa, an L-shaped sofa, or a sectional?';
+        }
+    }
+
+    if (topFamily === 'bed' && /\b(mattress|bed)\b/.test(normalizedQuery) && !hasMattressSize) {
+        return 'What size is the mattress?';
+    }
+
+    if (topFamily === 'carpet' && /\b(carpet|rug)\b/.test(normalizedQuery) && !hasCarpetArea) {
+        return 'About how large is the carpeted area, and is it a room, hallway, stairs, or another area?';
+    }
+
+    if (topFamily === 'chair' && /\bchair\b/.test(normalizedQuery) && !hasChairSubtype) {
+        return 'What kind of chair is it?';
+    }
+
+    return null;
+}
+
+function hasStrongTopServiceMatch(
+    query: string,
+    rankedServices: Array<{ service: any; score: number }>
+): boolean {
+    const top = rankedServices[0];
+    if (!top || top.score <= 0) return false;
+
+    const second = rankedServices[1];
+    const normalizedQuery = normalizeSemanticText(query);
+    const topName = normalizeSemanticText(top.service?.name || '');
+    const topDescription = normalizeSemanticText(top.service?.description || '');
+    const queryTokens = normalizedQuery.split(/[^a-z0-9]+/).filter((token) => token.length > 2);
+
+    const tokenCoverage = queryTokens.length === 0
+        ? 0
+        : queryTokens.filter((token) => topName.includes(token) || topDescription.includes(token)).length / queryTokens.length;
+
+    if (topName.includes(normalizedQuery) || tokenCoverage >= 0.8) {
+        return true;
+    }
+
+    if (!second) return top.score >= 40;
+
+    return top.score >= 70 && (top.score - second.score) >= 20;
 }
 
 // Build chat tools dynamically based on intake flow configuration
@@ -90,7 +246,7 @@ export function buildChatTools(enabledObjectives: IntakeObjective[]): OpenAI.Cha
             type: "function",
             function: {
                 name: CHAT_TOOL.LIST_SERVICES,
-                description: "List all available cleaning services from our catalog. CRITICAL: You must ONLY recommend services that exist in this list. Never combine multiple smaller services when a single larger service exists. For example, if customer needs a 7-seater cleaned, recommend the 7-8 Seater service, NOT multiple 3-seater sessions.",
+                description: "List all available cleaning services from our catalog. Results include descriptions, semantic match hints, and may include a clarificationQuestion when the customer's request is still ambiguous. If clarificationQuestion is present, ask that instead of listing internal catalog options. CRITICAL: You must ONLY recommend services that exist in this list. Never combine multiple smaller services when a single larger service exists. For example, if customer needs a 7-seater cleaned, recommend the 7-8 Seater service, NOT multiple 3-seater sessions.",
                 parameters: {
                     type: "object",
                     properties: {
@@ -320,7 +476,8 @@ export async function runChatTool(
     switch (toolName) {
         case CHAT_TOOL.LIST_SERVICES: {
             const services = await getCachedServices();
-            const query = (args?.query as string | undefined)?.toLowerCase?.()?.trim();
+            const rawQuery = (args?.query as string | undefined)?.trim();
+            const query = normalizeSemanticText(rawQuery || '');
 
             if (!query) {
                 return { services: services.map(formatServiceForTool) };
@@ -332,9 +489,10 @@ export async function runChatTool(
 
             const synonyms: Record<string, string[]> = {
                 'sectional': ['sectional', 'l-shaped', 'l shaped', 'corner', 'modular'],
-                'sofa': ['sofa', 'couch', 'settee', 'loveseat', 'seater'],
-                'carpet': ['carpet', 'rug', 'floor'],
+                'sofa': ['sofa', 'couch', 'settee', 'loveseat', 'seater', 'upholstery'],
+                'carpet': ['carpet', 'rug', 'runner', 'hallway', 'stairs', 'floor'],
                 'mattress': ['mattress', 'bed'],
+                'chair': ['chair', 'armchair', 'recliner', 'chaise', 'office', 'dining'],
             };
 
             const expandedQueryWords = new Set(queryWords);
@@ -347,8 +505,10 @@ export async function runChatTool(
             }
 
             const scoredServices = services.map(service => {
-                const name = service.name.toLowerCase();
-                const desc = (service.description || '').toLowerCase();
+                const name = normalizeSemanticText(service.name || '');
+                const desc = normalizeSemanticText(service.description || '');
+                const semantic = getServiceSemanticProfile(service);
+                const semanticText = semantic.matchHints.join(' ');
                 let score = 0;
 
                 if (name.includes(query)) score += 100;
@@ -369,6 +529,7 @@ export async function runChatTool(
                 for (const word of Array.from(expandedQueryWords)) {
                     if (name.includes(word)) score += 10;
                     if (desc.includes(word)) score += 5;
+                    if (semanticText.includes(word)) score += 8;
                 }
 
                 return { service, score };
@@ -376,11 +537,18 @@ export async function runChatTool(
 
             const filtered = scoredServices
                 .filter(s => s.score > 0)
-                .sort((a, b) => b.score - a.score)
-                .map(s => s.service);
+                .sort((a, b) => b.score - a.score);
 
-            const result = filtered.length > 0 ? filtered : services;
-            return { services: result.map(formatServiceForTool) };
+            const ranked = filtered.length > 0 ? filtered : services.map((service) => ({ service, score: 0 }));
+            const result = ranked.map((item) => item.service);
+            const clarificationQuestion =
+                rawQuery && !hasStrongTopServiceMatch(rawQuery, ranked)
+                    ? buildClarificationQuestion(rawQuery, result.slice(0, 5))
+                    : null;
+            return {
+                services: result.map(formatServiceForTool),
+                clarificationQuestion,
+            };
         }
         case CHAT_TOOL.GET_SERVICE_DETAILS: {
             const serviceId = Number(args?.service_id);
@@ -390,12 +558,27 @@ export async function runChatTool(
             return { service: formatServiceForTool(service) };
         }
         case CHAT_TOOL.SUGGEST_BOOKING_DATES: {
-            const serviceId = Number(args?.service_id);
+            let serviceId = Number(args?.service_id);
             const specificDate = args?.specific_date as string | undefined;
             const maxSuggestions = Math.min(Math.max(Number(args?.max_suggestions) || 3, 1), 5); // Default 3, max 5
 
+            let service = serviceId ? await chatDeps.storage.getService(serviceId) : null;
+            if ((!serviceId || !service) && conversationId) {
+                const conversation = await chatDeps.storage.getConversation(conversationId);
+                const memory = (conversation?.memory as any) || {};
+                const cart = Array.isArray(memory.cart) ? memory.cart : [];
+                const fallbackServiceId =
+                    Number(cart?.[0]?.serviceId) ||
+                    Number(memory?.selectedService?.id) ||
+                    0;
+
+                if (fallbackServiceId) {
+                    serviceId = fallbackServiceId;
+                    service = await chatDeps.storage.getService(serviceId);
+                }
+            }
+
             if (!serviceId) return { error: 'Service ID is required' };
-            const service = await chatDeps.storage.getService(serviceId);
             if (!service) return { error: 'Service not found' };
 
             const durationMinutes = service.durationMinutes || 60;
@@ -450,12 +633,13 @@ export async function runChatTool(
                 const suggestions = availableDates.slice(0, maxSuggestions).map(d => ({
                     date: d.date,
                     dayOfWeek: d.dayOfWeek,
-                    availableSlots: pickRandomSlots(d.availableSlots || [], 4) // Show diverse random slots
+                    availableSlots: pickRandomSlots(d.availableSlots || [], 3)
                 }));
 
                 const formattedText = formatAvailabilityResponse(suggestions);
 
                 return {
+                    success: true,
                     suggestions,
                     formattedText,
                     timeZone,
@@ -464,6 +648,7 @@ export async function runChatTool(
             } catch (error: any) {
                 console.error('[suggest_booking_dates] Error:', error);
                 return {
+                    success: false,
                     error: 'Failed to check availability',
                     message: getErrorMessage('availabilityCheckFailed', language)
                 };
@@ -473,7 +658,7 @@ export async function runChatTool(
             const company = await chatDeps.storage.getCompanySettings();
             const businessHours = await chatDeps.storage.getBusinessHours();
             return {
-                businessName: company?.companyName || 'Skleanings',
+                businessName: company?.companyName || 'the business',
                 email: company?.companyEmail,
                 phone: company?.companyPhone,
                 address: company?.companyAddress,
@@ -562,12 +747,42 @@ export async function runChatTool(
             if (!conversationId) return { error: 'Conversation ID missing' };
             if (!name && !email && !phone) return { error: 'Provide at least one of name, email, or phone' };
 
-            const updates: any = {};
-            if (name) updates.visitorName = name;
-            if (email) updates.visitorEmail = email;
-            if (phone) updates.visitorPhone = phone;
+            const existingConversation = await chatDeps.storage.getConversation(conversationId);
+            if (!existingConversation) return { error: 'Conversation not found' };
+            const existingMemory = (existingConversation.memory as any) || {};
+            const requestedFields = [
+                ...(name ? ['name'] : []),
+                ...(email ? ['email'] : []),
+                ...(phone ? ['phone'] : []),
+            ];
 
-            const updated = await chatDeps.storage.updateConversation(conversationId, updates);
+            const lastContactUpdateMessageId = existingMemory.lastContactUpdateMessageId as string | undefined;
+            const lastContactUpdateFields = Array.isArray(existingMemory.lastContactUpdateFields)
+                ? existingMemory.lastContactUpdateFields as string[]
+                : [];
+            const isDuplicateSameTurn =
+                !!options?.userMessageId &&
+                lastContactUpdateMessageId === options.userMessageId &&
+                requestedFields.length > 0 &&
+                requestedFields.every((field) => lastContactUpdateFields.includes(field));
+            if (isDuplicateSameTurn) {
+                return {
+                    success: true,
+                    deduplicated: true,
+                    visitorName: existingConversation.visitorName,
+                    visitorEmail: existingConversation.visitorEmail,
+                    visitorPhone: existingConversation.visitorPhone,
+                };
+            }
+
+            const updates: any = {};
+            if (name && name !== existingConversation.visitorName) updates.visitorName = name;
+            if (email && email !== existingConversation.visitorEmail) updates.visitorEmail = email;
+            if (phone && phone !== existingConversation.visitorPhone) updates.visitorPhone = phone;
+
+            const updated = Object.keys(updates).length > 0
+                ? await chatDeps.storage.updateConversation(conversationId, updates)
+                : existingConversation;
             const chatSettings = await chatDeps.storage.getChatSettings();
             const ghlSettings = await chatDeps.storage.getIntegrationSettings('gohighlevel');
             const calendarProvider = chatSettings?.calendarProvider || 'gohighlevel';
@@ -629,6 +844,14 @@ export async function runChatTool(
                 }
             }
 
+            if (options?.userMessageId) {
+                const refreshedConversation = await chatDeps.storage.getConversation(conversationId);
+                const refreshedMemory = (refreshedConversation?.memory as any) || {};
+                refreshedMemory.lastContactUpdateMessageId = options.userMessageId;
+                refreshedMemory.lastContactUpdateFields = requestedFields;
+                await chatDeps.storage.updateConversation(conversationId, { memory: refreshedMemory });
+            }
+
             return {
                 success: true,
                 visitorName: updated?.visitorName,
@@ -653,13 +876,34 @@ export async function runChatTool(
                 currentMemory.selectedService = args.selected_service;
             }
 
+            let slotValidationWarning: string | null = null;
+            let selectedDateArg = (args?.selected_date as string | undefined)?.trim();
+            let selectedTimeArg = (args?.selected_time as string | undefined)?.trim();
+            const suggestedOptions = Array.isArray(currentMemory.lastSuggestedOptions) ? currentMemory.lastSuggestedOptions : [];
+            const lastSuggestedDate = typeof currentMemory.lastSuggestedDate === 'string' ? currentMemory.lastSuggestedDate : undefined;
+            const lastSuggestedSlots = Array.isArray(currentMemory.lastSuggestedSlots) ? currentMemory.lastSuggestedSlots : [];
+
+            if (selectedTimeArg) {
+                const dateForValidation = selectedDateArg || lastSuggestedDate;
+                if (dateForValidation) {
+                    const suggestionForDate = suggestedOptions.find((item: any) => item?.date === dateForValidation);
+                    const validSlots = Array.isArray(suggestionForDate?.availableSlots)
+                        ? suggestionForDate.availableSlots
+                        : (dateForValidation === lastSuggestedDate ? lastSuggestedSlots : []);
+                    if (validSlots.length > 0 && !validSlots.includes(selectedTimeArg)) {
+                        slotValidationWarning = `Selected time ${selectedTimeArg} is not in suggested slots for ${dateForValidation}`;
+                        selectedTimeArg = undefined;
+                    }
+                }
+            }
+
             // Update collected data fields
             if (args?.zipcode) collectedData.zipcode = args.zipcode;
             if (args?.service_type) collectedData.serviceType = args.service_type;
             if (args?.service_details) collectedData.serviceDetails = args.service_details;
             if (args?.preferred_date) collectedData.preferredDate = args.preferred_date;
-            if (args?.selected_date) collectedData.selectedDate = args.selected_date;
-            if (args?.selected_time) collectedData.selectedTime = args.selected_time;
+            if (selectedDateArg) collectedData.selectedDate = selectedDateArg;
+            if (selectedTimeArg) collectedData.selectedTime = selectedTimeArg;
             if (args?.name) collectedData.name = args.name;
             if (args?.phone) collectedData.phone = args.phone;
             if (args?.email) collectedData.email = args.email;
@@ -691,6 +935,7 @@ export async function runChatTool(
             return {
                 success: true,
                 memory: currentMemory,
+                warning: slotValidationWarning || undefined,
             };
         }
         case CHAT_TOOL.ADD_SERVICE: {
@@ -747,17 +992,21 @@ export async function runChatTool(
             const currentMemory = (conversation.memory as any) || { collectedData: {}, completedSteps: [], cart: [] };
             const cart = currentMemory.cart || [];
             const autoAddedServices = Array.isArray(currentMemory.autoAddedServices) ? currentMemory.autoAddedServices : [];
+            const autoAddedServiceIds = Array.isArray(currentMemory.autoAddedServiceIds)
+                ? currentMemory.autoAddedServiceIds.map((id: any) => Number(id)).filter(Boolean)
+                : [];
             const autoAddedMessageId = currentMemory.autoAddedMessageId;
 
             if (
                 autoAddedMessageId &&
                 options?.userMessageId &&
                 autoAddedMessageId === options.userMessageId &&
-                autoAddedServices.includes(normalizedName)
+                (autoAddedServices.includes(normalizedName) || autoAddedServiceIds.includes(serviceId))
             ) {
                 const total = cart.reduce((sum: number, item: any) => sum + Number(item.price || 0), 0);
                 return {
                     success: true,
+                    deduplicated: true,
                     cart,
                     total,
                     message: `Already added ${service.name || serviceName} to cart.`,
@@ -1167,9 +1416,47 @@ export async function runChatTool(
                     bookingItemsData,
                 });
 
-                const serviceNames = services.map(s => s.name).join(', ');
+                const serviceNamesForNotification = services
+                    .map((service) => service.name?.trim())
+                    .filter((name): name is string => Boolean(name));
+                const serviceNames = serviceNamesForNotification.join(', ');
                 const ghlSync = await syncBookingToGhl(booking, serviceNames);
                 const pendingSync = ghlSync.attempted && !ghlSync.synced;
+
+                try {
+                    const [twilioSettings, telegramSettings] = await Promise.all([
+                        chatDeps.storage.getTwilioSettings(),
+                        chatDeps.storage.getTelegramSettings(),
+                    ]);
+
+                    if (twilioSettings?.enabled && twilioSettings.authToken && twilioSettings.fromPhoneNumber) {
+                        try {
+                            await chatDeps.twilio.sendBookingNotification(
+                                booking,
+                                serviceNamesForNotification,
+                                twilioSettings,
+                                company?.companyName || 'the business'
+                            );
+                        } catch (twilioError) {
+                            console.error('[create_booking] Twilio Notification Error:', twilioError);
+                        }
+                    }
+
+                    if (telegramSettings?.enabled && telegramSettings.botToken && telegramSettings.chatIds.length > 0) {
+                        try {
+                            await chatDeps.telegram.sendBookingNotification(
+                                booking,
+                                serviceNamesForNotification,
+                                telegramSettings,
+                                company?.companyName || 'the business'
+                            );
+                        } catch (telegramError) {
+                            console.error('[create_booking] Telegram Notification Error:', telegramError);
+                        }
+                    }
+                } catch (notificationError) {
+                    console.error('[create_booking] Booking Notification Error:', notificationError);
+                }
 
                 if (conversationId) {
                     await chatDeps.storage.updateConversation(conversationId, {
