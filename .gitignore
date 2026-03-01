@@ -11,3 +11,4 @@ vite.config.ts.*
 .env.production
 .env.*.local
 data-export.json
+nul
