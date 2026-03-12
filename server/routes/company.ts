@@ -61,7 +61,7 @@ router.put('/api/company-settings', requireAdmin, async (req, res) => {
 router.get('/robots.txt', async (req, res) => {
     try {
         const settings = await storage.getCompanySettings();
-        const canonicalUrl = settings?.seoCanonicalUrl || `https://${req.get('host')}`;
+        const canonicalUrl = (settings?.seoCanonicalUrl || `https://${req.get('host')}`).replace(/\/$/, '');
 
         const robotsTxt = `User-agent: *
 Allow: /
