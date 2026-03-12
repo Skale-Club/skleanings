@@ -6,17 +6,29 @@ import { log } from "../lib/logger";
 
 export class BlogGenerator {
 
-    private static async getModel() {
-        let apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    /**
+     * Get the Gemini API key from various sources in order of preference:
+     * 1. Blog-specific environment variable (BLOG_GEMINI_API_KEY)
+     * 2. Generic Gemini environment variables (GEMINI_API_KEY, GOOGLE_API_KEY)
+     * 3. Database chat integrations (fallback for backwards compatibility)
+     */
+    private static async getGeminiApiKey(): Promise<string> {
+        // 1. Check blog-specific environment variable first
+        let apiKey = process.env.BLOG_GEMINI_API_KEY;
 
+        // 2. Check generic Gemini environment variables
         if (!apiKey) {
-            // Try to get from DB integration settings
-            // We need to handle the case where storage might not be fully ready in some contexts,
-            // but here we are in a service method called after startup.
+            apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+        }
+
+        // 3. Fallback to database chat integrations for backwards compatibility
+        // This maintains the existing behavior while encouraging migration to env vars
+        if (!apiKey) {
             try {
                 const integration = await storage.getChatIntegration("gemini");
                 if (integration?.apiKey) {
                     apiKey = integration.apiKey;
+                    log("Using Gemini API key from chat integrations (consider migrating to BLOG_GEMINI_API_KEY env var)", "BlogGenerator");
                 }
             } catch (e) {
                 log(`Error fetching Gemini key from DB: ${e}`, "BlogGenerator");
@@ -24,9 +36,14 @@ export class BlogGenerator {
         }
 
         if (!apiKey) {
-            throw new Error("Gemini API key not found in environment variables or database integration settings.");
+            throw new Error("Gemini API key not found. Set BLOG_GEMINI_API_KEY, GEMINI_API_KEY, or GOOGLE_API_KEY environment variable, or configure Gemini in chat integrations.");
         }
 
+        return apiKey;
+    }
+
+    private static async getModel() {
+        const apiKey = await this.getGeminiApiKey();
         const genAI = new GoogleGenerativeAI(apiKey);
         return genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     }
@@ -43,8 +60,14 @@ export class BlogGenerator {
                     return;
                 }
 
+                // Check if postsPerDay is zero (disables automatic scheduling)
+                if (settings.postsPerDay <= 0) {
+                    log("Automatic scheduling disabled (postsPerDay <= 0). Skipping.", "BlogGenerator");
+                    return;
+                }
+
                 // Check frequency
-                if (settings.lastRunAt && settings.postsPerDay > 0) {
+                if (settings.lastRunAt) {
                     const now = new Date();
                     const lastRun = new Date(settings.lastRunAt);
                     const hoursSinceLastRun = (now.getTime() - lastRun.getTime()) / (1000 * 60 * 60);
@@ -70,7 +93,7 @@ export class BlogGenerator {
             const imageUrl = await this.generatePostImage(topic);
             log(`Generated image URL: ${imageUrl}`, "BlogGenerator");
 
-            const slug = this.slugify(content.title);
+            const slug = await this.generateUniqueSlug(content.title);
 
             const newPost = {
                 title: content.title,
@@ -196,5 +219,27 @@ export class BlogGenerator {
             .replace(/\-\-+/g, "-") // Replace multiple - with single -
             .replace(/^-+/, "") // Trim - from start of text
             .replace(/-+$/, ""); // Trim - from end of text
+    }
+
+    /**
+     * Generate a unique slug by checking for existing posts with the same slug.
+     * If a collision is found, appends a numeric suffix (-2, -3, etc.)
+     */
+    private static async generateUniqueSlug(title: string): Promise<string> {
+        const baseSlug = this.slugify(title);
+        let slug = baseSlug;
+        let suffix = 2;
+
+        // Check for existing posts with the same slug
+        while (true) {
+            const existingPost = await storage.getBlogPostBySlug(slug);
+            if (!existingPost) {
+                break;
+            }
+            slug = `${baseSlug}-${suffix}`;
+            suffix++;
+        }
+
+        return slug;
     }
 }

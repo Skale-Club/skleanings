@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Loader2, Play, Save } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, authenticatedRequest } from "@/lib/queryClient";
 
 interface BlogSettings {
     enabled: boolean;
@@ -20,7 +20,11 @@ interface BlogSettings {
     enableTrendAnalysis: boolean;
 }
 
-export default function BlogSettings() {
+interface BlogSettingsProps {
+    getAccessToken: () => Promise<string | null>;
+}
+
+export default function BlogSettings({ getAccessToken }: BlogSettingsProps) {
     const { toast } = useToast();
     const queryClient = useQueryClient();
     const [isGenerating, setIsGenerating] = useState(false);
@@ -46,7 +50,9 @@ export default function BlogSettings() {
 
     const updateSettingsMutation = useMutation({
         mutationFn: async (data: BlogSettings) => {
-            const res = await apiRequest("PUT", "/api/blog/settings", data);
+            const token = await getAccessToken();
+            if (!token) throw new Error('Authentication required');
+            const res = await authenticatedRequest("PUT", "/api/blog/settings", token, data);
             return res.json();
         },
         onSuccess: () => {
@@ -67,11 +73,14 @@ export default function BlogSettings() {
 
     const generateNowMutation = useMutation({
         mutationFn: async () => {
-            const res = await apiRequest("POST", "/api/blog/generate", { manual: true });
+            const token = await getAccessToken();
+            if (!token) throw new Error('Authentication required');
+            const res = await authenticatedRequest("POST", "/api/blog/generate", token, { manual: true });
             return res.json();
         },
         onSuccess: (data) => {
-            queryClient.invalidateQueries({ queryKey: ["/api/blog/posts"] });
+            // Fix: invalidate the correct query key used by BlogSection
+            queryClient.invalidateQueries({ queryKey: ["/api/blog"] });
             queryClient.invalidateQueries({ queryKey: ["/api/blog/settings"] });
             toast({
                 title: "Blog post generated",

@@ -6,9 +6,10 @@ import { log } from "../lib/logger";
 export function startCronJobs() {
     log("Initializing cron jobs...", "CronService");
 
-    // Run every hour to check for blog generation schedule
+    // Run every hour to check for blog generation schedule based on postsPerDay setting
+    // The actual generation frequency is controlled by BlogSettings.postsPerDay and lastRunAt
     cron.schedule("0 * * * *", async () => {
-        log("Running scheduled daily blog post generation...", "CronService");
+        log("Running hourly blog generation check...", "CronService");
         try {
             await BlogGenerator.startDailyPostGeneration();
         } catch (error) {
@@ -16,5 +17,5 @@ export function startCronJobs() {
         }
     });
 
-    log("Cron jobs scheduled: Daily Blog Post (09:00 AM)", "CronService");
+    log("Cron jobs scheduled: Blog generation check (hourly, frequency controlled by postsPerDay setting)", "CronService");
 }

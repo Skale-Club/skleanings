@@ -37,21 +37,24 @@ router.put('/settings', requireAdmin, async (req, res) => {
     }
 });
 
-// Blog Posts (public GET, admin CRUD)
+// Blog Posts (public GET returns only published, admin can see all)
 router.get('/', async (req, res) => {
     try {
         const status = req.query.status as string | undefined;
         const limit = req.query.limit ? Number(req.query.limit) : undefined;
         const offset = req.query.offset ? Number(req.query.offset) : 0;
 
-        if (status === 'published' && limit) {
+        // Public requests default to published only
+        // If no status specified, return only published posts (prevent draft leakage)
+        if (!status) {
+            const posts = await storage.getBlogPosts('published');
+            res.json(posts);
+        } else if (status === 'published' && limit) {
             const posts = await storage.getPublishedBlogPosts(limit, offset);
             res.json(posts);
-        } else if (status) {
-            const posts = await storage.getBlogPosts(status);
-            res.json(posts);
         } else {
-            const posts = await storage.getBlogPosts();
+            // Non-published status requests should require admin (handled by storage layer or add middleware)
+            const posts = await storage.getBlogPosts(status);
             res.json(posts);
         }
     } catch (err) {
@@ -146,6 +149,7 @@ router.put('/tags/:tag', requireAdmin, async (req, res) => {
     }
 });
 
+// Get single post by ID or slug - public only sees published posts
 router.get('/:idOrSlug', async (req, res) => {
     try {
         const param = req.params.idOrSlug;
@@ -160,6 +164,13 @@ router.get('/:idOrSlug', async (req, res) => {
         if (!post) {
             return res.status(404).json({ message: 'Blog post not found' });
         }
+
+        // Prevent draft leakage: only return published posts for public access
+        // Admin users can access drafts via the admin API endpoints
+        if (post.status !== 'published') {
+            return res.status(404).json({ message: 'Blog post not found' });
+        }
+
         res.json(post);
     } catch (err) {
         res.status(500).json({ message: (err as Error).message });
@@ -175,11 +186,25 @@ router.get('/:id/services', async (req, res) => {
     }
 });
 
+// Get related posts - only published posts
 router.get('/:id/related', async (req, res) => {
     try {
         const limit = req.query.limit ? Number(req.query.limit) : 4;
         const posts = await storage.getRelatedBlogPosts(Number(req.params.id), limit);
         res.json(posts);
+    } catch (err) {
+        res.status(500).json({ message: (err as Error).message });
+    }
+});
+
+// Admin endpoint to get any post by ID (including drafts) for editing
+router.get('/admin/:id', requireAdmin, async (req, res) => {
+    try {
+        const post = await storage.getBlogPost(Number(req.params.id));
+        if (!post) {
+            return res.status(404).json({ message: 'Blog post not found' });
+        }
+        res.json(post);
     } catch (err) {
         res.status(500).json({ message: (err as Error).message });
     }

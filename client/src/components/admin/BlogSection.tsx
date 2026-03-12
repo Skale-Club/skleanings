@@ -1534,7 +1534,7 @@ export function BlogSection({ resetSignal, getAccessToken }: { resetSignal: numb
                 </DialogContent>
               </Dialog>
             </div>
-            
+
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <Select value={sortBy} onValueChange={(value: typeof sortBy) => setSortBy(value)}>
                 <SelectTrigger className="w-full sm:w-[180px]" data-testid="select-blog-sort">
@@ -1587,7 +1587,7 @@ export function BlogSection({ resetSignal, getAccessToken }: { resetSignal: numb
                             <FileText className="w-6 h-6 sm:w-8 sm:h-8 text-muted-foreground/50" />
                           </div>
                         )}
-                        
+
                         <div className="flex-1 min-w-0 flex flex-col justify-between h-16 sm:h-20 py-0.5">
                           <div>
                             <h3
@@ -1603,7 +1603,7 @@ export function BlogSection({ resetSignal, getAccessToken }: { resetSignal: numb
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* Bottom Row: Badges and Actions */}
                       <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/40">
                         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar mask-gradient-right">
@@ -1681,7 +1681,7 @@ export function BlogSection({ resetSignal, getAccessToken }: { resetSignal: numb
           </div>
         </div>
       ) : (
-        <BlogSettings />
+        <BlogSettings getAccessToken={getAccessToken} />
       )}
       <AlertDialog open={!!tagToDelete} onOpenChange={(open) => !open && setTagToDelete(null)}>
         <AlertDialogContent>

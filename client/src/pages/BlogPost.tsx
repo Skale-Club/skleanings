@@ -1,17 +1,18 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, Link } from 'wouter';
+import DOMPurify from 'dompurify';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Calendar, 
-  User, 
-  FileText, 
-  ArrowLeft, 
-  Facebook, 
-  Twitter, 
+import {
+  Calendar,
+  User,
+  FileText,
+  ArrowLeft,
+  Facebook,
+  Twitter,
   Linkedin,
   Share2,
   ShoppingCart
@@ -54,7 +55,7 @@ export default function BlogPostPage() {
   useEffect(() => {
     if (post) {
       document.title = `${post.title} | ${settings?.companyName || 'Blog'}`;
-      
+
       const metaDesc = document.querySelector('meta[name="description"]');
       if (metaDesc) {
         metaDesc.setAttribute('content', post.metaDescription || post.excerpt || '');
@@ -62,10 +63,10 @@ export default function BlogPostPage() {
 
       const ogTitle = document.querySelector('meta[property="og:title"]');
       if (ogTitle) ogTitle.setAttribute('content', post.title);
-      
+
       const ogDesc = document.querySelector('meta[property="og:description"]');
       if (ogDesc) ogDesc.setAttribute('content', post.metaDescription || post.excerpt || '');
-      
+
       const ogImage = document.querySelector('meta[property="og:image"]');
       if (ogImage && post.featureImageUrl) {
         ogImage.setAttribute('content', post.featureImageUrl);
@@ -75,6 +76,16 @@ export default function BlogPostPage() {
 
   const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
   const shareText = post?.title || '';
+
+  // Sanitize HTML content to prevent XSS attacks
+  const sanitizedContent = useMemo(() => {
+    if (!post?.content) return '';
+    return DOMPurify.sanitize(post.content, {
+      ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'hr', 'ul', 'ol', 'li', 'a', 'strong', 'em', 'b', 'i', 'u', 's', 'blockquote', 'pre', 'code', 'img', 'figure', 'figcaption', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'div', 'span'],
+      ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'id', 'target', 'rel', 'width', 'height'],
+      ALLOW_DATA_ATTR: false,
+    });
+  }, [post?.content]);
 
   const shareLinks = {
     facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
@@ -179,9 +190,9 @@ export default function BlogPostPage() {
                 </div>
               )}
 
-              <div 
+              <div
                 className="prose prose-lg dark:prose-invert max-w-none mb-8"
-                dangerouslySetInnerHTML={{ __html: post.content }}
+                dangerouslySetInnerHTML={{ __html: sanitizedContent }}
                 data-testid="text-post-content"
               />
 
