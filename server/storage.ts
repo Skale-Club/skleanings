@@ -281,6 +281,14 @@ export class DatabaseStorage implements IStorage {
   private companySchemaEnsured = false;
   private conversationSchemaEnsured = false;
 
+  async initializeRuntimeState(): Promise<void> {
+    await Promise.all([
+      this.ensureChatSchema(),
+      this.ensureCompanySchema(),
+      this.ensureConversationSchema(),
+    ]);
+  }
+
   private async ensureChatSchema(): Promise<void> {
     if (this.chatSchemaEnsured) return;
     try {
@@ -723,15 +731,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCompanySettings(): Promise<CompanySettings> {
-    try {
-      await this.ensureCompanySchema();
-      const [settings] = await db.select().from(companySettings);
-      if (settings) return settings;
-    } catch (err) {
-      console.error("getCompanySettings initial read failed, retrying after ensuring schema:", err);
-      this.companySchemaEnsured = false;
-      await this.ensureCompanySchema();
-    }
+    const [settings] = await db.select().from(companySettings);
+    if (settings) return settings;
 
     // Create default settings if none exist
     const [newSettings] = await db.insert(companySettings).values({}).returning();
@@ -739,19 +740,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateCompanySettings(settings: Partial<InsertCompanySettings>): Promise<CompanySettings> {
-    try {
-      await this.ensureCompanySchema();
-      const existing = await this.getCompanySettings();
-      const [updated] = await db.update(companySettings).set(settings).where(eq(companySettings.id, existing.id)).returning();
-      return updated;
-    } catch (err) {
-      console.error("updateCompanySettings failed, retrying after ensuring schema:", err);
-      this.companySchemaEnsured = false;
-      await this.ensureCompanySchema();
-      const existing = await this.getCompanySettings();
-      const [updated] = await db.update(companySettings).set(settings).where(eq(companySettings.id, existing.id)).returning();
-      return updated;
-    }
+    const existing = await this.getCompanySettings();
+    const [updated] = await db.update(companySettings).set(settings).where(eq(companySettings.id, existing.id)).returning();
+    return updated;
   }
 
   async getBusinessHours(): Promise<BusinessHours> {
@@ -950,24 +941,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getChatSettings(): Promise<ChatSettings> {
-    // First attempt: try to read existing settings
-    try {
-      await this.ensureChatSchema();
-      const [settings] = await db.select().from(chatSettings).limit(1);
-      if (settings) return settings;
-    } catch (err) {
-      console.error("getChatSettings initial read failed, retrying after ensuring schema:", err);
-      this.chatSchemaEnsured = false;
-      await this.ensureChatSchema();
-
-      // Retry after schema repair
-      try {
-        const [settings] = await db.select().from(chatSettings).limit(1);
-        if (settings) return settings;
-      } catch (retryErr) {
-        console.error("getChatSettings retry failed:", retryErr);
-      }
-    }
+    const [settings] = await db.select().from(chatSettings).limit(1);
+    if (settings) return settings;
 
     // No settings found - create default row (singleton pattern)
     try {
@@ -988,27 +963,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateChatSettings(settings: Partial<InsertChatSettings>): Promise<ChatSettings> {
-    try {
-      await this.ensureChatSchema();
-      const existing = await this.getChatSettings();
-      const [updated] = await db
-        .update(chatSettings)
-        .set({ ...settings, updatedAt: new Date() })
-        .where(eq(chatSettings.id, existing.id))
-        .returning();
-      return updated;
-    } catch (err) {
-      console.error("updateChatSettings failed, retrying after ensuring schema:", err);
-      this.chatSchemaEnsured = false;
-      await this.ensureChatSchema();
-      const existing = await this.getChatSettings();
-      const [updated] = await db
-        .update(chatSettings)
-        .set({ ...settings, updatedAt: new Date() })
-        .where(eq(chatSettings.id, existing.id))
-        .returning();
-      return updated;
-    }
+    const existing = await this.getChatSettings();
+    const [updated] = await db
+      .update(chatSettings)
+      .set({ ...settings, updatedAt: new Date() })
+      .where(eq(chatSettings.id, existing.id))
+      .returning();
+    return updated;
   }
 
   async getChatIntegration(provider: string): Promise<ChatIntegrations | undefined> {
@@ -1104,38 +1065,43 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getConversations(): Promise<Conversation[]> {
-    await this.ensureConversationSchema();
-    const convs = await db
-      .select()
+    const lastMessageExpr = sql<string | null>`COALESCE(
+      ${conversations.lastMessage},
+      (
+        SELECT ${conversationMessages.content}
+        FROM ${conversationMessages}
+        WHERE ${conversationMessages.conversationId} = ${conversations.id}
+        ORDER BY ${conversationMessages.createdAt} DESC
+        LIMIT 1
+      )
+    )`;
+
+    return await db
+      .select({
+        id: conversations.id,
+        status: conversations.status,
+        createdAt: conversations.createdAt,
+        updatedAt: conversations.updatedAt,
+        lastMessageAt: conversations.lastMessageAt,
+        firstPageUrl: conversations.firstPageUrl,
+        visitorName: conversations.visitorName,
+        visitorPhone: conversations.visitorPhone,
+        visitorEmail: conversations.visitorEmail,
+        visitorAddress: conversations.visitorAddress,
+        visitorZipcode: conversations.visitorZipcode,
+        lastMessage: lastMessageExpr,
+        memory: conversations.memory,
+      })
       .from(conversations)
       .orderBy(desc(sql`COALESCE(${conversations.lastMessageAt}, ${conversations.createdAt})`));
-
-    // Fill in lastMessage from latest conversation_messages for any conversation missing it
-    for (const conv of convs) {
-      if (!conv.lastMessage) {
-        const [latestMsg] = await db
-          .select({ content: conversationMessages.content })
-          .from(conversationMessages)
-          .where(eq(conversationMessages.conversationId, conv.id))
-          .orderBy(desc(conversationMessages.createdAt))
-          .limit(1);
-        if (latestMsg) {
-          conv.lastMessage = latestMsg.content;
-        }
-      }
-    }
-
-    return convs;
   }
 
   async getConversation(id: string): Promise<Conversation | undefined> {
-    await this.ensureConversationSchema();
     const [conversation] = await db.select().from(conversations).where(eq(conversations.id, id));
     return conversation;
   }
 
   async updateConversation(id: string, updates: Partial<Conversation>): Promise<Conversation | undefined> {
-    await this.ensureConversationSchema();
     const [updated] = await db
       .update(conversations)
       .set({ ...updates, updatedAt: new Date() })
@@ -1150,7 +1116,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createConversation(conversation: InsertConversation): Promise<Conversation> {
-    await this.ensureConversationSchema();
     const [created] = await db.insert(conversations).values(conversation).returning();
     return created;
   }

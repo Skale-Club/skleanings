@@ -1,11 +1,13 @@
 import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
+import { initializeSeedData } from "./lib/seeds";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import * as dotenv from "dotenv";
 import session from "express-session";
 import MemoryStore from "memorystore";
+import { storage } from "./storage";
 
 // Load environment
 const env = process.env.NODE_ENV || 'development';
@@ -85,6 +87,8 @@ app.use((req, res, next) => {
   const { startCronJobs } = await import("./services/cron");
   startCronJobs();
 
+  await storage.initializeRuntimeState();
+  await initializeSeedData();
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

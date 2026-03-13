@@ -1,5 +1,5 @@
 
-import { Request, Router } from "express";
+import { Request, Response, Router } from "express";
 import crypto from "crypto";
 import { handleMessage } from "./message-handler";
 import { requireAdmin, supabase } from "../../lib/auth";
@@ -13,6 +13,30 @@ const excludedUrlRuleSchema = z.object({
     pattern: z.string().min(1),
     match: z.enum(["contains", "starts_with", "equals"]),
 });
+
+type PublicChatConfigResponse = {
+    enabled: boolean;
+    agentName: string;
+    welcomeMessage: string;
+    agentAvatarUrl: string;
+    fallbackAvatarUrl: undefined;
+    companyLogo: string | undefined;
+    languageSelectorEnabled: boolean;
+    defaultLanguage: string;
+    excludedUrlRules: Array<z.infer<typeof excludedUrlRuleSchema>>;
+    showInProd: boolean;
+};
+
+const PUBLIC_CHAT_CONFIG_TTL_MS = 5 * 60 * 1000;
+let publicChatConfigCache: { value: PublicChatConfigResponse; expiresAt: number } | null = null;
+
+function clearPublicChatConfigCache() {
+    publicChatConfigCache = null;
+}
+
+function setPublicChatConfigCacheHeaders(res: Response) {
+    res.setHeader("Cache-Control", "public, max-age=300, s-maxage=300, stale-while-revalidate=86400");
+}
 
 async function isAuthenticatedAdminRequest(req: Request): Promise<boolean> {
     const authHeader = req.headers.authorization;
@@ -39,11 +63,17 @@ router.post("/chat/message", handleMessage);
 // GET /api/chat/config — public chat widget config (controls whether chat appears)
 router.get("/chat/config", async (_req, res) => {
     try {
+        if (publicChatConfigCache && publicChatConfigCache.expiresAt > Date.now()) {
+            setPublicChatConfigCacheHeaders(res);
+            return res.json(publicChatConfigCache.value);
+        }
+
         const settings = await storage.getChatSettings();
         const companySettings = await storage.getCompanySettings();
+        let payload: PublicChatConfigResponse;
 
         if (!settings) {
-            return res.json({
+            payload = {
                 enabled: false,
                 agentName: "Assistant",
                 welcomeMessage: "Hi! How can I help?",
@@ -54,24 +84,31 @@ router.get("/chat/config", async (_req, res) => {
                 defaultLanguage: "en",
                 excludedUrlRules: [],
                 showInProd: false,
-            });
+            };
+        } else {
+            // @ts-ignore - uiSettings structure mismatch with generated types
+            const ui = settings.uiSettings || {};
+            const parsedRules = z.array(excludedUrlRuleSchema).safeParse(settings.excludedUrlRules);
+            payload = {
+                enabled: settings.enabled ?? false,
+                agentName: settings.agentName || ui.title || "Assistant",
+                agentAvatarUrl: settings.agentAvatarUrl || ui.avatarUrl || "",
+                fallbackAvatarUrl: undefined,
+                companyLogo: companySettings?.logoIcon || undefined,
+                welcomeMessage: settings.welcomeMessage || ui.welcomeMessage || "Hi! How can I help?",
+                languageSelectorEnabled: settings.languageSelectorEnabled ?? false,
+                defaultLanguage: settings.defaultLanguage || "en",
+                excludedUrlRules: parsedRules.success ? parsedRules.data : [],
+                showInProd: settings.showInProd ?? false,
+            };
         }
 
-        // @ts-ignore - uiSettings structure mismatch with generated types
-        const ui = settings.uiSettings || {};
-        const parsedRules = z.array(excludedUrlRuleSchema).safeParse(settings.excludedUrlRules);
-        res.json({
-            enabled: settings.enabled ?? false,
-            agentName: settings.agentName || ui.title || "Assistant",
-            agentAvatarUrl: settings.agentAvatarUrl || ui.avatarUrl || "",
-            fallbackAvatarUrl: undefined,
-            companyLogo: companySettings?.logoIcon || undefined,
-            welcomeMessage: settings.welcomeMessage || ui.welcomeMessage || "Hi! How can I help?",
-            languageSelectorEnabled: settings.languageSelectorEnabled ?? false,
-            defaultLanguage: settings.defaultLanguage || "en",
-            excludedUrlRules: parsedRules.success ? parsedRules.data : [],
-            showInProd: settings.showInProd ?? false,
-        });
+        publicChatConfigCache = {
+            value: payload,
+            expiresAt: Date.now() + PUBLIC_CHAT_CONFIG_TTL_MS,
+        };
+        setPublicChatConfigCacheHeaders(res);
+        res.json(payload);
     } catch (err) {
         res.status(500).json({ message: (err as Error).message });
     }
@@ -148,6 +185,7 @@ router.put("/chat/settings", requireAdmin, async (req, res) => {
     try {
         const validatedData = insertChatSettingsSchema.partial().parse(req.body);
         const settings = await storage.updateChatSettings(validatedData);
+        clearPublicChatConfigCache();
         res.json(settings);
     } catch (err) {
         if (err instanceof z.ZodError) {
@@ -162,6 +200,7 @@ router.post("/chat/config", requireAdmin, async (req, res) => {
     try {
         const validatedData = insertChatSettingsSchema.parse(req.body);
         const settings = await storage.updateChatSettings(validatedData);
+        clearPublicChatConfigCache();
         res.json(settings);
     } catch (err) {
         if (err instanceof z.ZodError) {
@@ -193,13 +232,8 @@ router.get("/chat/ghl-status", requireAdmin, async (_req, res) => {
 router.get("/chat/conversations", requireAdmin, async (_req, res) => {
     try {
         const convs = await storage.getConversations();
-        // Debug: log first conversation's lastMessage to verify fix
-        if (convs.length > 0) {
-            console.log(`[DEBUG] getConversations: ${convs.length} convs, first.lastMessage = "${convs[0].lastMessage?.substring(0, 50) ?? 'NULL'}"`);
-        }
         res.json(convs);
     } catch (err) {
-        console.error('[DEBUG] getConversations error:', err);
         res.status(500).json({ message: (err as Error).message });
     }
 });
@@ -278,29 +312,6 @@ router.delete("/chat/conversations/:id", requireAdmin, async (req, res) => {
     } catch (err) {
         res.status(500).json({ message: (err as Error).message });
     }
-});
-
-// SSE Stream for real-time conversation updates (Admin)
-// GET /api/chat/conversations/:conversationId/stream
-router.get("/chat/conversations/:conversationId/stream", (req, res) => {
-    const { conversationId } = req.params;
-
-    res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
-    res.flushHeaders();
-
-    const onNewMessage = (data: any) => {
-        if (data.conversationId === conversationId) {
-            res.write(`data: ${JSON.stringify(data)}\n\n`);
-        }
-    };
-
-    conversationEvents.on("new_message", onNewMessage);
-
-    req.on("close", () => {
-        conversationEvents.off("new_message", onNewMessage);
-    });
 });
 
 export default router;

@@ -34,6 +34,26 @@ interface SeedData {
     }>;
 }
 
+let seedInitializationPromise: Promise<void> | null = null;
+
+function parseBooleanEnv(value: string | undefined): boolean | undefined {
+    if (value == null) return undefined;
+
+    const normalized = value.trim().toLowerCase();
+    if (["1", "true", "yes", "on"].includes(normalized)) return true;
+    if (["0", "false", "no", "off"].includes(normalized)) return false;
+    return undefined;
+}
+
+export function shouldSeedOnStartup(): boolean {
+    const explicit = parseBooleanEnv(process.env.SEED_ON_STARTUP);
+    if (explicit !== undefined) {
+        return explicit;
+    }
+
+    return process.env.NODE_ENV !== "production" && !process.env.VERCEL;
+}
+
 function loadSeedData(): SeedData | null {
     try {
         if (!fs.existsSync(SEED_DATA_PATH)) {
@@ -103,4 +123,24 @@ export async function seedDatabase() {
     }
 
     console.log(`[Seed] Seeding complete: ${seedData.categories.length} categories created`);
+}
+
+export async function runSeedData(): Promise<void> {
+    await seedDatabase();
+    await seedFaqs();
+}
+
+export async function initializeSeedData(): Promise<void> {
+    if (!shouldSeedOnStartup()) {
+        console.log('[Seed] Startup seeding disabled for this environment');
+        return;
+    }
+
+    if (!seedInitializationPromise) {
+        seedInitializationPromise = runSeedData().finally(() => {
+            seedInitializationPromise = null;
+        });
+    }
+
+    await seedInitializationPromise;
 }

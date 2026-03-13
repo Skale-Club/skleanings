@@ -1,6 +1,6 @@
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
     ResizableHandle,
     ResizablePanel,
@@ -21,6 +21,9 @@ interface AdminChatLayoutProps {
     getAccessToken: () => Promise<string | null>;
 }
 
+const MESSAGE_REFRESH_INTERVAL_MS = 15000;
+const CONVERSATION_REFRESH_INTERVAL_MS = 30000;
+
 export function AdminChatLayout({ getAccessToken }: AdminChatLayoutProps) {
     const { toast } = useToast();
     const queryClient = useQueryClient();
@@ -30,6 +33,33 @@ export function AdminChatLayout({ getAccessToken }: AdminChatLayoutProps) {
     const [isMobileListVisible, setIsMobileListVisible] = useState(true);
     const [settingsPanelWidth, setSettingsPanelWidth] = useState(600);
     const [isResizing, setIsResizing] = useState(false);
+
+    const loadMessages = useCallback(async (
+        id: string,
+        options: { silent?: boolean; showError?: boolean } = {}
+    ) => {
+        const { silent = false, showError = true } = options;
+        if (!silent) {
+            setIsMessagesLoading(true);
+        }
+
+        try {
+            const token = await getAccessToken();
+            if (!token) throw new Error("Authentication required");
+            const url = `/api/chat/conversations/${id}/messages?includeInternal=true`;
+            const res = await authenticatedRequest('GET', url, token);
+            const data = await res.json();
+            setMessages(data.messages || []);
+        } catch (error: any) {
+            if (showError) {
+                toast({ title: 'Failed to load conversation', description: error.message, variant: 'destructive' });
+            }
+        } finally {
+            if (!silent) {
+                setIsMessagesLoading(false);
+            }
+        }
+    }, [getAccessToken, toast]);
 
     // Queries
     const { data: conversations, isLoading: loadingConversations, refetch: refetchConversations } = useQuery<ConversationSummary[]>({
@@ -43,7 +73,14 @@ export function AdminChatLayout({ getAccessToken }: AdminChatLayoutProps) {
             if (!res.ok) throw new Error('Failed to fetch conversations');
             return res.json();
         },
-        refetchInterval: 10000,
+        refetchInterval: () => {
+            if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+                return false;
+            }
+            return selectedConversationId ? MESSAGE_REFRESH_INTERVAL_MS : CONVERSATION_REFRESH_INTERVAL_MS;
+        },
+        refetchOnWindowFocus: false,
+        refetchIntervalInBackground: false,
     });
 
     const { data: settings, isLoading: loadingSettings } = useQuery<ChatSettingsData>({
@@ -85,56 +122,26 @@ export function AdminChatLayout({ getAccessToken }: AdminChatLayoutProps) {
     // Effects
     useEffect(() => {
         if (selectedConversationId) {
-            loadMessages(selectedConversationId);
+            void loadMessages(selectedConversationId);
             setIsMobileListVisible(false);
         } else {
             setMessages([]);
             setIsMobileListVisible(true);
         }
-    }, [selectedConversationId]);
+    }, [loadMessages, selectedConversationId]);
 
-    // Real-time updates (SSE)
     useEffect(() => {
         if (!selectedConversationId) return;
 
-        const eventSource = new EventSource(`/api/chat/conversations/${selectedConversationId}/stream`);
-
-        eventSource.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                if (data.type === 'new_message' && data.message) {
-                    setMessages((prev) => {
-                        if (prev.some((m) => m.id === data.message.id)) return prev;
-                        return [...prev, data.message];
-                    });
-                    // Update conversation in list if needed (e.g. lastMessage)
-                    queryClient.invalidateQueries({ queryKey: ['/api/chat/conversations'] });
-                }
-            } catch (err) {
-                console.error('SSE parse error:', err);
+        const intervalId = window.setInterval(() => {
+            if (document.visibilityState !== "visible") {
+                return;
             }
-        };
+            void loadMessages(selectedConversationId, { silent: true, showError: false });
+        }, MESSAGE_REFRESH_INTERVAL_MS);
 
-        return () => eventSource.close();
-    }, [selectedConversationId, queryClient]);
-
-
-    // Actions
-    const loadMessages = async (id: string) => {
-        setIsMessagesLoading(true);
-        try {
-            const token = await getAccessToken();
-            if (!token) throw new Error("Authentication required");
-            const url = `/api/chat/conversations/${id}/messages?includeInternal=true`;
-            const res = await authenticatedRequest('GET', url, token);
-            const data = await res.json();
-            setMessages(data.messages || []);
-        } catch (error: any) {
-            toast({ title: 'Failed to load conversation', description: error.message, variant: 'destructive' });
-        } finally {
-            setIsMessagesLoading(false);
-        }
-    };
+        return () => window.clearInterval(intervalId);
+    }, [loadMessages, selectedConversationId]);
 
     const handleSendMessage = async (content: string) => {
         if (!selectedConversationId) return;
@@ -159,8 +166,10 @@ export function AdminChatLayout({ getAccessToken }: AdminChatLayoutProps) {
                 token,
                 { content, role: 'assistant' }
             );
-            // Real message will come via SSE or next fetch, but we can invalidate to be sure
-            queryClient.invalidateQueries({ queryKey: ['/api/chat/conversations'] });
+            await Promise.all([
+                loadMessages(selectedConversationId, { silent: true, showError: false }),
+                refetchConversations(),
+            ]);
         } catch (error: any) {
             setMessages(prev => prev.filter(m => m.id !== tempId)); // Rollback
             toast({ title: 'Failed to send message', description: error.message, variant: 'destructive' });
@@ -172,12 +181,7 @@ export function AdminChatLayout({ getAccessToken }: AdminChatLayoutProps) {
             const token = await getAccessToken();
             if (!token) return;
             await authenticatedRequest('POST', `/api/chat/conversations/${id}/status`, token, { status });
-            queryClient.invalidateQueries({ queryKey: ['/api/chat/conversations'] });
-
-            if (selectedConversationId === id) {
-                // Optimistically update local state if selected
-                // But query invalidation should handle it
-            }
+            await refetchConversations();
         } catch (error: any) {
             toast({ title: 'Failed to update status', description: error.message, variant: 'destructive' });
         }
@@ -188,7 +192,7 @@ export function AdminChatLayout({ getAccessToken }: AdminChatLayoutProps) {
             const token = await getAccessToken();
             if (!token) throw new Error("Authentication required");
             await authenticatedRequest('DELETE', `/api/chat/conversations/${id}`, token);
-            queryClient.invalidateQueries({ queryKey: ['/api/chat/conversations'] });
+            await refetchConversations();
             if (selectedConversationId === id) {
                 setSelectedConversationId(null);
             }

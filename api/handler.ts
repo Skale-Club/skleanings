@@ -1,6 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "../server/routes";
 import { serveStatic } from "../server/static";
+import { initializeSeedData } from "../server/lib/seeds";
+import { storage } from "../server/storage";
 import { createServer } from "http";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
@@ -63,27 +65,39 @@ app.use((req, res, next) => {
 });
 
 let isInitialized = false;
+let initializationPromise: Promise<void> | null = null;
 
 async function initializeApp() {
   if (isInitialized) return;
+  if (initializationPromise) return initializationPromise;
 
-  const httpServer = createServer(app);
+  initializationPromise = (async () => {
+    const httpServer = createServer(app);
 
-  await registerRoutes(httpServer, app);
+    await storage.initializeRuntimeState();
+    await initializeSeedData();
+    await registerRoutes(httpServer, app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || "Internal Server Error";
 
-    res.status(status).json({ message });
-    console.error(err);
-  });
+      res.status(status).json({ message });
+      console.error(err);
+    });
 
-  // Serve static files in production
-  serveStatic(app);
+    // Serve static files in production
+    serveStatic(app);
 
-  isInitialized = true;
-  log("App initialized for Vercel");
+    isInitialized = true;
+    log("App initialized for Vercel");
+  })();
+
+  try {
+    await initializationPromise;
+  } finally {
+    initializationPromise = null;
+  }
 }
 
 // Vercel serverless handler

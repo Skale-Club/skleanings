@@ -28,7 +28,6 @@ type ChatConfig = {
   agentAvatarUrl?: string;
   companyLogo?: string;
   fallbackAvatarUrl?: string;
-  companyLogo?: string;
   welcomeMessage: string;
   languageSelectorEnabled?: boolean;
   defaultLanguage?: string;
@@ -161,6 +160,7 @@ export function ChatWidget() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
+  const loadedHistoryConversationIdRef = useRef<string | null>(null);
 
   const { data: config } = useQuery<ChatConfig>({
     queryKey: ["/api/chat/config"],
@@ -169,6 +169,10 @@ export function ChatWidget() {
       if (!res.ok) throw new Error("Failed to load chat config");
       return res.json();
     },
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
+    refetchOnWindowFocus: false,
+    retry: false,
   });
 
   useEffect(() => {
@@ -191,11 +195,23 @@ export function ChatWidget() {
   }, []);
 
   useEffect(() => {
-    if (conversationId) {
-      localStorage.setItem(STORAGE_KEY, conversationId);
-      setCookie(COOKIE_KEY, conversationId, COOKIE_MAX_AGE);
-      setLoadingHistory(true);
-      fetch(`/api/chat/conversations/${conversationId}/messages?limit=50`, { credentials: "include" })
+    if (!conversationId) {
+      loadedHistoryConversationIdRef.current = null;
+      return;
+    }
+
+    localStorage.setItem(STORAGE_KEY, conversationId);
+    setCookie(COOKIE_KEY, conversationId, COOKIE_MAX_AGE);
+  }, [conversationId]);
+
+  useEffect(() => {
+    if (!conversationId || !isOpen || loadedHistoryConversationIdRef.current === conversationId) {
+      return;
+    }
+
+    loadedHistoryConversationIdRef.current = conversationId;
+    setLoadingHistory(true);
+    fetch(`/api/chat/conversations/${conversationId}/messages?limit=50`, { credentials: "include" })
         .then(async (res) => {
           if (!res.ok) return;
           const data = await res.json();
@@ -245,8 +261,7 @@ export function ChatWidget() {
           }
         })
         .finally(() => setLoadingHistory(false));
-    }
-  }, [conversationId, config?.welcomeMessage]);
+  }, [conversationId, config?.welcomeMessage, isOpen]);
 
   useEffect(() => {
     if (isOpen && config?.welcomeMessage && messages.length === 0) {
@@ -350,6 +365,7 @@ export function ChatWidget() {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(LOCAL_MESSAGES_KEY);
     removeCookie(COOKIE_KEY);
+    loadedHistoryConversationIdRef.current = null;
     setConversationId(null);
     setMessages([]);
     setLimitReached(false);

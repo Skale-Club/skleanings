@@ -2,7 +2,6 @@
 // Force restart: schema updated
 import type { Express } from "express";
 import { type Server } from "http";
-import { seedDatabase, seedFaqs } from "./lib/seeds";
 
 // Import routers
 import chatRouter from "./routes/chat";
@@ -52,8 +51,4 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // Service Area routes (mounted at /api/service-areas)
   app.use("/api/service-areas", serviceAreasRouter);
-
-  // Seed Data
-  await seedDatabase();
-  await seedFaqs();
 }

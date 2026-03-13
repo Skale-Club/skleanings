@@ -64,10 +64,12 @@ To use custom seed data for a different tenant or industry:
 
 ## How Seeding Works
 
-1. **On server startup**, `server/routes.ts` calls `seedDatabase()` and `seedFaqs()`
-2. **If data already exists** in the database, seeding is skipped
-3. **If seed file is missing**, a warning is logged and seeding is skipped
-4. **If seed file is invalid**, an error is logged and seeding is skipped
+1. **On local development startup**, seeding runs automatically by default
+2. **In production/serverless**, startup seeding is disabled unless `SEED_ON_STARTUP=true`
+3. **If data already exists** in the database, seeding is skipped
+4. **If seed file is missing**, a warning is logged and seeding is skipped
+5. **If seed file is invalid**, an error is logged and seeding is skipped
+6. **Manual seeding** is available with `npm run db:seed`
 
 ## Multi-Tenant SaaS Usage
 
@@ -88,6 +90,14 @@ To deploy without seed data (e.g., for a fresh SaaS instance):
    ```
 
 2. Or delete/rename `server/lib/seed-data.json`
+
+## Forcing Seed on Startup
+
+If you explicitly want runtime startup seeding outside local development:
+
+```bash
+SEED_ON_STARTUP=true
+```
 
 ## Example: Pet Grooming Service
 
