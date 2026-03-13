@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import OpenAI from "openai";
 import crypto from "crypto";
+import { ChatError, isChatError } from "../../lib/chat-errors";
 import { chatDeps } from "./dependencies";
 import { conversationEvents } from "../../lib/chat-events";
 import { getTodayStr } from "../../lib/availability";
@@ -71,6 +72,18 @@ const chatMessageSchema = z.object({
     visitorPhone: z.string().optional(),
     language: z.string().optional(),
 });
+
+function respondWithChatError(
+    res: Response,
+    error: ChatError,
+    extra: Record<string, unknown> = {}
+) {
+    return res.status(error.statusCode).json({
+        message: error.message,
+        code: error.code,
+        ...extra,
+    });
+}
 
 function isUrlExcluded(url: string, rules: UrlRule[]): boolean {
     if (!url || !rules.length) return false;
@@ -261,25 +274,35 @@ export async function handleMessage(req: Request, res: Response) {
     try {
         const parsed = chatMessageSchema.safeParse(req.body);
         if (!parsed.success) {
-            return res.status(400).json({ message: 'Invalid input', errors: parsed.error.errors });
+            return respondWithChatError(
+                res,
+                new ChatError('bad_request:api', 'Invalid input'),
+                { errors: parsed.error.errors }
+            );
         }
         const input = parsed.data;
 
         const ipKey = (req.ip || 'unknown').toString();
         const rateLimitKey = `${ipKey}:${input.conversationId || "new"}`;
         if (isRateLimited(rateLimitKey)) {
-            return res.status(429).json({ message: 'Too many requests, please slow down.' });
+            return respondWithChatError(res, new ChatError('rate_limit:chat'));
         }
 
         const settings = await chatDeps.storage.getChatSettings();
         const excludedRules = (settings.excludedUrlRules as UrlRule[]) || [];
 
         if (!settings.enabled) {
-            return res.status(503).json({ message: 'Chat is currently disabled.' });
+            return respondWithChatError(
+                res,
+                new ChatError('provider:unavailable', 'Chat is currently disabled.')
+            );
         }
 
         if (isUrlExcluded(input.pageUrl || '', excludedRules)) {
-            return res.status(403).json({ message: 'Chat is not available on this page.' });
+            return respondWithChatError(
+                res,
+                new ChatError('forbidden:chat', 'Chat is not available on this page.')
+            );
         }
 
         const [openaiIntegration, geminiIntegration, openrouterIntegration] = await Promise.all([
@@ -306,9 +329,13 @@ export async function handleMessage(req: Request, res: Response) {
 
         const integration = activeProvider ? integrationsByProvider[activeProvider] : null;
         if (!activeProvider || !integration) {
-            return res.status(503).json({
-                message: "No AI integration is enabled. Please enable OpenAI, Gemini, or OpenRouter in Admin -> Integrations.",
-            });
+            return respondWithChatError(
+                res,
+                new ChatError(
+                    'provider:unavailable',
+                    "No AI integration is enabled. Please enable OpenAI, Gemini, or OpenRouter in Admin -> Integrations."
+                )
+            );
         }
 
         let apiKey = "";
@@ -322,9 +349,13 @@ export async function handleMessage(req: Request, res: Response) {
 
         if (!apiKey) {
             const providerName = activeProvider === "openai" ? "OpenAI" : activeProvider === "gemini" ? "Gemini" : "OpenRouter";
-            return res.status(503).json({
-                message: `${providerName} API key is missing. Please configure it in Admin -> Integrations.`,
-            });
+            return respondWithChatError(
+                res,
+                new ChatError(
+                    'provider:unavailable',
+                    `${providerName} API key is missing. Please configure it in Admin -> Integrations.`
+                )
+            );
         }
 
         const model =
@@ -410,10 +441,11 @@ export async function handleMessage(req: Request, res: Response) {
         const existingMessages = await chatDeps.storage.getConversationMessages(conversationId);
         const userFacingMessages = existingMessages.filter(m => !(m.metadata as any)?.internal);
         if (userFacingMessages.length >= 100) {
-            return res.status(429).json({
-                message: 'This conversation has reached the message limit. Please start a new conversation.',
-                limitReached: true
-            });
+            return respondWithChatError(
+                res,
+                new ChatError('rate_limit:chat', 'This conversation has reached the message limit. Please start a new conversation.'),
+                { limitReached: true }
+            );
         }
 
         const visitorMessageId = crypto.randomUUID();
@@ -1063,7 +1095,10 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
                 ? chatDeps.getOpenRouterClient(apiKey)
                 : chatDeps.getOpenAIClient(apiKey);
         if (!aiClient) {
-            return res.status(503).json({ message: 'Chat is currently unavailable.' });
+            return respondWithChatError(
+                res,
+                new ChatError('provider:unavailable', 'Chat is currently unavailable.')
+            );
         }
 
         // Shared variables for downstream logic
@@ -1568,6 +1603,14 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
             bookingCompleted
         });
     } catch (err) {
-        res.status(500).json({ message: (err as Error).message });
+        if (isChatError(err)) {
+            return respondWithChatError(res, err);
+        }
+
+        console.error('[Chat] Unhandled route error:', err);
+        return respondWithChatError(
+            res,
+            new ChatError('internal:error')
+        );
     }
 }
