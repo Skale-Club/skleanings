@@ -982,7 +982,7 @@ router.get("/thumbtack/callback", async (req, res) => {
             });
         }
 
-        const baseUrl = process.env.SITE_URL || "https://skleanings.com";
+        const baseUrl = process.env.SITE_URL || "https://www.skleanings.com";
         const redirectUri = `${baseUrl}/api/integrations/thumbtack/callback`;
 
         const tokens = await exchangeCodeForTokens(
@@ -1033,7 +1033,7 @@ router.get("/thumbtack/authorize", requireAdmin, async (_req, res) => {
             });
         }
 
-        const baseUrl = process.env.SITE_URL || "https://skleanings.com";
+        const baseUrl = process.env.SITE_URL || "https://www.skleanings.com";
         const redirectUri = `${baseUrl}/api/integrations/thumbtack/callback`;
         const state = crypto.randomBytes(16).toString("hex");
 
