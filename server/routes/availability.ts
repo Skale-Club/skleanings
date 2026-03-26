@@ -31,7 +31,7 @@ router.get("/api/availability", async (req, res) => {
       totalDurationMinutes,
       useGhl,
       ghlSettings,
-      { timeZone, requireGhl: useGhl }
+      { timeZone, requireGhl: false }
     );
 
     const response = availableSlots.map((time) => ({ time, available: true }));
@@ -64,41 +64,51 @@ router.get("/api/availability/month", async (req, res) => {
       monthMap[dateKey] = false;
     }
 
+    let ghlSuccess = false;
+
     // Fast-path for GHL: one API call for the whole month instead of one call per day.
     if (useGhl && ghlSettings?.apiKey && ghlSettings.calendarId) {
-      const startDateObj = new Date(`${startDate}T00:00:00`);
-      const endDateObj = new Date(`${endDate}T23:59:59`);
-      const ghlSlotsResult = await getGHLFreeSlots(
-        ghlSettings.apiKey,
-        ghlSettings.calendarId,
-        startDateObj,
-        endDateObj,
-        timeZone
-      );
+      try {
+        const startDateObj = new Date(`${startDate}T00:00:00`);
+        const endDateObj = new Date(`${endDate}T23:59:59`);
+        const ghlSlotsResult = await getGHLFreeSlots(
+          ghlSettings.apiKey,
+          ghlSettings.calendarId,
+          startDateObj,
+          endDateObj,
+          timeZone
+        );
 
-      if (!ghlSlotsResult.success) {
-        throw new Error(ghlSlotsResult.message || "Failed to fetch monthly availability from GoHighLevel");
-      }
-
-      const availableDates = new Set<string>();
-      for (const slot of ghlSlotsResult.slots || []) {
-        const start = slot?.startTime;
-        if (typeof start !== "string") continue;
-        if (start.length >= 10) {
-          const datePart = start.slice(0, 10);
-          if (datePart.startsWith(`${year}-${monthStr}-`)) {
-            availableDates.add(datePart);
+        if (ghlSlotsResult.success && ghlSlotsResult.slots) {
+          const availableDates = new Set<string>();
+          for (const slot of ghlSlotsResult.slots) {
+            const start = slot?.startTime;
+            if (typeof start !== "string") continue;
+            if (start.length >= 10) {
+              const datePart = start.slice(0, 10);
+              if (datePart.startsWith(`${year}-${monthStr}-`)) {
+                availableDates.add(datePart);
+              }
+            }
           }
-        }
-      }
 
-      for (const dateKey of Object.keys(monthMap)) {
-        monthMap[dateKey] = availableDates.has(dateKey);
+          for (const dateKey of Object.keys(monthMap)) {
+            monthMap[dateKey] = availableDates.has(dateKey);
+          }
+          ghlSuccess = true;
+        } else {
+          console.error('[GHL] Failed to fetch monthly availability:', ghlSlotsResult.message);
+        }
+      } catch (error) {
+        console.error('[GHL] Error fetching monthly availability:', (error as Error).message);
       }
-    } else {
+    }
+
+    // Fall back to local availability if GHL is not enabled or failed
+    if (!ghlSuccess) {
       const slotMap = await getAvailabilityRange(startDate, endDate, totalDurationMinutes, {
-        useGhl,
-        ghlSettings,
+        useGhl: false,
+        ghlSettings: null,
         requireGhl: false,
         timeZone,
       });
