@@ -15,14 +15,24 @@ const router = Router();
 
 // Categories
 router.get(api.categories.list.path, async (req, res) => {
-    const categories = await storage.getCategories();
-    res.json(categories);
+    try {
+        const categories = await storage.getCategories();
+        res.json(categories);
+    } catch (err) {
+        console.error("[catalog] Failed to load categories. Check DB schema/migrations.", err);
+        res.json([]);
+    }
 });
 
 router.get(api.categories.get.path, async (req, res) => {
-    const category = await storage.getCategoryBySlug(req.params.slug);
-    if (!category) return res.status(404).json({ message: "Category not found" });
-    res.json(category);
+    try {
+        const category = await storage.getCategoryBySlug(req.params.slug);
+        if (!category) return res.status(404).json({ message: "Category not found" });
+        res.json(category);
+    } catch (err) {
+        console.error("[catalog] Failed to load category by slug. Check DB schema/migrations.", err);
+        res.status(500).json({ message: (err as Error).message });
+    }
 });
 
 // Admin Category CRUD (protected routes)
@@ -83,9 +93,14 @@ router.delete('/api/categories/:id', requireAdmin, async (req, res) => {
 
 // Subcategories
 router.get('/api/subcategories', async (req, res) => {
-    const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
-    const subcategories = await storage.getSubcategories(categoryId);
-    res.json(subcategories);
+    try {
+        const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
+        const subcategories = await storage.getSubcategories(categoryId);
+        res.json(subcategories);
+    } catch (err) {
+        console.error("[catalog] Failed to load subcategories. Check DB schema/migrations.", err);
+        res.json([]);
+    }
 });
 
 router.post('/api/subcategories', requireAdmin, async (req, res) => {
@@ -125,13 +140,18 @@ router.delete('/api/subcategories/:id', requireAdmin, async (req, res) => {
 
 // Services
 router.get(api.services.list.path, async (req, res) => {
-    const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
-    const subcategoryId = req.query.subcategoryId ? Number(req.query.subcategoryId) : undefined;
-    const includeHidden = req.query.includeHidden === 'true';
-    // When not including hidden (admin view), only show services that should appear on landing page
-    const showOnLanding = includeHidden ? undefined : true;
-    const services = await storage.getServices(categoryId, subcategoryId, includeHidden, showOnLanding);
-    res.json(services);
+    try {
+        const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
+        const subcategoryId = req.query.subcategoryId ? Number(req.query.subcategoryId) : undefined;
+        const includeHidden = req.query.includeHidden === 'true';
+        // When not including hidden (admin view), only show services that should appear on landing page
+        const showOnLanding = includeHidden ? undefined : true;
+        const services = await storage.getServices(categoryId, subcategoryId, includeHidden, showOnLanding);
+        res.json(services);
+    } catch (err) {
+        console.error("[catalog] Failed to load services. Check DB schema/migrations.", err);
+        res.json([]);
+    }
 });
 
 // Admin Service CRUD (protected routes)
@@ -204,8 +224,13 @@ router.delete('/api/services/:id', requireAdmin, async (req, res) => {
 
 // Service Addons
 router.get('/api/services/:id/addons', async (req, res) => {
-    const addons = await storage.getServiceAddons(Number(req.params.id));
-    res.json(addons);
+    try {
+        const addons = await storage.getServiceAddons(Number(req.params.id));
+        res.json(addons);
+    } catch (err) {
+        console.error("[catalog] Failed to load service addons. Check DB schema/migrations.", err);
+        res.json([]);
+    }
 });
 
 router.put('/api/services/:id/addons', requireAdmin, async (req, res) => {
@@ -222,8 +247,12 @@ router.put('/api/services/:id/addons', requireAdmin, async (req, res) => {
 });
 
 router.get('/api/service-addons', requireAdmin, async (req, res) => {
-    const relationships = await storage.getAddonRelationships();
-    res.json(relationships);
+    try {
+        const relationships = await storage.getAddonRelationships();
+        res.json(relationships);
+    } catch (err) {
+        res.status(500).json({ message: (err as Error).message });
+    }
 });
 
 // Service Options (for base_plus_addons pricing)
@@ -232,7 +261,8 @@ router.get('/api/services/:id/options', async (req, res) => {
         const options = await storage.getServiceOptions(Number(req.params.id));
         res.json(options);
     } catch (err) {
-        res.status(500).json({ message: (err as Error).message });
+        console.error("[catalog] Failed to load service options. Check DB schema/migrations.", err);
+        res.json([]);
     }
 });
 
@@ -261,7 +291,8 @@ router.get('/api/services/:id/frequencies', async (req, res) => {
         const frequencies = await storage.getServiceFrequencies(Number(req.params.id));
         res.json(frequencies);
     } catch (err) {
-        res.status(500).json({ message: (err as Error).message });
+        console.error("[catalog] Failed to load service frequencies. Check DB schema/migrations.", err);
+        res.json([]);
     }
 });
 

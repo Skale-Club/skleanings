@@ -3,9 +3,61 @@ import { z } from "zod";
 import { storage } from "../storage";
 import { requireAdmin, supabase } from "../lib/auth";
 import { storageService } from "../services/storage";
-import { insertCompanySettingsSchema } from "@shared/schema";
+import { DEFAULT_BUSINESS_HOURS, insertCompanySettingsSchema, type CompanySettings } from "@shared/schema";
+import { sanitizeHomepageContent } from "../lib/sanitize";
 
 const router = Router();
+
+function sanitizeCompanySettingsResponse(settings: CompanySettings | null): CompanySettings | null {
+  if (!settings) return null;
+  return {
+    ...settings,
+    homepageContent: sanitizeHomepageContent(settings.homepageContent),
+  };
+}
+
+const publicCompanySettingsFallback = {
+    companyName: "",
+    companyEmail: "",
+    companyPhone: "",
+    companyAddress: "",
+    workingHoursStart: "08:00",
+    workingHoursEnd: "18:00",
+    logoMain: "",
+    logoDark: "",
+    logoIcon: "",
+    sectionsOrder: [],
+    socialLinks: [],
+    mapEmbedUrl: "",
+    heroTitle: "",
+    heroSubtitle: "",
+    heroImageUrl: "",
+    ctaText: "Book Now",
+    timeFormat: "12h",
+    timeZone: "America/New_York",
+    businessHours: DEFAULT_BUSINESS_HOURS,
+    minimumBookingValue: "0",
+    seoTitle: "",
+    seoDescription: "",
+    seoKeywords: "",
+    seoAuthor: "",
+    seoCanonicalUrl: "",
+    seoRobotsTag: "index, follow",
+    ogImage: "",
+    ogType: "website",
+    ogSiteName: "",
+    twitterCard: "summary_large_image",
+    twitterSite: "",
+    twitterCreator: "",
+    schemaLocalBusiness: {},
+    gtmContainerId: "",
+    ga4MeasurementId: "",
+    facebookPixelId: "",
+    gtmEnabled: false,
+    ga4Enabled: false,
+    facebookPixelEnabled: false,
+    homepageContent: {},
+};
 
 // Upload endpoint using Supabase Storage
 router.post("/upload", requireAdmin, async (req, res) => {
@@ -38,9 +90,10 @@ router.post("/upload", requireAdmin, async (req, res) => {
 router.get('/api/company-settings', async (req, res) => {
     try {
         const settings = await storage.getCompanySettings();
-        res.json(settings);
+        res.json(sanitizeCompanySettingsResponse(settings));
     } catch (err) {
-        res.status(500).json({ message: (err as Error).message });
+        console.error("[company] Failed to load company settings. Check DB schema/migrations.", err);
+        res.json(publicCompanySettingsFallback);
     }
 });
 
@@ -48,7 +101,7 @@ router.put('/api/company-settings', requireAdmin, async (req, res) => {
     try {
         const validatedData = insertCompanySettingsSchema.partial().parse(req.body);
         const settings = await storage.updateCompanySettings(validatedData);
-        res.json(settings);
+        res.json(sanitizeCompanySettingsResponse(settings));
     } catch (err) {
         if (err instanceof z.ZodError) {
             return res.status(400).json({ message: 'Validation error', errors: err.errors });

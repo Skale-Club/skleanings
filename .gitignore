@@ -55,6 +55,7 @@ coverage/
 
 # Cache
 .cache/
+.npm-cache/
 .parcel-cache/
 .turbo/
 .eslintcache

@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { trackCTAClick, trackCallClick } from "@/lib/analytics";
 import { DEFAULT_HOMEPAGE_CONTENT } from "@/lib/homepageDefaults";
 import { ServiceCard } from "@/components/ui/ServiceCard";
+import { fetchJsonOrThrow } from "@/lib/queryClient";
 
 function BlogSection({ content }: { content: HomepageContent['blogSection'] }) {
   const sectionContent = {
@@ -21,7 +22,7 @@ function BlogSection({ content }: { content: HomepageContent['blogSection'] }) {
 
   const { data: posts, isLoading } = useQuery<BlogPost[]>({
     queryKey: ['/api/blog', 'published', 3, 0],
-    queryFn: () => fetch('/api/blog?status=published&limit=3&offset=0').then(r => r.json()),
+    queryFn: () => fetchJsonOrThrow<BlogPost[]>('/api/blog?status=published&limit=3&offset=0'),
   });
 
   useEffect(() => {
@@ -126,7 +127,7 @@ export default function Home() {
   const homepageContent = {
     ...DEFAULT_HOMEPAGE_CONTENT,
     ...(companySettings?.homepageContent || {}),
-    trustBadges: companySettings?.homepageContent?.trustBadges?.length
+    trustBadges: Array.isArray(companySettings?.homepageContent?.trustBadges) && companySettings.homepageContent.trustBadges.length > 0
       ? companySettings.homepageContent.trustBadges
       : DEFAULT_HOMEPAGE_CONTENT.trustBadges,
     categoriesSection: {
@@ -147,7 +148,7 @@ export default function Home() {
     },
   };
 
-  const trustBadges = homepageContent.trustBadges || [];
+  const trustBadges = Array.isArray(homepageContent.trustBadges) ? homepageContent.trustBadges : [];
   const badgeIconMap: Record<string, React.ComponentType<any>> = {
     star: Star,
     shield: Shield,

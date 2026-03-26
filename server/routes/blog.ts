@@ -58,7 +58,8 @@ router.get('/', async (req, res) => {
             res.json(posts);
         }
     } catch (err) {
-        res.status(500).json({ message: (err as Error).message });
+        console.error("[blog] Failed to load posts. Check DB schema/migrations.", err);
+        res.json([]);
     }
 });
 
@@ -67,7 +68,8 @@ router.get('/count', async (req, res) => {
         const count = await storage.countPublishedBlogPosts();
         res.json({ count });
     } catch (err) {
-        res.status(500).json({ message: (err as Error).message });
+        console.error("[blog] Failed to count posts. Check DB schema/migrations.", err);
+        res.json({ count: 0 });
     }
 });
 
@@ -182,7 +184,8 @@ router.get('/:id/services', async (req, res) => {
         const services = await storage.getBlogPostServices(Number(req.params.id));
         res.json(services);
     } catch (err) {
-        res.status(500).json({ message: (err as Error).message });
+        console.error("[blog] Failed to load related services. Check DB schema/migrations.", err);
+        res.json([]);
     }
 });
 
@@ -193,7 +196,8 @@ router.get('/:id/related', async (req, res) => {
         const posts = await storage.getRelatedBlogPosts(Number(req.params.id), limit);
         res.json(posts);
     } catch (err) {
-        res.status(500).json({ message: (err as Error).message });
+        console.error("[blog] Failed to load related posts. Check DB schema/migrations.", err);
+        res.json([]);
     }
 });
 

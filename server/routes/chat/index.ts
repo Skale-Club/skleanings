@@ -29,6 +29,18 @@ type PublicChatConfigResponse = {
 
 const PUBLIC_CHAT_CONFIG_TTL_MS = 5 * 60 * 1000;
 let publicChatConfigCache: { value: PublicChatConfigResponse; expiresAt: number } | null = null;
+const publicChatConfigFallback = {
+    enabled: false,
+    agentName: "Assistant",
+    welcomeMessage: "Hi! How can I help?",
+    agentAvatarUrl: "",
+    fallbackAvatarUrl: undefined,
+    companyLogo: undefined,
+    languageSelectorEnabled: false,
+    defaultLanguage: "en",
+    excludedUrlRules: [],
+    showInProd: false,
+} satisfies PublicChatConfigResponse;
 
 function clearPublicChatConfigCache() {
     publicChatConfigCache = null;
@@ -74,16 +86,8 @@ router.get("/chat/config", async (_req, res) => {
 
         if (!settings) {
             payload = {
-                enabled: false,
-                agentName: "Assistant",
-                welcomeMessage: "Hi! How can I help?",
-                agentAvatarUrl: "",
-                fallbackAvatarUrl: undefined,
+                ...publicChatConfigFallback,
                 companyLogo: companySettings?.logoIcon || undefined,
-                languageSelectorEnabled: false,
-                defaultLanguage: "en",
-                excludedUrlRules: [],
-                showInProd: false,
             };
         } else {
             // @ts-ignore - uiSettings structure mismatch with generated types
@@ -110,7 +114,9 @@ router.get("/chat/config", async (_req, res) => {
         setPublicChatConfigCacheHeaders(res);
         res.json(payload);
     } catch (err) {
-        res.status(500).json({ message: (err as Error).message });
+        console.error("[chat] Failed to load public chat config. Check DB schema/migrations.", err);
+        setPublicChatConfigCacheHeaders(res);
+        res.json(publicChatConfigFallback);
     }
 });
 

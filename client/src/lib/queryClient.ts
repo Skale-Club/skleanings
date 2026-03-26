@@ -22,6 +22,19 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+export async function fetchJsonOrThrow<T>(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<T> {
+  const res = await fetch(input, {
+    credentials: "include",
+    ...init,
+  });
+
+  await throwIfResNotOk(res);
+  return res.json() as Promise<T>;
+}
+
 export async function apiRequest(
   method: string,
   url: string,

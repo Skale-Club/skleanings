@@ -22,6 +22,7 @@ import type { BlogPost, Service, CompanySettings } from '@shared/schema';
 import { useCart } from '@/context/CartContext';
 import { useToast } from '@/hooks/use-toast';
 import { CartSummary } from '@/components/CartSummary';
+import { fetchJsonOrThrow } from '@/lib/queryClient';
 
 export default function BlogPostPage() {
   const params = useParams<{ slug: string }>();
@@ -38,13 +39,13 @@ export default function BlogPostPage() {
 
   const { data: relatedPosts } = useQuery<BlogPost[]>({
     queryKey: ['/api/blog', post?.id, 'related'],
-    queryFn: () => fetch(`/api/blog/${post?.id}/related?limit=1`).then(r => r.json()),
+    queryFn: () => fetchJsonOrThrow<BlogPost[]>(`/api/blog/${post?.id}/related?limit=1`),
     enabled: !!post?.id,
   });
 
   const { data: relatedServices } = useQuery<Service[]>({
     queryKey: ['/api/blog', post?.id, 'services'],
-    queryFn: () => fetch(`/api/blog/${post?.id}/services`).then(r => r.json()),
+    queryFn: () => fetchJsonOrThrow<Service[]>(`/api/blog/${post?.id}/services`),
     enabled: !!post?.id,
   });
 
