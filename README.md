@@ -58,11 +58,12 @@ ADMIN_PASSWORD_HASH=bcrypt-hashed-password
 ### GitHub Actions Keepalive
 
 The Supabase keepalive runs via GitHub Actions at `.github/workflows/supabase-keepalive.yml`.
-It connects directly to PostgreSQL/Supabase (no dependency on Vercel or app endpoints).
+It pings Supabase's REST API directly, without depending on Vercel or app endpoints.
 
 Configure these repository secrets:
 
-- `DATABASE_URL` - PostgreSQL connection string used for keepalive queries
+- `SUPABASE_URL` - Supabase project URL
+- `SUPABASE_ANON_KEY` - Supabase anon API key used for the keepalive probe
 
 ### Installation
 
