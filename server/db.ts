@@ -22,32 +22,22 @@ if (!DATABASE_URL) {
   );
 }
 
-const parsedUrl = new URL(DATABASE_URL);
-const isLocalhost = parsedUrl.hostname.includes('localhost') || parsedUrl.hostname.includes('127.0.0.1');
-const isSupabasePooler = parsedUrl.hostname.includes('pooler.supabase.com');
+const connectionString = DATABASE_URL.replace(/([?&])sslmode=[^&]*(&)?/gi, (_, prefix: string, suffix?: string) => {
+  if (prefix === "?" && suffix) {
+    return "?";
+  }
+
+  return "";
+}).replace(/[?&]$/, "");
 
 // Configurar pool com SSL explícito
-export const pool = new Pool(
-  isSupabasePooler
-    ? {
-        connectionString: DATABASE_URL,
-        ssl: { rejectUnauthorized: false },
-        max: isServerless ? 1 : 10,
-        idleTimeoutMillis: isServerless ? 5000 : 30000,
-        connectionTimeoutMillis: 30000,
-      }
-    : {
-        host: parsedUrl.hostname,
-        port: parsedUrl.port ? Number(parsedUrl.port) : 5432,
-        database: parsedUrl.pathname.replace(/^\//, ''),
-        user: decodeURIComponent(parsedUrl.username),
-        password: decodeURIComponent(parsedUrl.password),
-        ssl: { rejectUnauthorized: false },
-        max: isServerless ? 1 : 10,
-        idleTimeoutMillis: isServerless ? 5000 : 30000,
-        connectionTimeoutMillis: 30000,
-      }
-);
+export const pool = new Pool({
+  connectionString,
+  ssl: { rejectUnauthorized: false },
+  max: isServerless ? 1 : 10,
+  idleTimeoutMillis: isServerless ? 5000 : 30000,
+  connectionTimeoutMillis: 30000,
+});
 
 // Avoid process crashes on transient idle-client disconnects (e.g. ECONNRESET from pooler/network).
 pool.on("error", (error) => {
