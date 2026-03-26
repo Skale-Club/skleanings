@@ -10,31 +10,34 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Install PostgreSQL client
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client
-
-      - name: Run keepalive query directly on Supabase
+      - name: Write heartbeat via Supabase REST API
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           set -euo pipefail
 
-          if [ -z "${DATABASE_URL}" ]; then
-            echo "Missing required secret: DATABASE_URL"
+          if [ -z "${SUPABASE_URL}" ] || [ -z "${SUPABASE_SERVICE_ROLE_KEY}" ]; then
+            echo "Missing required secrets: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY"
             exit 1
           fi
 
-          psql "${DATABASE_URL}" -v ON_ERROR_STOP=1 <<'SQL'
-          select now();
+          RESPONSE_FILE="$(mktemp)"
+          STATUS=$(curl -sS -o "${RESPONSE_FILE}" -w "%{http_code}" \
+            -X POST \
+            -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            "${SUPABASE_URL}/rest/v1/system_heartbeats" \
+            -d '{"source":"github-actions-rest","note":"keepalive"}')
 
-          do $$
-          begin
-            if to_regclass('public.system_heartbeats') is not null then
-              insert into public.system_heartbeats (source, note)
-              values ('github-actions-direct', '');
-            end if;
-          end
-          $$;
-          SQL
+          echo "Response status: ${STATUS}"
+
+          if [ "${STATUS}" != "201" ]; then
+            echo "Unexpected status code: ${STATUS}"
+            cat "${RESPONSE_FILE}"
+            exit 1
+          fi
+
+          echo "Heartbeat written successfully."
