@@ -5,6 +5,7 @@ import { requireAdmin, supabase } from "../lib/auth";
 import { storageService } from "../services/storage";
 import { DEFAULT_BUSINESS_HOURS, insertCompanySettingsSchema, type CompanySettings } from "@shared/schema";
 import { sanitizeHomepageContent } from "../lib/sanitize";
+import { getFallbackCategories, getFallbackCompanySettings, getFallbackPublishedBlogPosts } from "../lib/public-data-fallback";
 
 const router = Router();
 
@@ -88,12 +89,28 @@ router.post("/upload", requireAdmin, async (req, res) => {
 
 // Company Settings (public GET, admin PUT)
 router.get('/api/company-settings', async (req, res) => {
+    if (process.env.VERCEL) {
+        try {
+            const fallbackSettings = await getFallbackCompanySettings();
+            return res.json(sanitizeCompanySettingsResponse(fallbackSettings) || publicCompanySettingsFallback);
+        } catch (fallbackErr) {
+            console.error("[company] Supabase fallback failed for company settings.", fallbackErr);
+            return res.json(publicCompanySettingsFallback);
+        }
+    }
+
     try {
         const settings = await storage.getCompanySettings();
         res.json(sanitizeCompanySettingsResponse(settings));
     } catch (err) {
         console.error("[company] Failed to load company settings. Check DB schema/migrations.", err);
-        res.json(publicCompanySettingsFallback);
+        try {
+            const fallbackSettings = await getFallbackCompanySettings();
+            res.json(sanitizeCompanySettingsResponse(fallbackSettings) || publicCompanySettingsFallback);
+        } catch (fallbackErr) {
+            console.error("[company] Supabase fallback failed for company settings.", fallbackErr);
+            res.json(publicCompanySettingsFallback);
+        }
     }
 });
 
@@ -113,7 +130,9 @@ router.put('/api/company-settings', requireAdmin, async (req, res) => {
 // Robots.txt endpoint
 router.get('/robots.txt', async (req, res) => {
     try {
-        const settings = await storage.getCompanySettings();
+        const settings = process.env.VERCEL
+            ? await getFallbackCompanySettings()
+            : await storage.getCompanySettings();
         const canonicalUrl = (settings?.seoCanonicalUrl || `https://${req.get('host')}`).replace(/\/$/, '');
 
         const robotsTxt = `User-agent: *
@@ -130,9 +149,21 @@ Sitemap: ${canonicalUrl}/sitemap.xml
 // Sitemap.xml endpoint
 router.get('/sitemap.xml', async (req, res) => {
     try {
-        const settings = await storage.getCompanySettings();
-        const categories = await storage.getCategories();
-        const blogPostsList = await storage.getPublishedBlogPosts(100, 0);
+        const settings = process.env.VERCEL
+            ? await getFallbackCompanySettings()
+            : await storage.getCompanySettings().catch(async (err) => {
+                console.error("[company] Primary company settings lookup failed for sitemap.", err);
+                return await getFallbackCompanySettings();
+            });
+        const categories = process.env.VERCEL
+            ? await getFallbackCategories()
+            : await storage.getCategories();
+        const blogPostsList = process.env.VERCEL
+            ? await getFallbackPublishedBlogPosts(100, 0)
+            : await storage.getPublishedBlogPosts(100, 0).catch(async (err) => {
+                console.error("[company] Primary blog lookup failed for sitemap.", err);
+                return await getFallbackPublishedBlogPosts(100, 0);
+            });
         // Remove trailing slash from canonical URL to prevent double slashes
         const baseUrl = (settings?.seoCanonicalUrl || `https://${req.get('host')}`).replace(/\/$/, '');
         const lastMod = new Date().toISOString().split('T')[0];

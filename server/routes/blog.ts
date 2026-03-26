@@ -5,6 +5,12 @@ import { storage } from "../storage";
 import { requireAdmin } from "../lib/auth";
 import { insertBlogPostSchema, insertBlogSettingsSchema } from "@shared/schema";
 import { BlogGenerator } from "../services/blog-generator";
+import {
+    getFallbackBlogPost,
+    getFallbackBlogPostServices,
+    getFallbackPublishedBlogPosts,
+    getFallbackRelatedBlogPosts,
+} from "../lib/public-data-fallback";
 
 const router = Router();
 
@@ -39,6 +45,27 @@ router.put('/settings', requireAdmin, async (req, res) => {
 
 // Blog Posts (public GET returns only published, admin can see all)
 router.get('/', async (req, res) => {
+    if (process.env.VERCEL) {
+        try {
+            const status = req.query.status as string | undefined;
+            const limit = req.query.limit ? Number(req.query.limit) : undefined;
+            const offset = req.query.offset ? Number(req.query.offset) : 0;
+
+            if (!status) {
+                return res.json(await getFallbackPublishedBlogPosts(limit ?? 100, offset));
+            }
+
+            if (status === 'published') {
+                return res.json(await getFallbackPublishedBlogPosts(limit ?? 10, offset));
+            }
+
+            return res.json([]);
+        } catch (fallbackErr) {
+            console.error("[blog] Supabase fallback failed for posts.", fallbackErr);
+            return res.json([]);
+        }
+    }
+
     try {
         const status = req.query.status as string | undefined;
         const limit = req.query.limit ? Number(req.query.limit) : undefined;
@@ -59,17 +86,50 @@ router.get('/', async (req, res) => {
         }
     } catch (err) {
         console.error("[blog] Failed to load posts. Check DB schema/migrations.", err);
-        res.json([]);
+        try {
+            const status = req.query.status as string | undefined;
+            const limit = req.query.limit ? Number(req.query.limit) : undefined;
+            const offset = req.query.offset ? Number(req.query.offset) : 0;
+
+            if (!status) {
+                return res.json(await getFallbackPublishedBlogPosts(limit ?? 100, offset));
+            }
+
+            if (status === 'published') {
+                return res.json(await getFallbackPublishedBlogPosts(limit ?? 10, offset));
+            }
+
+            res.json([]);
+        } catch (fallbackErr) {
+            console.error("[blog] Supabase fallback failed for posts.", fallbackErr);
+            res.json([]);
+        }
     }
 });
 
 router.get('/count', async (req, res) => {
+    if (process.env.VERCEL) {
+        try {
+            const posts = await getFallbackPublishedBlogPosts(1000, 0);
+            return res.json({ count: posts.length });
+        } catch (fallbackErr) {
+            console.error("[blog] Supabase fallback failed for post count.", fallbackErr);
+            return res.json({ count: 0 });
+        }
+    }
+
     try {
         const count = await storage.countPublishedBlogPosts();
         res.json({ count });
     } catch (err) {
         console.error("[blog] Failed to count posts. Check DB schema/migrations.", err);
-        res.json({ count: 0 });
+        try {
+            const posts = await getFallbackPublishedBlogPosts(1000, 0);
+            res.json({ count: posts.length });
+        } catch (fallbackErr) {
+            console.error("[blog] Supabase fallback failed for post count.", fallbackErr);
+            res.json({ count: 0 });
+        }
     }
 });
 
@@ -153,6 +213,24 @@ router.put('/tags/:tag', requireAdmin, async (req, res) => {
 
 // Get single post by ID or slug - public only sees published posts
 router.get('/:idOrSlug', async (req, res) => {
+    if (process.env.VERCEL) {
+        try {
+            const param = req.params.idOrSlug;
+            const post = /^\d+$/.test(param)
+                ? await getFallbackBlogPost(Number(param))
+                : await getFallbackBlogPost(param);
+
+            if (!post || post.status !== 'published') {
+                return res.status(404).json({ message: 'Blog post not found' });
+            }
+
+            return res.json(post);
+        } catch (fallbackErr) {
+            console.error("[blog] Supabase fallback failed for single post.", fallbackErr);
+            return res.status(500).json({ message: 'Failed to load blog post' });
+        }
+    }
+
     try {
         const param = req.params.idOrSlug;
         let post;
@@ -175,29 +253,73 @@ router.get('/:idOrSlug', async (req, res) => {
 
         res.json(post);
     } catch (err) {
-        res.status(500).json({ message: (err as Error).message });
+        try {
+            const param = req.params.idOrSlug;
+            const post = /^\d+$/.test(param)
+                ? await getFallbackBlogPost(Number(param))
+                : await getFallbackBlogPost(param);
+
+            if (!post || post.status !== 'published') {
+                return res.status(404).json({ message: 'Blog post not found' });
+            }
+
+            res.json(post);
+        } catch (fallbackErr) {
+            console.error("[blog] Supabase fallback failed for single post.", fallbackErr);
+            res.status(500).json({ message: (err as Error).message });
+        }
     }
 });
 
 router.get('/:id/services', async (req, res) => {
+    if (process.env.VERCEL) {
+        try {
+            return res.json(await getFallbackBlogPostServices(Number(req.params.id)));
+        } catch (fallbackErr) {
+            console.error("[blog] Supabase fallback failed for related services.", fallbackErr);
+            return res.json([]);
+        }
+    }
+
     try {
         const services = await storage.getBlogPostServices(Number(req.params.id));
         res.json(services);
     } catch (err) {
         console.error("[blog] Failed to load related services. Check DB schema/migrations.", err);
-        res.json([]);
+        try {
+            res.json(await getFallbackBlogPostServices(Number(req.params.id)));
+        } catch (fallbackErr) {
+            console.error("[blog] Supabase fallback failed for related services.", fallbackErr);
+            res.json([]);
+        }
     }
 });
 
 // Get related posts - only published posts
 router.get('/:id/related', async (req, res) => {
+    if (process.env.VERCEL) {
+        try {
+            const limit = req.query.limit ? Number(req.query.limit) : 4;
+            return res.json(await getFallbackRelatedBlogPosts(Number(req.params.id), limit));
+        } catch (fallbackErr) {
+            console.error("[blog] Supabase fallback failed for related posts.", fallbackErr);
+            return res.json([]);
+        }
+    }
+
     try {
         const limit = req.query.limit ? Number(req.query.limit) : 4;
         const posts = await storage.getRelatedBlogPosts(Number(req.params.id), limit);
         res.json(posts);
     } catch (err) {
         console.error("[blog] Failed to load related posts. Check DB schema/migrations.", err);
-        res.json([]);
+        try {
+            const limit = req.query.limit ? Number(req.query.limit) : 4;
+            res.json(await getFallbackRelatedBlogPosts(Number(req.params.id), limit));
+        } catch (fallbackErr) {
+            console.error("[blog] Supabase fallback failed for related posts.", fallbackErr);
+            res.json([]);
+        }
     }
 });
 

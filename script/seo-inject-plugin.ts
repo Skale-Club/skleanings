@@ -39,9 +39,51 @@ const DEFAULT_SEO: SEOData = {
 
 async function fetchSEOData(): Promise<SEOData> {
   const databaseUrl = process.env.DATABASE_URL;
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
+
+  if (supabaseUrl && supabaseKey) {
+    try {
+      const response = await fetch(
+        `${supabaseUrl}/rest/v1/company_settings?select=seo_title,seo_description,og_image,logo_icon,company_name,company_phone,company_email,company_address,seo_canonical_url,seo_robots_tag,og_type,og_site_name,twitter_card,twitter_site,twitter_creator&limit=1`,
+        {
+          headers: {
+            apikey: supabaseKey,
+            Authorization: `Bearer ${supabaseKey}`,
+          },
+        },
+      );
+
+      if (response.ok) {
+        const rows = await response.json() as Array<Record<string, string | null>>;
+        if (rows.length > 0) {
+          const row = rows[0];
+          return {
+            title: row.seo_title || '',
+            description: row.seo_description || '',
+            ogImage: row.og_image || null,
+            logoIcon: row.logo_icon || null,
+            companyName: row.company_name || '',
+            companyPhone: row.company_phone || null,
+            companyEmail: row.company_email || null,
+            companyAddress: row.company_address || null,
+            canonicalUrl: row.seo_canonical_url || null,
+            robotsTag: row.seo_robots_tag || 'index, follow',
+            ogType: row.og_type || 'website',
+            ogSiteName: row.og_site_name || null,
+            twitterCard: row.twitter_card || 'summary_large_image',
+            twitterSite: row.twitter_site || null,
+            twitterCreator: row.twitter_creator || null,
+          };
+        }
+      }
+    } catch {
+      // Fall through to database/default behavior.
+    }
+  }
 
   if (!databaseUrl) {
-    console.warn('[SEO Inject] DATABASE_URL not set, using empty defaults');
+    console.log('[SEO Inject] DATABASE_URL not set, using defaults');
     return DEFAULT_SEO;
   }
 
@@ -93,7 +135,7 @@ async function fetchSEOData(): Promise<SEOData> {
       twitterCreator: row.twitter_creator || null,
     };
   } catch (error) {
-    console.error('[SEO Inject] Failed to fetch SEO data:', error);
+    console.log('[SEO Inject] Database SEO lookup unavailable, using defaults');
     return DEFAULT_SEO;
   } finally {
     await pool.end();

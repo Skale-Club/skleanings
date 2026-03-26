@@ -10,17 +10,36 @@ import {
     insertServiceSchema
 } from "@shared/schema";
 import { invalidateChatCache } from "./chat/tools";
+import {
+    getFallbackCategories,
+    getFallbackServices,
+    getFallbackSubcategories,
+} from "../lib/public-data-fallback";
 
 const router = Router();
 
 // Categories
 router.get(api.categories.list.path, async (req, res) => {
+    if (process.env.VERCEL) {
+        try {
+            return res.json(await getFallbackCategories());
+        } catch (fallbackErr) {
+            console.error("[catalog] Supabase fallback failed for categories.", fallbackErr);
+            return res.json([]);
+        }
+    }
+
     try {
         const categories = await storage.getCategories();
         res.json(categories);
     } catch (err) {
         console.error("[catalog] Failed to load categories. Check DB schema/migrations.", err);
-        res.json([]);
+        try {
+            res.json(await getFallbackCategories());
+        } catch (fallbackErr) {
+            console.error("[catalog] Supabase fallback failed for categories.", fallbackErr);
+            res.json([]);
+        }
     }
 });
 
@@ -93,13 +112,29 @@ router.delete('/api/categories/:id', requireAdmin, async (req, res) => {
 
 // Subcategories
 router.get('/api/subcategories', async (req, res) => {
+    if (process.env.VERCEL) {
+        try {
+            const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
+            return res.json(await getFallbackSubcategories(categoryId));
+        } catch (fallbackErr) {
+            console.error("[catalog] Supabase fallback failed for subcategories.", fallbackErr);
+            return res.json([]);
+        }
+    }
+
     try {
         const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
         const subcategories = await storage.getSubcategories(categoryId);
         res.json(subcategories);
     } catch (err) {
         console.error("[catalog] Failed to load subcategories. Check DB schema/migrations.", err);
-        res.json([]);
+        try {
+            const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
+            res.json(await getFallbackSubcategories(categoryId));
+        } catch (fallbackErr) {
+            console.error("[catalog] Supabase fallback failed for subcategories.", fallbackErr);
+            res.json([]);
+        }
     }
 });
 
@@ -140,6 +175,19 @@ router.delete('/api/subcategories/:id', requireAdmin, async (req, res) => {
 
 // Services
 router.get(api.services.list.path, async (req, res) => {
+    if (process.env.VERCEL) {
+        try {
+            const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
+            const subcategoryId = req.query.subcategoryId ? Number(req.query.subcategoryId) : undefined;
+            const includeHidden = req.query.includeHidden === 'true';
+            const showOnLanding = includeHidden ? undefined : true;
+            return res.json(await getFallbackServices({ categoryId, subcategoryId, includeHidden, showOnLanding }));
+        } catch (fallbackErr) {
+            console.error("[catalog] Supabase fallback failed for services.", fallbackErr);
+            return res.json([]);
+        }
+    }
+
     try {
         const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
         const subcategoryId = req.query.subcategoryId ? Number(req.query.subcategoryId) : undefined;
@@ -150,7 +198,16 @@ router.get(api.services.list.path, async (req, res) => {
         res.json(services);
     } catch (err) {
         console.error("[catalog] Failed to load services. Check DB schema/migrations.", err);
-        res.json([]);
+        try {
+            const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
+            const subcategoryId = req.query.subcategoryId ? Number(req.query.subcategoryId) : undefined;
+            const includeHidden = req.query.includeHidden === 'true';
+            const showOnLanding = includeHidden ? undefined : true;
+            res.json(await getFallbackServices({ categoryId, subcategoryId, includeHidden, showOnLanding }));
+        } catch (fallbackErr) {
+            console.error("[catalog] Supabase fallback failed for services.", fallbackErr);
+            res.json([]);
+        }
     }
 });
 

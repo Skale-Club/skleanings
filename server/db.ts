@@ -20,26 +20,17 @@ if (!DATABASE_URL) {
   );
 }
 
-// Remover sslmode da URL para evitar conflito com configuração manual
-// O pg driver precisa de ssl config explícito, não via query string
-let connectionString = DATABASE_URL.replace(/[?&]sslmode=[^&]*/g, '');
-// Limpar ? ou & soltos no final
-connectionString = connectionString.replace(/[?&]$/, '');
-
-const isLocalhost = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+const parsedUrl = new URL(DATABASE_URL);
+const isLocalhost = parsedUrl.hostname.includes('localhost') || parsedUrl.hostname.includes('127.0.0.1');
 const isServerless = !!process.env.VERCEL;
-
-console.log('DB Config:', {
-  isLocalhost,
-  isServerless,
-  hasPostgresUrl: !!process.env.POSTGRES_URL,
-  hasDatabaseUrl: !!process.env.DATABASE_URL,
-  urlPreview: connectionString.substring(0, 50) + '...'
-});
 
 // Configurar pool com SSL explícito
 export const pool = new Pool({
-  connectionString,
+  host: parsedUrl.hostname,
+  port: parsedUrl.port ? Number(parsedUrl.port) : 5432,
+  database: parsedUrl.pathname.replace(/^\//, ''),
+  user: decodeURIComponent(parsedUrl.username),
+  password: decodeURIComponent(parsedUrl.password),
   // Forçar SSL com rejectUnauthorized: false para qualquer banco não-localhost
   ssl: { rejectUnauthorized: false },
   max: isServerless ? 1 : 10,

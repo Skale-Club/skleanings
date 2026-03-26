@@ -8,6 +8,9 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 // No need to load dotenv in Vercel - environment variables are injected by Vercel
 // process.env is already populated with variables from Vercel dashboard
+if (process.env.NODE_ENV === "production") {
+  process.noDeprecation = true;
+}
 
 const app = express();
 

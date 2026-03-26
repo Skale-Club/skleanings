@@ -9,6 +9,10 @@ import session from "express-session";
 import MemoryStore from "memorystore";
 import { storage } from "./storage";
 
+if (process.env.NODE_ENV === "production") {
+  process.noDeprecation = true;
+}
+
 // Load environment
 const env = process.env.NODE_ENV || 'development';
 dotenv.config({ path: `.env.${env}`, override: true });

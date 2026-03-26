@@ -6,6 +6,7 @@ import { requireAdmin, supabase } from "../../lib/auth";
 import { storage } from "../../storage";
 import { insertChatSettingsSchema } from "@shared/schema";
 import { conversationEvents } from "../../lib/chat-events";
+import { getFallbackChatSettings, getFallbackCompanySettings } from "../../lib/public-data-fallback";
 import { z } from "zod";
 
 const router = Router();
@@ -74,6 +75,50 @@ router.post("/chat/message", handleMessage);
 
 // GET /api/chat/config — public chat widget config (controls whether chat appears)
 router.get("/chat/config", async (_req, res) => {
+    if (process.env.VERCEL) {
+        try {
+            if (publicChatConfigCache && publicChatConfigCache.expiresAt > Date.now()) {
+                setPublicChatConfigCacheHeaders(res);
+                return res.json(publicChatConfigCache.value);
+            }
+
+            const [settings, companySettings] = await Promise.all([
+                getFallbackChatSettings(),
+                getFallbackCompanySettings(),
+            ]);
+
+            const parsedRules = z.array(excludedUrlRuleSchema).safeParse(settings?.excludedUrlRules);
+            const payload: PublicChatConfigResponse = !settings
+                ? {
+                    ...publicChatConfigFallback,
+                    companyLogo: companySettings?.logoIcon || undefined,
+                }
+                : {
+                    enabled: settings.enabled ?? false,
+                    agentName: settings.agentName || "Assistant",
+                    welcomeMessage: settings.welcomeMessage || "Hi! How can I help?",
+                    agentAvatarUrl: settings.agentAvatarUrl || "",
+                    fallbackAvatarUrl: undefined,
+                    companyLogo: companySettings?.logoIcon || undefined,
+                    languageSelectorEnabled: settings.languageSelectorEnabled ?? false,
+                    defaultLanguage: settings.defaultLanguage || "en",
+                    excludedUrlRules: parsedRules.success ? parsedRules.data : [],
+                    showInProd: settings.showInProd ?? false,
+                };
+
+            publicChatConfigCache = {
+                value: payload,
+                expiresAt: Date.now() + PUBLIC_CHAT_CONFIG_TTL_MS,
+            };
+            setPublicChatConfigCacheHeaders(res);
+            return res.json(payload);
+        } catch (fallbackErr) {
+            console.error("[chat] Supabase fallback failed for public chat config.", fallbackErr);
+            setPublicChatConfigCacheHeaders(res);
+            return res.json(publicChatConfigFallback);
+        }
+    }
+
     try {
         if (publicChatConfigCache && publicChatConfigCache.expiresAt > Date.now()) {
             setPublicChatConfigCacheHeaders(res);
@@ -115,8 +160,42 @@ router.get("/chat/config", async (_req, res) => {
         res.json(payload);
     } catch (err) {
         console.error("[chat] Failed to load public chat config. Check DB schema/migrations.", err);
-        setPublicChatConfigCacheHeaders(res);
-        res.json(publicChatConfigFallback);
+        try {
+            const [settings, companySettings] = await Promise.all([
+                getFallbackChatSettings(),
+                getFallbackCompanySettings(),
+            ]);
+
+            const parsedRules = z.array(excludedUrlRuleSchema).safeParse(settings?.excludedUrlRules);
+            const payload: PublicChatConfigResponse = !settings
+                ? {
+                    ...publicChatConfigFallback,
+                    companyLogo: companySettings?.logoIcon || undefined,
+                }
+                : {
+                    enabled: settings.enabled ?? false,
+                    agentName: settings.agentName || "Assistant",
+                    welcomeMessage: settings.welcomeMessage || "Hi! How can I help?",
+                    agentAvatarUrl: settings.agentAvatarUrl || "",
+                    fallbackAvatarUrl: undefined,
+                    companyLogo: companySettings?.logoIcon || undefined,
+                    languageSelectorEnabled: settings.languageSelectorEnabled ?? false,
+                    defaultLanguage: settings.defaultLanguage || "en",
+                    excludedUrlRules: parsedRules.success ? parsedRules.data : [],
+                    showInProd: settings.showInProd ?? false,
+                };
+
+            publicChatConfigCache = {
+                value: payload,
+                expiresAt: Date.now() + PUBLIC_CHAT_CONFIG_TTL_MS,
+            };
+            setPublicChatConfigCacheHeaders(res);
+            res.json(payload);
+        } catch (fallbackErr) {
+            console.error("[chat] Supabase fallback failed for public chat config.", fallbackErr);
+            setPublicChatConfigCacheHeaders(res);
+            res.json(publicChatConfigFallback);
+        }
     }
 });
 
