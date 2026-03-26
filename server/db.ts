@@ -8,21 +8,22 @@ if (!process.env.VERCEL) {
   dotenv.config();
 }
 
-// Usar DATABASE_URL ou POSTGRES_URL (Vercel Postgres)
-// Vercel Postgres cria POSTGRES_URL automaticamente
-const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
+const isServerless = !!process.env.VERCEL;
+
+const DATABASE_URL = isServerless
+  ? process.env.POSTGRES_URL || process.env.DATABASE_URL || process.env.POSTGRES_URL_NON_POOLING || ""
+  : process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_URL_NON_POOLING || "";
 
 const { Pool } = pg;
 
 if (!DATABASE_URL) {
   throw new Error(
-    "DATABASE_URL or POSTGRES_URL must be set. Did you forget to provision a database?",
+    "DATABASE_URL, POSTGRES_URL, or POSTGRES_URL_NON_POOLING must be set. Did you forget to provision a database?",
   );
 }
 
 const parsedUrl = new URL(DATABASE_URL);
 const isLocalhost = parsedUrl.hostname.includes('localhost') || parsedUrl.hostname.includes('127.0.0.1');
-const isServerless = !!process.env.VERCEL;
 
 // Configurar pool com SSL explícito
 export const pool = new Pool({
