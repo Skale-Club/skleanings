@@ -282,6 +282,15 @@ export class DatabaseStorage implements IStorage {
   private conversationSchemaEnsured = false;
 
   async initializeRuntimeState(): Promise<void> {
+    // WARNING: This method executes DDL operations (ALTER TABLE) which cause
+    // 504 timeouts in serverless environments like Vercel.
+    // 
+    // DO NOT call this method in:
+    // - api/handler.ts (Vercel serverless)
+    // - server/index.ts startup
+    //
+    // Schema migrations should be done via `npm run db:push` during deployment.
+    // This method is kept for manual execution in scripts (e.g., server/scripts/seed.ts)
     await Promise.all([
       this.ensureChatSchema(),
       this.ensureCompanySchema(),

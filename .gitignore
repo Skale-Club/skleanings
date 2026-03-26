@@ -1,14 +1,107 @@
-node_modules
-dist
-.DS_Store
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+build/
 server/public
-vite.config.ts.*
-*.tar.gz
+
+# Environment variables
 .env
 .env.*
 .env.local
 .env.development
 .env.production
 .env.*.local
-data-export.json
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# TypeScript
+*.tsbuildinfo
+*.tsbuildinfo.*
+
+# Vite
+vite.config.ts.*
+.vite/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
 nul
+
+# Testing & Coverage
+coverage/
+*.lcov
+.nyc_output/
+
+# Cache
+.cache/
+.parcel-cache/
+.turbo/
+.eslintcache
+.stylelintcache
+
+# Misc
+*.tar.gz
+data-export.json
+*.tgz
+
+# Drizzle
+drizzle/
+
+# Vercel
+.vercel/
+
+# Turbo
+.turbo/
+
+# pnpm
+pnpm-lock.yaml
+
+# Yarn
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# Bun
+bun.lockb
+
+# Replit
+.replit
+replit.nix
+.config/
+
+# Sentry
+.sentryclirc
+
+# Local history (vscode extension)
+.history/
+
+# Backup files
+*.bak
+*.tmp
+*.orig
+
+.vercel
