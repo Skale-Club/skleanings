@@ -518,7 +518,9 @@ export default function Home() {
                   onPointerCancel={handlePointerUp}
                   onClickCapture={(event) => {
                     if (didDragRef.current) {
-                      event.preventDefault();
+                      if (event.cancelable) {
+                        event.preventDefault();
+                      }
                       event.stopPropagation();
                     }
                   }}
