@@ -1,28 +1,29 @@
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import { storage } from "../storage";
 import { insertBlogPostSchema } from "@shared/schema";
+import type { BlogPost, BlogGenerationJob } from "@shared/schema";
 import { log } from "../lib/logger";
+import { storageService } from "./storage";
+
+interface GenerationResult {
+    success: boolean;
+    post?: BlogPost;
+    job?: BlogGenerationJob;
+    skipped?: boolean;
+    reason?: string;
+    error?: string;
+}
 
 export class BlogGenerator {
 
-    /**
-     * Get the Gemini API key from various sources in order of preference:
-     * 1. Blog-specific environment variable (BLOG_GEMINI_API_KEY)
-     * 2. Generic Gemini environment variables (GEMINI_API_KEY, GOOGLE_API_KEY)
-     * 3. Database chat integrations (fallback for backwards compatibility)
-     */
     private static async getGeminiApiKey(): Promise<string> {
-        // 1. Check blog-specific environment variable first
         let apiKey = process.env.BLOG_GEMINI_API_KEY;
 
-        // 2. Check generic Gemini environment variables
         if (!apiKey) {
             apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
         }
 
-        // 3. Fallback to database chat integrations for backwards compatibility
-        // This maintains the existing behavior while encouraging migration to env vars
         if (!apiKey) {
             try {
                 const integration = await storage.getChatIntegration("gemini");
@@ -48,41 +49,65 @@ export class BlogGenerator {
         return genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     }
 
-    static async startDailyPostGeneration(options: { manual?: boolean } = {}) {
-        log(`Starting blog post generation (Manual: ${options.manual})`, "BlogGenerator");
-        try {
-            const settings = await storage.getBlogSettings();
+    static async startDailyPostGeneration(options: { manual?: boolean; autoPublish?: boolean } = {}): Promise<GenerationResult> {
+        const isManual = options.manual ?? false;
+        const lockIdentity = isManual ? "manual" : "cron";
+        const LOCK_TTL_MS = 300000;
 
-            // Check if enabled (unless manual)
-            if (!options.manual) {
-                if (!settings?.enabled) {
-                    log("Blog generation disabled in settings. Skipping.", "BlogGenerator");
-                    return;
-                }
+        log(`Starting blog post generation (Manual: ${isManual})`, "BlogGenerator");
 
-                // Check if postsPerDay is zero (disables automatic scheduling)
-                if (settings.postsPerDay <= 0) {
-                    log("Automatic scheduling disabled (postsPerDay <= 0). Skipping.", "BlogGenerator");
-                    return;
-                }
+        const settings = await storage.getBlogSettings();
 
-                // Check frequency
-                if (settings.lastRunAt) {
-                    const now = new Date();
-                    const lastRun = new Date(settings.lastRunAt);
-                    const hoursSinceLastRun = (now.getTime() - lastRun.getTime()) / (1000 * 60 * 60);
-                    const hoursBetweenPosts = 24 / settings.postsPerDay;
+        if (!settings) {
+            log("Blog settings not found. Skipping.", "BlogGenerator");
+            return { success: false, skipped: true, reason: "no_settings" };
+        }
 
-                    if (hoursSinceLastRun < hoursBetweenPosts) {
-                        log(`Skipping generation. Last run was ${hoursSinceLastRun.toFixed(2)} hours ago. Schedule is every ${hoursBetweenPosts.toFixed(2)} hours.`, "BlogGenerator");
-                        return;
-                    }
-                }
+        if (!isManual) {
+            if (!settings.enabled) {
+                log("Blog generation disabled in settings. Skipping.", "BlogGenerator");
+                return { success: false, skipped: true, reason: "disabled" };
             }
 
-            const seoKeywords = settings?.seoKeywords || "";
-            const enableTrendAnalysis = settings?.enableTrendAnalysis ?? true;
-            const promptStyle = settings?.promptStyle || "";
+            if (settings.postsPerDay <= 0) {
+                log("Automatic scheduling disabled (postsPerDay <= 0). Skipping.", "BlogGenerator");
+                return { success: false, skipped: true, reason: "disabled" };
+            }
+
+            if (settings.lastRunAt) {
+                const now = new Date();
+                const lastRun = new Date(settings.lastRunAt);
+                const hoursSinceLastRun = (now.getTime() - lastRun.getTime()) / (1000 * 60 * 60);
+                const hoursBetweenPosts = 24 / settings.postsPerDay;
+
+                if (hoursSinceLastRun < hoursBetweenPosts) {
+                    log(`Skipping generation. Last run was ${hoursSinceLastRun.toFixed(2)} hours ago. Schedule is every ${hoursBetweenPosts.toFixed(2)} hours.`, "BlogGenerator");
+                    return { success: false, skipped: true, reason: "too_soon" };
+                }
+            }
+        }
+
+        const seoKeywords = settings.seoKeywords || "";
+        const enableTrendAnalysis = settings.enableTrendAnalysis ?? true;
+        const promptStyle = settings.promptStyle || "";
+
+        const job = await storage.createBlogGenerationJob({
+            postId: 0,
+            status: "pending",
+            scheduledAt: new Date(),
+            config: { manual: isManual, autoPublish: options.autoPublish ?? false },
+        });
+
+        const lockAcquired = await storage.acquireBlogGenerationLock(job.id, lockIdentity, LOCK_TTL_MS);
+
+        if (!lockAcquired) {
+            log(`Could not acquire lock for job ${job.id}. Another instance may be running.`, "BlogGenerator");
+            await storage.updateBlogGenerationJob(job.id, { status: "failed", errorMessage: "Could not acquire lock - concurrent execution detected" });
+            return { success: false, skipped: true, reason: "locked", job };
+        }
+
+        try {
+            await storage.updateBlogGenerationJob(job.id, { status: "in_progress", startedAt: new Date() });
 
             const topic = await this.generateTopic(seoKeywords, enableTrendAnalysis);
             log(`Generated topic: ${topic}`, "BlogGenerator");
@@ -104,26 +129,45 @@ export class BlogGenerator {
                 focusKeyword: content.focusKeyword,
                 tags: content.tags,
                 featureImageUrl: imageUrl,
-                status: "published",
+                status: "draft",
                 authorName: "AI Assistant",
-                publishedAt: new Date(),
             };
 
             const validPost = insertBlogPostSchema.parse(newPost);
             const savedPost = await storage.createBlogPost(validPost);
 
-            // Update last run time if settings exist
-            if (settings) {
-                await storage.upsertBlogSettings({ ...settings, lastRunAt: new Date() });
-            }
+            await storage.updateBlogGenerationJob(job.id, {
+                status: "completed",
+                completedAt: new Date(),
+                postId: savedPost.id,
+                publishedPostId: savedPost.id,
+            });
 
-            log(`Blog post "${content.title}" published successfully!`, "BlogGenerator");
-            return savedPost;
+            await storage.upsertBlogSettings({ ...settings, lastRunAt: new Date() });
+
+            log(`Blog post "${content.title}" created as draft successfully!`, "BlogGenerator");
+
+            return { success: true, post: savedPost, job };
 
         } catch (error) {
+            const errorMsg = (error as Error).message;
             console.error("Error generating blog post:", error);
-            log(`Error generating blog post: ${(error as Error).message}`, "BlogGenerator");
-            throw error;
+            log(`Error generating blog post: ${errorMsg}`, "BlogGenerator");
+
+            const updatedJob = await storage.updateBlogGenerationJob(job.id, {
+                status: "failed",
+                errorMessage: errorMsg,
+                completedAt: new Date(),
+                attempts: (job.attempts ?? 0) + 1,
+            });
+
+            return { success: false, job: updatedJob, error: errorMsg };
+        } finally {
+            try {
+                await storage.releaseBlogGenerationLock(job.id, lockIdentity);
+            } catch (e) {
+                log(`Error releasing lock for job ${job.id}: ${(e as Error).message}`, "BlogGenerator");
+            }
         }
     }
 
@@ -183,7 +227,6 @@ export class BlogGenerator {
         const response = await result.response;
         let text = response.text().trim();
 
-        // Clean up markdown code blocks if Gemini includes them
         if (text.startsWith("```json")) {
             text = text.replace(/^```json\s*/, "").replace(/\s*```$/, "");
         } else if (text.startsWith("```")) {
@@ -198,39 +241,93 @@ export class BlogGenerator {
         }
     }
 
-    private static async generatePostImage(topic: string): Promise<string> {
-        // For now, we'll use a high-quality placeholder from Unsplash based on keywords
-        // because standard Gemini text models don't generate images directly via this API interactively 
-        // without specific Imagen configuration or distinct endpoints.
-        // To ensure reliability for the "MVP", we use a relevant Unsplash source.
+    private static async getImageModel() {
+        const apiKey = await this.getGeminiApiKey();
+        const genAI = new GoogleGenerativeAI(apiKey);
+        return genAI.getGenerativeModel({ 
+            model: "gemini-3.1-flash-image-preview",
+            generationConfig: {
+                responseModalities: ["image", "text"],
+            } as Record<string, unknown>,
+            safetySettings: [
+                { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+                { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+                { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+                { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+            ],
+        });
+    }
 
-        const keywords = topic.split(" ").slice(0, 3).join(",");
-        const encodedKeywords = encodeURIComponent(keywords);
-        // Use a source that redirects to a random image matching keywords
-        return `https://source.unsplash.com/800x600/?cleaning,home,${encodedKeywords}`;
+    private static async generatePostImage(topic: string): Promise<string> {
+        try {
+            const model = await this.getImageModel();
+            const prompt = `Generate a professional, high-quality photograph-style image for a blog post about "${topic}" for a cleaning service company. 
+The image should be clean, bright, and inviting - showing a spotless, organized space.
+Style: Professional real estate or lifestyle photography.
+Aspect ratio: 16:9 landscape.
+No text, watermarks, or logos in the image.`;
+
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            
+            const candidate = response.candidates?.[0];
+            if (!candidate?.content?.parts) {
+                log("No image parts in response, falling back", "BlogGenerator");
+                return this.generateFallbackImage(topic);
+            }
+
+            for (const part of candidate.content.parts) {
+                if (part.inlineData?.mimeType?.startsWith("image/") && part.inlineData?.data) {
+                    const base64Data = part.inlineData.data;
+                    const mimeType = part.inlineData.mimeType;
+                    const extension = mimeType.split("/")[1] || "png";
+                    
+                    const buffer = Buffer.from(base64Data, "base64");
+                    const timestamp = Date.now();
+                    const sanitizedTopic = topic.toLowerCase().replace(/[^a-z0-9]/g, "-").slice(0, 50);
+                    const path = `blog-images/${sanitizedTopic}-${timestamp}.${extension}`;
+                    
+                    const publicUrl = await storageService.uploadFile(
+                        "images",
+                        path,
+                        buffer,
+                        mimeType
+                    );
+                    
+                    log(`Image uploaded successfully: ${publicUrl}`, "BlogGenerator");
+                    return publicUrl;
+                }
+            }
+
+            log("No image data found in response parts, falling back", "BlogGenerator");
+            return this.generateFallbackImage(topic);
+        } catch (error) {
+            log(`Image generation failed: ${error}. Falling back to placeholder`, "BlogGenerator");
+            return this.generateFallbackImage(topic);
+        }
+    }
+
+    private static generateFallbackImage(topic: string): string {
+        const keywords = topic.toLowerCase().replace(/[^a-z0-9\s]/g, "").split(/\s+/).slice(0, 3).join(",");
+        return `https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&h=450&fit=crop`;
     }
 
     private static slugify(text: string): string {
         return text
             .toString()
             .toLowerCase()
-            .replace(/\s+/g, "-") // Replace spaces with -
-            .replace(/[^\w\-]+/g, "") // Remove all non-word chars
-            .replace(/\-\-+/g, "-") // Replace multiple - with single -
-            .replace(/^-+/, "") // Trim - from start of text
-            .replace(/-+$/, ""); // Trim - from end of text
+            .replace(/\s+/g, "-")
+            .replace(/[^\w\-]+/g, "")
+            .replace(/\-\-+/g, "-")
+            .replace(/^-+/, "")
+            .replace(/-+$/, "");
     }
 
-    /**
-     * Generate a unique slug by checking for existing posts with the same slug.
-     * If a collision is found, appends a numeric suffix (-2, -3, etc.)
-     */
     private static async generateUniqueSlug(title: string): Promise<string> {
         const baseSlug = this.slugify(title);
         let slug = baseSlug;
         let suffix = 2;
 
-        // Check for existing posts with the same slug
         while (true) {
             const existingPost = await storage.getBlogPostBySlug(slug);
             if (!existingPost) {

@@ -133,8 +133,18 @@ export function BlogSection({ resetSignal, getAccessToken }: { resetSignal: numb
     };
   }, [isSeoChecklistOpen]);
 
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+
   const { data: posts, isLoading } = useQuery<BlogPost[]>({
-    queryKey: ['/api/blog'],
+    queryKey: ['/api/blog', 'admin', statusFilter],
+    queryFn: async () => {
+      const token = await getAccessToken();
+      if (!token) throw new Error('Authentication required');
+      const params = new URLSearchParams();
+      if (statusFilter !== 'all') params.set('status', statusFilter);
+      const res = await authenticatedRequest('GET', `/api/blog/admin/posts?${params.toString()}`, token);
+      return res.json();
+    },
   });
 
   const { data: services } = useQuery<Service[]>({
@@ -1536,6 +1546,20 @@ export function BlogSection({ resetSignal, getAccessToken }: { resetSignal: numb
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Select
+                value={statusFilter}
+                onValueChange={(value: typeof statusFilter) => setStatusFilter(value)}
+                data-testid="select-blog-status-filter"
+              >
+                <SelectTrigger className="w-full sm:w-[150px]" data-testid="select-blog-status-filter">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Posts</SelectItem>
+                  <SelectItem value="published">Published</SelectItem>
+                  <SelectItem value="draft">Drafts</SelectItem>
+                </SelectContent>
+              </Select>
               <Select value={sortBy} onValueChange={(value: typeof sortBy) => setSortBy(value)}>
                 <SelectTrigger className="w-full sm:w-[180px]" data-testid="select-blog-sort">
                   <SelectValue />

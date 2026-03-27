@@ -83,8 +83,8 @@ export default function BlogSettings({ getAccessToken }: BlogSettingsProps) {
             queryClient.invalidateQueries({ queryKey: ["/api/blog"] });
             queryClient.invalidateQueries({ queryKey: ["/api/blog/settings"] });
             toast({
-                title: "Blog post generated",
-                description: `Successfully created: ${data.post?.title}`,
+                title: "Blog post generated!",
+                description: "Post created as draft. Review and publish it from the Posts tab.",
             });
         },
         onError: (error) => {

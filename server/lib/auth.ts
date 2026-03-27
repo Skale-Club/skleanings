@@ -31,15 +31,16 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
         }
 
         // Check if user email matches admin email
-        // Comentado para permitir que qualquer usuário autenticado seja admin
-        // const adminEmail = process.env.ADMIN_EMAIL || '';
-        // if (user.email !== adminEmail) {
-        //   console.log(`Admin access denied. User: ${user.email}, Expected: ${adminEmail}`);
-        //   return res.status(403).json({ message: 'Admin access required' });
-        // }
+        const adminEmail = process.env.ADMIN_EMAIL || '';
+        if (adminEmail && user.email !== adminEmail) {
+          console.log(`Admin access denied. User: ${user.email}, Expected: ${adminEmail}`);
+          return res.status(403).json({ message: 'Admin access required' });
+        }
 
-        // Por enquanto, qualquer usuário autenticado no Supabase é considerado admin
-        // console.log(`User ${user.email} authenticated as admin`);
+        // If ADMIN_EMAIL is not set, allow any authenticated user (development mode)
+        if (!adminEmail) {
+          console.warn(`ADMIN_EMAIL not set. Allowing authenticated user ${user.email} as admin. Set ADMIN_EMAIL in production.`);
+        }
 
         (req as any).user = user;
         next();

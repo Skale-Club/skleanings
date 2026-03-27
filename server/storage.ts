@@ -69,6 +69,9 @@ import {
   type InsertIntegrationSettings,
   type InsertBlogPost,
   type InsertBlogSettings,
+  blogGenerationJobs,
+  type BlogGenerationJob,
+  type InsertBlogGenerationJob,
   type TimeSlotLock,
   type InsertTimeSlotLock,
   type BookingItemOption,
@@ -229,7 +232,7 @@ export interface IStorage {
   findOpenConversationByContact(phone?: string, email?: string, excludeId?: string): Promise<Conversation | undefined>;
 
   // Blog Posts
-  getBlogPosts(status?: string): Promise<BlogPost[]>;
+  getBlogPosts(status?: string, limit?: number, offset?: number): Promise<BlogPost[]>;
   getBlogPost(id: number): Promise<BlogPost | undefined>;
   getBlogPostBySlug(slug: string): Promise<BlogPost | undefined>;
   getPublishedBlogPosts(limit?: number, offset?: number): Promise<BlogPost[]>;
@@ -242,6 +245,14 @@ export interface IStorage {
   countPublishedBlogPosts(): Promise<number>;
   getBlogSettings(): Promise<BlogSettings | undefined>;
   upsertBlogSettings(settings: InsertBlogSettings): Promise<BlogSettings>;
+
+  // Blog Generation Jobs
+  getBlogGenerationJobs(status?: string, limit?: number, offset?: number): Promise<BlogGenerationJob[]>;
+  getBlogGenerationJob(id: number): Promise<BlogGenerationJob | undefined>;
+  createBlogGenerationJob(job: InsertBlogGenerationJob): Promise<BlogGenerationJob>;
+  updateBlogGenerationJob(id: number, updates: Partial<InsertBlogGenerationJob>): Promise<BlogGenerationJob>;
+  acquireBlogGenerationLock(jobId: number, lockedBy: string, ttlMs?: number): Promise<boolean>;
+  releaseBlogGenerationLock(jobId: number, lockedBy: string): Promise<void>;
 
   // Time Slot Locks
   acquireTimeSlotLock(bookingDate: string, startTime: string, conversationId: string, ttlMs?: number): Promise<boolean>;
@@ -845,6 +856,79 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // Blog Generation Jobs
+  async getBlogGenerationJobs(status?: string, limit: number = 50, offset: number = 0): Promise<BlogGenerationJob[]> {
+    let query = db.select().from(blogGenerationJobs).orderBy(desc(blogGenerationJobs.createdAt));
+    if (status) {
+      query = query.where(eq(blogGenerationJobs.status, status)) as any;
+    }
+    return await query.limit(limit).offset(offset);
+  }
+
+  async getBlogGenerationJob(id: number): Promise<BlogGenerationJob | undefined> {
+    const [job] = await db.select().from(blogGenerationJobs).where(eq(blogGenerationJobs.id, id));
+    return job;
+  }
+
+  async createBlogGenerationJob(job: InsertBlogGenerationJob): Promise<BlogGenerationJob> {
+    const [created] = await db.insert(blogGenerationJobs).values(job).returning();
+    return created;
+  }
+
+  async updateBlogGenerationJob(id: number, updates: Partial<InsertBlogGenerationJob>): Promise<BlogGenerationJob> {
+    const [updated] = await db.update(blogGenerationJobs)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(blogGenerationJobs.id, id))
+      .returning();
+    if (!updated) throw new Error('Blog generation job not found');
+    return updated;
+  }
+
+  async acquireBlogGenerationLock(jobId: number, lockedBy: string, ttlMs: number = 300000): Promise<boolean> {
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + ttlMs);
+
+    // Clean up expired locks first
+    await db.update(blogGenerationJobs)
+      .set({ lockedAt: null, lockedBy: null })
+      .where(
+        and(
+          eq(blogGenerationJobs.lockedBy, lockedBy),
+          lte(blogGenerationJobs.lockedAt, new Date(Date.now() - ttlMs))
+        )
+      );
+
+    // Try to acquire lock on this specific job
+    const [existing] = await db.select().from(blogGenerationJobs)
+      .where(eq(blogGenerationJobs.id, jobId))
+      .limit(1);
+
+    if (!existing) return false;
+    if (existing.lockedAt && new Date(existing.lockedAt).getTime() > Date.now() - ttlMs) {
+      // Lock is held by someone else and hasn't expired
+      return false;
+    }
+
+    // Acquire the lock
+    const [updated] = await db.update(blogGenerationJobs)
+      .set({ lockedAt: now, lockedBy, status: 'running', startedAt: now })
+      .where(eq(blogGenerationJobs.id, jobId))
+      .returning();
+
+    return !!updated;
+  }
+
+  async releaseBlogGenerationLock(jobId: number, lockedBy: string): Promise<void> {
+    await db.update(blogGenerationJobs)
+      .set({ lockedAt: null, lockedBy: null })
+      .where(
+        and(
+          eq(blogGenerationJobs.id, jobId),
+          eq(blogGenerationJobs.lockedBy, lockedBy)
+        )
+      );
+  }
+
   async updateServiceAreaGroup(id: number, group: Partial<InsertServiceAreaGroup>): Promise<ServiceAreaGroup> {
     const [updated] = await db.update(serviceAreaGroups).set(group).where(eq(serviceAreaGroups.id, id)).returning();
     if (!updated) throw new Error('Service area group not found');
@@ -1173,11 +1257,15 @@ export class DatabaseStorage implements IStorage {
     return existing;
   }
 
-  async getBlogPosts(status?: string): Promise<BlogPost[]> {
+  async getBlogPosts(status?: string, limit?: number, offset: number = 0): Promise<BlogPost[]> {
+    let query = db.select().from(blogPosts).orderBy(desc(blogPosts.createdAt));
     if (status) {
-      return await db.select().from(blogPosts).where(eq(blogPosts.status, status)).orderBy(desc(blogPosts.createdAt));
+      query = query.where(eq(blogPosts.status, status)) as any;
     }
-    return await db.select().from(blogPosts).orderBy(desc(blogPosts.createdAt));
+    if (limit) {
+      return await query.limit(limit).offset(offset);
+    }
+    return await query;
   }
 
   async getBlogPost(id: number): Promise<BlogPost | undefined> {

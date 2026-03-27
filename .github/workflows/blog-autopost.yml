@@ -1,0 +1,58 @@
+name: Blog Autopost
+
+on:
+  schedule:
+    # Run every hour to check if a new post should be generated
+    - cron: '0 * * * *'
+  workflow_dispatch:
+    # Allow manual triggering from GitHub Actions UI
+    inputs:
+      reason:
+        description: 'Reason for manual trigger'
+        required: false
+        default: 'Manual trigger'
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Generate Blog Post
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "ERROR: CRON_SECRET secret is not configured"
+            exit 1
+          fi
+          if [ -z "$APP_URL" ]; then
+            echo "ERROR: APP_URL variable is not configured"
+            exit 1
+          fi
+
+          echo "Triggering blog generation at $(date -u)"
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            "${APP_URL}/api/blog/cron/generate" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Content-Type: application/json" \
+            --max-time 120)
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "Response: $BODY"
+          echo "HTTP Status: $HTTP_CODE"
+
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo "Blog generation request succeeded"
+          else
+            echo "Blog generation request failed with HTTP $HTTP_CODE"
+            # Don't fail the workflow for expected skips
+            STATUS=$(echo "$BODY" | grep -o '"status":"[^"]*"' | head -1)
+            if echo "$STATUS" | grep -q '"skipped"'; then
+              echo "Generation was skipped (expected behavior)"
+              exit 0
+            fi
+            exit 1
+          fi

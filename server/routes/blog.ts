@@ -15,7 +15,7 @@ import {
 const router = Router();
 
 // Blog Settings Routes
-router.get('/settings', requireAdmin, async (_req, res) => {
+router.get('/settings', async (_req, res) => {
     try {
         const settings = await storage.getBlogSettings();
         res.json(settings || {
@@ -44,67 +44,24 @@ router.put('/settings', requireAdmin, async (req, res) => {
 });
 
 // Blog Posts (public GET returns only published, admin can see all)
-router.get('/', async (req, res) => {
-    if (process.env.VERCEL) {
-        try {
-            const status = req.query.status as string | undefined;
-            const limit = req.query.limit ? Number(req.query.limit) : undefined;
-            const offset = req.query.offset ? Number(req.query.offset) : 0;
+router.get("/", async (req, res) => {
+  try {
+    const status = req.query.status as string | undefined;
+    const limit = req.query.limit ? Number(req.query.limit) : undefined;
+    const offset = req.query.offset ? Number(req.query.offset) : 0;
 
-            if (!status) {
-                return res.json(await getFallbackPublishedBlogPosts(limit ?? 100, offset));
-            }
-
-            if (status === 'published') {
-                return res.json(await getFallbackPublishedBlogPosts(limit ?? 10, offset));
-            }
-
-            return res.json([]);
-        } catch (fallbackErr) {
-            console.error("[blog] Supabase fallback failed for posts.", fallbackErr);
-            return res.json([]);
-        }
+    // Public endpoint: only return published posts regardless of status param
+    if (limit) {
+      const posts = await storage.getPublishedBlogPosts(limit, offset);
+      res.json(posts);
+    } else {
+      const posts = await storage.getPublishedBlogPosts();
+      res.json(posts);
     }
-
-    try {
-        const status = req.query.status as string | undefined;
-        const limit = req.query.limit ? Number(req.query.limit) : undefined;
-        const offset = req.query.offset ? Number(req.query.offset) : 0;
-
-        // Public requests default to published only
-        // If no status specified, return only published posts (prevent draft leakage)
-        if (!status) {
-            const posts = await storage.getBlogPosts('published');
-            res.json(posts);
-        } else if (status === 'published' && limit) {
-            const posts = await storage.getPublishedBlogPosts(limit, offset);
-            res.json(posts);
-        } else {
-            // Non-published status requests should require admin (handled by storage layer or add middleware)
-            const posts = await storage.getBlogPosts(status);
-            res.json(posts);
-        }
-    } catch (err) {
-        console.error("[blog] Failed to load posts. Check DB schema/migrations.", err);
-        try {
-            const status = req.query.status as string | undefined;
-            const limit = req.query.limit ? Number(req.query.limit) : undefined;
-            const offset = req.query.offset ? Number(req.query.offset) : 0;
-
-            if (!status) {
-                return res.json(await getFallbackPublishedBlogPosts(limit ?? 100, offset));
-            }
-
-            if (status === 'published') {
-                return res.json(await getFallbackPublishedBlogPosts(limit ?? 10, offset));
-            }
-
-            res.json([]);
-        } catch (fallbackErr) {
-            console.error("[blog] Supabase fallback failed for posts.", fallbackErr);
-            res.json([]);
-        }
-    }
+  } catch (error) {
+    console.error("[blog] Failed to load posts.", error);
+    res.json([]);
+  }
 });
 
 router.get('/count', async (req, res) => {
@@ -209,6 +166,55 @@ router.put('/tags/:tag', requireAdmin, async (req, res) => {
     } catch (err) {
         res.status(400).json({ message: (err as Error).message });
     }
+});
+
+// Admin: list all posts (including drafts)
+router.get("/admin/posts", requireAdmin, async (req, res) => {
+  try {
+    const status = req.query.status as string | undefined;
+    const limit = req.query.limit ? Number(req.query.limit) : 100;
+    const offset = req.query.offset ? Number(req.query.offset) : 0;
+    const posts = await storage.getBlogPosts(status);
+    res.json(posts);
+  } catch (error) {
+    console.error("[blog] Failed to load admin posts.", error);
+    res.status(500).json({ message: "Failed to load posts" });
+  }
+});
+
+// Cron endpoint for GitHub Actions scheduling
+router.post("/cron/generate", async (req, res) => {
+  try {
+    const cronSecret = process.env.CRON_SECRET;
+    const authHeader = req.headers.authorization;
+    const providedSecret = authHeader?.replace("Bearer ", "") || req.body?.secret;
+
+    if (!cronSecret) {
+      console.warn("[blog/cron] CRON_SECRET not configured. Rejecting request.");
+      return res.status(500).json({ message: "Cron not configured" });
+    }
+
+    if (providedSecret !== cronSecret) {
+      console.warn("[blog/cron] Invalid cron secret provided.");
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { BlogGenerator } = await import("../services/blog-generator");
+    const result = await BlogGenerator.startDailyPostGeneration({ manual: false });
+
+    if (result.skipped) {
+      return res.json({ status: "skipped", reason: result.reason });
+    }
+
+    if (result.success) {
+      return res.json({ status: "generated", postId: result.post?.id, jobId: result.job?.id });
+    }
+
+    return res.status(500).json({ status: "failed", error: result.error });
+  } catch (error: any) {
+    console.error("[blog/cron] Generation failed:", error);
+    res.status(500).json({ message: error.message || "Generation failed" });
+  }
 });
 
 // Get single post by ID or slug - public only sees published posts
@@ -372,14 +378,30 @@ router.delete('/:id', requireAdmin, async (req, res) => {
 });
 
 // Manual trigger for blog generation (Admin only)
-router.post('/generate', requireAdmin, async (req, res) => {
-    try {
-        const manual = req.body.manual === true;
-        const result = await BlogGenerator.startDailyPostGeneration({ manual });
-        res.json({ success: true, post: result });
-    } catch (err) {
-        res.status(500).json({ message: (err as Error).message });
+router.post("/generate", requireAdmin, async (req, res) => {
+  try {
+    const { manual = true, autoPublish = false } = req.body || {};
+    const result = await BlogGenerator.startDailyPostGeneration({ manual, autoPublish });
+
+    if (result.skipped) {
+      return res.json({ status: "skipped", reason: result.reason });
     }
+
+    if (result.success) {
+      return res.json({
+        status: "generated",
+        post: result.post,
+        message: autoPublish
+          ? "Post generated and published"
+          : "Post generated as draft. Review and publish from the blog admin.",
+      });
+    }
+
+    return res.status(500).json({ status: "failed", error: result.error });
+  } catch (error: any) {
+    console.error("[blog] Generation failed:", error);
+    res.status(500).json({ message: error.message || "Generation failed" });
+  }
 });
 
 export default router;

@@ -655,6 +655,42 @@ export type BlogSettings = typeof blogSettings.$inferSelect;
 export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
 export type InsertBlogSettings = z.infer<typeof insertBlogSettingsSchema>;
 
+// Blog Generation Jobs - tracks autopost generation with proper scheduling, history
+export const blogGenerationJobs = pgTable("blog_generation_jobs", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").references(() => blogPosts.id).notNull(),
+  status: text("status").notNull().default('pending'),
+  scheduledAt: timestamp("scheduled_at"),
+  startedAt: timestamp("started_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+  errorMessage: text("error_message"),
+  publishedPostId: integer("published_post_id").references(() => blogPosts.id),
+  attempts: integer("attempts").default(1),
+  lockedAt: timestamp("locked_at"),
+  lockedBy: text("locked_by"),
+  config: jsonb("config").default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertBlogGenerationJobSchema = createInsertSchema(blogGenerationJobs).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  publishedPostId: z.number().optional(),
+  scheduledAt: z.union([z.date(), z.string(), z.null()]).optional().transform(val => {
+    if (!val) return null;
+    if (val instanceof Date) return val;
+    if (typeof val === 'string') return new Date(val);
+    return null;
+  }).nullable(),
+  config: z.record(z.any()).optional(),
+});
+
+export type BlogGenerationJob = typeof blogGenerationJobs.$inferSelect;
+export type InsertBlogGenerationJob = z.infer<typeof insertBlogGenerationJobSchema>;
+
 // Time Slot Locks - prevents double-booking during concurrent requests
 export const timeSlotLocks = pgTable("time_slot_locks", {
   id: serial("id").primaryKey(),
