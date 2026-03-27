@@ -71,6 +71,7 @@ drizzle/
 
 # Vercel
 .vercel/
+.vercel-env-inspect
 
 # Turbo
 .turbo/
