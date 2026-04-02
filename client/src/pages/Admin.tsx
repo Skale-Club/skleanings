@@ -24,6 +24,7 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import type { AdminSection, CompanySettingsData } from '@/components/admin/shared/types';
 import { AdminSidebar, type AdminMenuItem } from '@/components/admin/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
+import { CalendarReconnectBanner } from '@/components/admin/CalendarReconnectBanner';
 import { DashboardSection } from '@/components/admin/DashboardSection';
 import { CategoriesSection } from '@/components/admin/CategoriesSection';
 import { ServicesSection } from '@/components/admin/ServicesSection';
@@ -136,6 +137,7 @@ function AdminContent() {
 
       <main className="flex-1 min-w-0 min-h-0 relative bg-background overflow-y-auto overscroll-contain" id="admin-top">
         <AdminHeader companyName={companySettings?.companyName} />
+        {activeSection !== 'chat' && <CalendarReconnectBanner getAccessToken={getAccessToken} />}
         <div className={activeSection === 'chat' ? 'min-h-0 p-0' : 'min-h-0 p-6 sm:p-6 md:p-8 pb-8'}>
           {activeSection === 'dashboard' && (
             <DashboardSection

@@ -51,14 +51,17 @@ Customers can book cleaning services with a specific professional, with a unifie
 - [x] Staff-aware booking — staffMemberId stored on booking, shown in admin dashboard — Phase 5
 
 ### Active (In Progress)
-- [ ] v0.5 — "Take Action" in-app banner + frontend reconnect flow (Plan 05-02)
+None — v0.5 complete.
 
-### Validated (v0.5 in progress)
+### Validated (v0.5 complete)
 - [x] needsReconnect + lastDisconnectedAt columns on staffGoogleCalendar — v0.5 Phase 1
 - [x] Auto-mark on token refresh failure — storage.markCalendarNeedsReconnect — v0.5 Phase 1
 - [x] SMS notification on first calendar disconnection via Twilio — v0.5 Phase 1
 - [x] GET /api/staff/calendar/all-statuses — admin endpoint for banner data — v0.5 Phase 1
 - [x] POST /api/staff/:id/calendar/clear-reconnect — resets flag after re-auth — v0.5 Phase 1
+- [x] "Take Action" banner in admin dashboard — amber warning + "Fix This" modal — v0.5 Phase 1
+- [x] CalendarTab reconnect warning state — three-state UI — v0.5 Phase 1
+- [x] OAuth callback auto-clears needsReconnect — v0.5 Phase 1
 
 ### Validated (v0.4 complete)
 - [x] Unified Users section — Staff + Admin Accounts tabs — v0.4 Phase 1
@@ -137,4 +140,4 @@ Customers can book cleaning services with a specific professional, with a unifie
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-04-02 after Phase 05-01 — v0.5 backend reconnect detection complete*
+*Last updated: 2026-04-02 after Phase 05-02 — v0.5 Google Calendar Reconnect Notifications complete*

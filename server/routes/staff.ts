@@ -101,6 +101,7 @@ router.get("/calendar/callback", async (req, res) => {
     }
 
     await exchangeCodeForTokens(code, staffId);
+    await storage.clearCalendarNeedsReconnect(staffId);
     res.redirect("/admin/staff");
   } catch (err) {
     res.status(500).json({ message: (err as Error).message });
@@ -189,8 +190,8 @@ router.put("/:id/availability", requireAdmin, async (req, res) => {
 router.get("/:id/calendar/status", requireAdmin, async (req, res) => {
   try {
     const record = await storage.getStaffGoogleCalendar(Number(req.params.id));
-    if (!record) return res.json({ connected: false });
-    res.json({ connected: true, calendarId: record.calendarId, connectedAt: record.connectedAt });
+    if (!record) return res.json({ connected: false, needsReconnect: false });
+    res.json({ connected: !record.needsReconnect, calendarId: record.calendarId, connectedAt: record.connectedAt, needsReconnect: record.needsReconnect });
   } catch (err) {
     res.status(500).json({ message: (err as Error).message });
   }

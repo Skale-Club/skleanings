@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Calendar, Link, Unlink } from 'lucide-react';
+import { AlertTriangle, Loader2, Calendar, Link, Unlink } from 'lucide-react';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -261,6 +261,7 @@ interface CalendarStatus {
   connected: boolean;
   calendarId?: string;
   connectedAt?: string;
+  needsReconnect?: boolean;
 }
 
 function CalendarTab({ staffId }: { staffId: number }) {
@@ -297,7 +298,41 @@ function CalendarTab({ staffId }: { staffId: number }) {
       <p className="text-sm text-muted-foreground">
         Connect a Google Calendar to automatically block this staff member's external appointments.
       </p>
-      {status?.connected ? (
+      {status?.needsReconnect ? (
+        <div className="space-y-3">
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3">
+            <div className="flex items-center gap-2 text-amber-800">
+              <AlertTriangle className="w-4 h-4" />
+              <span className="font-medium text-sm">Calendar disconnected</span>
+            </div>
+            <p className="text-sm text-amber-700">
+              Reconnect to resume availability sync. External appointments are not being blocked while disconnected.
+            </p>
+            <div className="flex items-center gap-2">
+              <Button asChild size="sm">
+                <a href={`/api/staff/${staffId}/calendar/connect`}>
+                  <Link className="w-4 h-4 mr-2" />
+                  Reconnect
+                </a>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => disconnect.mutate()}
+                disabled={disconnect.isPending}
+                className="text-muted-foreground"
+              >
+                {disconnect.isPending ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Unlink className="w-4 h-4 mr-2" />
+                )}
+                Disconnect completely
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : status?.connected ? (
         <div className="rounded-lg border p-4 space-y-3">
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-green-500" />

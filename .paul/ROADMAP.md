@@ -195,7 +195,7 @@ Consolidate the separate "Users" and "Staff" sidebar sections into a single "Use
 
 When a staff member's Google Calendar token expires or becomes invalid, the system automatically detects the disconnection, marks the record, sends SMS + email notifications to the admin, and shows a "Take Action" in-app banner inside the admin dashboard — mirroring the GoHighLevel reconnect alert UX.
 
-### Phase 1: Reconnect Detection & Notifications ✅ Complete — 2026-04-02
+### Phase 1: Reconnect Detection & Notifications ✅ Complete — 2026-04-02 (all plans)
 
 **Goal:** Backend detects expired/invalid tokens, marks them as `needsReconnect`, sends SMS notification via Twilio, and exposes a status endpoint for the frontend banner.
 **Depends on:** Nothing (schema already updated with `needsReconnect` + `lastDisconnectedAt`)
@@ -208,8 +208,8 @@ When a staff member's Google Calendar token expires or becomes invalid, the syst
 
 **Plans:**
 - [x] 05-01: Storage + token health check + SMS notification ✅ 2026-04-02
-- [ ] 05-02: "Take Action" banner component + admin wiring
+- [x] 05-02: "Take Action" banner component + admin wiring ✅ 2026-04-02
 
 ---
 *Roadmap created: 2026-04-02*
-*Last updated: 2026-04-02 — v0.5 Phase 1 complete*
+*Last updated: 2026-04-02 — v0.5 milestone complete*

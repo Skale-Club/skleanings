@@ -5,26 +5,26 @@
 See: .paul/PROJECT.md (updated 2026-04-02)
 
 **Core value:** Customers can book cleaning services with a specific professional, with a unified calendar that automatically resolves availability conflicts across staff members and their external Google Calendar events.
-**Current focus:** v0.5 Google Calendar Reconnect Notifications — Plan 05-02
+**Current focus:** v0.5 Google Calendar Reconnect Notifications — **COMPLETE** ✅
 
 ## Current Position
 
-Milestone: v0.5 Google Calendar Reconnect Notifications
-Phase: 1 of 1 (Reconnect Detection & Notifications) — In Progress (1/2 plans complete)
-Plan: 05-01 unified — ready to plan 05-02
-Status: Ready for next PLAN
-Last activity: 2026-04-02 — 05-01 unified: backend reconnect detection + SMS complete
+Milestone: v0.5 Google Calendar Reconnect Notifications — **COMPLETE** ✅
+Phase: 1 of 1 (Reconnect Detection & Notifications) — Complete
+Plan: 05-02 unified — all plans complete
+Status: Milestone complete
+Last activity: 2026-04-02 — v0.5 complete: full reconnect detection + notifications + banner
 
 Progress:
-- Milestone: [█████░░░░░] 50%
-- Phase 1: [█████░░░░░] 50%
+- Milestone: [██████████] 100% ✓
+- Phase 1: [██████████] 100% ✓
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop complete — ready for next PLAN]
+  ✓        ✓        ✓     [v0.5 milestone complete]
 ```
 
 ## Accumulated Context
@@ -47,9 +47,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-02
-Stopped at: Plan 05-01 unified — backend reconnect detection complete
-Next action: /paul:plan for 05-02 (TakeActionBanner + admin wiring)
-Resume file: .paul/phases/05-gcal-reconnect-notifications/05-01-SUMMARY.md
+Stopped at: v0.5 milestone complete — all plans unified
+Next action: Merge feature/google-calendar-reconnect-notifications → dev, run db:push
+Resume file: .paul/phases/05-gcal-reconnect-notifications/05-02-SUMMARY.md
 
 ---
 *STATE.md — Updated after every significant action*
