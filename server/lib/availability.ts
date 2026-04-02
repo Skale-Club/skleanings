@@ -159,9 +159,12 @@ export async function checkAvailability(
     date: string,
     startTime: string,
     endTime: string,
-    excludeBookingId?: number
+    excludeBookingId?: number,
+    staffMemberId?: number
 ): Promise<boolean> {
-    const existingBookings = await storage.getBookingsByDate(date);
+    const existingBookings = staffMemberId
+        ? await storage.getBookingsByDateAndStaff(date, staffMemberId)
+        : await storage.getBookingsByDate(date);
 
     return !existingBookings.some(booking => {
         if (excludeBookingId && booking.id === excludeBookingId) return false;

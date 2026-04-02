@@ -116,6 +116,8 @@ export const bookings = pgTable("bookings", {
   ghlAppointmentId: text("ghl_appointment_id"),
   ghlContactId: text("ghl_contact_id"),
   ghlSyncStatus: text("ghl_sync_status").default("pending"), // pending, synced, failed
+  // Staff assignment (nullable — single-operator deployments have no staff selection)
+  staffMemberId: integer("staff_member_id").references(() => staffMembers.id, { onDelete: "set null" }),
 });
 
 // GoHighLevel Integration Settings
@@ -708,3 +710,79 @@ export const insertTimeSlotLockSchema = createInsertSchema(timeSlotLocks).omit({
 
 export type TimeSlotLock = typeof timeSlotLocks.$inferSelect;
 export type InsertTimeSlotLock = z.infer<typeof insertTimeSlotLockSchema>;
+
+// === STAFF MEMBERS ===
+
+// Staff members who perform services (barber-shop model)
+export const staffMembers = pgTable("staff_members", {
+  id: serial("id").primaryKey(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  email: text("email").unique(),
+  phone: text("phone"),
+  profileImageUrl: text("profile_image_url"),
+  bio: text("bio"),
+  isActive: boolean("is_active").default(true).notNull(),
+  order: integer("order").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Junction: which services each staff member can perform
+export const staffServiceAbilities = pgTable("staff_service_abilities", {
+  id: serial("id").primaryKey(),
+  staffMemberId: integer("staff_member_id").references(() => staffMembers.id, { onDelete: "cascade" }).notNull(),
+  serviceId: integer("service_id").references(() => services.id, { onDelete: "cascade" }).notNull(),
+});
+
+// Per-staff working hours by day of week
+export const staffAvailability = pgTable("staff_availability", {
+  id: serial("id").primaryKey(),
+  staffMemberId: integer("staff_member_id").references(() => staffMembers.id, { onDelete: "cascade" }).notNull(),
+  dayOfWeek: integer("day_of_week").notNull(), // 0=Sunday, 1=Monday, ..., 6=Saturday (JS Date convention)
+  startTime: text("start_time").notNull(), // HH:MM
+  endTime: text("end_time").notNull(),     // HH:MM
+  isAvailable: boolean("is_available").default(true).notNull(),
+});
+
+// Optional Google Calendar OAuth tokens per staff member
+export const staffGoogleCalendar = pgTable("staff_google_calendar", {
+  id: serial("id").primaryKey(),
+  staffMemberId: integer("staff_member_id").references(() => staffMembers.id, { onDelete: "cascade" }).notNull().unique(),
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token").notNull(),
+  calendarId: text("calendar_id").default("primary").notNull(),
+  tokenExpiresAt: timestamp("token_expires_at").notNull(),
+  connectedAt: timestamp("connected_at").defaultNow().notNull(),
+});
+
+// Staff insert schemas
+export const insertStaffMemberSchema = createInsertSchema(staffMembers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertStaffServiceAbilitySchema = createInsertSchema(staffServiceAbilities).omit({
+  id: true,
+});
+
+export const insertStaffAvailabilitySchema = createInsertSchema(staffAvailability).omit({
+  id: true,
+});
+
+export const insertStaffGoogleCalendarSchema = createInsertSchema(staffGoogleCalendar).omit({
+  id: true,
+  connectedAt: true,
+});
+
+// Staff TypeScript types
+export type StaffMember = typeof staffMembers.$inferSelect;
+export type StaffServiceAbility = typeof staffServiceAbilities.$inferSelect;
+export type StaffAvailability = typeof staffAvailability.$inferSelect;
+export type StaffGoogleCalendar = typeof staffGoogleCalendar.$inferSelect;
+
+export type InsertStaffMember = z.infer<typeof insertStaffMemberSchema>;
+export type InsertStaffServiceAbility = z.infer<typeof insertStaffServiceAbilitySchema>;
+export type InsertStaffAvailability = z.infer<typeof insertStaffAvailabilitySchema>;
+export type InsertStaffGoogleCalendar = z.infer<typeof insertStaffGoogleCalendarSchema>;
