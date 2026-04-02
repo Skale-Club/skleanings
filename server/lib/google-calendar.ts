@@ -1,5 +1,6 @@
 import { OAuth2Client } from "google-auth-library";
 import { storage } from "../storage";
+import { sendCalendarDisconnectNotification } from "../integrations/twilio";
 
 async function createOAuth2Client(): Promise<OAuth2Client> {
   const creds = await storage.getIntegrationSettings("google-calendar");
@@ -82,6 +83,23 @@ export async function getValidAccessToken(staffMemberId: number): Promise<string
 
     return credentials.access_token;
   } catch {
+    // Mark the calendar as needing reconnect and notify admin via SMS
+    try {
+      await storage.markCalendarNeedsReconnect(staffMemberId);
+      const twilioSettings = await storage.getTwilioSettings();
+      if (twilioSettings) {
+        const calRecord = await storage.getStaffGoogleCalendar(staffMemberId);
+        if (calRecord) {
+          const member = await storage.getStaffMember(staffMemberId);
+          if (member) {
+            const staffName = `${member.firstName} ${member.lastName}`;
+            await sendCalendarDisconnectNotification(staffName, twilioSettings);
+          }
+        }
+      }
+    } catch {
+      // Notification failure must never break the availability engine
+    }
     return null;
   }
 }

@@ -51,9 +51,19 @@ Customers can book cleaning services with a specific professional, with a unifie
 - [x] Staff-aware booking — staffMemberId stored on booking, shown in admin dashboard — Phase 5
 
 ### Active (In Progress)
-None — v0.3 Stripe Payments is complete.
+- [ ] v0.5 — "Take Action" in-app banner + frontend reconnect flow (Plan 05-02)
 
-### Validated (v0.3 in progress)
+### Validated (v0.5 in progress)
+- [x] needsReconnect + lastDisconnectedAt columns on staffGoogleCalendar — v0.5 Phase 1
+- [x] Auto-mark on token refresh failure — storage.markCalendarNeedsReconnect — v0.5 Phase 1
+- [x] SMS notification on first calendar disconnection via Twilio — v0.5 Phase 1
+- [x] GET /api/staff/calendar/all-statuses — admin endpoint for banner data — v0.5 Phase 1
+- [x] POST /api/staff/:id/calendar/clear-reconnect — resets flag after re-auth — v0.5 Phase 1
+
+### Validated (v0.4 complete)
+- [x] Unified Users section — Staff + Admin Accounts tabs — v0.4 Phase 1
+
+### Validated (v0.3 complete)
 - [x] Stripe Connect OAuth — client connects own Stripe account via button in Admin → Integrations — Phase 1
 - [x] Stripe Checkout redirect flow — booking creates session, customer redirected to Stripe — Phase 1 + 2
 - [x] stripeSessionId on bookings — links booking to Stripe session for verification — Phase 1
@@ -91,6 +101,8 @@ None — v0.3 Stripe Payments is complete.
 | Availability is computed per-service, then merged | Cart may contain services from different staff; must intersect availability correctly | 2026-04-02 | Active |
 | Google Calendar per staff member (OAuth) | Staff use personal Google calendars; OAuth allows read-only busy-time fetching without exposing credentials | 2026-04-02 | Active |
 | Hide staff UI when count = 1 | Single-operator businesses shouldn't see irrelevant UI | 2026-04-02 | Active |
+| Conditional DB write on needsReconnect | Only update when currently false — prevents duplicate SMS on repeated token failures | 2026-04-02 | Active |
+| Notification path fully try/catch wrapped | Token refresh is called from availability engine — failure must never break booking flow | 2026-04-02 | Active |
 
 ## Success Metrics
 
@@ -125,4 +137,4 @@ None — v0.3 Stripe Payments is complete.
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-04-02 after Phase 3 — v0.3 Stripe Payments complete*
+*Last updated: 2026-04-02 after Phase 05-01 — v0.5 backend reconnect detection complete*

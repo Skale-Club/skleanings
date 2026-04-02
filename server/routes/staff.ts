@@ -28,6 +28,16 @@ router.get("/", async (req, res) => {
   }
 });
 
+// GET /api/staff/calendar/all-statuses — all staff calendar connection state (must be before /:id)
+router.get("/calendar/all-statuses", requireAdmin, async (_req, res) => {
+  try {
+    const statuses = await storage.getAllCalendarStatuses();
+    res.json(statuses);
+  } catch (err) {
+    res.status(500).json({ message: (err as Error).message });
+  }
+});
+
 // GET /api/staff/count — count of active staff (must be before /:id)
 router.get("/count", async (_req, res) => {
   try {
@@ -204,6 +214,16 @@ router.get("/:id/calendar/connect", requireAdmin, async (req, res) => {
 router.delete("/:id/calendar", requireAdmin, async (req, res) => {
   try {
     await storage.deleteStaffGoogleCalendar(Number(req.params.id));
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ message: (err as Error).message });
+  }
+});
+
+// POST /api/staff/:id/calendar/clear-reconnect — clear needsReconnect flag after re-auth
+router.post("/:id/calendar/clear-reconnect", requireAdmin, async (req, res) => {
+  try {
+    await storage.clearCalendarNeedsReconnect(Number(req.params.id));
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ message: (err as Error).message });

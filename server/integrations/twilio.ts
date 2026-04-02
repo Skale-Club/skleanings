@@ -42,6 +42,34 @@ export async function sendNewChatNotification(
   }
 }
 
+export async function sendCalendarDisconnectNotification(
+  staffName: string,
+  twilioSettings: TwilioSettings
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    if (!twilioSettings.enabled || !twilioSettings.accountSid || !twilioSettings.authToken || !twilioSettings.fromPhoneNumber || !twilioSettings.toPhoneNumbers || twilioSettings.toPhoneNumbers.length === 0) {
+      return { success: false, message: "Twilio settings incomplete or disabled" };
+    }
+
+    const { default: twilio } = await import("twilio");
+    const client = twilio(twilioSettings.accountSid, twilioSettings.authToken);
+    const body = `⚠️ Google Calendar disconnected for ${staffName}. Please reconnect at Admin → Staff → Calendar.`;
+
+    for (const phoneNumber of twilioSettings.toPhoneNumbers) {
+      await client.messages.create({
+        body,
+        from: twilioSettings.fromPhoneNumber,
+        to: phoneNumber,
+      });
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Failed to send calendar disconnect notification:", error);
+    return { success: false, message: error?.message || "Unknown error" };
+  }
+}
+
 export async function sendBookingNotification(
   booking: BookingNotificationPayload,
   serviceNames: string[],
