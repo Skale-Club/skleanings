@@ -15,6 +15,7 @@ import {
   Package,
   Puzzle,
   Search,
+  Users,
   Users2,
 } from 'lucide-react';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -32,6 +33,7 @@ import { HeroSettingsSection } from '@/components/admin/HeroSettingsSection';
 import { CompanySettingsSection } from '@/components/admin/CompanySettingsSection';
 import { SEOSection } from '@/components/admin/SEOSection';
 import { FaqsSection } from '@/components/admin/FaqsSection';
+import { UsersSection } from './admin/UsersSection';
 import { AvailabilitySection } from '@/components/admin/AvailabilitySection';
 import { AdminChatLayout } from '@/components/chat/admin/AdminChatLayout';
 import { IntegrationsSection } from '@/components/admin/IntegrationsSection';
@@ -48,6 +50,7 @@ const menuItems: AdminMenuItem[] = [
   { id: 'availability', title: 'Availability', icon: Clock },
   { id: 'chat', title: 'Chat', icon: MessageSquare },
   { id: 'faqs', title: 'FAQs', icon: HelpCircle },
+  { id: 'users', title: 'Users', icon: Users },
   { id: 'blog', title: 'Blog', icon: FileText },
   { id: 'seo', title: 'SEO', icon: Search },
   { id: 'integrations', title: 'Integrations', icon: Puzzle },
@@ -156,6 +159,7 @@ function AdminContent() {
           {activeSection === 'company' && <CompanySettingsSection getAccessToken={getAccessToken} />}
           {activeSection === 'seo' && <SEOSection getAccessToken={getAccessToken} />}
           {activeSection === 'faqs' && <FaqsSection />}
+          {activeSection === 'users' && <UsersSection />}
           {activeSection === 'availability' && <AvailabilitySection />}
           {activeSection === 'chat' && <AdminChatLayout getAccessToken={getAccessToken} />}
           {activeSection === 'integrations' && <IntegrationsSection getAccessToken={getAccessToken} />}
