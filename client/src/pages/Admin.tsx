@@ -16,7 +16,6 @@ import {
   Puzzle,
   Search,
   Users,
-  Users2,
 } from 'lucide-react';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useAdminAuth } from '@/context/AuthContext';
@@ -33,12 +32,11 @@ import { HeroSettingsSection } from '@/components/admin/HeroSettingsSection';
 import { CompanySettingsSection } from '@/components/admin/CompanySettingsSection';
 import { SEOSection } from '@/components/admin/SEOSection';
 import { FaqsSection } from '@/components/admin/FaqsSection';
-import { UsersSection } from './admin/UsersSection';
+import { UnifiedUsersSection } from '@/components/admin/UnifiedUsersSection';
 import { AvailabilitySection } from '@/components/admin/AvailabilitySection';
 import { AdminChatLayout } from '@/components/chat/admin/AdminChatLayout';
 import { IntegrationsSection } from '@/components/admin/IntegrationsSection';
 import { BlogSection } from '@/components/admin/BlogSection';
-import { StaffSection } from '@/components/admin/StaffSection';
 
 const menuItems: AdminMenuItem[] = [
   { id: 'dashboard', title: 'Dashboard', icon: LayoutDashboard },
@@ -54,7 +52,6 @@ const menuItems: AdminMenuItem[] = [
   { id: 'blog', title: 'Blog', icon: FileText },
   { id: 'seo', title: 'SEO', icon: Search },
   { id: 'integrations', title: 'Integrations', icon: Puzzle },
-  { id: 'staff', title: 'Staff', icon: Users2 },
 ];
 
 function AdminContent() {
@@ -159,12 +156,11 @@ function AdminContent() {
           {activeSection === 'company' && <CompanySettingsSection getAccessToken={getAccessToken} />}
           {activeSection === 'seo' && <SEOSection getAccessToken={getAccessToken} />}
           {activeSection === 'faqs' && <FaqsSection />}
-          {activeSection === 'users' && <UsersSection />}
+          {activeSection === 'users' && <UnifiedUsersSection />}
           {activeSection === 'availability' && <AvailabilitySection />}
           {activeSection === 'chat' && <AdminChatLayout getAccessToken={getAccessToken} />}
           {activeSection === 'integrations' && <IntegrationsSection getAccessToken={getAccessToken} />}
           {activeSection === 'blog' && <BlogSection resetSignal={blogResetSignal} getAccessToken={getAccessToken} />}
-          {activeSection === 'staff' && <StaffSection />}
         </div>
       </main>
     </div>
