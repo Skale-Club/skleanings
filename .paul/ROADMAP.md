@@ -7,8 +7,8 @@ Skleanings is a booking platform for a cleaning company. The current milestone (
 ## Current Milestone
 
 **v0.3 — Stripe Payments** (v0.3.0)
-Status: In progress
-Phases: 2 of 3 complete
+Status: ✅ Complete — 2026-04-02
+Phases: 3 of 3 complete
 
 ## Completed Milestone
 
@@ -157,7 +157,7 @@ Customers can pay for their cleaning booking online at checkout via Stripe. The 
 **Plans:**
 - [x] 02-01: Booking flow UI + confirmation page states ✅ 2026-04-02
 
-### Phase 3: Admin Payment Management
+### Phase 3: Admin Payment Management ✅ Complete — 2026-04-02
 
 **Goal:** Admin can see Stripe payment status on bookings and manually override payment status.
 **Depends on:** Phase 1 (Stripe fields on bookings)
@@ -168,8 +168,8 @@ Customers can pay for their cleaning booking online at checkout via Stripe. The 
 - Admin can mark any booking as paid/unpaid manually (already exists — ensure `pending_payment` is handled)
 
 **Plans:**
-- [ ] 03-01: Admin booking card Stripe payment display
+- [x] 03-01: Admin booking card Stripe payment display ✅ 2026-04-02
 
 ---
 *Roadmap created: 2026-04-02*
-*Last updated: 2026-04-02 — Phase 2 complete (Booking Flow — Pay Online)*
+*Last updated: 2026-04-02 — v0.3 Stripe Payments milestone complete*

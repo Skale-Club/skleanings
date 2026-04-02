@@ -51,7 +51,7 @@ Customers can book cleaning services with a specific professional, with a unifie
 - [x] Staff-aware booking — staffMemberId stored on booking, shown in admin dashboard — Phase 5
 
 ### Active (In Progress)
-- [ ] v0.3 Phase 3 — Admin payment management (Stripe session ID + status badge on booking cards)
+None — v0.3 Stripe Payments is complete.
 
 ### Validated (v0.3 in progress)
 - [x] Stripe Connect OAuth — client connects own Stripe account via button in Admin → Integrations — Phase 1
@@ -59,6 +59,7 @@ Customers can book cleaning services with a specific professional, with a unifie
 - [x] stripeSessionId on bookings — links booking to Stripe session for verification — Phase 1
 - [x] Pay Online radio enabled in booking flow — Phase 2
 - [x] Confirmation page Stripe states (loading/pending/paid) — Phase 2
+- [x] Admin booking card: pending_payment badge + Stripe dashboard link — Phase 3
 
 ### Out of Scope
 - Per-service Google Calendar (calendar is per staff member, not per service)
@@ -124,4 +125,4 @@ Customers can book cleaning services with a specific professional, with a unifie
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-04-02 after Phase 2 (v0.3 Booking Flow — Pay Online complete)*
+*Last updated: 2026-04-02 after Phase 3 — v0.3 Stripe Payments complete*
