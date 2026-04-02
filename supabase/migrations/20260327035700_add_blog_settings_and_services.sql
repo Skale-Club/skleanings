@@ -19,9 +19,9 @@ create table if not exists public.blog_post_services (
 );
 
 -- Create unique constraint to prevent duplicate service associations
-create unique index if not exists public.blog_post_services_unique 
+create unique index if not exists blog_post_services_unique
   on public.blog_post_services (blog_post_id, service_id);
 
 -- Add comment for documentation
-comment on 'public.blog_settings' is 'Blog automation settings singleton table';
-comment on 'public.blog_post_services' is 'Junction table linking blog posts to services';
+comment on table public.blog_settings is 'Blog automation settings singleton table';
+comment on table public.blog_post_services is 'Junction table linking blog posts to services';
