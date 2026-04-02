@@ -5,26 +5,26 @@
 See: .paul/PROJECT.md (updated 2026-04-02)
 
 **Core value:** Customers can book cleaning services with a specific professional, with a unified calendar that automatically resolves availability conflicts across staff members and their external Google Calendar events.
-**Current focus:** v0.3 Stripe Payments — COMPLETE ✅
+**Current focus:** v0.4 Unified Users Management — Phase 1
 
 ## Current Position
 
-Milestone: v0.3 Stripe Payments — **COMPLETE** ✅
-Phase: 3 of 3 (Admin Payment Management) — Complete
-Plan: 03-01 complete
-Status: Milestone complete — ready for next milestone planning
-Last activity: 2026-04-02 — v0.3 Stripe Payments milestone complete
+Milestone: v0.4 Unified Users Management — **COMPLETE** ✅
+Phase: 1 of 1 (Unified Users Section) — Complete
+Plan: 04-01 complete
+Status: Milestone complete — ready to merge feature/merge-users-staff
+Last activity: 2026-04-02 — v0.4 complete
 
 Progress:
 - Milestone: [██████████] 100% ✓
-- Phase 3: [██████████] 100% ✓
+- Phase 1: [██████████] 100% ✓
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [v0.3 milestone complete]
+  ✓        ✓        ✓     [v0.4 milestone complete]
 ```
 
 ## Accumulated Context
@@ -48,8 +48,8 @@ None.
 
 Last session: 2026-04-02
 Stopped at: Phase 2 complete — all plans unified, transitioned to Phase 3
-Next action: Merge feature/stripe-payments to dev, then plan v0.4 milestone
-Resume file: .paul/phases/03-admin-payment-management/03-01-SUMMARY.md
+Next action: Merge feature/merge-users-staff → dev → push origin
+Resume file: .paul/phases/04-unified-users/04-01-SUMMARY.md
 
 ---
 *STATE.md — Updated after every significant action*

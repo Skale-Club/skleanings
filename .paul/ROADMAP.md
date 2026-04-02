@@ -171,5 +171,24 @@ Customers can pay for their cleaning booking online at checkout via Stripe. The 
 - [x] 03-01: Admin booking card Stripe payment display ✅ 2026-04-02
 
 ---
+
+## v0.4 — Unified Users Management
+
+Consolidate the separate "Users" and "Staff" sidebar sections into a single "Users" section with internal tabs. A user is a base entity that may or may not be admin or staff.
+
+### Phase 1: Unified Users Section ✅ Complete — 2026-04-02
+
+**Goal:** Single "Users" nav item containing both platform users (admin accounts) and staff members (cleaning professionals) in a tabbed interface.
+**Depends on:** Nothing
+
+**Scope:**
+- New `UnifiedUsersSection` component with Staff + Admin Accounts tabs
+- Remove "Staff" nav item from Admin sidebar
+- Update AdminSection type
+
+**Plans:**
+- [x] 04-01: Unified Users page with tabs ✅ 2026-04-02
+
+---
 *Roadmap created: 2026-04-02*
-*Last updated: 2026-04-02 — v0.3 Stripe Payments milestone complete*
+*Last updated: 2026-04-02 — v0.4 Unified Users complete*
