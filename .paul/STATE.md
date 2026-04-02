@@ -5,26 +5,25 @@
 See: .paul/PROJECT.md (updated 2026-04-02)
 
 **Core value:** Customers can book cleaning services with a specific professional, with a unified calendar that automatically resolves availability conflicts across staff members and their external Google Calendar events.
-**Current focus:** v0.5 Google Calendar Reconnect Notifications — **COMPLETE** ✅
+**Current focus:** v0.6 Unified Users & Roles — Phase 1
 
 ## Current Position
 
-Milestone: v0.5 Google Calendar Reconnect Notifications — **COMPLETE** ✅
-Phase: 1 of 1 (Reconnect Detection & Notifications) — Complete
-Plan: 05-02 unified — all plans complete
-Status: Milestone complete
-Last activity: 2026-04-02 — v0.5 complete: full reconnect detection + notifications + banner
+Milestone: v0.6 Unified Users & Roles
+Phase: 1 of 3 (Schema + Auth + Role Middleware) — Discussion complete
+Plan: 06-01 unified — ready to plan 06-02
+Status: Ready for next PLAN
+Last activity: 2026-04-02 — 06-01 unified: schema + auth + AuthContext role complete
 
 Progress:
-- Milestone: [██████████] 100% ✓
-- Phase 1: [██████████] 100% ✓
+- Milestone: [░░░░░░░░░░] 0%
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [v0.5 milestone complete]
+  ✓        ✓        ✓     [Loop complete — ready for next PLAN]
 ```
 
 ## Accumulated Context
@@ -47,9 +46,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-02
-Stopped at: v0.5 milestone complete — all plans unified
-Next action: Merge feature/google-calendar-reconnect-notifications → dev, run db:push
-Resume file: .paul/phases/05-gcal-reconnect-notifications/05-02-SUMMARY.md
+Stopped at: v0.6 discussion complete — CONTEXT.md written
+Next action: /paul:plan for 06-02 (login redirect by role + staff route guard)
+Resume file: .paul/phases/06-unified-users-roles/06-01-SUMMARY.md
 
 ---
 *STATE.md — Updated after every significant action*

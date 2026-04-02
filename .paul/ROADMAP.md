@@ -211,5 +211,59 @@ When a staff member's Google Calendar token expires or becomes invalid, the syst
 - [x] 05-02: "Take Action" banner component + admin wiring ✅ 2026-04-02
 
 ---
+
+## v0.6 — Unified Users & Roles
+
+Single "Users" page with three roles: Admin (owner — full access), User (receptionist — manage staff, view calendars/bookings), Staff (professional — personal settings only). Bridge approach: `users` table gets `role` column; `staffMembers` gets `userId` FK. Existing availability/calendar/booking code stays untouched.
+
+### Phase 1: Schema + Auth + Role Middleware
+
+**Goal:** `users` table has `role` enum column. Auth returns role. Three middleware levels: `requireAdmin`, `requireUser` (admin+user), `requireStaff` (any authenticated). Staff login creates a user record automatically when admin creates staff.
+**Depends on:** Nothing
+
+**Scope:**
+- Add `role` column to `users` table (enum: admin/user/staff, default 'admin' for backward compat)
+- Add `phone` column to `users` table
+- Add `userId` FK to `staffMembers` table
+- Update auth middleware: `requireAdmin` (role=admin), `requireUser` (role=admin|user), `requireStaff` (any auth'd user)
+- Update AuthContext to expose `role`
+- Login redirects: admin/user → /admin, staff → /staff/settings
+- Supabase migration
+
+**Plans:**
+- [ ] 06-01: Schema migration + auth middleware + AuthContext role
+- [ ] 06-02: Login redirect by role + staff route guard
+
+### Phase 2: Unified Users Page + Create User Flow
+
+**Goal:** Single flat users list showing all users (admin + user + staff) with role badges. "Add User" dialog with role picker and avatar upload. Creating staff-role user also creates linked staffMembers record.
+**Depends on:** Phase 1
+
+**Scope:**
+- Rewrite UnifiedUsersSection → single flat table (no tabs)
+- Add User dialog: role picker (Admin visible only to admins, User+Staff visible to users), name, email, password, avatar upload
+- Edit User dialog: same fields, role change rules
+- When creating role=staff: auto-create staffMembers record with userId FK
+- Avatar upload using existing Supabase Storage flow (ObjectUploader)
+
+**Plans:**
+- [ ] 06-03: Unified users list + Add/Edit user dialog with role picker
+- [ ] 06-04: Staff creation bridge (auto-create staffMembers on role=staff)
+
+### Phase 3: Staff Personal Settings Page
+
+**Goal:** Staff logs in and lands on a personal settings page where they can edit their profile, bio, avatar, and Google Calendar connection. No access to admin pages.
+**Depends on:** Phase 2
+
+**Scope:**
+- New route: /staff/settings
+- StaffSettingsPage component: edit own profile (name, phone, bio, avatar) + CalendarTab
+- Route guard: staff role only sees /staff/* routes
+- Staff navbar: minimal (just settings + logout)
+
+**Plans:**
+- [ ] 06-05: Staff settings page + route protection
+
+---
 *Roadmap created: 2026-04-02*
-*Last updated: 2026-04-02 — v0.5 milestone complete*
+*Last updated: 2026-04-02 — v0.6 Unified Users & Roles added*

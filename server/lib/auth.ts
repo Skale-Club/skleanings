@@ -1,50 +1,75 @@
 
 import { Request, Response, NextFunction } from "express";
 import { createClient } from '@supabase/supabase-js';
+import { storage } from "../storage";
 
 // Supabase client for auth verification
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || '';
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Admin authentication middleware - uses Supabase Auth
+/**
+ * Validate Bearer token and look up the DB user with role.
+ * Returns the DB user or null. Attaches user to req if valid.
+ */
+async function getAuthenticatedUser(req: Request) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) return null;
+
+  const token = authHeader.split('Bearer ')[1];
+  try {
+    const { data: { user: supabaseUser }, error } = await supabase.auth.getUser(token);
+    if (error || !supabaseUser || !supabaseUser.email) return null;
+
+    const dbUser = await storage.getUserByEmail(supabaseUser.email);
+    if (!dbUser) return null;
+
+    (req as any).user = dbUser;
+    (req as any).supabaseUser = supabaseUser;
+    return dbUser;
+  } catch {
+    return null;
+  }
+}
+
+/** Any authenticated user (admin, user, or staff) */
+export async function requireAuth(req: Request, res: Response, next: NextFunction) {
+  const user = await getAuthenticatedUser(req);
+  if (!user) return res.status(401).json({ message: 'Authentication required' });
+  next();
+}
+
+/** Admin or User role (not staff) */
+export async function requireUser(req: Request, res: Response, next: NextFunction) {
+  const user = await getAuthenticatedUser(req);
+  if (!user) return res.status(401).json({ message: 'Authentication required' });
+  if (user.role !== 'admin' && user.role !== 'user') {
+    return res.status(403).json({ message: 'Insufficient permissions' });
+  }
+  next();
+}
+
+/** Admin role only */
 export async function requireAdmin(req: Request, res: Response, next: NextFunction) {
-    const authHeader = req.headers.authorization;
+  const user = await getAuthenticatedUser(req);
+  if (!user) return res.status(401).json({ message: 'Authentication required' });
+  if (user.role !== 'admin') {
+    return res.status(403).json({ message: 'Admin access required' });
+  }
+  next();
+}
 
-    // console.log('Auth header:', authHeader);
-    // console.log('Request URL:', req.url);
-
-    if (!authHeader?.startsWith('Bearer ')) {
-        console.log('Missing or invalid Bearer token');
-        return res.status(401).json({ message: 'Authentication required' });
-    }
-
-    const token = authHeader.split('Bearer ')[1];
-    // console.log('Token received:', token.substring(0, 20) + '...');
-
-    try {
-        const { data: { user }, error } = await supabase.auth.getUser(token);
-
-        if (error || !user) {
-            console.log('Token validation failed:', error);
-            return res.status(401).json({ message: 'Authentication required' });
-        }
-
-        // Check if user email matches admin email
-        const adminEmail = process.env.ADMIN_EMAIL || '';
-        if (adminEmail && user.email !== adminEmail) {
-          console.log(`Admin access denied. User: ${user.email}, Expected: ${adminEmail}`);
-          return res.status(403).json({ message: 'Admin access required' });
-        }
-
-        // If ADMIN_EMAIL is not set, allow any authenticated user (development mode)
-        if (!adminEmail) {
-          console.warn(`ADMIN_EMAIL not set. Allowing authenticated user ${user.email} as admin. Set ADMIN_EMAIL in production.`);
-        }
-
-        (req as any).user = user;
-        next();
-    } catch (error) {
-        return res.status(500).json({ message: 'Failed to verify admin status' });
-    }
+/** GET /api/auth/me — returns current user's profile with role */
+export async function getAuthMe(req: Request, res: Response) {
+  const user = await getAuthenticatedUser(req);
+  if (!user) return res.status(401).json({ message: 'Not authenticated' });
+  res.json({
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    phone: user.phone,
+    profileImageUrl: user.profileImageUrl,
+  });
 }
