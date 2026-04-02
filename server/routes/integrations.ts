@@ -1053,4 +1053,70 @@ router.get("/thumbtack/authorize", requireAdmin, async (_req, res) => {
     }
 });
 
+// ===============================
+// Google Calendar Integration Routes
+// ===============================
+
+// Get Google Calendar OAuth credentials
+router.get("/google-calendar", requireAdmin, async (req, res) => {
+    try {
+        const settings = await storage.getIntegrationSettings("google-calendar");
+        if (!settings) {
+            return res.json({
+                provider: "google-calendar",
+                apiKey: "",
+                locationId: "",
+                calendarId: "",
+                isEnabled: false
+            });
+        }
+        res.json({
+            ...settings,
+            apiKey: settings.apiKey ? "********" : "",
+            locationId: settings.locationId ? "********" : "",
+        });
+    } catch (err) {
+        res.status(500).json({ message: (err as Error).message });
+    }
+});
+
+// Save Google Calendar OAuth credentials
+router.put("/google-calendar", requireAdmin, async (req, res) => {
+    try {
+        const { apiKey, locationId, calendarId, isEnabled } = req.body;
+
+        const existingSettings = await storage.getIntegrationSettings("google-calendar");
+
+        const settingsToSave: any = {
+            provider: "google-calendar",
+            calendarId: calendarId || "",
+            isEnabled: isEnabled ?? false
+        };
+
+        // apiKey = GOOGLE_CLIENT_ID
+        if (apiKey && apiKey !== "********") {
+            settingsToSave.apiKey = apiKey;
+        } else if (existingSettings?.apiKey) {
+            settingsToSave.apiKey = existingSettings.apiKey;
+        }
+
+        // locationId = GOOGLE_CLIENT_SECRET
+        if (locationId && locationId !== "********") {
+            settingsToSave.locationId = locationId;
+        } else if (existingSettings?.locationId) {
+            settingsToSave.locationId = existingSettings.locationId;
+        }
+
+        const settings = await storage.upsertIntegrationSettings(settingsToSave);
+
+        res.json({
+            ...settings,
+            apiKey: settings.apiKey ? "********" : "",
+            locationId: settings.locationId ? "********" : "",
+        });
+    } catch (err) {
+        res.status(400).json({ message: (err as Error).message });
+    }
+});
+
 export default router;

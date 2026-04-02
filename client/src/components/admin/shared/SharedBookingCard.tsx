@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
-import { Calendar, ChevronDown, Clock, Loader2, MapPin, Pencil, Trash2 } from 'lucide-react';
-import type { Booking } from '@shared/schema';
+import { Calendar, ChevronDown, Clock, Loader2, MapPin, Pencil, Trash2, User } from 'lucide-react';
+import type { Booking, StaffMember } from '@shared/schema';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -119,6 +119,9 @@ export function SharedBookingCard({
                             <MapPin className="w-4 h-4 mt-0.5 shrink-0" />
                             <span className="line-clamp-2 leading-snug">{booking.customerAddress}</span>
                         </div>
+                        {booking.staffMemberId && (
+                            <StaffBadge staffMemberId={booking.staffMemberId} />
+                        )}
                     </div>
 
                     {/* Vertical divider */}
@@ -291,5 +294,22 @@ export function SharedBookingCard({
                 )}
             </CardContent>
         </Card>
+    );
+}
+
+function StaffBadge({ staffMemberId }: { staffMemberId: number }) {
+    const { data: member } = useQuery<StaffMember>({
+        queryKey: ['/api/staff', staffMemberId],
+        queryFn: () => fetch(`/api/staff/${staffMemberId}`).then(r => r.json()),
+        staleTime: 60_000,
+    });
+
+    if (!member) return null;
+
+    return (
+        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <User className="w-4 h-4 shrink-0" />
+            <span>{member.firstName} {member.lastName}</span>
+        </div>
     );
 }

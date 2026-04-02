@@ -52,12 +52,22 @@ export function useServices(categoryId?: number, subcategoryId?: number) {
 }
 
 // --- Availability ---
-export function useAvailability(date: string | undefined, totalDurationMinutes: number) {
+export function useAvailability(
+  date: string | undefined,
+  totalDurationMinutes: number,
+  options?: { staffId?: number; serviceIds?: number[] }
+) {
   return useQuery({
-    queryKey: [api.availability.check.path, date, totalDurationMinutes],
+    queryKey: [api.availability.check.path, date, totalDurationMinutes, options?.staffId, options?.serviceIds],
     queryFn: async () => {
       if (!date) return [];
-      const url = `${api.availability.check.path}?date=${date}&totalDurationMinutes=${totalDurationMinutes}`;
+      const params = new URLSearchParams({
+        date,
+        totalDurationMinutes: String(totalDurationMinutes),
+      });
+      if (options?.staffId) params.append('staffId', String(options.staffId));
+      if (options?.serviceIds?.length) params.append('serviceIds', options.serviceIds.join(','));
+      const url = `${api.availability.check.path}?${params.toString()}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to check availability");
       return api.availability.check.responses[200].parse(await res.json());
@@ -71,11 +81,23 @@ export function useAvailability(date: string | undefined, totalDurationMinutes: 
 }
 
 // --- Monthly Availability ---
-export function useMonthAvailability(year: number, month: number, totalDurationMinutes: number) {
+export function useMonthAvailability(
+  year: number,
+  month: number,
+  totalDurationMinutes: number,
+  options?: { staffId?: number; serviceIds?: number[] }
+) {
   return useQuery({
-    queryKey: [api.availability.month.path, year, month, totalDurationMinutes],
+    queryKey: [api.availability.month.path, year, month, totalDurationMinutes, options?.staffId, options?.serviceIds],
     queryFn: async () => {
-      const url = `${api.availability.month.path}?year=${year}&month=${month}&totalDurationMinutes=${totalDurationMinutes}`;
+      const params = new URLSearchParams({
+        year: String(year),
+        month: String(month),
+        totalDurationMinutes: String(totalDurationMinutes),
+      });
+      if (options?.staffId) params.append('staffId', String(options.staffId));
+      if (options?.serviceIds?.length) params.append('serviceIds', options.serviceIds.join(','));
+      const url = `${api.availability.month.path}?${params.toString()}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to check monthly availability");
       return api.availability.month.responses[200].parse(await res.json()) as Record<string, boolean>;
@@ -85,6 +107,19 @@ export function useMonthAvailability(year: number, month: number, totalDurationM
     gcTime: 0,
     refetchOnMount: 'always',
     refetchOnWindowFocus: false,
+  });
+}
+
+// --- Staff Count ---
+export function useStaffCount() {
+  return useQuery<{ count: number }>({
+    queryKey: ['/api/staff/count'],
+    queryFn: async () => {
+      const res = await fetch('/api/staff/count');
+      if (!res.ok) throw new Error('Failed to fetch staff count');
+      return res.json();
+    },
+    staleTime: 60_000,
   });
 }
 

@@ -80,6 +80,18 @@ import {
   type InsertCompanySettings,
   type BusinessHours,
   DEFAULT_BUSINESS_HOURS,
+  staffMembers,
+  staffServiceAbilities,
+  staffAvailability,
+  staffGoogleCalendar,
+  type StaffMember,
+  type StaffServiceAbility,
+  type StaffAvailability,
+  type StaffGoogleCalendar,
+  type InsertStaffMember,
+  type InsertStaffServiceAbility,
+  type InsertStaffAvailability,
+  type InsertStaffGoogleCalendar,
 } from "@shared/schema";
 import { eq, and, or, gte, lte, inArray, desc, asc, sql, ne } from "drizzle-orm";
 import { z } from "zod";
@@ -135,6 +147,7 @@ export interface IStorage {
   createBooking(booking: InsertBooking & { totalPrice: string, totalDurationMinutes: number, endTime: string, bookingItemsData?: any[] }): Promise<Booking>;
   getBookings(limit?: number): Promise<Booking[]>;
   getBookingsByDate(date: string): Promise<Booking[]>;
+  getBookingsByDateAndStaff(date: string, staffMemberId: number): Promise<Booking[]>;
   getBooking(id: number): Promise<Booking | undefined>;
   updateBooking(
     id: number,
@@ -262,6 +275,30 @@ export interface IStorage {
   // GHL Sync Queue
   getBookingsPendingSync(): Promise<Booking[]>;
   updateBookingSyncStatus(bookingId: number, status: string, ghlContactId?: string, ghlAppointmentId?: string): Promise<void>;
+
+  // Staff Members
+  getStaffMembers(includeInactive?: boolean): Promise<StaffMember[]>;
+  getStaffMember(id: number): Promise<StaffMember | undefined>;
+  getStaffCount(): Promise<number>;
+  createStaffMember(staff: InsertStaffMember): Promise<StaffMember>;
+  updateStaffMember(id: number, staff: Partial<InsertStaffMember>): Promise<StaffMember>;
+  deleteStaffMember(id: number): Promise<void>;
+  reorderStaffMembers(updates: { id: number; order: number }[]): Promise<void>;
+
+  // Staff Service Abilities
+  getStaffMembersByService(serviceId: number): Promise<StaffMember[]>;
+  getServicesByStaffMember(staffMemberId: number): Promise<Service[]>;
+  getStaffMembersByServiceId(serviceId: number): Promise<StaffMember[]>;
+  setStaffServiceAbilities(staffMemberId: number, serviceIds: number[]): Promise<void>;
+
+  // Staff Availability
+  getStaffAvailability(staffMemberId: number): Promise<StaffAvailability[]>;
+  setStaffAvailability(staffMemberId: number, availability: Omit<InsertStaffAvailability, 'staffMemberId'>[]): Promise<StaffAvailability[]>;
+
+  // Staff Google Calendar (optional integration)
+  getStaffGoogleCalendar(staffMemberId: number): Promise<StaffGoogleCalendar | undefined>;
+  upsertStaffGoogleCalendar(calendar: InsertStaffGoogleCalendar): Promise<StaffGoogleCalendar>;
+  deleteStaffGoogleCalendar(staffMemberId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -624,6 +661,15 @@ export class DatabaseStorage implements IStorage {
 
   async getBookingsByDate(date: string): Promise<Booking[]> {
     return await db.select().from(bookings).where(eq(bookings.bookingDate, date));
+  }
+
+  async getBookingsByDateAndStaff(date: string, staffMemberId: number): Promise<Booking[]> {
+    return await db.select().from(bookings).where(
+      and(
+        eq(bookings.bookingDate, date),
+        eq(bookings.staffMemberId, staffMemberId)
+      )
+    );
   }
 
   async getBooking(id: number): Promise<Booking | undefined> {
@@ -1440,6 +1486,148 @@ export class DatabaseStorage implements IStorage {
     if (ghlAppointmentId) updates.ghlAppointmentId = ghlAppointmentId;
 
     await db.update(bookings).set(updates).where(eq(bookings.id, bookingId));
+  }
+
+  // ─── Staff Members ────────────────────────────────────────────────────────
+
+  async getStaffMembers(includeInactive = false): Promise<StaffMember[]> {
+    if (!includeInactive) {
+      return await db.select().from(staffMembers)
+        .where(eq(staffMembers.isActive, true))
+        .orderBy(asc(staffMembers.order));
+    }
+    return await db.select().from(staffMembers).orderBy(asc(staffMembers.order));
+  }
+
+  async getStaffMember(id: number): Promise<StaffMember | undefined> {
+    const [member] = await db.select().from(staffMembers).where(eq(staffMembers.id, id));
+    return member;
+  }
+
+  async getStaffCount(): Promise<number> {
+    const [row] = await db.select({ count: sql<number>`count(*)::int` })
+      .from(staffMembers)
+      .where(eq(staffMembers.isActive, true));
+    return row?.count ?? 0;
+  }
+
+  async createStaffMember(staff: InsertStaffMember): Promise<StaffMember> {
+    const [created] = await db.insert(staffMembers).values(staff).returning();
+    return created;
+  }
+
+  async updateStaffMember(id: number, staff: Partial<InsertStaffMember>): Promise<StaffMember> {
+    const [updated] = await db.update(staffMembers)
+      .set({ ...staff, updatedAt: new Date() })
+      .where(eq(staffMembers.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteStaffMember(id: number): Promise<void> {
+    await db.delete(staffMembers).where(eq(staffMembers.id, id));
+  }
+
+  async reorderStaffMembers(updates: { id: number; order: number }[]): Promise<void> {
+    await Promise.all(
+      updates.map(({ id, order }) =>
+        db.update(staffMembers).set({ order }).where(eq(staffMembers.id, id))
+      )
+    );
+  }
+
+  // ─── Staff Service Abilities ───────────────────────────────────────────────
+
+  async getStaffMembersByService(serviceId: number): Promise<StaffMember[]> {
+    const rows = await db
+      .select({ staffMembers })
+      .from(staffMembers)
+      .innerJoin(staffServiceAbilities, eq(staffServiceAbilities.staffMemberId, staffMembers.id))
+      .where(and(
+        eq(staffServiceAbilities.serviceId, serviceId),
+        eq(staffMembers.isActive, true)
+      ))
+      .orderBy(asc(staffMembers.order));
+    return rows.map(r => r.staffMembers);
+  }
+
+  async getServicesByStaffMember(staffMemberId: number): Promise<Service[]> {
+    const rows = await db
+      .select({ services })
+      .from(services)
+      .innerJoin(staffServiceAbilities, eq(staffServiceAbilities.serviceId, services.id))
+      .where(eq(staffServiceAbilities.staffMemberId, staffMemberId));
+    return rows.map(r => r.services);
+  }
+
+  async getStaffMembersByServiceId(serviceId: number): Promise<StaffMember[]> {
+    const rows = await db
+      .select({ staffMembers })
+      .from(staffMembers)
+      .innerJoin(staffServiceAbilities, eq(staffServiceAbilities.staffMemberId, staffMembers.id))
+      .where(
+        and(
+          eq(staffServiceAbilities.serviceId, serviceId),
+          eq(staffMembers.isActive, true)
+        )
+      );
+    return rows.map(r => r.staffMembers);
+  }
+
+  async setStaffServiceAbilities(staffMemberId: number, serviceIds: number[]): Promise<void> {
+    await db.delete(staffServiceAbilities).where(eq(staffServiceAbilities.staffMemberId, staffMemberId));
+    if (serviceIds.length > 0) {
+      await db.insert(staffServiceAbilities).values(
+        serviceIds.map(serviceId => ({ staffMemberId, serviceId }))
+      );
+    }
+  }
+
+  // ─── Staff Availability ────────────────────────────────────────────────────
+
+  async getStaffAvailability(staffMemberId: number): Promise<StaffAvailability[]> {
+    return await db.select().from(staffAvailability)
+      .where(eq(staffAvailability.staffMemberId, staffMemberId))
+      .orderBy(asc(staffAvailability.dayOfWeek));
+  }
+
+  async setStaffAvailability(
+    staffMemberId: number,
+    availability: Omit<InsertStaffAvailability, 'staffMemberId'>[]
+  ): Promise<StaffAvailability[]> {
+    await db.delete(staffAvailability).where(eq(staffAvailability.staffMemberId, staffMemberId));
+    if (availability.length === 0) return [];
+    return await db.insert(staffAvailability)
+      .values(availability.map(a => ({ ...a, staffMemberId })))
+      .returning();
+  }
+
+  // ─── Staff Google Calendar ─────────────────────────────────────────────────
+
+  async getStaffGoogleCalendar(staffMemberId: number): Promise<StaffGoogleCalendar | undefined> {
+    const [row] = await db.select().from(staffGoogleCalendar)
+      .where(eq(staffGoogleCalendar.staffMemberId, staffMemberId));
+    return row;
+  }
+
+  async upsertStaffGoogleCalendar(calendar: InsertStaffGoogleCalendar): Promise<StaffGoogleCalendar> {
+    const [row] = await db.insert(staffGoogleCalendar)
+      .values(calendar)
+      .onConflictDoUpdate({
+        target: staffGoogleCalendar.staffMemberId,
+        set: {
+          accessToken: calendar.accessToken,
+          refreshToken: calendar.refreshToken,
+          calendarId: calendar.calendarId,
+          tokenExpiresAt: calendar.tokenExpiresAt,
+        },
+      })
+      .returning();
+    return row;
+  }
+
+  async deleteStaffGoogleCalendar(staffMemberId: number): Promise<void> {
+    await db.delete(staffGoogleCalendar).where(eq(staffGoogleCalendar.staffMemberId, staffMemberId));
   }
 }
 

@@ -16,6 +16,7 @@ import {
   Puzzle,
   Search,
   Users,
+  Users2,
 } from 'lucide-react';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useAdminAuth } from '@/context/AuthContext';
@@ -37,6 +38,7 @@ import { AvailabilitySection } from '@/components/admin/AvailabilitySection';
 import { AdminChatLayout } from '@/components/chat/admin/AdminChatLayout';
 import { IntegrationsSection } from '@/components/admin/IntegrationsSection';
 import { BlogSection } from '@/components/admin/BlogSection';
+import { StaffSection } from '@/components/admin/StaffSection';
 
 const menuItems: AdminMenuItem[] = [
   { id: 'dashboard', title: 'Dashboard', icon: LayoutDashboard },
@@ -52,6 +54,7 @@ const menuItems: AdminMenuItem[] = [
   { id: 'blog', title: 'Blog', icon: FileText },
   { id: 'seo', title: 'SEO', icon: Search },
   { id: 'integrations', title: 'Integrations', icon: Puzzle },
+  { id: 'staff', title: 'Staff', icon: Users2 },
 ];
 
 function AdminContent() {
@@ -161,6 +164,7 @@ function AdminContent() {
           {activeSection === 'chat' && <AdminChatLayout getAccessToken={getAccessToken} />}
           {activeSection === 'integrations' && <IntegrationsSection getAccessToken={getAccessToken} />}
           {activeSection === 'blog' && <BlogSection resetSignal={blogResetSignal} getAccessToken={getAccessToken} />}
+          {activeSection === 'staff' && <StaffSection />}
         </div>
       </main>
     </div>
