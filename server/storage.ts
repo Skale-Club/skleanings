@@ -149,6 +149,8 @@ export interface IStorage {
   getBookingsByDate(date: string): Promise<Booking[]>;
   getBookingsByDateAndStaff(date: string, staffMemberId: number): Promise<Booking[]>;
   getBooking(id: number): Promise<Booking | undefined>;
+  getBookingByStripeSessionId(sessionId: string): Promise<Booking | undefined>;
+  updateBookingStripeFields(bookingId: number, stripeSessionId: string, stripePaymentStatus?: string): Promise<void>;
   updateBooking(
     id: number,
     updates: Partial<{
@@ -675,6 +677,25 @@ export class DatabaseStorage implements IStorage {
   async getBooking(id: number): Promise<Booking | undefined> {
     const [booking] = await db.select().from(bookings).where(eq(bookings.id, id));
     return booking;
+  }
+
+  async getBookingByStripeSessionId(sessionId: string): Promise<Booking | undefined> {
+    const [booking] = await db
+      .select()
+      .from(bookings)
+      .where(eq(bookings.stripeSessionId, sessionId))
+      .limit(1);
+    return booking;
+  }
+
+  async updateBookingStripeFields(bookingId: number, stripeSessionId: string, stripePaymentStatus?: string): Promise<void> {
+    await db
+      .update(bookings)
+      .set({
+        stripeSessionId,
+        ...(stripePaymentStatus ? { stripePaymentStatus } : {}),
+      })
+      .where(eq(bookings.id, bookingId));
   }
 
   async updateBooking(

@@ -118,6 +118,9 @@ export const bookings = pgTable("bookings", {
   ghlSyncStatus: text("ghl_sync_status").default("pending"), // pending, synced, failed
   // Staff assignment (nullable — single-operator deployments have no staff selection)
   staffMemberId: integer("staff_member_id").references(() => staffMembers.id, { onDelete: "set null" }),
+  // Stripe payment fields (nullable — only set for online payments)
+  stripeSessionId: text("stripe_session_id"),
+  stripePaymentStatus: text("stripe_payment_status"), // paid, unpaid, no_payment_required
 });
 
 // GoHighLevel Integration Settings

@@ -10,7 +10,7 @@ import { Trash2, Calendar as CalendarIcon, Clock, ChevronRight, CheckCircle2, Ar
 import { clsx } from "clsx";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { trackBeginCheckout, trackEvent } from "@/lib/analytics";
 import type { StaffMember } from "@shared/schema";
 
@@ -73,6 +73,31 @@ export default function BookingPage() {
   // API Hooks
   const { data: slots, isLoading: isLoadingSlots, isFetching: isFetchingSlots } = useAvailability(selectedDate, totalDuration, availabilityOptions);
   const createBooking = useCreateBooking();
+
+  const checkoutMutation = useMutation({
+    mutationFn: async (bookingData: any) => {
+      const res = await fetch("/api/payments/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bookingData),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Checkout failed");
+      }
+      return res.json() as Promise<{ sessionUrl: string; bookingId: number }>;
+    },
+    onSuccess: (data) => {
+      window.location.href = data.sessionUrl;
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Payment Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
   const { data: companySettings } = useQuery<{ timeFormat?: string; minimumBookingValue?: string }>({ queryKey: ['/api/company-settings'] });
 
   // Fetch monthly availability to disable dates without slots
@@ -118,6 +143,18 @@ export default function BookingPage() {
     }
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("cancelled") === "1") {
+      toast({
+        title: "Payment cancelled",
+        description: "Your booking was not completed. You can try again.",
+        variant: "destructive",
+      });
+      window.history.replaceState({}, "", "/booking");
+    }
+  }, []);
+
   const handleNextStep = (nextStep: 2 | 3 | 4 | 5) => {
     setStep(nextStep);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -133,7 +170,7 @@ export default function BookingPage() {
 
     const fullAddress = `${data.customerStreet}${data.customerUnit ? `, ${data.customerUnit}` : ""}, ${data.customerCity}, ${data.customerState}`;
 
-    createBooking.mutate({
+    const bookingPayload = {
       ...data,
       customerAddress: fullAddress,
       cartItems: getCartItemsForBooking(),
@@ -143,18 +180,24 @@ export default function BookingPage() {
       totalDurationMinutes: totalDuration,
       totalPrice: String(finalPrice),
       staffMemberId: selectedStaff?.id ?? null,
-    }, {
-      onSuccess: () => {
-        setLocation("/confirmation");
-      },
-      onError: (error) => {
-        toast({
-          title: "Booking Failed",
-          description: error.message,
-          variant: "destructive"
-        });
-      }
-    });
+    };
+
+    if (data.paymentMethod === "online") {
+      checkoutMutation.mutate(bookingPayload);
+    } else {
+      createBooking.mutate(bookingPayload, {
+        onSuccess: () => {
+          setLocation("/confirmation");
+        },
+        onError: (error) => {
+          toast({
+            title: "Booking Failed",
+            description: error.message,
+            variant: "destructive"
+          });
+        }
+      });
+    }
   };
 
   if (items.length === 0) {
@@ -511,24 +554,28 @@ export default function BookingPage() {
                         <span className="text-xs opacity-70">Cash or Card upon arrival</span>
                       </label>
                       <label className={clsx(
-                        "p-4 rounded-xl border cursor-pointer transition-all flex flex-col items-center gap-2 text-center opacity-60",
+                        "p-4 rounded-xl border cursor-pointer transition-all flex flex-col items-center gap-2 text-center",
                         form.watch("paymentMethod") === "online"
-                          ? "border-primary bg-blue-50 text-primary"
-                          : "border-gray-200"
+                          ? "border-primary bg-blue-50 text-primary ring-1 ring-primary"
+                          : "border-gray-200 hover:bg-slate-50"
                       )}>
-                        <input type="radio" value="online" disabled {...form.register("paymentMethod")} className="hidden" />
+                        <input type="radio" value="online" {...form.register("paymentMethod")} className="hidden" />
                         <span className="font-bold">Pay Online</span>
-                        <span className="text-xs opacity-70">Coming soon</span>
+                        <span className="text-xs opacity-70">Secure online payment</span>
                       </label>
                     </div>
                   </div>
 
                   <button
                     type="submit"
-                    disabled={createBooking.isPending}
+                    disabled={createBooking.isPending || checkoutMutation.isPending}
                     className="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-8 text-lg"
                   >
-                    {createBooking.isPending ? "Confirming..." : `Confirm Booking - $${finalPrice.toFixed(2)}`}
+                    {createBooking.isPending || checkoutMutation.isPending
+                      ? "Processing..."
+                      : form.watch("paymentMethod") === "online"
+                        ? `Pay $${finalPrice.toFixed(2)} with Stripe`
+                        : `Confirm Booking - $${finalPrice.toFixed(2)}`}
                   </button>
                 </form>
               </div>
