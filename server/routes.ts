@@ -17,6 +17,7 @@ import integrationRouter from "./routes/integrations";
 import userRoutes from "./routes/user-routes";
 import authRoutes from "./routes/auth-routes";
 import staffRouter from "./routes/staff";
+import paymentsRouter from "./routes/payments";
 
 export async function registerRoutes(server: Server, app: Express) {
   // Mount routers
@@ -55,4 +56,7 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // Staff routes (mounted at /api/staff)
   app.use("/api/staff", staffRouter);
+
+  // Payment routes (mounted at /api/payments)
+  app.use("/api/payments", paymentsRouter);
 }

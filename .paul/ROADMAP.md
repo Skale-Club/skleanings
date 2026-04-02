@@ -6,9 +6,9 @@ Skleanings is a booking platform for a cleaning company. The current milestone (
 
 ## Current Milestone
 
-**v0.3 — TBD** (planning)
-Status: Not started
-Phases: TBD
+**v0.3 — Stripe Payments** (v0.3.0)
+Status: In progress
+Phases: 2 of 3 complete
 
 ## Completed Milestone
 
@@ -123,5 +123,53 @@ Phases: 5 of 5 complete
 - [ ] 05-03: Confirmation screen + admin booking view updates
 
 ---
+---
+
+## v0.3 — Stripe Payments
+
+Customers can pay for their cleaning booking online at checkout via Stripe. The "Pay Online" option (currently disabled) is enabled with a full Stripe Checkout redirect flow. Payments are verified via webhook. Admins configure Stripe keys in the Integrations section.
+
+### Phase 1: Schema, Stripe Library & Admin Integration
+
+**Goal:** Stripe credentials stored in DB; `stripeSessionId` on bookings; Stripe client lib reads from DB; admin can configure keys.
+**Depends on:** Nothing (first phase)
+
+**Scope:**
+- Add `stripeSessionId` column to `bookings` table + Supabase migration
+- `server/lib/stripe.ts` — Stripe client (reads secret key from `integrationSettings`), `createCheckoutSession`, `verifyWebhookEvent`
+- `GET /api/integrations/stripe` + `PUT /api/integrations/stripe` — admin credential management (same pattern as GHL/Google Calendar)
+- Admin UI: Stripe card in `IntegrationsSection` (publishable key, secret key, webhook secret, enable toggle)
+
+**Plans:**
+- [ ] 01-01: Schema migration + Stripe lib + admin integration API
+- [ ] 01-02: Payment routes (`POST /api/payments/checkout`, `POST /api/payments/webhook`, `GET /api/payments/verify/:sessionId`)
+
+### Phase 2: Booking Flow — Pay Online ✅ Complete — 2026-04-02
+
+**Goal:** Customer can select "Pay Online", complete booking, be redirected to Stripe Checkout, and land on a success confirmation.
+**Depends on:** Phase 1 (Stripe lib + routes must exist)
+
+**Scope:**
+- `BookingPage.tsx` — enable "Pay Online" radio; on submit with `paymentMethod: "online"`, call `POST /api/payments/checkout` and redirect to Stripe URL
+- `client/src/pages/Confirmation.tsx` — detect `?session_id=xxx`; verify session; show payment-received / pending states
+- Booking submit button copy: "Pay $X.XX with Stripe" when online selected
+
+**Plans:**
+- [x] 02-01: Booking flow UI + confirmation page states ✅ 2026-04-02
+
+### Phase 3: Admin Payment Management
+
+**Goal:** Admin can see Stripe payment status on bookings and manually override payment status.
+**Depends on:** Phase 1 (Stripe fields on bookings)
+
+**Scope:**
+- `SharedBookingCard.tsx` — show Stripe session ID, link to Stripe dashboard for that payment
+- `paymentStatus` badge updates: `pending_payment` state shown as "Awaiting Payment"
+- Admin can mark any booking as paid/unpaid manually (already exists — ensure `pending_payment` is handled)
+
+**Plans:**
+- [ ] 03-01: Admin booking card Stripe payment display
+
+---
 *Roadmap created: 2026-04-02*
-*Last updated: 2026-04-02 — v0.2 complete*
+*Last updated: 2026-04-02 — Phase 2 complete (Booking Flow — Pay Online)*
