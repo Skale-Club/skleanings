@@ -757,6 +757,8 @@ export const staffGoogleCalendar = pgTable("staff_google_calendar", {
   calendarId: text("calendar_id").default("primary").notNull(),
   tokenExpiresAt: timestamp("token_expires_at").notNull(),
   connectedAt: timestamp("connected_at").defaultNow().notNull(),
+  needsReconnect: boolean("needs_reconnect").default(false).notNull(),
+  lastDisconnectedAt: timestamp("last_disconnected_at"),
 });
 
 // Staff insert schemas
@@ -777,6 +779,8 @@ export const insertStaffAvailabilitySchema = createInsertSchema(staffAvailabilit
 export const insertStaffGoogleCalendarSchema = createInsertSchema(staffGoogleCalendar).omit({
   id: true,
   connectedAt: true,
+  needsReconnect: true,
+  lastDisconnectedAt: true,
 });
 
 // Staff TypeScript types

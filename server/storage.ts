@@ -301,6 +301,16 @@ export interface IStorage {
   getStaffGoogleCalendar(staffMemberId: number): Promise<StaffGoogleCalendar | undefined>;
   upsertStaffGoogleCalendar(calendar: InsertStaffGoogleCalendar): Promise<StaffGoogleCalendar>;
   deleteStaffGoogleCalendar(staffMemberId: number): Promise<void>;
+  markCalendarNeedsReconnect(staffMemberId: number): Promise<void>;
+  clearCalendarNeedsReconnect(staffMemberId: number): Promise<void>;
+  getAllCalendarStatuses(): Promise<Array<{
+    staffMemberId: number;
+    firstName: string;
+    lastName: string;
+    connected: boolean;
+    needsReconnect: boolean;
+    lastDisconnectedAt: Date | null;
+  }>>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1649,6 +1659,54 @@ export class DatabaseStorage implements IStorage {
 
   async deleteStaffGoogleCalendar(staffMemberId: number): Promise<void> {
     await db.delete(staffGoogleCalendar).where(eq(staffGoogleCalendar.staffMemberId, staffMemberId));
+  }
+
+  async markCalendarNeedsReconnect(staffMemberId: number): Promise<void> {
+    await db.update(staffGoogleCalendar)
+      .set({ needsReconnect: true, lastDisconnectedAt: new Date() })
+      .where(
+        and(
+          eq(staffGoogleCalendar.staffMemberId, staffMemberId),
+          eq(staffGoogleCalendar.needsReconnect, false)
+        )
+      );
+  }
+
+  async clearCalendarNeedsReconnect(staffMemberId: number): Promise<void> {
+    await db.update(staffGoogleCalendar)
+      .set({ needsReconnect: false })
+      .where(eq(staffGoogleCalendar.staffMemberId, staffMemberId));
+  }
+
+  async getAllCalendarStatuses(): Promise<Array<{
+    staffMemberId: number;
+    firstName: string;
+    lastName: string;
+    connected: boolean;
+    needsReconnect: boolean;
+    lastDisconnectedAt: Date | null;
+  }>> {
+    const rows = await db
+      .select({
+        staffMemberId: staffMembers.id,
+        firstName: staffMembers.firstName,
+        lastName: staffMembers.lastName,
+        calendarId: staffGoogleCalendar.id,
+        needsReconnect: staffGoogleCalendar.needsReconnect,
+        lastDisconnectedAt: staffGoogleCalendar.lastDisconnectedAt,
+      })
+      .from(staffMembers)
+      .leftJoin(staffGoogleCalendar, eq(staffGoogleCalendar.staffMemberId, staffMembers.id))
+      .where(eq(staffMembers.isActive, true));
+
+    return rows.map((row) => ({
+      staffMemberId: row.staffMemberId,
+      firstName: row.firstName,
+      lastName: row.lastName,
+      connected: row.calendarId !== null && row.needsReconnect !== true,
+      needsReconnect: row.needsReconnect ?? false,
+      lastDisconnectedAt: row.lastDisconnectedAt ?? null,
+    }));
   }
 }
 
