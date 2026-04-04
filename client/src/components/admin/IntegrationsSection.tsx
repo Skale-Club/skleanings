@@ -35,7 +35,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Bot, Check, ChevronsUpDown, LayoutGrid, Loader2, Sparkles, Calendar } from 'lucide-react';
+import { Bot, Check, CheckCircle2, ChevronsUpDown, LayoutGrid, Loader2, Sparkles, Calendar, XCircle } from 'lucide-react';
 
 const ghlLogo = 'https://lsrlnlcdrshzzhqvklqc.supabase.co/storage/v1/object/public/skleanings/ghl-logo.webp';
 
@@ -1799,6 +1799,7 @@ function GoogleCalendarSection({ getAccessToken }: { getAccessToken: () => Promi
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
 
   const { data: savedCreds, isLoading } = useQuery<GoogleCalendarCredentials>({
     queryKey: ['/api/integrations/google-calendar'],
@@ -1818,6 +1819,7 @@ function GoogleCalendarSection({ getAccessToken }: { getAccessToken: () => Promi
 
   const save = async () => {
     setIsSaving(true);
+    setTestResult(null);
     try {
       const token = await getAccessToken();
       await authenticatedRequest('PUT', '/api/integrations/google-calendar', token ?? '', creds);
@@ -1830,19 +1832,29 @@ function GoogleCalendarSection({ getAccessToken }: { getAccessToken: () => Promi
     }
   };
 
+  const toggleEnabled = async (enabled: boolean) => {
+    const updated = { ...creds, isEnabled: enabled };
+    setCreds(updated);
+    try {
+      const token = await getAccessToken();
+      await authenticatedRequest('PUT', '/api/integrations/google-calendar', token ?? '', updated);
+      queryClient.invalidateQueries({ queryKey: ['/api/integrations/google-calendar'] });
+    } catch {
+      setCreds(prev => ({ ...prev, isEnabled: !enabled }));
+      toast({ title: 'Failed to update', variant: 'destructive' });
+    }
+  };
+
   const testConnection = async () => {
     setIsTesting(true);
+    setTestResult(null);
     try {
       const token = await getAccessToken();
       const res = await authenticatedRequest('POST', '/api/integrations/google-calendar/test', token ?? '', {});
       const data = await res.json();
-      if (data.ok) {
-        toast({ title: 'Connection valid', description: data.message });
-      } else {
-        toast({ title: 'Connection failed', description: data.message, variant: 'destructive' });
-      }
+      setTestResult({ ok: data.ok, message: data.message });
     } catch {
-      toast({ title: 'Test failed', description: 'Could not reach server', variant: 'destructive' });
+      setTestResult({ ok: false, message: 'Could not reach server' });
     } finally {
       setIsTesting(false);
     }
@@ -1863,6 +1875,15 @@ function GoogleCalendarSection({ getAccessToken }: { getAccessToken: () => Promi
                 <CardTitle className="text-lg">Google Calendar</CardTitle>
                 <p className="text-sm text-muted-foreground">OAuth credentials for staff calendar sync</p>
               </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Label className="text-sm">{creds.isEnabled ? 'Enabled' : 'Disabled'}</Label>
+              <Switch
+                checked={creds.isEnabled}
+                onCheckedChange={toggleEnabled}
+                disabled={isSaving}
+                data-testid="switch-google-calendar-enabled"
+              />
             </div>
           </div>
         </CardHeader>
@@ -1910,24 +1931,40 @@ function GoogleCalendarSection({ getAccessToken }: { getAccessToken: () => Promi
             </div>
           </div>
 
-          <div className="flex items-center gap-3 pt-4 border-t">
-            <Button
-              onClick={save}
-              disabled={isSaving || isTesting}
-              data-testid="button-save-google-calendar"
-            >
-              {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Save
-            </Button>
-            <Button
-              variant="outline"
-              onClick={testConnection}
-              disabled={isSaving || isTesting}
-              data-testid="button-test-google-calendar"
-            >
-              {isTesting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Test Connection
-            </Button>
+          <div className="space-y-3 pt-4 border-t">
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={save}
+                disabled={isSaving || isTesting}
+                data-testid="button-save-google-calendar"
+              >
+                {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Save
+              </Button>
+              <Button
+                variant="outline"
+                onClick={testConnection}
+                disabled={isSaving || isTesting}
+                data-testid="button-test-google-calendar"
+              >
+                {isTesting ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : testResult ? (
+                  testResult.ok
+                    ? <CheckCircle2 className="w-4 h-4 mr-2 text-green-500" />
+                    : <XCircle className="w-4 h-4 mr-2 text-red-500" />
+                ) : null}
+                Test Connection
+              </Button>
+            </div>
+            {testResult && (
+              <div className={`flex items-start gap-2 rounded-md px-3 py-2 text-sm ${testResult.ok ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
+                {testResult.ok
+                  ? <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0 text-green-600" />
+                  : <XCircle className="w-4 h-4 mt-0.5 shrink-0 text-red-600" />}
+                <span>{testResult.message}</span>
+              </div>
+            )}
           </div>
 
           <div className="p-4 bg-muted/60 rounded-lg border text-sm space-y-1">
