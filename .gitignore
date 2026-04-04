@@ -107,3 +107,4 @@ replit.nix
 *.orig
 
 .vercel
+.env.vercel
