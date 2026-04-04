@@ -234,7 +234,7 @@ Single "Users" page with three roles: Admin (owner — full access), User (recep
 - [x] 06-01: Schema migration + auth middleware + AuthContext role ✅ 2026-04-04
 - [x] 06-02: Login redirect by role + staff route guard ✅ 2026-04-04
 
-### Phase 2: Unified Users Page + Create User Flow
+### Phase 2: Unified Users Page + Create User Flow ✅ Complete — 2026-04-04
 
 **Goal:** Single flat users list showing all users (admin + user + staff) with role badges. "Add User" dialog with role picker and avatar upload. Creating staff-role user also creates linked staffMembers record.
 **Depends on:** Phase 1
@@ -247,8 +247,8 @@ Single "Users" page with three roles: Admin (owner — full access), User (recep
 - Avatar upload using existing Supabase Storage flow (ObjectUploader)
 
 **Plans:**
-- [ ] 06-03: Unified users list + Add/Edit user dialog with role picker
-- [ ] 06-04: Staff creation bridge (auto-create staffMembers on role=staff)
+- [x] 06-03: Unified users list + Add/Edit user dialog with role picker ✅ 2026-04-04
+- [x] 06-04: Staff creation bridge (auto-create staffMembers on role=staff) ✅ 2026-04-04
 
 ### Phase 3: Staff Personal Settings Page
 

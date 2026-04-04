@@ -51,8 +51,16 @@ Customers can book cleaning services with a specific professional, with a unifie
 - [x] Staff-aware booking — staffMemberId stored on booking, shown in admin dashboard — Phase 5
 
 ### Active (In Progress)
-- [ ] Unified Users Page + Create User Flow — v0.6 Phase 2
 - [ ] Staff Personal Settings Page — v0.6 Phase 3
+
+### Validated (v0.6 Phase 2 complete)
+- [x] Flat users list replacing tabbed UnifiedUsersSection — v0.6 Phase 2
+- [x] Role badges (admin/user/staff) from user.role — v0.6 Phase 2
+- [x] UserDialog role Select (Admin option gated to admins) — v0.6 Phase 2
+- [x] user-routes PATCH/DELETE guards use role === 'admin' — v0.6 Phase 2
+- [x] POST /api/users role=staff auto-creates staffMembers record — v0.6 Phase 2
+- [x] PATCH role→staff idempotent staffMembers bridge — v0.6 Phase 2
+- [x] DELETE staff user cleans up linked staffMembers first — v0.6 Phase 2
 
 ### Validated (v0.6 Phase 1 complete)
 - [x] role enum column on users table (admin/user/staff, default admin) — v0.6 Phase 1
@@ -119,6 +127,8 @@ Customers can book cleaning services with a specific professional, with a unifie
 | Notification path fully try/catch wrapped | Token refresh is called from availability engine — failure must never break booking flow | 2026-04-02 | Active |
 | Post-login always redirects to /admin; Admin.tsx guard handles staff redirect | Avoids race condition — role is fetched async after auth; redirect at login would fire before role is known | 2026-04-04 | Active |
 | /staff route group isolated before /admin in Router() | Clean separation; same pattern as isAdminRoute; /staff/* paths never fall through to admin routes | 2026-04-04 | Active |
+| linkStaffMemberToUser dedicated storage method | userId omitted from InsertStaffMember type by design; updateStaffMember can't accept it | 2026-04-04 | Active |
+| Default role = 'staff' for new users in UserDialog | Least privilege — admin must explicitly elevate to admin/user | 2026-04-04 | Active |
 
 ## Success Metrics
 
@@ -153,4 +163,4 @@ Customers can book cleaning services with a specific professional, with a unifie
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-04-04 after Phase 06-01+06-02 — v0.6 Phase 1 (Schema + Auth + Role Middleware) complete*
+*Last updated: 2026-04-04 after Phase 06-03+06-04 — v0.6 Phase 2 (Unified Users Page + Create User Flow) complete*

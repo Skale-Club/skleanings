@@ -281,6 +281,8 @@ export interface IStorage {
   // Staff Members
   getStaffMembers(includeInactive?: boolean): Promise<StaffMember[]>;
   getStaffMember(id: number): Promise<StaffMember | undefined>;
+  getStaffMemberByUserId(userId: string): Promise<StaffMember | undefined>;
+  linkStaffMemberToUser(staffId: number, userId: string): Promise<void>;
   getStaffCount(): Promise<number>;
   createStaffMember(staff: InsertStaffMember): Promise<StaffMember>;
   updateStaffMember(id: number, staff: Partial<InsertStaffMember>): Promise<StaffMember>;
@@ -1533,6 +1535,15 @@ export class DatabaseStorage implements IStorage {
   async getStaffMember(id: number): Promise<StaffMember | undefined> {
     const [member] = await db.select().from(staffMembers).where(eq(staffMembers.id, id));
     return member;
+  }
+
+  async getStaffMemberByUserId(userId: string): Promise<StaffMember | undefined> {
+    const [member] = await db.select().from(staffMembers).where(eq(staffMembers.userId, userId));
+    return member;
+  }
+
+  async linkStaffMemberToUser(staffId: number, userId: string): Promise<void> {
+    await db.update(staffMembers).set({ userId }).where(eq(staffMembers.id, staffId));
   }
 
   async getStaffCount(): Promise<number> {
