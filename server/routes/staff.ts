@@ -126,7 +126,8 @@ router.get("/calendar/callback", async (req, res) => {
   try {
     const code = String(req.query.code || "");
     const state = String(req.query.state || "");
-    const staffId = parseInt(state, 10);
+    const [staffIdStr, redirectTo] = state.split(":");
+    const staffId = parseInt(staffIdStr, 10);
 
     if (!code || isNaN(staffId)) {
       return res.status(400).send("Invalid OAuth callback parameters");
@@ -134,7 +135,7 @@ router.get("/calendar/callback", async (req, res) => {
 
     await exchangeCodeForTokens(code, staffId);
     await storage.clearCalendarNeedsReconnect(staffId);
-    res.redirect("/admin/staff");
+    res.redirect(redirectTo === "staff" ? "/staff/settings" : "/admin/staff");
   } catch (err) {
     res.status(500).json({ message: (err as Error).message });
   }
@@ -236,7 +237,9 @@ router.get("/:id/calendar/connect", requireAuth, async (req, res) => {
     if (!creds?.apiKey || !creds?.locationId) {
       return res.status(501).json({ message: "Google Calendar integration is not configured. Add credentials in Admin → Integrations." });
     }
-    const url = await getAuthUrl(Number(req.params.id));
+    const user = (req as any).user;
+    const redirectTo: "staff" | "admin" = user?.role === "staff" ? "staff" : "admin";
+    const url = await getAuthUrl(Number(req.params.id), redirectTo);
     res.redirect(url);
   } catch (err) {
     res.status(500).json({ message: (err as Error).message });

@@ -53,6 +53,13 @@ Customers can book cleaning services with a specific professional, with a unifie
 ### Active (In Progress)
 None.
 
+### Validated (v0.7 complete)
+- [x] OAuth state encodes `staffId:redirectTo` — callback routes to correct page per initiator role — v0.7
+- [x] Staff lands on /staff/settings after Google OAuth — v0.7
+- [x] Admin lands on /admin/staff after Google OAuth — v0.7 (unchanged behavior preserved)
+- [x] CalendarTab uses `useAdminAuth` + `authenticatedRequest` for all API calls — v0.7
+- [x] `requireAuth` accepts token from query param as fallback for browser-navigation OAuth — v0.7
+
 ### Validated (v0.6 Phase 3 complete)
 - [x] GET /api/staff/me + PATCH /api/staff/me — staff edits own profile — v0.6 Phase 3
 - [x] CalendarTab extracted as shared component — v0.6 Phase 3

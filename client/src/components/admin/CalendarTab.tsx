@@ -1,5 +1,6 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
+import { authenticatedRequest } from '@/lib/queryClient';
+import { useAdminAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,15 +15,23 @@ interface CalendarStatus {
 
 export function CalendarTab({ staffId }: { staffId: number }) {
   const { toast } = useToast();
+  const { getAccessToken } = useAdminAuth();
 
   const { data: status, isLoading, refetch } = useQuery<CalendarStatus>({
     queryKey: ['/api/staff', staffId, 'calendar', 'status'],
-    queryFn: () => fetch(`/api/staff/${staffId}/calendar/status`).then(r => r.json()),
+    queryFn: async () => {
+      const token = await getAccessToken();
+      if (!token) return { connected: false };
+      const res = await authenticatedRequest('GET', `/api/staff/${staffId}/calendar/status`, token);
+      return res.json();
+    },
   });
 
   const disconnect = useMutation({
     mutationFn: async () => {
-      return apiRequest('DELETE', `/api/staff/${staffId}/calendar`);
+      const token = await getAccessToken();
+      if (!token) throw new Error('Not authenticated');
+      return authenticatedRequest('DELETE', `/api/staff/${staffId}/calendar`, token);
     },
     onSuccess: () => {
       refetch();
@@ -32,6 +41,14 @@ export function CalendarTab({ staffId }: { staffId: number }) {
       toast({ title: 'Failed to disconnect', description: error.message, variant: 'destructive' });
     },
   });
+
+  const handleConnect = async () => {
+    const token = await getAccessToken();
+    const url = token
+      ? `/api/staff/${staffId}/calendar/connect?token=${encodeURIComponent(token)}`
+      : `/api/staff/${staffId}/calendar/connect`;
+    window.location.href = url;
+  };
 
   if (isLoading) {
     return (
@@ -57,11 +74,9 @@ export function CalendarTab({ staffId }: { staffId: number }) {
               Reconnect to resume availability sync. External appointments are not being blocked while disconnected.
             </p>
             <div className="flex items-center gap-2">
-              <Button asChild size="sm">
-                <a href={`/api/staff/${staffId}/calendar/connect`}>
-                  <Link className="w-4 h-4 mr-2" />
-                  Reconnect
-                </a>
+              <Button size="sm" onClick={handleConnect}>
+                <Link className="w-4 h-4 mr-2" />
+                Reconnect
               </Button>
               <Button
                 variant="ghost"
@@ -114,11 +129,9 @@ export function CalendarTab({ staffId }: { staffId: number }) {
         <div className="rounded-lg border border-dashed p-4 space-y-3 text-center">
           <Calendar className="w-8 h-8 text-muted-foreground mx-auto" />
           <p className="text-sm text-muted-foreground">No calendar connected</p>
-          <Button asChild size="sm" data-testid="button-connect-calendar">
-            <a href={`/api/staff/${staffId}/calendar/connect`}>
-              <Link className="w-4 h-4 mr-2" />
-              Connect Google Calendar
-            </a>
+          <Button size="sm" onClick={handleConnect} data-testid="button-connect-calendar">
+            <Link className="w-4 h-4 mr-2" />
+            Connect Google Calendar
           </Button>
         </div>
       )}

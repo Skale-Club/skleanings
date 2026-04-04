@@ -265,5 +265,27 @@ Single "Users" page with three roles: Admin (owner — full access), User (recep
 - [x] 06-05: Staff settings page + route protection ✅ 2026-04-04
 
 ---
+
+## v0.7 — Google Calendar Polish ✅ Complete — 2026-04-04
+
+White-label Google Calendar OAuth: admin configures credentials once, staff just click "Connect Google Calendar" from their personal settings page and land back there after OAuth. Fixes broken callback redirect and unauthenticated API calls in CalendarTab.
+
+### Phase 1: OAuth Flow + Auth Fixes ✅ Complete — 2026-04-04
+
+**Goal:** Staff connects Google Calendar from /staff/settings and returns there after OAuth. All CalendarTab API calls use authenticated requests. Admin connect flow unchanged.
+**Depends on:** v0.6 (staff settings page + requireAuth on calendar endpoints)
+
+**Scope:**
+- `getAuthUrl` encodes `redirectTo` in OAuth state
+- Connect route reads user role, passes `redirectTo` to `getAuthUrl`
+- Callback parses state to route to `/staff/settings` or `/admin/staff`
+- CalendarTab uses `useAdminAuth` + `authenticatedRequest` for all API calls
+- Connect button passes token as query param (browser navigation workaround)
+- `requireAuth` accepts token from query param as fallback
+
+**Plans:**
+- [x] 07-01: OAuth callback redirect + CalendarTab auth ✅ 2026-04-04
+
+---
 *Roadmap created: 2026-04-02*
-*Last updated: 2026-04-02 — v0.6 Unified Users & Roles added*
+*Last updated: 2026-04-04 — v0.7 Google Calendar Polish added*

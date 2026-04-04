@@ -14,9 +14,13 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
  */
 async function getAuthenticatedUser(req: Request) {
   const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) return null;
+  const queryToken = req.query?.token as string | undefined;
+  const rawToken = authHeader?.startsWith('Bearer ')
+    ? authHeader.split('Bearer ')[1]
+    : queryToken || null;
 
-  const token = authHeader.split('Bearer ')[1];
+  if (!rawToken) return null;
+  const token = rawToken;
   try {
     const { data: { user: supabaseUser }, error } = await supabase.auth.getUser(token);
     if (error || !supabaseUser || !supabaseUser.email) return null;
