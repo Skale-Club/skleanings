@@ -31,8 +31,11 @@ jobs:
             exit 1
           fi
 
+          APP_URL="${APP_URL%/}"
+          echo "Using APP_URL: $APP_URL"
+
           call_generate() {
-            curl -s -w "\n%{http_code}" -X POST \
+            curl -L -s -w "\n%{http_code}" -X POST \
               "${APP_URL}/api/blog/cron/generate" \
               -H "Authorization: Bearer ${CRON_SECRET}" \
               -H "Content-Type: application/json" \

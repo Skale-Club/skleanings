@@ -9,6 +9,10 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Lock, Mail, ArrowLeft } from 'lucide-react';
 
+type AuthMeResponse = {
+  role: 'admin' | 'user' | 'staff';
+};
+
 export default function AdminLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,19 +38,42 @@ export default function AdminLogin() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
 
+      const accessToken = data.session?.access_token;
+      if (!accessToken) {
+        throw new Error('Session was not created. Please try again.');
+      }
+
+      const meRes = await fetch('/api/auth/me', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        signal: AbortSignal.timeout(8000),
+      });
+
+      if (!meRes.ok) {
+        await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+        throw new Error('Session validation failed. A stale login was cleared; please try again.');
+      }
+
+      const me = await meRes.json() as AuthMeResponse;
+
       toast({
         title: 'Login successful',
         description: 'Welcome to the admin dashboard',
       });
 
-      setLocation('/admin');
+      if (me.role === 'staff') {
+        setLocation('/staff/settings');
+      } else if (me.role === 'admin') {
+        setLocation('/admin');
+      } else {
+        setLocation('/');
+      }
     } catch (error: any) {
       toast({
         title: 'Login failed',
@@ -59,7 +86,7 @@ export default function AdminLogin() {
   };
 
   const handleGoogleLogin = async () => {
-    const siteUrl = import.meta.env.VITE_SITE_URL || 'https://skleanings.com';
+    const siteUrl = window.location.origin || import.meta.env.VITE_SITE_URL || 'https://skleanings.com';
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',

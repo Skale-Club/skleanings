@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
-import type { User } from '@supabase/supabase-js';
+import type { Session, User } from '@supabase/supabase-js';
 
 type UserRole = 'admin' | 'user' | 'staff';
 
@@ -31,41 +31,52 @@ function wait(ms: number) {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
 
   useEffect(() => {
-    // Check active session
+    let mounted = true;
+
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
+      setSession(session ?? null);
       setUser(session?.user ?? null);
-      if (!session?.user) setLoading(false);
+      if (!session?.user) {
+        setLoading(false);
+      }
     });
 
-    // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+      setSession(session ?? null);
       setUser(session?.user ?? null);
+
       if (!session?.user) {
         setRole(null);
         setLoading(false);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
-  // Fetch role from DB when user changes
   useEffect(() => {
-    if (!user) {
+    if (!user || !session?.access_token) {
       setRole(null);
       setLoading(false);
       return;
     }
 
     let cancelled = false;
+
     (async () => {
       setRole(null);
       setLoading(true);
@@ -77,8 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             await wait(delay);
           }
 
-          const { data: { session } } = await supabase.auth.getSession();
-          if (!session?.access_token || cancelled) return;
+          if (cancelled) return;
 
           const res = await fetch('/api/auth/me', {
             headers: { Authorization: `Bearer ${session.access_token}` },
@@ -92,59 +102,82 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             return;
           }
 
-          if (res.status === 401) {
+          if (res.status === 401 || res.status === 403) {
             if (cancelled) return;
+
+            // Clear rotated or stale local sessions so the next login starts clean.
+            await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+            setSession(null);
+            setUser(null);
             setRole(null);
             return;
           }
         }
       } catch {
-        // Silently fail — role stays null
+        // Keep the current state quiet; network retries will happen on next auth change.
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     })();
 
-    return () => { cancelled = true; };
-  }, [user]);
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.access_token, user]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    setSession(null);
     setUser(null);
     setRole(null);
   };
 
   const getAccessToken = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.access_token || null;
+    if (session?.access_token) {
+      return session.access_token;
+    }
+
+    const {
+      data: { session: freshSession },
+    } = await supabase.auth.getSession();
+
+    if (freshSession?.access_token) {
+      setSession(freshSession);
+      setUser(freshSession.user ?? null);
+      return freshSession.access_token;
+    }
+
+    return null;
   };
 
-  // Extract user metadata
   const email = user?.email ?? null;
   const firstName = user?.user_metadata?.first_name ?? user?.user_metadata?.full_name?.split(' ')[0] ?? null;
   const lastName = user?.user_metadata?.last_name ?? user?.user_metadata?.full_name?.split(' ').slice(1).join(' ') ?? null;
 
-  // Role-based flags
   const isAdmin = role === 'admin';
   const isUser = role === 'user';
   const isStaff = role === 'staff';
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      role,
-      isAdmin,
-      isUser,
-      isStaff,
-      email,
-      firstName,
-      lastName,
-      loading,
-      showLoginDialog,
-      setShowLoginDialog,
-      signOut,
-      getAccessToken
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        role,
+        isAdmin,
+        isUser,
+        isStaff,
+        email,
+        firstName,
+        lastName,
+        loading,
+        showLoginDialog,
+        setShowLoginDialog,
+        signOut,
+        getAccessToken,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

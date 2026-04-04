@@ -2,7 +2,7 @@
 import { Request, Response, Router } from "express";
 import crypto from "crypto";
 import { handleMessage } from "./message-handler";
-import { requireAdmin, supabase } from "../../lib/auth";
+import { getAuthenticatedUser, requireAdmin } from "../../lib/auth";
 import { storage } from "../../storage";
 import { insertChatSettingsSchema } from "@shared/schema";
 import { conversationEvents } from "../../lib/chat-events";
@@ -52,15 +52,9 @@ function setPublicChatConfigCacheHeaders(res: Response) {
 }
 
 async function isAuthenticatedAdminRequest(req: Request): Promise<boolean> {
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith("Bearer ")) return false;
-
-    const token = authHeader.split("Bearer ")[1];
-    if (!token) return false;
-
     try {
-        const { data: { user }, error } = await supabase.auth.getUser(token);
-        return !error && !!user;
+        const user = await getAuthenticatedUser(req);
+        return user?.role === "admin";
     } catch {
         return false;
     }
