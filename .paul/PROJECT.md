@@ -51,7 +51,13 @@ Customers can book cleaning services with a specific professional, with a unifie
 - [x] Staff-aware booking — staffMemberId stored on booking, shown in admin dashboard — Phase 5
 
 ### Active (In Progress)
-- [ ] Staff Personal Settings Page — v0.6 Phase 3
+None.
+
+### Validated (v0.6 Phase 3 complete)
+- [x] GET /api/staff/me + PATCH /api/staff/me — staff edits own profile — v0.6 Phase 3
+- [x] CalendarTab extracted as shared component — v0.6 Phase 3
+- [x] /staff/settings full page: profile form + avatar upload + CalendarTab + logout — v0.6 Phase 3
+- [x] Calendar endpoints (status/connect/disconnect) use requireAuth — v0.6 Phase 3
 
 ### Validated (v0.6 Phase 2 complete)
 - [x] Flat users list replacing tabbed UnifiedUsersSection — v0.6 Phase 2
@@ -129,6 +135,7 @@ Customers can book cleaning services with a specific professional, with a unifie
 | /staff route group isolated before /admin in Router() | Clean separation; same pattern as isAdminRoute; /staff/* paths never fall through to admin routes | 2026-04-04 | Active |
 | linkStaffMemberToUser dedicated storage method | userId omitted from InsertStaffMember type by design; updateStaffMember can't accept it | 2026-04-04 | Active |
 | Default role = 'staff' for new users in UserDialog | Least privilege — admin must explicitly elevate to admin/user | 2026-04-04 | Active |
+| requireAuth on calendar endpoints (not requireAdmin) | Staff need to manage their own calendar from /staff/settings without admin privilege | 2026-04-04 | Active |
 
 ## Success Metrics
 
@@ -163,4 +170,4 @@ Customers can book cleaning services with a specific professional, with a unifie
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-04-04 after Phase 06-03+06-04 — v0.6 Phase 2 (Unified Users Page + Create User Flow) complete*
+*Last updated: 2026-04-04 after Phase 06-05 — v0.6 Unified Users & Roles milestone complete*

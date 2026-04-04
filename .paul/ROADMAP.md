@@ -212,7 +212,7 @@ When a staff member's Google Calendar token expires or becomes invalid, the syst
 
 ---
 
-## v0.6 — Unified Users & Roles
+## v0.6 — Unified Users & Roles ✅ Complete — 2026-04-04
 
 Single "Users" page with three roles: Admin (owner — full access), User (receptionist — manage staff, view calendars/bookings), Staff (professional — personal settings only). Bridge approach: `users` table gets `role` column; `staffMembers` gets `userId` FK. Existing availability/calendar/booking code stays untouched.
 
@@ -250,7 +250,7 @@ Single "Users" page with three roles: Admin (owner — full access), User (recep
 - [x] 06-03: Unified users list + Add/Edit user dialog with role picker ✅ 2026-04-04
 - [x] 06-04: Staff creation bridge (auto-create staffMembers on role=staff) ✅ 2026-04-04
 
-### Phase 3: Staff Personal Settings Page
+### Phase 3: Staff Personal Settings Page ✅ Complete — 2026-04-04
 
 **Goal:** Staff logs in and lands on a personal settings page where they can edit their profile, bio, avatar, and Google Calendar connection. No access to admin pages.
 **Depends on:** Phase 2
@@ -262,7 +262,7 @@ Single "Users" page with three roles: Admin (owner — full access), User (recep
 - Staff navbar: minimal (just settings + logout)
 
 **Plans:**
-- [ ] 06-05: Staff settings page + route protection
+- [x] 06-05: Staff settings page + route protection ✅ 2026-04-04
 
 ---
 *Roadmap created: 2026-04-02*

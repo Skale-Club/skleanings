@@ -2,7 +2,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { storage } from "../storage";
-import { requireAdmin } from "../lib/auth";
+import { requireAdmin, requireAuth } from "../lib/auth";
 import { insertStaffMemberSchema } from "@shared/schema";
 import { getAuthUrl, exchangeCodeForTokens } from "../lib/google-calendar";
 
@@ -43,6 +43,38 @@ router.get("/count", async (_req, res) => {
   try {
     const count = await storage.getStaffCount();
     res.json({ count });
+  } catch (err) {
+    res.status(500).json({ message: (err as Error).message });
+  }
+});
+
+// GET /api/staff/me — returns the logged-in staff's own staffMember record (must be before /:id)
+router.get("/me", requireAuth, async (req, res) => {
+  try {
+    const user = (req as any).user;
+    const member = await storage.getStaffMemberByUserId(user.id);
+    if (!member) return res.status(404).json({ message: "Staff profile not found" });
+    res.json(member);
+  } catch (err) {
+    res.status(500).json({ message: (err as Error).message });
+  }
+});
+
+// PATCH /api/staff/me — update own profile (name, phone, bio, avatar)
+router.patch("/me", requireAuth, async (req, res) => {
+  try {
+    const user = (req as any).user;
+    const member = await storage.getStaffMemberByUserId(user.id);
+    if (!member) return res.status(404).json({ message: "Staff profile not found" });
+    const { firstName, lastName, phone, bio, profileImageUrl } = req.body;
+    const updated = await storage.updateStaffMember(member.id, {
+      firstName: firstName ?? member.firstName,
+      lastName: lastName ?? member.lastName,
+      phone: phone ?? member.phone,
+      bio: bio ?? member.bio,
+      profileImageUrl: profileImageUrl ?? member.profileImageUrl,
+    });
+    res.json(updated);
   } catch (err) {
     res.status(500).json({ message: (err as Error).message });
   }
@@ -187,7 +219,7 @@ router.put("/:id/availability", requireAdmin, async (req, res) => {
 // ─── Google Calendar OAuth ─────────────────────────────────────────────────────
 
 // GET /api/staff/:id/calendar/status — connection state
-router.get("/:id/calendar/status", requireAdmin, async (req, res) => {
+router.get("/:id/calendar/status", requireAuth, async (req, res) => {
   try {
     const record = await storage.getStaffGoogleCalendar(Number(req.params.id));
     if (!record) return res.json({ connected: false, needsReconnect: false });
@@ -198,7 +230,7 @@ router.get("/:id/calendar/status", requireAdmin, async (req, res) => {
 });
 
 // GET /api/staff/:id/calendar/connect — initiate OAuth flow
-router.get("/:id/calendar/connect", requireAdmin, async (req, res) => {
+router.get("/:id/calendar/connect", requireAuth, async (req, res) => {
   try {
     const creds = await storage.getIntegrationSettings("google-calendar");
     if (!creds?.apiKey || !creds?.locationId) {
@@ -212,7 +244,7 @@ router.get("/:id/calendar/connect", requireAdmin, async (req, res) => {
 });
 
 // DELETE /api/staff/:id/calendar — disconnect Google Calendar
-router.delete("/:id/calendar", requireAdmin, async (req, res) => {
+router.delete("/:id/calendar", requireAuth, async (req, res) => {
   try {
     await storage.deleteStaffGoogleCalendar(Number(req.params.id));
     res.json({ success: true });
@@ -222,7 +254,7 @@ router.delete("/:id/calendar", requireAdmin, async (req, res) => {
 });
 
 // POST /api/staff/:id/calendar/clear-reconnect — clear needsReconnect flag after re-auth
-router.post("/:id/calendar/clear-reconnect", requireAdmin, async (req, res) => {
+router.post("/:id/calendar/clear-reconnect", requireAuth, async (req, res) => {
   try {
     await storage.clearCalendarNeedsReconnect(Number(req.params.id));
     res.json({ success: true });
