@@ -89,7 +89,10 @@ export function UsersSection() {
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold tracking-tight">Users</h2>
+                <div>
+                    <h2 className="text-2xl font-bold tracking-tight">Users</h2>
+                    <p className="text-muted-foreground text-sm mt-1">Manage platform users and cleaning professionals.</p>
+                </div>
                 <Button onClick={handleCreate}>
                     <Plus className="mr-2 h-4 w-4" />
                     Add User
