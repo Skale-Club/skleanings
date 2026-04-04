@@ -71,6 +71,7 @@ const Blog = lazy(() => import("@/pages/Blog").then(m => ({ default: () => <Page
 const BlogPost = lazy(() => import("@/pages/BlogPost").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const ServiceAreas = lazy(() => import("@/pages/ServiceAreas").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Team = lazy(() => import("@/pages/Team").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const StaffSettings = lazy(() => import("@/pages/StaffSettings").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 
 function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const { data: settings } = useQuery<CompanySettings>({
@@ -107,6 +108,7 @@ function Router() {
   const [location] = useLocation();
   const { isInitialLoad } = useContext(InitialLoadContext);
   const isAdminRoute = location.startsWith('/admin');
+  const isStaffRoute = location.startsWith('/staff');
   const prevLocation = useRef(location);
 
   // Scroll to top when navigating to a new page (not hash links)
@@ -123,6 +125,17 @@ function Router() {
 
   // During initial load, show PageLoader for route transitions
   const fallback = isInitialLoad ? null : <PageLoader />;
+
+  if (isStaffRoute) {
+    return (
+      <Suspense fallback={fallback}>
+        <Switch>
+          <Route path="/staff/settings" component={StaffSettings} />
+          <Route component={NotFound} />
+        </Switch>
+      </Suspense>
+    );
+  }
 
   if (isAdminRoute) {
     return (

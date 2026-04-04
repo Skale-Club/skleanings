@@ -2,9 +2,14 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { supabase } from '@/lib/supabase';
 import type { User } from '@supabase/supabase-js';
 
+type UserRole = 'admin' | 'user' | 'staff';
+
 interface AuthContextType {
   user: User | null;
+  role: UserRole | null;
   isAdmin: boolean;
+  isUser: boolean;
+  isStaff: boolean;
   email: string | null;
   firstName: string | null;
   lastName: string | null;
@@ -19,6 +24,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [role, setRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
 
@@ -26,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check active session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
-      setLoading(false);
+      if (!session?.user) setLoading(false);
     });
 
     // Listen for auth changes
@@ -34,15 +40,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
-      setLoading(false);
+      if (!session?.user) {
+        setRole(null);
+        setLoading(false);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
+  // Fetch role from DB when user changes
+  useEffect(() => {
+    if (!user) {
+      setRole(null);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token || cancelled) return;
+
+        const res = await fetch('/api/auth/me', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (res.ok && !cancelled) {
+          const data = await res.json();
+          setRole(data.role as UserRole);
+        }
+      } catch {
+        // Silently fail — role stays null
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [user]);
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
+    setRole(null);
   };
 
   const getAccessToken = async () => {
@@ -54,23 +94,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const email = user?.email ?? null;
   const firstName = user?.user_metadata?.first_name ?? user?.user_metadata?.full_name?.split(' ')[0] ?? null;
   const lastName = user?.user_metadata?.last_name ?? user?.user_metadata?.full_name?.split(' ').slice(1).join(' ') ?? null;
-  
-  // Check if user is admin (you can customize this logic based on your needs)
-  // For example, check if email is in an allowed list or check user_metadata.role
-  const isAdmin = !!user;
+
+  // Role-based flags
+  const isAdmin = role === 'admin';
+  const isUser = role === 'user';
+  const isStaff = role === 'staff';
 
   return (
-    <AuthContext.Provider value={{ 
+    <AuthContext.Provider value={{
       user,
-      isAdmin, 
-      email, 
-      firstName, 
-      lastName, 
+      role,
+      isAdmin,
+      isUser,
+      isStaff,
+      email,
+      firstName,
+      lastName,
       loading,
       showLoginDialog,
       setShowLoginDialog,
       signOut,
-      getAccessToken 
+      getAccessToken
     }}>
       {children}
     </AuthContext.Provider>

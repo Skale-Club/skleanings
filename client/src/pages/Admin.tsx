@@ -57,8 +57,15 @@ const menuItems: AdminMenuItem[] = [
 
 function AdminContent() {
   const { toast } = useToast();
-  const { isAdmin, email, loading, signOut, getAccessToken } = useAdminAuth();
+  const { isAdmin, role, email, loading, signOut, getAccessToken } = useAdminAuth();
   const [, setLocation] = useLocation();
+
+  // Redirect staff to their own settings page
+  useEffect(() => {
+    if (!loading && role === 'staff') {
+      setLocation('/staff/settings');
+    }
+  }, [role, loading, setLocation]);
   const [, params] = useRoute('/admin/:section?');
   const sectionFromUrl = params?.section as AdminSection | undefined;
   const activeSection: AdminSection = sectionFromUrl && menuItems.some((i) => i.id === sectionFromUrl)
