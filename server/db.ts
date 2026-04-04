@@ -11,7 +11,7 @@ if (!process.env.VERCEL) {
 const isServerless = !!process.env.VERCEL;
 
 const DATABASE_URL = isServerless
-  ? process.env.POSTGRES_URL_NON_POOLING || process.env.DATABASE_URL || process.env.POSTGRES_URL || ""
+  ? process.env.POSTGRES_URL || process.env.DATABASE_URL || process.env.POSTGRES_URL_NON_POOLING || ""
   : process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_URL_NON_POOLING || "";
 
 const { Pool } = pg;
@@ -36,7 +36,7 @@ export const pool = new Pool({
   ssl: { rejectUnauthorized: false },
   max: isServerless ? 1 : 10,
   idleTimeoutMillis: isServerless ? 5000 : 30000,
-  connectionTimeoutMillis: 30000,
+  connectionTimeoutMillis: 8000,
 });
 
 // Avoid process crashes on transient idle-client disconnects (e.g. ECONNRESET from pooler/network).

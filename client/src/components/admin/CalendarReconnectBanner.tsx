@@ -45,6 +45,8 @@ export function CalendarReconnectBanner({
       return res.json();
     },
     refetchInterval: 60_000,
+    refetchOnWindowFocus: false,
+    staleTime: 1000 * 60 * 5,
   });
 
   const disconnected = statuses?.filter((s) => s.needsReconnect) ?? [];
