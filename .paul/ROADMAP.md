@@ -287,5 +287,23 @@ White-label Google Calendar OAuth: admin configures credentials once, staff just
 - [x] 07-01: OAuth callback redirect + CalendarTab auth ✅ 2026-04-04
 
 ---
+
+## v0.8 — Production DB Stability ✅ Complete — 2026-04-04
+
+Vercel serverless functions are timing out (30s) on all DB-touching endpoints because the code uses the non-pooled Neon connection in production instead of the pgBouncer pooler. Fixing the connection priority + a few defensive hardening changes will restore stable production operation.
+
+### Phase 1: Database Connection Fix ← **Current**
+
+**Goal:** All API endpoints respond within normal latency (< 1s) in production; no more 504 timeouts on DB queries.
+**Depends on:** Nothing
+
+**Scope:**
+- `server/db.ts` — swap serverless connection priority to use `POSTGRES_URL` (pgBouncer pooler) first, reduce `connectionTimeoutMillis` from 30s to 8s
+- `client/src/components/admin/CalendarReconnectBanner.tsx` — add `refetchOnWindowFocus: false` to prevent repeated refetches of the most frequently timed-out endpoint
+
+**Plans:**
+- [x] 08-01: Fix DB connection pooling + harden CalendarReconnectBanner query ✅ 2026-04-04
+
+---
 *Roadmap created: 2026-04-02*
-*Last updated: 2026-04-04 — v0.7 Google Calendar Polish added*
+*Last updated: 2026-04-04 — v0.8 Production DB Stability added*

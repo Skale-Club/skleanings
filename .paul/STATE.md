@@ -9,11 +9,11 @@ See: .paul/PROJECT.md (updated 2026-04-04)
 
 ## Current Position
 
-Milestone: v0.7 Google Calendar Polish — **COMPLETE**
-Phase: 1 of 1 (OAuth Flow + Auth Fixes) — Complete
-Plan: 07-01 unified
+Milestone: v0.8 Production DB Stability — **COMPLETE**
+Phase: 1 of 1 (Database Connection Fix) — Complete
+Plan: 08-01 unified
 Status: Milestone complete — ready for next milestone
-Last activity: 2026-04-04 — v0.7 complete
+Last activity: 2026-04-04 — v0.8 complete
 
 Progress:
 - Milestone: [████████████] 100%
@@ -23,7 +23,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [v0.7 milestone complete]
+  ✓        ✓        ✓     [v0.8 milestone complete]
 ```
 
 ## Accumulated Context
@@ -56,7 +56,7 @@ Branch: main
 ## Session Continuity
 
 Last session: 2026-04-04
-Stopped at: v0.7 milestone complete
+Stopped at: v0.8 milestone complete
 Next action: Create next milestone or ship
 Resume file: .paul/ROADMAP.md
 
