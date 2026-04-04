@@ -130,7 +130,24 @@ export async function runSeedData(): Promise<void> {
     await seedFaqs();
 }
 
+export async function ensureAdminUser(): Promise<void> {
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (!adminEmail) return;
+
+    try {
+        const existing = await storage.getUserByEmail(adminEmail);
+        if (!existing) {
+            await storage.createUser({ email: adminEmail, role: 'admin', isAdmin: true });
+            console.log(`[Seed] Created admin user: ${adminEmail}`);
+        }
+    } catch (err) {
+        console.error('[Seed] Failed to ensure admin user:', err);
+    }
+}
+
 export async function initializeSeedData(): Promise<void> {
+    await ensureAdminUser();
+
     if (!shouldSeedOnStartup()) {
         console.log('[Seed] Startup seeding disabled for this environment');
         return;
