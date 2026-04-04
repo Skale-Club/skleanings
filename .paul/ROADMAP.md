@@ -216,7 +216,7 @@ When a staff member's Google Calendar token expires or becomes invalid, the syst
 
 Single "Users" page with three roles: Admin (owner — full access), User (receptionist — manage staff, view calendars/bookings), Staff (professional — personal settings only). Bridge approach: `users` table gets `role` column; `staffMembers` gets `userId` FK. Existing availability/calendar/booking code stays untouched.
 
-### Phase 1: Schema + Auth + Role Middleware
+### Phase 1: Schema + Auth + Role Middleware ✅ Complete — 2026-04-04
 
 **Goal:** `users` table has `role` enum column. Auth returns role. Three middleware levels: `requireAdmin`, `requireUser` (admin+user), `requireStaff` (any authenticated). Staff login creates a user record automatically when admin creates staff.
 **Depends on:** Nothing
@@ -231,8 +231,8 @@ Single "Users" page with three roles: Admin (owner — full access), User (recep
 - Supabase migration
 
 **Plans:**
-- [ ] 06-01: Schema migration + auth middleware + AuthContext role
-- [ ] 06-02: Login redirect by role + staff route guard
+- [x] 06-01: Schema migration + auth middleware + AuthContext role ✅ 2026-04-04
+- [x] 06-02: Login redirect by role + staff route guard ✅ 2026-04-04
 
 ### Phase 2: Unified Users Page + Create User Flow
 
