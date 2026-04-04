@@ -1798,6 +1798,7 @@ function GoogleCalendarSection({ getAccessToken }: { getAccessToken: () => Promi
     isEnabled: false,
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
 
   const { data: savedCreds, isLoading } = useQuery<GoogleCalendarCredentials>({
     queryKey: ['/api/integrations/google-calendar'],
@@ -1826,6 +1827,24 @@ function GoogleCalendarSection({ getAccessToken }: { getAccessToken: () => Promi
       toast({ title: 'Failed to save settings', variant: 'destructive' });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const testConnection = async () => {
+    setIsTesting(true);
+    try {
+      const token = await getAccessToken();
+      const res = await authenticatedRequest('POST', '/api/integrations/google-calendar/test', token ?? '', {});
+      const data = await res.json();
+      if (data.ok) {
+        toast({ title: 'Connection valid', description: data.message });
+      } else {
+        toast({ title: 'Connection failed', description: data.message, variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'Test failed', description: 'Could not reach server', variant: 'destructive' });
+    } finally {
+      setIsTesting(false);
     }
   };
 
@@ -1894,13 +1913,21 @@ function GoogleCalendarSection({ getAccessToken }: { getAccessToken: () => Promi
           <div className="flex items-center gap-3 pt-4 border-t">
             <Button
               onClick={save}
-              disabled={isSaving}
+              disabled={isSaving || isTesting}
               data-testid="button-save-google-calendar"
             >
               {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Save
             </Button>
-            {isSaving && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+            <Button
+              variant="outline"
+              onClick={testConnection}
+              disabled={isSaving || isTesting}
+              data-testid="button-test-google-calendar"
+            >
+              {isTesting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Test Connection
+            </Button>
           </div>
 
           <div className="p-4 bg-muted/60 rounded-lg border text-sm space-y-1">
