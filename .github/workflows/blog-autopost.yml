@@ -31,15 +31,27 @@ jobs:
             exit 1
           fi
 
+          call_generate() {
+            curl -s -w "\n%{http_code}" -X POST \
+              "${APP_URL}/api/blog/cron/generate" \
+              -H "Authorization: Bearer ${CRON_SECRET}" \
+              -H "Content-Type: application/json" \
+              --max-time 120
+          }
+
           echo "Triggering blog generation at $(date -u)"
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-            "${APP_URL}/api/blog/cron/generate" \
-            -H "Authorization: Bearer ${CRON_SECRET}" \
-            -H "Content-Type: application/json" \
-            --max-time 120)
+          RESPONSE=$(call_generate)
 
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           BODY=$(echo "$RESPONSE" | sed '$d')
+
+          if [ "$HTTP_CODE" -ge 500 ]; then
+            echo "Received HTTP $HTTP_CODE. Retrying once after 10s..."
+            sleep 10
+            RESPONSE=$(call_generate)
+            HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+            BODY=$(echo "$RESPONSE" | sed '$d')
+          fi
 
           echo "Response: $BODY"
           echo "HTTP Status: $HTTP_CODE"

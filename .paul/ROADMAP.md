@@ -305,5 +305,26 @@ Vercel serverless functions are timing out (30s) on all DB-touching endpoints be
 - [x] 08-01: Fix DB connection pooling + harden CalendarReconnectBanner query ✅ 2026-04-04
 
 ---
+ 
+## v0.9 — Runtime DB SCRAM Stability (Blog Autopost + Login) — In Progress
+
+GitHub Actions blog autopost and interactive login both still show intermittent HTTP 500 on cold start with `SASL: SCRAM-SERVER-FINAL-MESSAGE: server signature is missing`. A second production symptom is now tracked in the same milestone: login appears to authenticate but immediately redirects back to `/login` in a loop for `skleanings@gmail.com`. This milestone isolates runtime DB authentication and login-session stability in serverless and introduces a safe strategy that works for both cron-triggered and interactive user-triggered requests.
+
+### Phase 1: Runtime DB Auth Investigation + Fix ← **Current**
+
+**Goal:** Eliminate SCRAM handshake failures and the login redirect loop in production so `/api/blog/cron/generate` and login-authenticated endpoints remain stable after cold start.
+**Depends on:** v0.8
+
+**Scope:**
+- Validate which runtime connection URL path (`POSTGRES_URL`, `DATABASE_URL`, `POSTGRES_URL_NON_POOLING`) is actually selected in production and under which request flows
+- Reproduce and classify the SCRAM failure path for both cron endpoint and login flow with structured logs
+- Reproduce and classify the login loop path where auth appears successful but route/session validation bounces user back to `/login`
+- Apply minimal DB bootstrap hardening in `server/db.ts` to prevent the specific SCRAM handshake failure mode without regressing latency
+- Verify GitHub Action and manual login both succeed across cold and warm invocations without redirect looping
+
+**Plans:**
+- [ ] 09-01: Instrument, reproduce, and harden runtime DB/auth path for SCRAM stability + login loop resolution
+
+---
 *Roadmap created: 2026-04-02*
-*Last updated: 2026-04-04 — v0.8 Production DB Stability added*
+*Last updated: 2026-04-04 — v0.9 scope expanded with login loop investigation*

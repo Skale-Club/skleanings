@@ -14,6 +14,28 @@ import {
 
 const router = Router();
 
+const SCRAM_RETRY_DELAY_MS = 300;
+
+function isColdStartScramError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const message = error.message.toLowerCase();
+  return message.includes("server signature is missing") || message.includes("scram-server-final-message");
+}
+
+async function withColdStartDbRetry<T>(operation: () => Promise<T>): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    if (!isColdStartScramError(error)) {
+      throw error;
+    }
+
+    console.warn("[blog/cron] Detected cold-start SCRAM handshake error. Retrying once...");
+    await new Promise((resolve) => setTimeout(resolve, SCRAM_RETRY_DELAY_MS));
+    return operation();
+  }
+}
+
 // Blog Settings Routes
 router.get('/settings', async (_req, res) => {
     try {
@@ -200,7 +222,9 @@ router.post("/cron/generate", async (req, res) => {
     }
 
     const { BlogGenerator } = await import("../services/blog-generator");
-    const result = await BlogGenerator.startDailyPostGeneration({ manual: false });
+    const result = await withColdStartDbRetry(() =>
+      BlogGenerator.startDailyPostGeneration({ manual: false })
+    );
 
     if (result.skipped) {
       return res.json({ status: "skipped", reason: result.reason });
@@ -381,7 +405,9 @@ router.delete('/:id', requireAdmin, async (req, res) => {
 router.post("/generate", requireAdmin, async (req, res) => {
   try {
     const { manual = true, autoPublish = false } = req.body || {};
-    const result = await BlogGenerator.startDailyPostGeneration({ manual, autoPublish });
+    const result = await withColdStartDbRetry(() =>
+      BlogGenerator.startDailyPostGeneration({ manual, autoPublish })
+    );
 
     if (result.skipped) {
       return res.json({ status: "skipped", reason: result.reason });

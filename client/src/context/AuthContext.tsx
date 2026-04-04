@@ -22,6 +22,14 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const ROLE_FETCH_RETRY_DELAYS_MS = [0, 400, 1000];
+
+function wait(ms: number) {
+  return new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<UserRole | null>(null);
@@ -53,22 +61,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user) {
       setRole(null);
+      setLoading(false);
       return;
     }
 
     let cancelled = false;
     (async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.access_token || cancelled) return;
+      setRole(null);
+      setLoading(true);
 
-        const res = await fetch('/api/auth/me', {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-          signal: AbortSignal.timeout(8000),
-        });
-        if (res.ok && !cancelled) {
-          const data = await res.json();
-          setRole(data.role as UserRole);
+      try {
+        for (let attempt = 0; attempt < ROLE_FETCH_RETRY_DELAYS_MS.length; attempt += 1) {
+          const delay = ROLE_FETCH_RETRY_DELAYS_MS[attempt];
+          if (delay > 0) {
+            await wait(delay);
+          }
+
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session?.access_token || cancelled) return;
+
+          const res = await fetch('/api/auth/me', {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+            signal: AbortSignal.timeout(8000),
+          });
+
+          if (res.ok) {
+            if (cancelled) return;
+            const data = await res.json();
+            setRole(data.role as UserRole);
+            return;
+          }
+
+          if (res.status === 401) {
+            if (cancelled) return;
+            setRole(null);
+            return;
+          }
         }
       } catch {
         // Silently fail — role stays null

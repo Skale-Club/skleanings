@@ -22,10 +22,12 @@ export default function AdminLogin() {
   useEffect(() => {
     if (!authLoading && role === 'staff') {
       setLocation('/staff/settings');
-    } else if (!authLoading && role) {
+    } else if (!authLoading && isAdmin) {
       setLocation('/admin');
+    } else if (!authLoading && role === 'user') {
+      setLocation('/');
     }
-  }, [role, authLoading, setLocation]);
+  }, [role, isAdmin, authLoading, setLocation]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
