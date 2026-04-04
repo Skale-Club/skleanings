@@ -3,94 +3,33 @@ import pg from "pg";
 import * as schema from "@shared/schema";
 import * as dotenv from "dotenv";
 
-// Carregar .env apenas se não estiver no Vercel (Vercel injeta variáveis automaticamente)
 if (!process.env.VERCEL) {
   dotenv.config();
 }
 
 const isServerless = !!process.env.VERCEL;
 
-type DbUrlSource = "POSTGRES_URL" | "DATABASE_URL" | "POSTGRES_URL_NON_POOLING";
-
-// Serverless: POSTGRES_URL (pgBouncer pooler, port 6543) is the only reachable host from Vercel.
-// POSTGRES_URL_NON_POOLING (direct db.*.supabase.co) is firewalled — always times out at 8s.
-// pgBouncer has intermittent SCRAM handshake failures, handled by retry in pool.connect wrapper below.
-const rawCandidates: Array<{ source: DbUrlSource; url: string | undefined }> = isServerless
-  ? [
-      { source: "POSTGRES_URL", url: process.env.POSTGRES_URL },
-      { source: "DATABASE_URL", url: process.env.DATABASE_URL },
-      { source: "POSTGRES_URL_NON_POOLING", url: process.env.POSTGRES_URL_NON_POOLING },
-    ]
-  : [
-      { source: "DATABASE_URL", url: process.env.DATABASE_URL },
-      { source: "POSTGRES_URL", url: process.env.POSTGRES_URL },
-      { source: "POSTGRES_URL_NON_POOLING", url: process.env.POSTGRES_URL_NON_POOLING },
-    ];
-
-const candidates = rawCandidates.filter((candidate): candidate is { source: DbUrlSource; url: string } => Boolean(candidate.url));
-
-const selected = candidates[0];
+// Serverless: POSTGRES_URL (pgBouncer pooler) is the only reachable host from Vercel.
+// POSTGRES_URL_NON_POOLING (direct db.*.supabase.co) is firewalled and always times out.
+const DATABASE_URL = isServerless
+  ? process.env.POSTGRES_URL || process.env.DATABASE_URL || process.env.POSTGRES_URL_NON_POOLING || ""
+  : process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_URL_NON_POOLING || "";
 
 const { Pool } = pg;
 
-if (!selected) {
+if (!DATABASE_URL) {
   throw new Error(
     "DATABASE_URL, POSTGRES_URL, or POSTGRES_URL_NON_POOLING must be set. Did you forget to provision a database?",
   );
 }
 
-function sanitizeConnectionString(rawUrl: string): string {
-  return rawUrl
-    .replace(/([?&])sslmode=[^&]*(&)?/gi, (_, prefix: string, suffix?: string) => {
-      if (prefix === "?" && suffix) {
-        return "?";
-      }
-      return "";
-    })
-    .replace(/([?&])channel_binding=[^&]*(&)?/gi, (_, prefix: string, suffix?: string) => {
-      if (prefix === "?" && suffix) {
-        return "?";
-      }
-      return "";
-    })
-    .replace(/[?&]$/, "");
-}
-
-function getConnectionFingerprint(rawUrl: string) {
-  try {
-    const parsed = new URL(rawUrl);
-    return {
-      host: parsed.hostname || "unknown",
-      port: parsed.port || "5432",
-      dbName: parsed.pathname.replace(/^\//, "") || "unknown",
-      hadSslMode: parsed.searchParams.has("sslmode"),
-      hadChannelBinding: parsed.searchParams.has("channel_binding"),
-    };
-  } catch {
-    return {
-      host: "unparseable",
-      port: "unknown",
-      dbName: "unknown",
-      hadSslMode: false,
-      hadChannelBinding: false,
-    };
+const connectionString = DATABASE_URL.replace(/([?&])sslmode=[^&]*(&)?/gi, (_, prefix: string, suffix?: string) => {
+  if (prefix === "?" && suffix) {
+    return "?";
   }
-}
+  return "";
+}).replace(/[?&]$/, "");
 
-function isScramSignatureError(error: unknown): boolean {
-  if (!(error instanceof Error)) return false;
-  const message = error.message.toLowerCase();
-  return message.includes("scram-server-final-message") || message.includes("server signature is missing");
-}
-
-const fingerprint = getConnectionFingerprint(selected.url);
-const connectionString = sanitizeConnectionString(selected.url);
-
-console.info(
-  `[DB] init source=${selected.source} host=${fingerprint.host} port=${fingerprint.port} db=${fingerprint.dbName} serverless=${isServerless} strippedSslMode=${fingerprint.hadSslMode} strippedChannelBinding=${fingerprint.hadChannelBinding}`,
-);
-
-// Configurar pool com SSL explícito
 export const pool = new Pool({
   connectionString,
   ssl: { rejectUnauthorized: false },
@@ -99,29 +38,7 @@ export const pool = new Pool({
   connectionTimeoutMillis: 8000,
 });
 
-// Wrap pool.connect to retry on intermittent pgBouncer SCRAM handshake failures.
-// The SCRAM error occurs during connection setup, not during queries.
-const rawPoolConnect = pool.connect.bind(pool);
-pool.connect = (async (callback?: any) => {
-  try {
-    const client = await rawPoolConnect();
-    return client;
-  } catch (error) {
-    if (isScramSignatureError(error)) {
-      console.warn("[DB] SCRAM handshake error on connect — retrying once after 300ms");
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      return rawPoolConnect();
-    }
-    throw error;
-  }
-}) as typeof pool.connect;
-
-// Avoid process crashes on transient idle-client disconnects (e.g. ECONNRESET from pooler/network).
 pool.on("error", (error) => {
-  if (isScramSignatureError(error)) {
-    console.error(`[DB] Pool idle SCRAM error source=${selected.source}:`, error);
-    return;
-  }
   console.error("[DB] Pool idle client error:", error);
 });
 
