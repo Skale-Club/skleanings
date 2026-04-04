@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
-import { Calendar, ChevronDown, Clock, Loader2, MapPin, Pencil, Trash2 } from 'lucide-react';
-import type { Booking } from '@shared/schema';
+import { Calendar, ChevronDown, Clock, ExternalLink, Loader2, MapPin, Pencil, Trash2, User } from 'lucide-react';
+import type { Booking, StaffMember } from '@shared/schema';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -119,6 +119,9 @@ export function SharedBookingCard({
                             <MapPin className="w-4 h-4 mt-0.5 shrink-0" />
                             <span className="line-clamp-2 leading-snug">{booking.customerAddress}</span>
                         </div>
+                        {booking.staffMemberId && (
+                            <StaffBadge staffMemberId={booking.staffMemberId} />
+                        )}
                     </div>
 
                     {/* Vertical divider */}
@@ -140,9 +143,15 @@ export function SharedBookingCard({
                                     'text-xs font-semibold px-2.5 py-1 rounded-full border',
                                     booking.paymentStatus === 'paid'
                                         ? 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30'
-                                        : 'bg-muted text-muted-foreground border-border'
+                                        : booking.paymentStatus === 'pending_payment'
+                                            ? 'bg-amber-500/15 text-amber-600 border-amber-500/30'
+                                            : 'bg-muted text-muted-foreground border-border'
                                 )}>
-                                    {booking.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
+                                    {booking.paymentStatus === 'paid'
+                                        ? 'Paid'
+                                        : booking.paymentStatus === 'pending_payment'
+                                            ? 'Awaiting Payment'
+                                            : 'Unpaid'}
                                 </span>
                             </div>
                         </div>
@@ -191,6 +200,12 @@ export function SharedBookingCard({
                                             <span className="flex items-center gap-2">
                                                 <span className="w-2 h-2 rounded-full bg-emerald-500/70" />
                                                 Paid
+                                            </span>
+                                        </SelectItem>
+                                        <SelectItem value="pending_payment">
+                                            <span className="flex items-center gap-2">
+                                                <span className="w-2 h-2 rounded-full bg-amber-500/70" />
+                                                Awaiting Payment
                                             </span>
                                         </SelectItem>
                                         <SelectItem value="unpaid">
@@ -258,7 +273,25 @@ export function SharedBookingCard({
                         <ChevronDown className={clsx('w-3.5 h-3.5 mr-1 transition-transform', expanded && 'rotate-180')} />
                         {expanded ? 'Hide services' : 'Show services'}
                     </Button>
-                    <span className="text-xs text-muted-foreground">#{booking.id}</span>
+                    <div className="flex items-center gap-3">
+                        {booking.stripeSessionId && (
+                            <a
+                                href={
+                                    booking.stripeSessionId.startsWith('cs_test_')
+                                        ? `https://dashboard.stripe.com/test/payments/${booking.stripeSessionId}`
+                                        : `https://dashboard.stripe.com/payments/${booking.stripeSessionId}`
+                                }
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                                title={booking.stripeSessionId}
+                            >
+                                <ExternalLink className="w-3 h-3" />
+                                {booking.stripeSessionId.slice(0, 20)}…
+                            </a>
+                        )}
+                        <span className="text-xs text-muted-foreground">#{booking.id}</span>
+                    </div>
                 </div>
 
                 {/* Expanded services */}
@@ -291,5 +324,22 @@ export function SharedBookingCard({
                 )}
             </CardContent>
         </Card>
+    );
+}
+
+function StaffBadge({ staffMemberId }: { staffMemberId: number }) {
+    const { data: member } = useQuery<StaffMember>({
+        queryKey: ['/api/staff', staffMemberId],
+        queryFn: () => fetch(`/api/staff/${staffMemberId}`).then(r => r.json()),
+        staleTime: 60_000,
+    });
+
+    if (!member) return null;
+
+    return (
+        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <User className="w-4 h-4 shrink-0" />
+            <span>{member.firstName} {member.lastName}</span>
+        </div>
     );
 }

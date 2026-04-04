@@ -24,6 +24,7 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import type { AdminSection, CompanySettingsData } from '@/components/admin/shared/types';
 import { AdminSidebar, type AdminMenuItem } from '@/components/admin/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
+import { CalendarReconnectBanner } from '@/components/admin/CalendarReconnectBanner';
 import { DashboardSection } from '@/components/admin/DashboardSection';
 import { CategoriesSection } from '@/components/admin/CategoriesSection';
 import { ServicesSection } from '@/components/admin/ServicesSection';
@@ -32,7 +33,7 @@ import { HeroSettingsSection } from '@/components/admin/HeroSettingsSection';
 import { CompanySettingsSection } from '@/components/admin/CompanySettingsSection';
 import { SEOSection } from '@/components/admin/SEOSection';
 import { FaqsSection } from '@/components/admin/FaqsSection';
-import { UsersSection } from './admin/UsersSection';
+import { UnifiedUsersSection } from '@/components/admin/UnifiedUsersSection';
 import { AvailabilitySection } from '@/components/admin/AvailabilitySection';
 import { AdminChatLayout } from '@/components/chat/admin/AdminChatLayout';
 import { IntegrationsSection } from '@/components/admin/IntegrationsSection';
@@ -56,8 +57,15 @@ const menuItems: AdminMenuItem[] = [
 
 function AdminContent() {
   const { toast } = useToast();
-  const { isAdmin, email, loading, signOut, getAccessToken } = useAdminAuth();
+  const { isAdmin, role, email, loading, signOut, getAccessToken } = useAdminAuth();
   const [, setLocation] = useLocation();
+
+  // Redirect staff to their own settings page
+  useEffect(() => {
+    if (!loading && role === 'staff') {
+      setLocation('/staff/settings');
+    }
+  }, [role, loading, setLocation]);
   const [, params] = useRoute('/admin/:section?');
   const sectionFromUrl = params?.section as AdminSection | undefined;
   const activeSection: AdminSection = sectionFromUrl && menuItems.some((i) => i.id === sectionFromUrl)
@@ -136,6 +144,7 @@ function AdminContent() {
 
       <main className="flex-1 min-w-0 min-h-0 relative bg-background overflow-y-auto overscroll-contain" id="admin-top">
         <AdminHeader companyName={companySettings?.companyName} />
+        {activeSection !== 'chat' && <CalendarReconnectBanner getAccessToken={getAccessToken} />}
         <div className={activeSection === 'chat' ? 'min-h-0 p-0' : 'min-h-0 p-6 sm:p-6 md:p-8 pb-8'}>
           {activeSection === 'dashboard' && (
             <DashboardSection
@@ -156,7 +165,7 @@ function AdminContent() {
           {activeSection === 'company' && <CompanySettingsSection getAccessToken={getAccessToken} />}
           {activeSection === 'seo' && <SEOSection getAccessToken={getAccessToken} />}
           {activeSection === 'faqs' && <FaqsSection />}
-          {activeSection === 'users' && <UsersSection />}
+          {activeSection === 'users' && <UnifiedUsersSection />}
           {activeSection === 'availability' && <AvailabilitySection />}
           {activeSection === 'chat' && <AdminChatLayout getAccessToken={getAccessToken} />}
           {activeSection === 'integrations' && <IntegrationsSection getAccessToken={getAccessToken} />}

@@ -22,6 +22,7 @@ import {
     getRuntimeOpenRouterKey,
     listOpenRouterModels
 } from "../lib/openrouter";
+import { getConnectAuthUrl, exchangeConnectCode, deauthorizeConnectAccount } from "../lib/stripe";
 import {
     testGHLConnection,
     getGHLFreeSlots,
@@ -1050,6 +1051,168 @@ router.get("/thumbtack/authorize", requireAdmin, async (_req, res) => {
             success: false,
             message: (err as Error).message,
         });
+    }
+});
+
+// ===============================
+// Google Calendar Integration Routes
+// ===============================
+
+// Get Google Calendar OAuth credentials
+router.get("/google-calendar", requireAdmin, async (req, res) => {
+    try {
+        const settings = await storage.getIntegrationSettings("google-calendar");
+        if (!settings) {
+            return res.json({
+                provider: "google-calendar",
+                apiKey: "",
+                locationId: "",
+                calendarId: "",
+                isEnabled: false
+            });
+        }
+        res.json({
+            ...settings,
+            apiKey: settings.apiKey ? "********" : "",
+            locationId: settings.locationId ? "********" : "",
+        });
+    } catch (err) {
+        res.status(500).json({ message: (err as Error).message });
+    }
+});
+
+// Save Google Calendar OAuth credentials
+router.put("/google-calendar", requireAdmin, async (req, res) => {
+    try {
+        const { apiKey, locationId, calendarId, isEnabled } = req.body;
+
+        const existingSettings = await storage.getIntegrationSettings("google-calendar");
+
+        const settingsToSave: any = {
+            provider: "google-calendar",
+            calendarId: calendarId || "",
+            isEnabled: isEnabled ?? false
+        };
+
+        // apiKey = GOOGLE_CLIENT_ID
+        if (apiKey && apiKey !== "********") {
+            settingsToSave.apiKey = apiKey;
+        } else if (existingSettings?.apiKey) {
+            settingsToSave.apiKey = existingSettings.apiKey;
+        }
+
+        // locationId = GOOGLE_CLIENT_SECRET
+        if (locationId && locationId !== "********") {
+            settingsToSave.locationId = locationId;
+        } else if (existingSettings?.locationId) {
+            settingsToSave.locationId = existingSettings.locationId;
+        }
+
+        const settings = await storage.upsertIntegrationSettings(settingsToSave);
+
+        res.json({
+            ...settings,
+            apiKey: settings.apiKey ? "********" : "",
+            locationId: settings.locationId ? "********" : "",
+        });
+    } catch (err) {
+        res.status(400).json({ message: (err as Error).message });
+    }
+});
+
+// ===============================
+// Stripe Integration Routes
+// ===============================
+
+// GET /stripe — connection status (not raw credentials)
+router.get("/stripe", requireAdmin, async (req, res) => {
+    try {
+        const settings = await storage.getIntegrationSettings("stripe");
+        if (!settings?.apiKey) return res.json({ connected: false });
+        res.json({
+            connected: true,
+            stripeUserId: settings.locationId || "",
+            webhookSecret: settings.calendarId ? "********" : "",
+            isEnabled: settings.isEnabled ?? false,
+        });
+    } catch (err) {
+        res.status(500).json({ message: (err as Error).message });
+    }
+});
+
+// PUT /stripe/webhook — save webhook secret + isEnabled toggle
+router.put("/stripe/webhook", requireAdmin, async (req, res) => {
+    try {
+        const { webhookSecret, isEnabled } = req.body;
+        const existing = await storage.getIntegrationSettings("stripe");
+        const toSave: any = {
+            provider: "stripe",
+            apiKey: existing?.apiKey ?? "",
+            locationId: existing?.locationId ?? "",
+            isEnabled: isEnabled ?? existing?.isEnabled ?? false,
+        };
+        if (webhookSecret && webhookSecret !== "********") {
+            toSave.calendarId = webhookSecret;
+        } else {
+            toSave.calendarId = existing?.calendarId ?? "";
+        }
+        await storage.upsertIntegrationSettings(toSave);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(400).json({ message: (err as Error).message });
+    }
+});
+
+// GET /stripe/connect — initiate Stripe Connect OAuth
+router.get("/stripe/connect", requireAdmin, async (req, res) => {
+    try {
+        if (!process.env.STRIPE_CLIENT_ID) {
+            return res.status(501).json({ message: "STRIPE_CLIENT_ID env var not configured on server." });
+        }
+        const url = getConnectAuthUrl();
+        res.redirect(url);
+    } catch (err) {
+        res.status(500).json({ message: (err as Error).message });
+    }
+});
+
+// GET /stripe/callback — exchange OAuth code, store tokens
+router.get("/stripe/callback", async (req, res) => {
+    try {
+        const code = String(req.query.code || "");
+        if (!code) return res.status(400).send("Missing OAuth code");
+        const { accessToken, stripeUserId } = await exchangeConnectCode(code);
+        const existing = await storage.getIntegrationSettings("stripe");
+        await storage.upsertIntegrationSettings({
+            provider: "stripe",
+            apiKey: accessToken,
+            locationId: stripeUserId,
+            calendarId: existing?.calendarId ?? "",
+            isEnabled: existing?.isEnabled ?? true,
+        });
+        res.redirect("/admin/integrations");
+    } catch (err) {
+        res.status(500).send(`Stripe Connect error: ${(err as Error).message}`);
+    }
+});
+
+// DELETE /stripe/disconnect — revoke and clear tokens
+router.delete("/stripe/disconnect", requireAdmin, async (req, res) => {
+    try {
+        const existing = await storage.getIntegrationSettings("stripe");
+        if (existing?.locationId) {
+            await deauthorizeConnectAccount(existing.locationId);
+        }
+        await storage.upsertIntegrationSettings({
+            provider: "stripe",
+            apiKey: "",
+            locationId: "",
+            calendarId: existing?.calendarId ?? "",
+            isEnabled: false,
+        });
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ message: (err as Error).message });
     }
 });
 

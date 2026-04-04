@@ -15,15 +15,17 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { isAdmin, loading: authLoading } = useAdminAuth();
+  const { isAdmin, role, loading: authLoading } = useAdminAuth();
   const { settings: companySettings } = useCompanySettings();
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (!authLoading && isAdmin) {
+    if (!authLoading && role === 'staff') {
+      setLocation('/staff/settings');
+    } else if (!authLoading && role) {
       setLocation('/admin');
     }
-  }, [isAdmin, authLoading, setLocation]);
+  }, [role, authLoading, setLocation]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

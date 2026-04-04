@@ -10,21 +10,35 @@ router.get("/", requireAdmin, async (req, res) => {
 });
 
 router.post("/", requireAdmin, async (req, res) => {
-    // Validation logic...
     const newUser = await storage.createUser(req.body);
+
+    // Bridge: if role=staff, auto-create linked staffMembers record
+    if (newUser.role === 'staff') {
+        const created = await storage.createStaffMember({
+            firstName: newUser.firstName || '',
+            lastName: newUser.lastName || '',
+            email: newUser.email || undefined,
+            phone: newUser.phone || undefined,
+            profileImageUrl: newUser.profileImageUrl || undefined,
+            isActive: true,
+            order: 0,
+        });
+        await storage.linkStaffMemberToUser(created.id, newUser.id);
+    }
+
     res.status(201).json(newUser);
 });
 
 router.patch("/:id", requireAdmin, async (req, res) => {
     const id = req.params.id;
     const updates = req.body;
-    
-    // Check if we are demoting an admin
-    if (updates.isAdmin === false) {
+
+    // Prevent demoting the last admin
+    if (updates.role && updates.role !== 'admin') {
         const user = await storage.getUser(id);
-        if (user && user.isAdmin) {
+        if (user && user.role === 'admin') {
             const users = await storage.getUsers();
-            const adminCount = users.filter(u => u.isAdmin).length;
+            const adminCount = users.filter(u => u.role === 'admin').length;
             if (adminCount <= 1) {
                 return res.status(400).json({ message: "Cannot remove the last administrator." });
             }
@@ -32,19 +46,43 @@ router.patch("/:id", requireAdmin, async (req, res) => {
     }
 
     const updated = await storage.updateUser(id, updates);
+
+    // Bridge: if role changed to staff and no staffMember linked yet, create one
+    if (updates.role === 'staff') {
+        const existing = await storage.getStaffMemberByUserId(updated.id);
+        if (!existing) {
+            const created = await storage.createStaffMember({
+                firstName: updated.firstName || '',
+                lastName: updated.lastName || '',
+                email: updated.email || undefined,
+                phone: updated.phone || undefined,
+                profileImageUrl: updated.profileImageUrl || undefined,
+                isActive: true,
+                order: 0,
+            });
+            await storage.linkStaffMemberToUser(created.id, updated.id);
+        }
+    }
+
     res.json(updated);
 });
 
 router.delete("/:id", requireAdmin, async (req, res) => {
     const id = req.params.id;
     const user = await storage.getUser(id);
-    
-    if (user && user.isAdmin) {
+
+    if (user && user.role === 'admin') {
         const users = await storage.getUsers();
-        const adminCount = users.filter(u => u.isAdmin).length;
+        const adminCount = users.filter(u => u.role === 'admin').length;
         if (adminCount <= 1) {
-             return res.status(400).json({ message: "Cannot delete the last administrator." });
+            return res.status(400).json({ message: "Cannot delete the last administrator." });
         }
+    }
+
+    // Clean up linked staffMembers record to avoid FK constraint violation
+    const linkedStaff = await storage.getStaffMemberByUserId(id);
+    if (linkedStaff) {
+        await storage.deleteStaffMember(linkedStaff.id);
     }
 
     await storage.deleteUser(id);

@@ -118,11 +118,9 @@ export function UsersSection() {
                                 </TableCell>
                                 <TableCell>{user.email}</TableCell>
                                 <TableCell>
-                                    {user.isAdmin ? (
-                                        <Badge variant="default">Admin</Badge>
-                                    ) : (
-                                        <Badge variant="secondary">User</Badge>
-                                    )}
+                                    {user.role === 'admin' && <Badge variant="default">Admin</Badge>}
+                                    {user.role === 'user' && <Badge variant="secondary">User</Badge>}
+                                    {user.role === 'staff' && <Badge variant="outline">Staff</Badge>}
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <div className="flex justify-end gap-2">

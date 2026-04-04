@@ -80,6 +80,18 @@ import {
   type InsertCompanySettings,
   type BusinessHours,
   DEFAULT_BUSINESS_HOURS,
+  staffMembers,
+  staffServiceAbilities,
+  staffAvailability,
+  staffGoogleCalendar,
+  type StaffMember,
+  type StaffServiceAbility,
+  type StaffAvailability,
+  type StaffGoogleCalendar,
+  type InsertStaffMember,
+  type InsertStaffServiceAbility,
+  type InsertStaffAvailability,
+  type InsertStaffGoogleCalendar,
 } from "@shared/schema";
 import { eq, and, or, gte, lte, inArray, desc, asc, sql, ne } from "drizzle-orm";
 import { z } from "zod";
@@ -135,7 +147,10 @@ export interface IStorage {
   createBooking(booking: InsertBooking & { totalPrice: string, totalDurationMinutes: number, endTime: string, bookingItemsData?: any[] }): Promise<Booking>;
   getBookings(limit?: number): Promise<Booking[]>;
   getBookingsByDate(date: string): Promise<Booking[]>;
+  getBookingsByDateAndStaff(date: string, staffMemberId: number): Promise<Booking[]>;
   getBooking(id: number): Promise<Booking | undefined>;
+  getBookingByStripeSessionId(sessionId: string): Promise<Booking | undefined>;
+  updateBookingStripeFields(bookingId: number, stripeSessionId: string, stripePaymentStatus?: string): Promise<void>;
   updateBooking(
     id: number,
     updates: Partial<{
@@ -262,6 +277,42 @@ export interface IStorage {
   // GHL Sync Queue
   getBookingsPendingSync(): Promise<Booking[]>;
   updateBookingSyncStatus(bookingId: number, status: string, ghlContactId?: string, ghlAppointmentId?: string): Promise<void>;
+
+  // Staff Members
+  getStaffMembers(includeInactive?: boolean): Promise<StaffMember[]>;
+  getStaffMember(id: number): Promise<StaffMember | undefined>;
+  getStaffMemberByUserId(userId: string): Promise<StaffMember | undefined>;
+  linkStaffMemberToUser(staffId: number, userId: string): Promise<void>;
+  getStaffCount(): Promise<number>;
+  createStaffMember(staff: InsertStaffMember): Promise<StaffMember>;
+  updateStaffMember(id: number, staff: Partial<InsertStaffMember>): Promise<StaffMember>;
+  deleteStaffMember(id: number): Promise<void>;
+  reorderStaffMembers(updates: { id: number; order: number }[]): Promise<void>;
+
+  // Staff Service Abilities
+  getStaffMembersByService(serviceId: number): Promise<StaffMember[]>;
+  getServicesByStaffMember(staffMemberId: number): Promise<Service[]>;
+  getStaffMembersByServiceId(serviceId: number): Promise<StaffMember[]>;
+  setStaffServiceAbilities(staffMemberId: number, serviceIds: number[]): Promise<void>;
+
+  // Staff Availability
+  getStaffAvailability(staffMemberId: number): Promise<StaffAvailability[]>;
+  setStaffAvailability(staffMemberId: number, availability: Omit<InsertStaffAvailability, 'staffMemberId'>[]): Promise<StaffAvailability[]>;
+
+  // Staff Google Calendar (optional integration)
+  getStaffGoogleCalendar(staffMemberId: number): Promise<StaffGoogleCalendar | undefined>;
+  upsertStaffGoogleCalendar(calendar: InsertStaffGoogleCalendar): Promise<StaffGoogleCalendar>;
+  deleteStaffGoogleCalendar(staffMemberId: number): Promise<void>;
+  markCalendarNeedsReconnect(staffMemberId: number): Promise<void>;
+  clearCalendarNeedsReconnect(staffMemberId: number): Promise<void>;
+  getAllCalendarStatuses(): Promise<Array<{
+    staffMemberId: number;
+    firstName: string;
+    lastName: string;
+    connected: boolean;
+    needsReconnect: boolean;
+    lastDisconnectedAt: Date | null;
+  }>>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -626,9 +677,37 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(bookings).where(eq(bookings.bookingDate, date));
   }
 
+  async getBookingsByDateAndStaff(date: string, staffMemberId: number): Promise<Booking[]> {
+    return await db.select().from(bookings).where(
+      and(
+        eq(bookings.bookingDate, date),
+        eq(bookings.staffMemberId, staffMemberId)
+      )
+    );
+  }
+
   async getBooking(id: number): Promise<Booking | undefined> {
     const [booking] = await db.select().from(bookings).where(eq(bookings.id, id));
     return booking;
+  }
+
+  async getBookingByStripeSessionId(sessionId: string): Promise<Booking | undefined> {
+    const [booking] = await db
+      .select()
+      .from(bookings)
+      .where(eq(bookings.stripeSessionId, sessionId))
+      .limit(1);
+    return booking;
+  }
+
+  async updateBookingStripeFields(bookingId: number, stripeSessionId: string, stripePaymentStatus?: string): Promise<void> {
+    await db
+      .update(bookings)
+      .set({
+        stripeSessionId,
+        ...(stripePaymentStatus ? { stripePaymentStatus } : {}),
+      })
+      .where(eq(bookings.id, bookingId));
   }
 
   async updateBooking(
@@ -1440,6 +1519,205 @@ export class DatabaseStorage implements IStorage {
     if (ghlAppointmentId) updates.ghlAppointmentId = ghlAppointmentId;
 
     await db.update(bookings).set(updates).where(eq(bookings.id, bookingId));
+  }
+
+  // ─── Staff Members ────────────────────────────────────────────────────────
+
+  async getStaffMembers(includeInactive = false): Promise<StaffMember[]> {
+    if (!includeInactive) {
+      return await db.select().from(staffMembers)
+        .where(eq(staffMembers.isActive, true))
+        .orderBy(asc(staffMembers.order));
+    }
+    return await db.select().from(staffMembers).orderBy(asc(staffMembers.order));
+  }
+
+  async getStaffMember(id: number): Promise<StaffMember | undefined> {
+    const [member] = await db.select().from(staffMembers).where(eq(staffMembers.id, id));
+    return member;
+  }
+
+  async getStaffMemberByUserId(userId: string): Promise<StaffMember | undefined> {
+    const [member] = await db.select().from(staffMembers).where(eq(staffMembers.userId, userId));
+    return member;
+  }
+
+  async linkStaffMemberToUser(staffId: number, userId: string): Promise<void> {
+    await db.update(staffMembers).set({ userId }).where(eq(staffMembers.id, staffId));
+  }
+
+  async getStaffCount(): Promise<number> {
+    const [row] = await db.select({ count: sql<number>`count(*)::int` })
+      .from(staffMembers)
+      .where(eq(staffMembers.isActive, true));
+    return row?.count ?? 0;
+  }
+
+  async createStaffMember(staff: InsertStaffMember): Promise<StaffMember> {
+    const [created] = await db.insert(staffMembers).values(staff).returning();
+    return created;
+  }
+
+  async updateStaffMember(id: number, staff: Partial<InsertStaffMember>): Promise<StaffMember> {
+    const [updated] = await db.update(staffMembers)
+      .set({ ...staff, updatedAt: new Date() })
+      .where(eq(staffMembers.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteStaffMember(id: number): Promise<void> {
+    await db.delete(staffMembers).where(eq(staffMembers.id, id));
+  }
+
+  async reorderStaffMembers(updates: { id: number; order: number }[]): Promise<void> {
+    await Promise.all(
+      updates.map(({ id, order }) =>
+        db.update(staffMembers).set({ order }).where(eq(staffMembers.id, id))
+      )
+    );
+  }
+
+  // ─── Staff Service Abilities ───────────────────────────────────────────────
+
+  async getStaffMembersByService(serviceId: number): Promise<StaffMember[]> {
+    const rows = await db
+      .select({ staffMembers })
+      .from(staffMembers)
+      .innerJoin(staffServiceAbilities, eq(staffServiceAbilities.staffMemberId, staffMembers.id))
+      .where(and(
+        eq(staffServiceAbilities.serviceId, serviceId),
+        eq(staffMembers.isActive, true)
+      ))
+      .orderBy(asc(staffMembers.order));
+    return rows.map(r => r.staffMembers);
+  }
+
+  async getServicesByStaffMember(staffMemberId: number): Promise<Service[]> {
+    const rows = await db
+      .select({ services })
+      .from(services)
+      .innerJoin(staffServiceAbilities, eq(staffServiceAbilities.serviceId, services.id))
+      .where(eq(staffServiceAbilities.staffMemberId, staffMemberId));
+    return rows.map(r => r.services);
+  }
+
+  async getStaffMembersByServiceId(serviceId: number): Promise<StaffMember[]> {
+    const rows = await db
+      .select({ staffMembers })
+      .from(staffMembers)
+      .innerJoin(staffServiceAbilities, eq(staffServiceAbilities.staffMemberId, staffMembers.id))
+      .where(
+        and(
+          eq(staffServiceAbilities.serviceId, serviceId),
+          eq(staffMembers.isActive, true)
+        )
+      );
+    return rows.map(r => r.staffMembers);
+  }
+
+  async setStaffServiceAbilities(staffMemberId: number, serviceIds: number[]): Promise<void> {
+    await db.delete(staffServiceAbilities).where(eq(staffServiceAbilities.staffMemberId, staffMemberId));
+    if (serviceIds.length > 0) {
+      await db.insert(staffServiceAbilities).values(
+        serviceIds.map(serviceId => ({ staffMemberId, serviceId }))
+      );
+    }
+  }
+
+  // ─── Staff Availability ────────────────────────────────────────────────────
+
+  async getStaffAvailability(staffMemberId: number): Promise<StaffAvailability[]> {
+    return await db.select().from(staffAvailability)
+      .where(eq(staffAvailability.staffMemberId, staffMemberId))
+      .orderBy(asc(staffAvailability.dayOfWeek));
+  }
+
+  async setStaffAvailability(
+    staffMemberId: number,
+    availability: Omit<InsertStaffAvailability, 'staffMemberId'>[]
+  ): Promise<StaffAvailability[]> {
+    await db.delete(staffAvailability).where(eq(staffAvailability.staffMemberId, staffMemberId));
+    if (availability.length === 0) return [];
+    return await db.insert(staffAvailability)
+      .values(availability.map(a => ({ ...a, staffMemberId })))
+      .returning();
+  }
+
+  // ─── Staff Google Calendar ─────────────────────────────────────────────────
+
+  async getStaffGoogleCalendar(staffMemberId: number): Promise<StaffGoogleCalendar | undefined> {
+    const [row] = await db.select().from(staffGoogleCalendar)
+      .where(eq(staffGoogleCalendar.staffMemberId, staffMemberId));
+    return row;
+  }
+
+  async upsertStaffGoogleCalendar(calendar: InsertStaffGoogleCalendar): Promise<StaffGoogleCalendar> {
+    const [row] = await db.insert(staffGoogleCalendar)
+      .values(calendar)
+      .onConflictDoUpdate({
+        target: staffGoogleCalendar.staffMemberId,
+        set: {
+          accessToken: calendar.accessToken,
+          refreshToken: calendar.refreshToken,
+          calendarId: calendar.calendarId,
+          tokenExpiresAt: calendar.tokenExpiresAt,
+        },
+      })
+      .returning();
+    return row;
+  }
+
+  async deleteStaffGoogleCalendar(staffMemberId: number): Promise<void> {
+    await db.delete(staffGoogleCalendar).where(eq(staffGoogleCalendar.staffMemberId, staffMemberId));
+  }
+
+  async markCalendarNeedsReconnect(staffMemberId: number): Promise<void> {
+    await db.update(staffGoogleCalendar)
+      .set({ needsReconnect: true, lastDisconnectedAt: new Date() })
+      .where(
+        and(
+          eq(staffGoogleCalendar.staffMemberId, staffMemberId),
+          eq(staffGoogleCalendar.needsReconnect, false)
+        )
+      );
+  }
+
+  async clearCalendarNeedsReconnect(staffMemberId: number): Promise<void> {
+    await db.update(staffGoogleCalendar)
+      .set({ needsReconnect: false })
+      .where(eq(staffGoogleCalendar.staffMemberId, staffMemberId));
+  }
+
+  async getAllCalendarStatuses(): Promise<Array<{
+    staffMemberId: number;
+    firstName: string;
+    lastName: string;
+    connected: boolean;
+    needsReconnect: boolean;
+    lastDisconnectedAt: Date | null;
+  }>> {
+    const rows = await db
+      .select({
+        staffMemberId: staffMembers.id,
+        firstName: staffMembers.firstName,
+        lastName: staffMembers.lastName,
+        calendarId: staffGoogleCalendar.id,
+        needsReconnect: staffGoogleCalendar.needsReconnect,
+        lastDisconnectedAt: staffGoogleCalendar.lastDisconnectedAt,
+      })
+      .from(staffMembers)
+      .leftJoin(staffGoogleCalendar, eq(staffGoogleCalendar.staffMemberId, staffMembers.id))
+      .where(eq(staffMembers.isActive, true));
+
+    return rows.map((row) => ({
+      staffMemberId: row.staffMemberId,
+      firstName: row.firstName,
+      lastName: row.lastName,
+      connected: row.calendarId !== null && row.needsReconnect !== true,
+      needsReconnect: row.needsReconnect ?? false,
+      lastDisconnectedAt: row.lastDisconnectedAt ?? null,
+    }));
   }
 }
 

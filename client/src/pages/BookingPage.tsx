@@ -1,17 +1,18 @@
 import { useCart } from "@/context/CartContext";
-import { useAvailability, useCreateBooking, useMonthAvailability } from "@/hooks/use-booking";
+import { useAvailability, useCreateBooking, useMonthAvailability, useStaffCount } from "@/hooks/use-booking";
 import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format, addDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek, isSameMonth, isSameDay, addMonths, subMonths } from "date-fns";
 import { Link, useLocation } from "wouter";
-import { Trash2, Calendar as CalendarIcon, Clock, ChevronRight, CheckCircle2, ArrowLeft, ChevronLeft, Plus, Minus, X } from "lucide-react";
+import { Trash2, Calendar as CalendarIcon, Clock, ChevronRight, CheckCircle2, ArrowLeft, ChevronLeft, Plus, Minus, X, User } from "lucide-react";
 import { clsx } from "clsx";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { trackBeginCheckout, trackEvent } from "@/lib/analytics";
+import type { StaffMember } from "@shared/schema";
 
 // Helper to format time based on format setting
 function formatTime(time24: string, timeFormat: string): string {
@@ -37,25 +38,72 @@ const bookingFormSchema = z.object({
 type BookingFormValues = z.infer<typeof bookingFormSchema>;
 
 export default function BookingPage() {
-  const [step, setStep] = useState<2 | 3 | 4>(2);
+  const [step, setStep] = useState<2 | 3 | 4 | 5>(2);
   const { items, totalPrice, totalDuration, removeItem, updateQuantity, getCartItemsForBooking } = useCart();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  
+
   // Booking State - start with tomorrow
   const [selectedDate, setSelectedDate] = useState<string>(format(addDays(new Date(), 1), "yyyy-MM-dd"));
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [viewDate, setViewDate] = useState<Date>(new Date());
-  
+  const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
+
+  // Staff
+  const { data: staffCountData } = useStaffCount();
+  const staffCount = staffCountData?.count ?? 0;
+
+  const { data: staffList } = useQuery<StaffMember[]>({
+    queryKey: ['/api/staff'],
+    queryFn: () => fetch('/api/staff').then(r => r.json()),
+    enabled: staffCount > 1,
+  });
+
+  // Auto-skip staff step when count <= 1
+  useEffect(() => {
+    if (staffCountData !== undefined && staffCount <= 1 && step === 2) {
+      setStep(3);
+    }
+  }, [staffCountData, staffCount, step]);
+
+  // Service IDs from cart for cross-service availability
+  const serviceIds = items.map(item => item.id);
+  const availabilityOptions = { staffId: selectedStaff?.id, serviceIds };
+
   // API Hooks
-  const { data: slots, isLoading: isLoadingSlots, isFetching: isFetchingSlots } = useAvailability(selectedDate, totalDuration);
+  const { data: slots, isLoading: isLoadingSlots, isFetching: isFetchingSlots } = useAvailability(selectedDate, totalDuration, availabilityOptions);
   const createBooking = useCreateBooking();
+
+  const checkoutMutation = useMutation({
+    mutationFn: async (bookingData: any) => {
+      const res = await fetch("/api/payments/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bookingData),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Checkout failed");
+      }
+      return res.json() as Promise<{ sessionUrl: string; bookingId: number }>;
+    },
+    onSuccess: (data) => {
+      window.location.href = data.sessionUrl;
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Payment Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
   const { data: companySettings } = useQuery<{ timeFormat?: string; minimumBookingValue?: string }>({ queryKey: ['/api/company-settings'] });
-  
+
   // Fetch monthly availability to disable dates without slots
   const viewYear = viewDate.getFullYear();
   const viewMonth = viewDate.getMonth() + 1; // 1-12
-  const { data: monthAvailability, isLoading: isLoadingMonthAvailability, isFetching: isFetchingMonthAvailability } = useMonthAvailability(viewYear, viewMonth, totalDuration);
+  const { data: monthAvailability, isLoading: isLoadingMonthAvailability, isFetching: isFetchingMonthAvailability } = useMonthAvailability(viewYear, viewMonth, totalDuration, availabilityOptions);
   const isSlotsPending = isLoadingSlots || isFetchingSlots;
   const isMonthAvailabilityPending = isLoadingMonthAvailability || isFetchingMonthAvailability;
   const timeFormat = companySettings?.timeFormat || '12h';
@@ -64,7 +112,7 @@ export default function BookingPage() {
   const isBelowMinimum = minimumBookingValue > 0 && totalPrice < minimumBookingValue;
   const adjustmentAmount = isBelowMinimum ? minimumBookingValue - totalPrice : 0;
   const finalPrice = isBelowMinimum ? minimumBookingValue : totalPrice;
-  
+
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
     defaultValues: {
@@ -95,7 +143,19 @@ export default function BookingPage() {
     }
   }, []);
 
-  const handleNextStep = (nextStep: 2 | 3 | 4) => {
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("cancelled") === "1") {
+      toast({
+        title: "Payment cancelled",
+        description: "Your booking was not completed. You can try again.",
+        variant: "destructive",
+      });
+      window.history.replaceState({}, "", "/booking");
+    }
+  }, []);
+
+  const handleNextStep = (nextStep: 2 | 3 | 4 | 5) => {
     setStep(nextStep);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -103,16 +163,14 @@ export default function BookingPage() {
   const onSubmit = (data: BookingFormValues) => {
     if (!selectedDate || !selectedTime) return;
 
-    // Calculate end time simply for the frontend display/object construction
-    // The real validation happens on backend usually, but we need to send it
     const [hours, minutes] = selectedTime.split(":").map(Number);
-    const endDate = new Date(); 
+    const endDate = new Date();
     endDate.setHours(hours, minutes + totalDuration);
     const endTime = format(endDate, "HH:mm");
 
     const fullAddress = `${data.customerStreet}${data.customerUnit ? `, ${data.customerUnit}` : ""}, ${data.customerCity}, ${data.customerState}`;
 
-    createBooking.mutate({
+    const bookingPayload = {
       ...data,
       customerAddress: fullAddress,
       cartItems: getCartItemsForBooking(),
@@ -121,18 +179,25 @@ export default function BookingPage() {
       endTime: endTime,
       totalDurationMinutes: totalDuration,
       totalPrice: String(finalPrice),
-    }, {
-      onSuccess: () => {
-        setLocation("/confirmation");
-      },
-      onError: (error) => {
-        toast({
-          title: "Booking Failed",
-          description: error.message,
-          variant: "destructive"
-        });
-      }
-    });
+      staffMemberId: selectedStaff?.id ?? null,
+    };
+
+    if (data.paymentMethod === "online") {
+      checkoutMutation.mutate(bookingPayload);
+    } else {
+      createBooking.mutate(bookingPayload, {
+        onSuccess: () => {
+          setLocation("/confirmation");
+        },
+        onError: (error) => {
+          toast({
+            title: "Booking Failed",
+            description: error.message,
+            variant: "destructive"
+          });
+        }
+      });
+    }
   };
 
   if (items.length === 0) {
@@ -156,25 +221,81 @@ export default function BookingPage() {
     <div className="bg-slate-50 py-8 min-h-[60vh]">
       <div className="container-custom mx-auto max-w-5xl mb-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
+
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            
-            {/* STEP 2: SCHEDULE */}
-            {step === 2 && (
+
+            {/* STEP 2: STAFF SELECTION */}
+            {step === 2 && staffCount > 1 && (
+              <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-4">
+                <h2 className="text-2xl font-bold mb-2">Choose Your Professional</h2>
+                <p className="text-slate-500 text-sm mb-6">Select who you'd like to work with, or choose any available professional.</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
+                  {/* Any Professional option */}
+                  <button
+                    onClick={() => setSelectedStaff(null)}
+                    className={clsx(
+                      "flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all",
+                      selectedStaff === null
+                        ? "border-primary bg-primary/5"
+                        : "border-slate-200 hover:border-slate-300"
+                    )}
+                  >
+                    <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
+                      <User className="w-8 h-8 text-slate-400" />
+                    </div>
+                    <span className="font-semibold text-sm text-center">Any Professional</span>
+                  </button>
+                  {/* Staff member cards */}
+                  {staffList?.map(member => (
+                    <button
+                      key={member.id}
+                      onClick={() => setSelectedStaff(member)}
+                      className={clsx(
+                        "flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all",
+                        selectedStaff?.id === member.id
+                          ? "border-primary bg-primary/5"
+                          : "border-slate-200 hover:border-slate-300"
+                      )}
+                    >
+                      {member.profileImageUrl ? (
+                        <img src={member.profileImageUrl} alt="" className="w-16 h-16 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xl font-bold">
+                          {member.firstName[0]}{member.lastName[0]}
+                        </div>
+                      )}
+                      <div className="text-center">
+                        <p className="font-semibold text-sm">{member.firstName} {member.lastName}</p>
+                        {member.bio && <p className="text-xs text-slate-400 mt-0.5 line-clamp-2">{member.bio}</p>}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => handleNextStep(3)}
+                  className="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+                >
+                  Continue to Schedule <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {/* STEP 3: SCHEDULE */}
+            {step === 3 && (
               <div ref={calendarRef} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-4 text-slate-900">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                   {/* Calendar Column */}
                   <div>
                     <div className="flex items-center justify-between mb-8">
-                      <button 
+                      <button
                         onClick={() => setViewDate(subMonths(viewDate, 1))}
                         className="p-2 hover:bg-slate-50 rounded-full text-slate-400 transition-colors border border-gray-100"
                       >
                         <ChevronLeft className="w-5 h-5" />
                       </button>
                       <h3 className="text-lg font-bold text-slate-900">{format(viewDate, "MMMM yyyy")}</h3>
-                      <button 
+                      <button
                         onClick={() => setViewDate(addMonths(viewDate, 1))}
                         className="p-2 hover:bg-slate-50 rounded-full text-slate-400 transition-colors border border-gray-100"
                       >
@@ -209,8 +330,6 @@ export default function BookingPage() {
                             const isToday = isSameDay(currentDay, new Date());
                             const isPast = currentDay < new Date() && !isToday;
 
-                            // Check availability from the monthly availability API
-                            // Never show a date as available until month availability is loaded.
                             const isAvailable = !isMonthAvailabilityPending && monthAvailability ? monthAvailability[dateStr] === true : false;
 
                             days.push(
@@ -289,11 +408,11 @@ export default function BookingPage() {
               </div>
             )}
 
-            {/* STEP 3: CONTACT INFORMATION */}
-            {step === 3 && (
+            {/* STEP 4: CONTACT INFORMATION */}
+            {step === 4 && (
               <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-4">
                 <div className="flex items-center gap-4 mb-6">
-                  <button onClick={() => setStep(2)} className="p-2 hover:bg-slate-100 rounded-full">
+                  <button onClick={() => setStep(3)} className="p-2 hover:bg-slate-100 rounded-full">
                     <ArrowLeft className="w-5 h-5" />
                   </button>
                   <h2 className="text-2xl font-bold">Contact Details</h2>
@@ -329,7 +448,7 @@ export default function BookingPage() {
                       onChange={(e) => {
                         let value = e.target.value.replace(/\D/g, "");
                         if (value.length > 10) value = value.slice(0, 10);
-                        
+
                         let maskedValue = "";
                         if (value.length > 0) {
                           maskedValue = "(" + value.slice(0, 3);
@@ -349,13 +468,13 @@ export default function BookingPage() {
                     {form.formState.errors.customerPhone && <p className="text-red-500 text-xs">{form.formState.errors.customerPhone.message}</p>}
                   </div>
 
-                  {step === 3 && (
-                    <button 
+                  {step === 4 && (
+                    <button
                       type="button"
                       onClick={async () => {
                         const isValid = await form.trigger(["customerName", "customerEmail", "customerPhone"]);
                         if (isValid) {
-                          handleNextStep(4);
+                          handleNextStep(5);
                         }
                       }}
                       className="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
@@ -367,11 +486,11 @@ export default function BookingPage() {
               </div>
             )}
 
-            {/* STEP 4: ADDRESS & PAYMENT */}
-            {step === 4 && (
+            {/* STEP 5: ADDRESS & PAYMENT */}
+            {step === 5 && (
               <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-4">
                 <div className="flex items-center gap-4 mb-6">
-                  <button onClick={() => setStep(3)} className="p-2 hover:bg-slate-100 rounded-full">
+                  <button onClick={() => setStep(4)} className="p-2 hover:bg-slate-100 rounded-full">
                     <ArrowLeft className="w-5 h-5" />
                   </button>
                   <h2 className="text-2xl font-bold">Address & Payment</h2>
@@ -426,8 +545,8 @@ export default function BookingPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <label className={clsx(
                         "p-4 rounded-xl border cursor-pointer transition-all flex flex-col items-center gap-2 text-center",
-                        form.watch("paymentMethod") === "site" 
-                          ? "border-primary bg-blue-50 text-primary ring-1 ring-primary" 
+                        form.watch("paymentMethod") === "site"
+                          ? "border-primary bg-blue-50 text-primary ring-1 ring-primary"
                           : "border-gray-200 hover:bg-slate-50"
                       )}>
                         <input type="radio" value="site" {...form.register("paymentMethod")} className="hidden" />
@@ -435,24 +554,28 @@ export default function BookingPage() {
                         <span className="text-xs opacity-70">Cash or Card upon arrival</span>
                       </label>
                       <label className={clsx(
-                        "p-4 rounded-xl border cursor-pointer transition-all flex flex-col items-center gap-2 text-center opacity-60",
-                        form.watch("paymentMethod") === "online" 
-                          ? "border-primary bg-blue-50 text-primary" 
-                          : "border-gray-200"
+                        "p-4 rounded-xl border cursor-pointer transition-all flex flex-col items-center gap-2 text-center",
+                        form.watch("paymentMethod") === "online"
+                          ? "border-primary bg-blue-50 text-primary ring-1 ring-primary"
+                          : "border-gray-200 hover:bg-slate-50"
                       )}>
-                        <input type="radio" value="online" disabled {...form.register("paymentMethod")} className="hidden" />
+                        <input type="radio" value="online" {...form.register("paymentMethod")} className="hidden" />
                         <span className="font-bold">Pay Online</span>
-                        <span className="text-xs opacity-70">Coming soon</span>
+                        <span className="text-xs opacity-70">Secure online payment</span>
                       </label>
                     </div>
                   </div>
 
-                  <button 
+                  <button
                     type="submit"
-                    disabled={createBooking.isPending}
+                    disabled={createBooking.isPending || checkoutMutation.isPending}
                     className="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-8 text-lg"
                   >
-                    {createBooking.isPending ? "Confirming..." : `Confirm Booking - $${finalPrice.toFixed(2)}`}
+                    {createBooking.isPending || checkoutMutation.isPending
+                      ? "Processing..."
+                      : form.watch("paymentMethod") === "online"
+                        ? `Pay $${finalPrice.toFixed(2)} with Stripe`
+                        : `Confirm Booking - $${finalPrice.toFixed(2)}`}
                   </button>
                 </form>
               </div>
@@ -463,7 +586,7 @@ export default function BookingPage() {
           <div className="lg:col-span-1" ref={summaryRef}>
             <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 sticky top-24">
               <h3 className="font-bold text-xl mb-4 text-slate-900">Booking Summary</h3>
-              
+
               <div className="space-y-4 mb-6">
                 {items.map((item) => (
                   <div key={item.id} className="flex flex-col gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
@@ -478,7 +601,6 @@ export default function BookingPage() {
                       </button>
                     </div>
 
-                    {/* Show pricing details for non-fixed pricing */}
                     {item.areaSize && (
                       <span className="text-xs text-slate-500">Size: {item.areaSize}{item.areaValue ? ` (${item.areaValue} sqft)` : ''}</span>
                     )}
@@ -528,22 +650,28 @@ export default function BookingPage() {
               </div>
 
               <div className="border-t border-gray-100 pt-4 space-y-2">
-                 <div className="flex justify-between text-slate-500 text-sm">
-                   <span>Duration</span>
-                   <span>{Math.floor(totalDuration / 60)}h {totalDuration % 60}m</span>
-                 </div>
-                 {selectedDate && (
-                   <div className="flex justify-between text-slate-500 text-sm">
-                     <span>Date</span>
-                     <span>{format(new Date(selectedDate), "MMM do, yyyy")}</span>
-                   </div>
-                 )}
-                 {selectedTime && (
-                   <div className="flex justify-between text-slate-500 text-sm">
-                     <span>Time</span>
-                     <span>{formatTime(selectedTime, timeFormat)}</span>
-                   </div>
-                 )}
+                <div className="flex justify-between text-slate-500 text-sm">
+                  <span>Duration</span>
+                  <span>{Math.floor(totalDuration / 60)}h {totalDuration % 60}m</span>
+                </div>
+                {selectedDate && (
+                  <div className="flex justify-between text-slate-500 text-sm">
+                    <span>Date</span>
+                    <span>{format(new Date(selectedDate), "MMM do, yyyy")}</span>
+                  </div>
+                )}
+                {selectedTime && (
+                  <div className="flex justify-between text-slate-500 text-sm">
+                    <span>Time</span>
+                    <span>{formatTime(selectedTime, timeFormat)}</span>
+                  </div>
+                )}
+                {selectedStaff && (
+                  <div className="flex justify-between text-slate-500 text-sm">
+                    <span>Professional</span>
+                    <span>{selectedStaff.firstName} {selectedStaff.lastName}</span>
+                  </div>
+                )}
               </div>
 
               <div className="border-t border-gray-100 pt-4 space-y-2">
@@ -571,10 +699,10 @@ export default function BookingPage() {
               )}
 
               <div className="mt-8">
-                {step === 2 && (
-                  <button 
+                {step === 3 && (
+                  <button
                     disabled={!selectedDate || !selectedTime}
-                    onClick={() => handleNextStep(3)}
+                    onClick={() => handleNextStep(4)}
                     className="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     Continue to Contact <ChevronRight className="w-4 h-4" />

@@ -25,7 +25,7 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
@@ -35,9 +35,13 @@ type UserDialogProps = {
     onOpenChange: (open: boolean) => void;
 };
 
-// Use the insert schema but make some fields optional/required as needed for the form
-const formSchema = insertUserSchema.extend({
-    // Add specific validations if needed, schema is generated from drizzle-zod
+const formSchema = insertUserSchema.pick({
+    email: true,
+    firstName: true,
+    lastName: true,
+    profileImageUrl: true,
+}).extend({
+    role: z.enum(['admin', 'user', 'staff']).default('staff'),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -45,7 +49,7 @@ type FormValues = z.infer<typeof formSchema>;
 export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
     const { toast } = useToast();
     const queryClient = useQueryClient();
-    const { getAccessToken } = useAdminAuth();
+    const { getAccessToken, isAdmin: currentUserIsAdmin } = useAdminAuth();
     const [uploadedUrls, setUploadedUrls] = useState<Record<string, string>>({});
 
     const getUploadParameters = async (file: UppyFile<Record<string, unknown>, Record<string, unknown>>) => {
@@ -88,7 +92,7 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
             firstName: user?.firstName || "",
             lastName: user?.lastName || "",
             profileImageUrl: user?.profileImageUrl || "",
-            isAdmin: user?.isAdmin || false,
+            role: (user?.role as 'admin' | 'user' | 'staff') || 'staff',
         },
     });
 
@@ -99,7 +103,7 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
                 firstName: user?.firstName || "",
                 lastName: user?.lastName || "",
                 profileImageUrl: user?.profileImageUrl || "",
-                isAdmin: user?.isAdmin || false,
+                role: (user?.role as 'admin' | 'user' | 'staff') || 'staff',
             });
         }
     }, [user, open, form]);
@@ -224,18 +228,25 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
                         />
                         <FormField
                             control={form.control}
-                            name="isAdmin"
+                            name="role"
                             render={({ field }) => (
-                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                                    <div className="space-y-0.5">
-                                        <FormLabel className="text-base">Admin Access</FormLabel>
-                                    </div>
-                                    <FormControl>
-                                        <Switch
-                                            checked={field.value || false}
-                                            onCheckedChange={field.onChange}
-                                        />
-                                    </FormControl>
+                                <FormItem>
+                                    <FormLabel>Role</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select role" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {currentUserIsAdmin && (
+                                                <SelectItem value="admin">Admin</SelectItem>
+                                            )}
+                                            <SelectItem value="user">User</SelectItem>
+                                            <SelectItem value="staff">Staff</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
                                 </FormItem>
                             )}
                         />

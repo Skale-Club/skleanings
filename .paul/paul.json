@@ -1,0 +1,25 @@
+{
+  "name": "skleanings",
+  "version": "0.6.0",
+  "milestone": {
+    "name": "v0.6 Unified Users & Roles",
+    "version": "0.6.0",
+    "status": "in_progress"
+  },
+  "phase": {
+    "number": 3,
+    "name": "Staff Personal Settings Page",
+    "status": "not_started"
+  },
+  "loop": {
+    "plan": null,
+    "position": "IDLE"
+  },
+  "timestamps": {
+    "created_at": "2026-04-02T00:00:00.000Z",
+    "updated_at": "2026-04-04T00:00:00.000Z"
+  },
+  "satellite": {
+    "groom": true
+  }
+}

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { clsx } from 'clsx';
-import { SiFacebook, SiGoogleanalytics, SiGoogletagmanager, SiOpenai } from 'react-icons/si';
+import { SiFacebook, SiGoogleanalytics, SiGoogletagmanager, SiOpenai, SiStripe } from 'react-icons/si';
 import { authenticatedRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import type {
@@ -35,7 +35,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Bot, Check, ChevronsUpDown, LayoutGrid, Loader2, Sparkles } from 'lucide-react';
+import { Bot, Check, ChevronsUpDown, LayoutGrid, Loader2, Sparkles, Calendar } from 'lucide-react';
 
 const ghlLogo = 'https://lsrlnlcdrshzzhqvklqc.supabase.co/storage/v1/object/public/skleanings/ghl-logo.webp';
 
@@ -1483,6 +1483,8 @@ export function IntegrationsSection({ getAccessToken }: { getAccessToken: () => 
         </Card>
       </div>
 
+      <StripeSection getAccessToken={getAccessToken} />
+      <GoogleCalendarSection getAccessToken={getAccessToken} />
       <TelegramSection getAccessToken={getAccessToken} />
       <TwilioSection getAccessToken={getAccessToken} />
 
@@ -1640,4 +1642,279 @@ export function IntegrationsSection({ getAccessToken }: { getAccessToken: () => 
   );
 }
 
+interface StripeConnectionStatus {
+  connected: boolean;
+  stripeUserId?: string;
+  webhookSecret?: string;
+  isEnabled?: boolean;
+}
+
+function StripeSection({ getAccessToken }: { getAccessToken: () => Promise<string | null> }) {
+  const { toast } = useToast();
+  const [webhookSecret, setWebhookSecret] = useState('');
+  const [isSavingWebhook, setIsSavingWebhook] = useState(false);
+
+  const { data: status, isLoading, refetch } = useQuery<StripeConnectionStatus>({
+    queryKey: ['/api/integrations/stripe'],
+    queryFn: async () => {
+      const token = await getAccessToken();
+      const res = await fetch('/api/integrations/stripe', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Failed to fetch Stripe status');
+      return res.json();
+    },
+  });
+
+  useEffect(() => {
+    if (status?.webhookSecret) setWebhookSecret(status.webhookSecret);
+  }, [status]);
+
+  const disconnect = async () => {
+    try {
+      const token = await getAccessToken();
+      await authenticatedRequest('DELETE', '/api/integrations/stripe/disconnect', token ?? '', {});
+      refetch();
+      toast({ title: 'Stripe account disconnected' });
+    } catch {
+      toast({ title: 'Failed to disconnect', variant: 'destructive' });
+    }
+  };
+
+  const saveWebhook = async () => {
+    setIsSavingWebhook(true);
+    try {
+      const token = await getAccessToken();
+      await authenticatedRequest('PUT', '/api/integrations/stripe/webhook', token ?? '', {
+        webhookSecret,
+        isEnabled: status?.isEnabled ?? true,
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/integrations/stripe'] });
+      toast({ title: 'Webhook secret saved' });
+    } catch {
+      toast({ title: 'Failed to save webhook secret', variant: 'destructive' });
+    } finally {
+      setIsSavingWebhook(false);
+    }
+  };
+
+  if (isLoading) return null;
+
+  return (
+    <div className="space-y-4">
+      <Card className="border-0 bg-muted">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
+              <SiStripe className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+            </div>
+            <div>
+              <CardTitle className="text-lg">Stripe</CardTitle>
+              <p className="text-sm text-muted-foreground">Accept online payments at checkout</p>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {status?.connected ? (
+            <div className="rounded-lg border p-4 space-y-4">
+              <div className="flex items-center gap-2">
+                <SiStripe className="w-4 h-4 text-violet-500" />
+                <span className="font-medium text-sm">Connected</span>
+                <span className="text-xs bg-muted px-2 py-0.5 rounded-full font-mono text-muted-foreground">
+                  {status.stripeUserId}
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="stripe-webhook-secret">Webhook Secret</Label>
+                <Input
+                  id="stripe-webhook-secret"
+                  type="password"
+                  value={webhookSecret}
+                  onChange={(e) => setWebhookSecret(e.target.value)}
+                  placeholder="whsec_..."
+                  data-testid="input-stripe-webhook-secret"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Stripe Dashboard → Developers → Webhooks → your endpoint → Signing secret.
+                  Subscribe to <code className="bg-background px-1 rounded">checkout.session.completed</code>.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2 border-t">
+                <Button
+                  size="sm"
+                  onClick={saveWebhook}
+                  disabled={isSavingWebhook}
+                  data-testid="button-save-stripe-webhook"
+                >
+                  {isSavingWebhook && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Save Webhook Secret
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={disconnect}
+                  className="text-destructive hover:text-destructive ml-auto"
+                  data-testid="button-disconnect-stripe"
+                >
+                  Disconnect
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-dashed p-6 space-y-3 text-center">
+              <SiStripe className="w-8 h-8 text-muted-foreground mx-auto" />
+              <p className="text-sm text-muted-foreground">No Stripe account connected</p>
+              <Button asChild size="sm" className="bg-violet-600 hover:bg-violet-700 text-white" data-testid="button-connect-stripe">
+                <a href="/api/integrations/stripe/connect">
+                  Connect with Stripe
+                </a>
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                You'll be redirected to Stripe to authorize the connection.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+interface GoogleCalendarCredentials {
+  apiKey: string;      // Client ID
+  locationId: string;  // Client Secret
+  calendarId: string;  // Redirect URI
+  isEnabled: boolean;
+}
+
+function GoogleCalendarSection({ getAccessToken }: { getAccessToken: () => Promise<string | null> }) {
+  const { toast } = useToast();
+  const [creds, setCreds] = useState<GoogleCalendarCredentials>({
+    apiKey: '',
+    locationId: '',
+    calendarId: '',
+    isEnabled: false,
+  });
+  const [isSaving, setIsSaving] = useState(false);
+
+  const { data: savedCreds, isLoading } = useQuery<GoogleCalendarCredentials>({
+    queryKey: ['/api/integrations/google-calendar'],
+    queryFn: async () => {
+      const token = await getAccessToken();
+      const res = await fetch('/api/integrations/google-calendar', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Failed to fetch Google Calendar settings');
+      return res.json();
+    },
+  });
+
+  useEffect(() => {
+    if (savedCreds) setCreds(savedCreds);
+  }, [savedCreds]);
+
+  const save = async () => {
+    setIsSaving(true);
+    try {
+      const token = await getAccessToken();
+      await authenticatedRequest('PUT', '/api/integrations/google-calendar', token ?? '', creds);
+      queryClient.invalidateQueries({ queryKey: ['/api/integrations/google-calendar'] });
+      toast({ title: 'Google Calendar settings saved' });
+    } catch {
+      toast({ title: 'Failed to save settings', variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading) return null;
+
+  return (
+    <div className="space-y-4">
+      <Card className="border-0 bg-muted">
+        <CardHeader>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">Google Calendar</CardTitle>
+                <p className="text-sm text-muted-foreground">OAuth credentials for staff calendar sync</p>
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="gc-client-id">Client ID</Label>
+              <Input
+                id="gc-client-id"
+                type="password"
+                value={creds.apiKey}
+                onChange={(e) => setCreds(prev => ({ ...prev, apiKey: e.target.value }))}
+                placeholder="Google OAuth Client ID"
+                data-testid="input-gc-client-id"
+              />
+              <p className="text-xs text-muted-foreground">
+                From Google Cloud Console → Credentials → OAuth 2.0 Client IDs
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="gc-client-secret">Client Secret</Label>
+              <Input
+                id="gc-client-secret"
+                type="password"
+                value={creds.locationId}
+                onChange={(e) => setCreds(prev => ({ ...prev, locationId: e.target.value }))}
+                placeholder="Google OAuth Client Secret"
+                data-testid="input-gc-client-secret"
+              />
+            </div>
+
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="gc-redirect-uri">Redirect URI</Label>
+              <Input
+                id="gc-redirect-uri"
+                value={creds.calendarId}
+                onChange={(e) => setCreds(prev => ({ ...prev, calendarId: e.target.value }))}
+                placeholder="https://yourdomain.com/api/staff/calendar/callback"
+                data-testid="input-gc-redirect-uri"
+              />
+              <p className="text-xs text-muted-foreground">
+                Must match exactly what's configured in Google Cloud Console. Add this URI to the Authorized Redirect URIs list.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 pt-4 border-t">
+            <Button
+              onClick={save}
+              disabled={isSaving}
+              data-testid="button-save-google-calendar"
+            >
+              {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Save
+            </Button>
+            {isSaving && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+          </div>
+
+          <div className="p-4 bg-muted/60 rounded-lg border text-sm space-y-1">
+            <p className="font-medium">Setup instructions</p>
+            <ol className="list-decimal list-inside text-muted-foreground space-y-1 text-xs">
+              <li>Go to Google Cloud Console and create an OAuth 2.0 Client ID (Web application)</li>
+              <li>Add the Redirect URI above to the authorized list</li>
+              <li>Paste Client ID and Client Secret here and save</li>
+              <li>Each staff member can then connect their calendar from their settings panel</li>
+            </ol>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 

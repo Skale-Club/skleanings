@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { storage } from "../storage";
 import { getAvailabilityForDate, getAvailabilityRange } from "../lib/availability";
+import { getStaffAvailableSlots, getSlotsForServices, getStaffUnionSlots } from "../lib/staff-availability";
 import { getGHLFreeSlots } from "../integrations/ghl";
 
 const router = Router();
@@ -9,32 +10,45 @@ const router = Router();
 const availabilityQuerySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   totalDurationMinutes: z.coerce.number().int().positive(),
+  staffId: z.coerce.number().int().positive().optional(),
+  serviceIds: z.string().optional(), // comma-separated: "1,2,3"
 });
 
 const monthAvailabilityQuerySchema = z.object({
   year: z.coerce.number().int().min(1970).max(2100),
   month: z.coerce.number().int().min(1).max(12),
   totalDurationMinutes: z.coerce.number().int().positive(),
+  staffId: z.coerce.number().int().positive().optional(),
+  serviceIds: z.string().optional(), // comma-separated: "1,2,3"
 });
 
 router.get("/api/availability", async (req, res) => {
   try {
-    const { date, totalDurationMinutes } = availabilityQuerySchema.parse(req.query);
+    const { date, totalDurationMinutes, staffId, serviceIds } = availabilityQuerySchema.parse(req.query);
+    const parsedServiceIds = serviceIds ? serviceIds.split(",").map(Number).filter(Boolean) : [];
 
-    const ghlSettings = await storage.getIntegrationSettings("gohighlevel");
-    const useGhl = !!(ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.calendarId);
     const companySettings = await storage.getCompanySettings();
     const timeZone = companySettings?.timeZone || "America/New_York";
 
-    const availableSlots = await getAvailabilityForDate(
-      date,
-      totalDurationMinutes,
-      useGhl,
-      ghlSettings,
-      { timeZone, requireGhl: false }
-    );
+    let slots: string[];
 
-    const response = availableSlots.map((time) => ({ time, available: true }));
+    const staffCount = await storage.getStaffCount();
+
+    if (staffCount === 0) {
+      // No staff in system — legacy global logic
+      const ghlSettings = await storage.getIntegrationSettings("gohighlevel");
+      const useGhl = !!(ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.calendarId);
+      slots = await getAvailabilityForDate(date, totalDurationMinutes, useGhl, ghlSettings, {
+        timeZone,
+        requireGhl: false,
+      });
+    } else if (parsedServiceIds.length > 0 || staffId) {
+      slots = await getSlotsForServices(date, totalDurationMinutes, parsedServiceIds, staffId, { timeZone });
+    } else {
+      slots = await getStaffUnionSlots(date, totalDurationMinutes, { timeZone });
+    }
+
+    const response = slots.map((time) => ({ time, available: true }));
     res.json(response);
   } catch (err) {
     if (err instanceof z.ZodError) {
@@ -46,15 +60,14 @@ router.get("/api/availability", async (req, res) => {
 
 router.get("/api/availability/month", async (req, res) => {
   try {
-    const { year, month, totalDurationMinutes } = monthAvailabilityQuerySchema.parse(req.query);
+    const { year, month, totalDurationMinutes, staffId, serviceIds } = monthAvailabilityQuerySchema.parse(req.query);
+    const parsedServiceIds = serviceIds ? serviceIds.split(",").map(Number).filter(Boolean) : [];
 
     const monthStr = String(month).padStart(2, "0");
     const startDate = `${year}-${monthStr}-01`;
     const lastDay = new Date(year, month, 0).getDate();
     const endDate = `${year}-${monthStr}-${String(lastDay).padStart(2, "0")}`;
 
-    const ghlSettings = await storage.getIntegrationSettings("gohighlevel");
-    const useGhl = !!(ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.calendarId);
     const companySettings = await storage.getCompanySettings();
     const timeZone = companySettings?.timeZone || "America/New_York";
 
@@ -63,6 +76,26 @@ router.get("/api/availability/month", async (req, res) => {
       const dateKey = `${year}-${monthStr}-${String(day).padStart(2, "0")}`;
       monthMap[dateKey] = false;
     }
+
+    const staffCount = await storage.getStaffCount();
+
+    // Per-staff month availability
+    if (staffCount > 0) {
+      for (const dateKey of Object.keys(monthMap)) {
+        const slots = await getSlotsForServices(
+          dateKey,
+          totalDurationMinutes,
+          parsedServiceIds,
+          staffId,
+          { timeZone }
+        );
+        monthMap[dateKey] = slots.length > 0;
+      }
+      return res.json(monthMap);
+    }
+
+    const ghlSettings = await storage.getIntegrationSettings("gohighlevel");
+    const useGhl = !!(ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.calendarId);
 
     let ghlSuccess = false;
 

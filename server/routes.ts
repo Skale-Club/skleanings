@@ -16,6 +16,8 @@ import serviceAreasRouter from "./routes/service-areas";
 import integrationRouter from "./routes/integrations";
 import userRoutes from "./routes/user-routes";
 import authRoutes from "./routes/auth-routes";
+import staffRouter from "./routes/staff";
+import paymentsRouter from "./routes/payments";
 
 export async function registerRoutes(server: Server, app: Express) {
   // Mount routers
@@ -51,4 +53,10 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // Service Area routes (mounted at /api/service-areas)
   app.use("/api/service-areas", serviceAreasRouter);
+
+  // Staff routes (mounted at /api/staff)
+  app.use("/api/staff", staffRouter);
+
+  // Payment routes (mounted at /api/payments)
+  app.use("/api/payments", paymentsRouter);
 }
