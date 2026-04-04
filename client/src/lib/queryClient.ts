@@ -45,6 +45,7 @@ export async function apiRequest(
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
+    signal: AbortSignal.timeout(10000),
   });
 
   await throwIfResNotOk(res);
@@ -69,6 +70,7 @@ export async function authenticatedRequest(
     headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
+    signal: AbortSignal.timeout(10000),
   });
 
   await throwIfResNotOk(res);
@@ -83,6 +85,7 @@ export const getQueryFn: <T>(options: {
     async ({ queryKey }) => {
       const res = await fetch(queryKey.join("/") as string, {
         credentials: "include",
+        signal: AbortSignal.timeout(10000),
       });
 
       if (unauthorizedBehavior === "returnNull" && res.status === 401) {

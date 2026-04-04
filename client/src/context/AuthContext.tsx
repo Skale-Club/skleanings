@@ -64,6 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const res = await fetch('/api/auth/me', {
           headers: { Authorization: `Bearer ${session.access_token}` },
+          signal: AbortSignal.timeout(8000),
         });
         if (res.ok && !cancelled) {
           const data = await res.json();
