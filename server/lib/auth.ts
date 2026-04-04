@@ -25,8 +25,23 @@ async function getAuthenticatedUser(req: Request) {
     const { data: { user: supabaseUser }, error } = await supabase.auth.getUser(token);
     if (error || !supabaseUser || !supabaseUser.email) return null;
 
-    const dbUser = await storage.getUserByEmail(supabaseUser.email);
-    if (!dbUser) return null;
+    let dbUser = await storage.getUserByEmail(supabaseUser.email);
+    if (!dbUser) {
+      // Auto-provision: if this is the admin email, create the DB record now.
+      // Handles the case where ensureAdminUser() failed on cold start (SCRAM/timeout).
+      const adminEmail = process.env.ADMIN_EMAIL;
+      if (adminEmail && supabaseUser.email.toLowerCase() === adminEmail.toLowerCase()) {
+        try {
+          dbUser = await storage.createUser({ email: supabaseUser.email, role: 'admin', isAdmin: true });
+          console.log(`[Auth] Auto-provisioned admin user: ${supabaseUser.email}`);
+        } catch (err) {
+          console.error('[Auth] Failed to auto-provision admin user:', err);
+          return null;
+        }
+      } else {
+        return null;
+      }
+    }
 
     (req as any).user = dbUser;
     (req as any).supabaseUser = supabaseUser;
