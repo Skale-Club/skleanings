@@ -8,21 +8,6 @@ const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || '';
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-/** Retry a DB operation once on pgBouncer SCRAM handshake failure */
-async function withDbRetry<T>(fn: () => Promise<T>): Promise<T> {
-  try {
-    return await fn();
-  } catch (err: any) {
-    const msg = err?.message?.toLowerCase() || '';
-    if (msg.includes('scram-server-final-message') || msg.includes('server signature is missing')) {
-      console.warn('[Auth] SCRAM error on DB query, retrying once...');
-      await new Promise(r => setTimeout(r, 200));
-      return fn();
-    }
-    throw err;
-  }
-}
-
 /**
  * Validate Bearer token and look up the DB user with role.
  * Returns the DB user or null. Attaches user to req if valid.
@@ -40,21 +25,22 @@ async function getAuthenticatedUser(req: Request) {
     const { data: { user: supabaseUser }, error } = await supabase.auth.getUser(token);
     if (error || !supabaseUser || !supabaseUser.email) return null;
 
-    const email = supabaseUser.email!;
-    let dbUser = await withDbRetry(() => storage.getUserByEmail(email));
+    const email = supabaseUser.email;
+    let dbUser = await storage.getUserByEmail(email);
     if (!dbUser) {
-      // Auto-provision: if this is the admin email, create the DB record now.
-      // Handles the case where ensureAdminUser() failed on cold start (SCRAM/timeout).
+      // Auto-provision: Supabase validated the token, but no DB user exists.
+      // Create one — admin if email matches ADMIN_EMAIL, otherwise default 'user' role.
       const adminEmail = process.env.ADMIN_EMAIL;
-      if (adminEmail && supabaseUser.email.toLowerCase() === adminEmail.toLowerCase()) {
-        try {
-          dbUser = await withDbRetry(() => storage.createUser({ email, role: 'admin', isAdmin: true }));
-          console.log(`[Auth] Auto-provisioned admin user: ${supabaseUser.email}`);
-        } catch (err) {
-          console.error('[Auth] Failed to auto-provision admin user:', err);
-          return null;
-        }
-      } else {
+      const isAdmin = !!(adminEmail && email.toLowerCase() === adminEmail.toLowerCase());
+      try {
+        dbUser = await storage.createUser({
+          email,
+          role: isAdmin ? 'admin' : 'user',
+          isAdmin,
+        });
+        console.log(`[Auth] Auto-provisioned ${isAdmin ? 'admin' : 'user'}: ${email}`);
+      } catch (err) {
+        console.error('[Auth] Failed to auto-provision user:', err);
         return null;
       }
     }
