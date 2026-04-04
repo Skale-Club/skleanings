@@ -8,6 +8,21 @@ const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || '';
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+/** Retry a DB operation once on pgBouncer SCRAM handshake failure */
+async function withDbRetry<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (err: any) {
+    const msg = err?.message?.toLowerCase() || '';
+    if (msg.includes('scram-server-final-message') || msg.includes('server signature is missing')) {
+      console.warn('[Auth] SCRAM error on DB query, retrying once...');
+      await new Promise(r => setTimeout(r, 200));
+      return fn();
+    }
+    throw err;
+  }
+}
+
 /**
  * Validate Bearer token and look up the DB user with role.
  * Returns the DB user or null. Attaches user to req if valid.
@@ -19,23 +34,21 @@ async function getAuthenticatedUser(req: Request) {
     ? authHeader.split('Bearer ')[1]
     : queryToken || null;
 
-  if (!rawToken) { console.log('[Auth] No token found'); return null; }
+  if (!rawToken) return null;
   const token = rawToken;
   try {
-    console.log(`[Auth] Validating token (${token.substring(0, 20)}...) supabaseUrl=${supabaseUrl ? 'SET' : 'EMPTY'} anonKey=${supabaseAnonKey ? 'SET' : 'EMPTY'}`);
     const { data: { user: supabaseUser }, error } = await supabase.auth.getUser(token);
-    if (error) { console.log(`[Auth] Supabase error: ${error.message}`); return null; }
-    if (!supabaseUser || !supabaseUser.email) { console.log('[Auth] No supabase user or email'); return null; }
-    console.log(`[Auth] Supabase validated: ${supabaseUser.email}`);
+    if (error || !supabaseUser || !supabaseUser.email) return null;
 
-    let dbUser = await storage.getUserByEmail(supabaseUser.email);
+    const email = supabaseUser.email!;
+    let dbUser = await withDbRetry(() => storage.getUserByEmail(email));
     if (!dbUser) {
       // Auto-provision: if this is the admin email, create the DB record now.
       // Handles the case where ensureAdminUser() failed on cold start (SCRAM/timeout).
       const adminEmail = process.env.ADMIN_EMAIL;
       if (adminEmail && supabaseUser.email.toLowerCase() === adminEmail.toLowerCase()) {
         try {
-          dbUser = await storage.createUser({ email: supabaseUser.email, role: 'admin', isAdmin: true });
+          dbUser = await withDbRetry(() => storage.createUser({ email, role: 'admin', isAdmin: true }));
           console.log(`[Auth] Auto-provisioned admin user: ${supabaseUser.email}`);
         } catch (err) {
           console.error('[Auth] Failed to auto-provision admin user:', err);
@@ -83,43 +96,15 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
 
 /** GET /api/auth/me — returns current user's profile with role */
 export async function getAuthMe(req: Request, res: Response) {
-  // Temporary: inline diagnostic to pinpoint 401 cause
-  const authHeader = req.headers.authorization;
-  const queryToken = req.query?.token as string | undefined;
-  const rawToken = authHeader?.startsWith('Bearer ') ? authHeader.split('Bearer ')[1] : queryToken || null;
-
-  if (!rawToken) return res.status(401).json({ message: 'Not authenticated', debug: 'no_token' });
-
-  try {
-    const { data: { user: sbUser }, error: sbError } = await supabase.auth.getUser(rawToken);
-    if (sbError) return res.status(401).json({ message: 'Not authenticated', debug: 'supabase_error', detail: sbError.message });
-    if (!sbUser?.email) return res.status(401).json({ message: 'Not authenticated', debug: 'no_supabase_email' });
-
-    let dbUser = await storage.getUserByEmail(sbUser.email);
-    if (!dbUser) {
-      const adminEmail = process.env.ADMIN_EMAIL;
-      if (adminEmail && sbUser.email.toLowerCase() === adminEmail.toLowerCase()) {
-        try {
-          dbUser = await storage.createUser({ email: sbUser.email, role: 'admin', isAdmin: true });
-        } catch (createErr: any) {
-          return res.status(401).json({ message: 'Not authenticated', debug: 'create_failed', detail: createErr.message });
-        }
-      } else {
-        return res.status(401).json({ message: 'Not authenticated', debug: 'no_db_user', email: sbUser.email, adminEmail: adminEmail || 'NOT_SET' });
-      }
-    }
-
-    (req as any).user = dbUser;
-    res.json({
-      id: dbUser.id,
-      email: dbUser.email,
-      role: dbUser.role,
-      firstName: dbUser.firstName,
-      lastName: dbUser.lastName,
-      phone: dbUser.phone,
-      profileImageUrl: dbUser.profileImageUrl,
-    });
-  } catch (err: any) {
-    return res.status(401).json({ message: 'Not authenticated', debug: 'exception', detail: err.message });
-  }
+  const user = await getAuthenticatedUser(req);
+  if (!user) return res.status(401).json({ message: 'Not authenticated' });
+  res.json({
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    phone: user.phone,
+    profileImageUrl: user.profileImageUrl,
+  });
 }
