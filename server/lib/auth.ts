@@ -19,11 +19,14 @@ async function getAuthenticatedUser(req: Request) {
     ? authHeader.split('Bearer ')[1]
     : queryToken || null;
 
-  if (!rawToken) return null;
+  if (!rawToken) { console.log('[Auth] No token found'); return null; }
   const token = rawToken;
   try {
+    console.log(`[Auth] Validating token (${token.substring(0, 20)}...) supabaseUrl=${supabaseUrl ? 'SET' : 'EMPTY'} anonKey=${supabaseAnonKey ? 'SET' : 'EMPTY'}`);
     const { data: { user: supabaseUser }, error } = await supabase.auth.getUser(token);
-    if (error || !supabaseUser || !supabaseUser.email) return null;
+    if (error) { console.log(`[Auth] Supabase error: ${error.message}`); return null; }
+    if (!supabaseUser || !supabaseUser.email) { console.log('[Auth] No supabase user or email'); return null; }
+    console.log(`[Auth] Supabase validated: ${supabaseUser.email}`);
 
     let dbUser = await storage.getUserByEmail(supabaseUser.email);
     if (!dbUser) {
