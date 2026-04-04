@@ -83,15 +83,43 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
 
 /** GET /api/auth/me — returns current user's profile with role */
 export async function getAuthMe(req: Request, res: Response) {
-  const user = await getAuthenticatedUser(req);
-  if (!user) return res.status(401).json({ message: 'Not authenticated' });
-  res.json({
-    id: user.id,
-    email: user.email,
-    role: user.role,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    phone: user.phone,
-    profileImageUrl: user.profileImageUrl,
-  });
+  // Temporary: inline diagnostic to pinpoint 401 cause
+  const authHeader = req.headers.authorization;
+  const queryToken = req.query?.token as string | undefined;
+  const rawToken = authHeader?.startsWith('Bearer ') ? authHeader.split('Bearer ')[1] : queryToken || null;
+
+  if (!rawToken) return res.status(401).json({ message: 'Not authenticated', debug: 'no_token' });
+
+  try {
+    const { data: { user: sbUser }, error: sbError } = await supabase.auth.getUser(rawToken);
+    if (sbError) return res.status(401).json({ message: 'Not authenticated', debug: 'supabase_error', detail: sbError.message });
+    if (!sbUser?.email) return res.status(401).json({ message: 'Not authenticated', debug: 'no_supabase_email' });
+
+    let dbUser = await storage.getUserByEmail(sbUser.email);
+    if (!dbUser) {
+      const adminEmail = process.env.ADMIN_EMAIL;
+      if (adminEmail && sbUser.email.toLowerCase() === adminEmail.toLowerCase()) {
+        try {
+          dbUser = await storage.createUser({ email: sbUser.email, role: 'admin', isAdmin: true });
+        } catch (createErr: any) {
+          return res.status(401).json({ message: 'Not authenticated', debug: 'create_failed', detail: createErr.message });
+        }
+      } else {
+        return res.status(401).json({ message: 'Not authenticated', debug: 'no_db_user', email: sbUser.email, adminEmail: adminEmail || 'NOT_SET' });
+      }
+    }
+
+    (req as any).user = dbUser;
+    res.json({
+      id: dbUser.id,
+      email: dbUser.email,
+      role: dbUser.role,
+      firstName: dbUser.firstName,
+      lastName: dbUser.lastName,
+      phone: dbUser.phone,
+      profileImageUrl: dbUser.profileImageUrl,
+    });
+  } catch (err: any) {
+    return res.status(401).json({ message: 'Not authenticated', debug: 'exception', detail: err.message });
+  }
 }
