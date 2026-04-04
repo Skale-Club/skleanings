@@ -12,14 +12,14 @@ const isServerless = !!process.env.VERCEL;
 
 type DbUrlSource = "POSTGRES_URL" | "DATABASE_URL" | "POSTGRES_URL_NON_POOLING";
 
-// Serverless: prefer NON_POOLING (direct Supabase TCP) to avoid pgBouncer transaction-mode
-// SCRAM-SHA-256 handshake failures. connectionTimeoutMillis: 8000 ensures fast failure if
-// the direct connection is slow. pgBouncer (POSTGRES_URL) is kept as last-resort fallback only.
+// Serverless: POSTGRES_URL (pgBouncer pooler, port 6543) is the only reachable host from Vercel.
+// POSTGRES_URL_NON_POOLING (direct db.*.supabase.co) is firewalled — always times out at 8s.
+// pgBouncer has intermittent SCRAM handshake failures, handled by retry in pool.connect wrapper below.
 const rawCandidates: Array<{ source: DbUrlSource; url: string | undefined }> = isServerless
   ? [
-      { source: "POSTGRES_URL_NON_POOLING", url: process.env.POSTGRES_URL_NON_POOLING },
-      { source: "DATABASE_URL", url: process.env.DATABASE_URL },
       { source: "POSTGRES_URL", url: process.env.POSTGRES_URL },
+      { source: "DATABASE_URL", url: process.env.DATABASE_URL },
+      { source: "POSTGRES_URL_NON_POOLING", url: process.env.POSTGRES_URL_NON_POOLING },
     ]
   : [
       { source: "DATABASE_URL", url: process.env.DATABASE_URL },
@@ -99,22 +99,22 @@ export const pool = new Pool({
   connectionTimeoutMillis: 8000,
 });
 
-const rawPoolQuery = pool.query.bind(pool) as typeof pool.query;
-let scramRetryUsed = false;
-
-pool.query = (async (...args: Parameters<typeof rawPoolQuery>) => {
+// Wrap pool.connect to retry on intermittent pgBouncer SCRAM handshake failures.
+// The SCRAM error occurs during connection setup, not during queries.
+const rawPoolConnect = pool.connect.bind(pool);
+pool.connect = (async (callback?: any) => {
   try {
-    return await rawPoolQuery(...args);
+    const client = await rawPoolConnect();
+    return client;
   } catch (error) {
-    if (!scramRetryUsed && isScramSignatureError(error)) {
-      scramRetryUsed = true;
-      console.warn("[DB] SCRAM handshake error on first query. Retrying once.");
-      await new Promise((resolve) => setTimeout(resolve, 250));
-      return rawPoolQuery(...args);
+    if (isScramSignatureError(error)) {
+      console.warn("[DB] SCRAM handshake error on connect — retrying once after 300ms");
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      return rawPoolConnect();
     }
     throw error;
   }
-}) as typeof pool.query;
+}) as typeof pool.connect;
 
 // Avoid process crashes on transient idle-client disconnects (e.g. ECONNRESET from pooler/network).
 pool.on("error", (error) => {
