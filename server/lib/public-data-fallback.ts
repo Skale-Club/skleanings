@@ -148,6 +148,22 @@ export async function getFallbackPublishedBlogPosts(limit = 10, offset = 0): Pro
   return camelizeKeys<BlogPost[]>(data ?? []);
 }
 
+export async function getFallbackBlogPosts(status?: string, limit = 100, offset = 0): Promise<BlogPost[]> {
+  const client = getAdminClient();
+  let query = client
+    .from("blog_posts")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .range(offset, Math.max(offset + limit - 1, offset));
+
+  if (status) {
+    query = query.eq("status", status);
+  }
+
+  const data = await runQuery(query);
+  return camelizeKeys<BlogPost[]>(data ?? []);
+}
+
 export async function getFallbackBlogPost(idOrSlug: number | string): Promise<BlogPost | null> {
   const client = getAdminClient();
   const column = typeof idOrSlug === "number" ? "id" : "slug";

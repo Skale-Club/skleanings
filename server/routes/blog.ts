@@ -6,6 +6,7 @@ import { requireAdmin } from "../lib/auth";
 import { insertBlogPostSchema, insertBlogSettingsSchema } from "@shared/schema";
 import { BlogGenerator } from "../services/blog-generator";
 import {
+    getFallbackBlogPosts,
     getFallbackBlogPost,
     getFallbackBlogPostServices,
     getFallbackPublishedBlogPosts,
@@ -73,6 +74,11 @@ router.get("/", async (req, res) => {
     const offset = req.query.offset ? Number(req.query.offset) : 0;
 
     // Public endpoint: only return published posts regardless of status param
+    if (process.env.VERCEL) {
+      const posts = await getFallbackPublishedBlogPosts(limit ?? 10, offset);
+      return res.json(posts);
+    }
+
     if (limit) {
       const posts = await storage.getPublishedBlogPosts(limit, offset);
       res.json(posts);
@@ -196,6 +202,11 @@ router.get("/admin/posts", requireAdmin, async (req, res) => {
     const status = req.query.status as string | undefined;
     const limit = req.query.limit ? Number(req.query.limit) : 100;
     const offset = req.query.offset ? Number(req.query.offset) : 0;
+
+    if (process.env.VERCEL) {
+      return res.json(await getFallbackBlogPosts(status, limit, offset));
+    }
+
     const posts = await storage.getBlogPosts(status);
     res.json(posts);
   } catch (error) {
