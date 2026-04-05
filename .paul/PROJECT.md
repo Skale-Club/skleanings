@@ -53,6 +53,16 @@ Customers can book cleaning services with a specific professional, with a unifie
 ### Active (In Progress)
 None.
 
+### Validated (v1.0 Phase 2 complete)
+- [x] GET /api/client/me — returns authenticated client's user record — v1.0 Phase 2
+- [x] PATCH /api/client/me — updates name/phone/avatar (role-safe Zod allow-list) — v1.0 Phase 2
+- [x] GET /api/client/bookings — merged userId + email-match legacy bookings list — v1.0 Phase 2
+- [x] GET /api/client/bookings/:id — single booking with ownership check (403 on mismatch) — v1.0 Phase 2
+- [x] POST /api/client/bookings/:id/cancel — ownership + status + date-window guarded cancel — v1.0 Phase 2
+- [x] POST /api/client/bookings/:id/reschedule — availability-checked reschedule with self-exclusion — v1.0 Phase 2
+- [x] GHL appointment delete/update on client-initiated changes (fire-and-forget) — v1.0 Phase 2
+- [x] Admin Twilio + Telegram notifications for client cancel/reschedule — v1.0 Phase 2
+
 ### Validated (v0.7 complete)
 - [x] OAuth state encodes `staffId:redirectTo` — callback routes to correct page per initiator role — v0.7
 - [x] Staff lands on /staff/settings after Google OAuth — v0.7
@@ -143,6 +153,9 @@ None.
 | linkStaffMemberToUser dedicated storage method | userId omitted from InsertStaffMember type by design; updateStaffMember can't accept it | 2026-04-04 | Active |
 | Default role = 'staff' for new users in UserDialog | Least privilege — admin must explicitly elevate to admin/user | 2026-04-04 | Active |
 | requireAuth on calendar endpoints (not requireAdmin) | Staff need to manage their own calendar from /staff/settings without admin privilege | 2026-04-04 | Active |
+| Client router uses (req as any).user from requireClient (no re-auth) | requireClient already calls getAuthenticatedUser and sets req.user; double call = double Supabase round-trip | 2026-04-05 | Active |
+| getClientBookings uses two parallel queries + in-process merge | Avoids complex OR on nullable column; Set-based dedup is straightforward | 2026-04-05 | Active |
+| Client cancel/reschedule sync is fire-and-forget | HTTP response speed — GHL/notification latency must not block client | 2026-04-05 | Active |
 
 ## Success Metrics
 

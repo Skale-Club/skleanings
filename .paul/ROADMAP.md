@@ -347,7 +347,7 @@ Add a fourth authenticated role, `client`, for end customers. A client can sign 
 - [x] 10-01: Add `client` role support across auth, redirects, and account route guards ✅ 2026-04-05
 - [x] 10-02: Add booking ownership (`bookings.userId`) and authenticated-booking autofill/linking ✅ 2026-04-05
 
-### Phase 2: Client Self-Service Booking API
+### Phase 2: Client Self-Service Booking API ✅ Complete — 2026-04-05
 
 **Goal:** Authenticated clients can fetch only their own account data and bookings, and can cancel or reschedule eligible future bookings through dedicated self-service endpoints.
 **Depends on:** Phase 1 (client identity + booking ownership)
@@ -361,9 +361,9 @@ Add a fourth authenticated role, `client`, for end customers. A client can sign 
 - Sync cancellation/reschedule effects to GHL and any notification paths already attached to booking changes
 
 **Plans:**
-- [ ] 11-01: Client profile + own-bookings endpoints with ownership guards
-- [ ] 11-02: Self-service cancellation and reschedule endpoints
-- [ ] 11-03: External sync and notification handling for client-initiated changes
+- [x] 11-01: Client profile + own-bookings endpoints with ownership guards ✅ 2026-04-05
+- [x] 11-02: Self-service cancellation and reschedule endpoints ✅ 2026-04-05
+- [x] 11-03: External sync and notification handling for client-initiated changes ✅ 2026-04-05
 
 ### Phase 3: Client Portal UI
 

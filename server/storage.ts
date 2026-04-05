@@ -93,7 +93,7 @@ import {
   type InsertStaffAvailability,
   type InsertStaffGoogleCalendar,
 } from "@shared/schema";
-import { eq, and, or, gte, lte, inArray, desc, asc, sql, ne } from "drizzle-orm";
+import { eq, and, or, gte, lte, inArray, desc, asc, sql, ne, isNull } from "drizzle-orm";
 import { z } from "zod";
 
 export const insertSubcategorySchema = z.object({
@@ -151,6 +151,7 @@ export interface IStorage {
   getBooking(id: number): Promise<Booking | undefined>;
   getBookingByStripeSessionId(sessionId: string): Promise<Booking | undefined>;
   getBookingsByUserId(userId: string): Promise<Booking[]>;
+  getClientBookings(userId: string, email: string): Promise<Booking[]>;
   updateBookingStripeFields(bookingId: number, stripeSessionId: string, stripePaymentStatus?: string): Promise<void>;
   updateBooking(
     id: number,
@@ -708,6 +709,23 @@ export class DatabaseStorage implements IStorage {
       .from(bookings)
       .where(eq(bookings.userId, userId))
       .orderBy(desc(bookings.createdAt));
+  }
+
+  async getClientBookings(userId: string, email: string): Promise<Booking[]> {
+    const [byUserId, byEmail] = await Promise.all([
+      db.select().from(bookings).where(eq(bookings.userId, userId)),
+      db.select().from(bookings).where(
+        and(isNull(bookings.userId), eq(bookings.customerEmail, email))
+      ),
+    ]);
+    const seen = new Set<number>();
+    const merged = [...byUserId, ...byEmail].filter(b => {
+      if (seen.has(b.id)) return false;
+      seen.add(b.id);
+      return true;
+    });
+    merged.sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime());
+    return merged;
   }
 
   async updateBookingStripeFields(bookingId: number, stripeSessionId: string, stripePaymentStatus?: string): Promise<void> {

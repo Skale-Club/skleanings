@@ -18,6 +18,7 @@ import userRoutes from "./routes/user-routes";
 import authRoutes from "./routes/auth-routes";
 import staffRouter from "./routes/staff";
 import paymentsRouter from "./routes/payments";
+import clientRouter from "./routes/client";
 
 export async function registerRoutes(server: Server, app: Express) {
   // Mount routers
@@ -59,4 +60,7 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // Payment routes (mounted at /api/payments)
   app.use("/api/payments", paymentsRouter);
+
+  // Client portal routes (mounted at /api/client)
+  app.use("/api/client", clientRouter);
 }
