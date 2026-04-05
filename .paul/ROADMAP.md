@@ -306,11 +306,11 @@ Vercel serverless functions are timing out (30s) on all DB-touching endpoints be
 
 ---
  
-## v0.9 — Runtime DB SCRAM Stability (Blog Autopost + Login) — In Progress
+## v0.9 — Runtime DB SCRAM Stability (Blog Autopost + Login) ✅ Complete — 2026-04-05
 
 GitHub Actions blog autopost and interactive login both still show intermittent HTTP 500 on cold start with `SASL: SCRAM-SERVER-FINAL-MESSAGE: server signature is missing`. A second production symptom is now tracked in the same milestone: login appears to authenticate but immediately redirects back to `/login` in a loop for `skleanings@gmail.com`. This milestone isolates runtime DB authentication and login-session stability in serverless and introduces a safe strategy that works for both cron-triggered and interactive user-triggered requests.
 
-### Phase 1: Runtime DB Auth Investigation + Fix ← **Current**
+### Phase 1: Runtime DB Auth Investigation + Fix ✅ Complete — 2026-04-05
 
 **Goal:** Eliminate SCRAM handshake failures and the login redirect loop in production so `/api/blog/cron/generate` and login-authenticated endpoints remain stable after cold start.
 **Depends on:** v0.8
@@ -323,8 +323,66 @@ GitHub Actions blog autopost and interactive login both still show intermittent 
 - Verify GitHub Action and manual login both succeed across cold and warm invocations without redirect looping
 
 **Plans:**
-- [ ] 09-01: Instrument, reproduce, and harden runtime DB/auth path for SCRAM stability + login loop resolution
+- [x] 09-01: Instrument, reproduce, and harden runtime DB/auth path for SCRAM stability + login loop resolution ✅ 2026-04-05
+
+---
+
+## v1.0 — Client Portal & Self-Service Booking Management
+
+Add a fourth authenticated role, `client`, for end customers. A client can sign in to a dedicated account area, update their personal information, see bookings that belong to them, and cancel or reschedule their own upcoming bookings without admin assistance.
+
+### Phase 1: Client Role + Booking Ownership
+
+**Goal:** The system can authenticate a `client` role, store customer profile data on the user record, and associate bookings to a specific authenticated client without breaking guest booking flow.
+**Depends on:** v0.6 (unified users + role-based auth)
+
+**Scope:**
+- Add `client` to the role model across schema, auth middleware, route guards, and frontend role handling
+- Add nullable `userId` FK on `bookings` to represent booking ownership
+- When an authenticated client creates a booking, attach `userId` automatically and prefill contact fields from the account profile where possible
+- Keep guest booking supported; `userId` remains nullable for non-logged-in bookings
+- Define ownership fallback for legacy bookings by confirmed email match until newer bookings are explicitly linked
+
+**Plans:**
+- [ ] 10-01: Add `client` role support across auth, redirects, and account route guards
+- [ ] 10-02: Add booking ownership (`bookings.userId`) and authenticated-booking autofill/linking
+
+### Phase 2: Client Self-Service Booking API
+
+**Goal:** Authenticated clients can fetch only their own account data and bookings, and can cancel or reschedule eligible future bookings through dedicated self-service endpoints.
+**Depends on:** Phase 1 (client identity + booking ownership)
+
+**Scope:**
+- `GET /api/client/me` + `PATCH /api/client/me` for personal info editing
+- `GET /api/client/bookings` + `GET /api/client/bookings/:id` scoped to the authenticated client only
+- `POST /api/client/bookings/:id/cancel` with ownership, status, and date-window checks
+- `POST /api/client/bookings/:id/reschedule` with ownership checks plus existing availability validation
+- Reuse or extend current booking update logic without exposing admin booking endpoints to clients
+- Sync cancellation/reschedule effects to GHL and any notification paths already attached to booking changes
+
+**Plans:**
+- [ ] 11-01: Client profile + own-bookings endpoints with ownership guards
+- [ ] 11-02: Self-service cancellation and reschedule endpoints
+- [ ] 11-03: External sync and notification handling for client-initiated changes
+
+### Phase 3: Client Portal UI
+
+**Goal:** Clients have a simple account area where they can sign in, edit profile details, review booking history/upcoming bookings, and complete cancel/reschedule flows.
+**Depends on:** Phase 2 (client API)
+
+**Scope:**
+- Dedicated client-facing login/account entrypoint and redirect behavior for role=`client`
+- `/account` or `/client` route group with profile and bookings sections
+- Profile form for name, phone, and avatar using existing upload/auth patterns
+- Booking list with status badges, service/date details, and actions gated by booking state
+- Reschedule UX reusing the existing availability experience as much as possible
+- Clear handling for legacy bookings that are visible by email match but not yet explicitly linked
+
+**Plans:**
+- [ ] 12-01: Client login/account shell + role-based routing
+- [ ] 12-02: Profile editor + own bookings list UI
+- [ ] 12-03: Cancel/reschedule UX and account-state polish
 
 ---
 *Roadmap created: 2026-04-02*
-*Last updated: 2026-04-04 — v0.9 scope expanded with login loop investigation*
+*Last updated: 2026-04-04 — added v1.0 client portal planning after v0.9*

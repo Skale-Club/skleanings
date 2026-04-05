@@ -2,6 +2,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { storage } from "../storage";
+import { ensureDatabaseReady } from "../db";
 import { requireAdmin } from "../lib/auth";
 import { insertBlogPostSchema, insertBlogSettingsSchema } from "@shared/schema";
 import { BlogGenerator } from "../services/blog-generator";
@@ -233,6 +234,7 @@ router.post("/cron/generate", async (req, res) => {
     }
 
     const { BlogGenerator } = await import("../services/blog-generator");
+    await ensureDatabaseReady();
     const result = await withColdStartDbRetry(() =>
       BlogGenerator.startDailyPostGeneration({ manual: false })
     );

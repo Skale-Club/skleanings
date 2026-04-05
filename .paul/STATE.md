@@ -5,25 +5,25 @@
 See: .paul/PROJECT.md (updated 2026-04-04)
 
 **Core value:** Customers can book cleaning services with a specific professional, with a unified calendar that automatically resolves availability conflicts across staff members and their external Google Calendar events.
-**Current focus:** v0.9 Blog Autopost + Login DB SCRAM Debug + Login Loop — IN PROGRESS
+**Current focus:** v1.0 Client Portal & Self-Service Booking Management — NEXT
 
 ## Current Position
 
-Milestone: v0.9 Blog Autopost + Login DB SCRAM Debug + Login Loop — **IN PROGRESS**
-Phase: 1 of 1 (Runtime DB Auth Investigation) — In progress
-Plan: 09-01 investigation
-Status: Apply in progress; DB/auth hardening patch implemented locally
-Last activity: 2026-04-04 — added DB diagnostics + SCRAM first-query retry and login-role fetch retries
+Milestone: v0.9 Blog Autopost + Login DB SCRAM Debug + Login Loop — **Complete (code)**
+Phase: 1 of 1 (Runtime DB Auth Investigation) — Complete
+Plan: 09-01 — UNIFY complete
+Status: Phase 9 loop closed; deploy + production log capture still pending as deferred ops work
+Last activity: 2026-04-05 — UNIFY closed; phase 9 complete
 
 Progress:
-- Milestone: [█████░░░░░░░] 45%
+- Milestone: [████████████] 100% (code complete; production validation deferred)
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        •     [local patch complete, awaiting production validation]
+  ✓        ✓        ✓     [Loop complete — ready for next PLAN]
 ```
 
 ## Accumulated Context
@@ -59,10 +59,10 @@ Branch: main
 
 ## Session Continuity
 
-Last session: 2026-04-04
-Stopped at: v0.9 plan initialization
-Next action: Deploy patch, capture cold/warm evidence for cron + login, then write 09-01 summary
-Resume file: .paul/ROADMAP.md
+Last session: 2026-04-05
+Stopped at: UNIFY closed for phase 09-01; v0.9 loop complete
+Next action: /paul:plan — begin v1.0 Phase 1 (Client Role + Booking Ownership)
+Resume file: .paul/phases/09-runtime-db-scram-stability/09-01-SUMMARY.md
 
 ---
 *STATE.md — Updated after every significant action*
