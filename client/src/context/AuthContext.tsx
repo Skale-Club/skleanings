@@ -23,11 +23,20 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const ROLE_FETCH_RETRY_DELAYS_MS = [0, 400, 1000];
+const OAUTH_CALLBACK_GRACE_MS = 6000;
 
 function wait(ms: number) {
   return new Promise<void>((resolve) => {
     setTimeout(resolve, ms);
   });
+}
+
+function hasOauthCallbackParams() {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  return window.location.search.includes('code=') || window.location.hash.includes('access_token');
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -39,13 +48,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    let oauthFallbackTimer: ReturnType<typeof setTimeout> | null = null;
+    const waitForOauthCallback = hasOauthCallbackParams();
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!mounted) return;
       setSession(session ?? null);
       setUser(session?.user ?? null);
       if (!session?.user) {
-        setLoading(false);
+        if (waitForOauthCallback) {
+          oauthFallbackTimer = setTimeout(() => {
+            if (!mounted) return;
+            setLoading(false);
+          }, OAUTH_CALLBACK_GRACE_MS);
+        } else {
+          setLoading(false);
+        }
       }
     });
 
@@ -53,6 +71,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
+      if (oauthFallbackTimer) {
+        clearTimeout(oauthFallbackTimer);
+        oauthFallbackTimer = null;
+      }
       setSession(session ?? null);
       setUser(session?.user ?? null);
 
@@ -64,6 +86,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       mounted = false;
+      if (oauthFallbackTimer) {
+        clearTimeout(oauthFallbackTimer);
+      }
       subscription.unsubscribe();
     };
   }, []);
@@ -80,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (async () => {
       setRole(null);
       setLoading(true);
+      let shouldClearLocalSession = false;
 
       try {
         for (let attempt = 0; attempt < ROLE_FETCH_RETRY_DELAYS_MS.length; attempt += 1) {
@@ -103,14 +129,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
 
           if (res.status === 401 || res.status === 403) {
-            if (cancelled) return;
+            shouldClearLocalSession = true;
+            continue;
+          }
 
-            // Clear rotated or stale local sessions so the next login starts clean.
+          shouldClearLocalSession = false;
+        }
+
+        if (shouldClearLocalSession && !cancelled) {
+          const {
+            data: { session: freshSession },
+          } = await supabase.auth.getSession();
+
+          const hasSameToken =
+            !freshSession?.access_token || freshSession.access_token === session.access_token;
+
+          if (hasSameToken) {
             await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
             setSession(null);
             setUser(null);
             setRole(null);
-            return;
           }
         }
       } catch {

@@ -13,6 +13,57 @@ type AuthMeResponse = {
   role: 'admin' | 'user' | 'staff';
 };
 
+const AUTH_ME_RETRY_DELAYS_MS = [0, 400, 1000];
+
+function wait(ms: number) {
+  return new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function fetchRoleForSession(accessToken: string) {
+  let shouldClearLocalSession = false;
+
+  for (const delay of AUTH_ME_RETRY_DELAYS_MS) {
+    if (delay > 0) {
+      await wait(delay);
+    }
+
+    const meRes = await fetch('/api/auth/me', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      signal: AbortSignal.timeout(8000),
+    });
+
+    if (meRes.ok) {
+      return meRes.json() as Promise<AuthMeResponse>;
+    }
+
+    if (meRes.status === 401 || meRes.status === 403) {
+      shouldClearLocalSession = true;
+      continue;
+    }
+
+    shouldClearLocalSession = false;
+  }
+
+  if (shouldClearLocalSession) {
+    const {
+      data: { session: freshSession },
+    } = await supabase.auth.getSession();
+
+    const hasSameToken =
+      !freshSession?.access_token || freshSession.access_token === accessToken;
+
+    if (hasSameToken) {
+      await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+    }
+
+    throw new Error('Session validation failed. Please try again.');
+  }
+
+  throw new Error('Unable to validate the session right now. Please try again.');
+}
+
 export default function AdminLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -50,17 +101,7 @@ export default function AdminLogin() {
         throw new Error('Session was not created. Please try again.');
       }
 
-      const meRes = await fetch('/api/auth/me', {
-        headers: { Authorization: `Bearer ${accessToken}` },
-        signal: AbortSignal.timeout(8000),
-      });
-
-      if (!meRes.ok) {
-        await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
-        throw new Error('Session validation failed. A stale login was cleared; please try again.');
-      }
-
-      const me = await meRes.json() as AuthMeResponse;
+      const me = await fetchRoleForSession(accessToken);
 
       toast({
         title: 'Login successful',
@@ -91,7 +132,7 @@ export default function AdminLogin() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${siteUrl}/admin`,
+          redirectTo: `${siteUrl}/admin/login`,
         },
       });
 

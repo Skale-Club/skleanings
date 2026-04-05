@@ -72,7 +72,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: siteUrl + '/admin',
+          redirectTo: siteUrl + '/admin/login',
         },
       });
       
