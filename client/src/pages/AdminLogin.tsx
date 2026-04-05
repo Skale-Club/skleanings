@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Lock, Mail, ArrowLeft } from 'lucide-react';
 
 type AuthMeResponse = {
-  role: 'admin' | 'user' | 'staff';
+  role: 'admin' | 'user' | 'staff' | 'client';
 };
 
 const AUTH_ME_RETRY_DELAYS_MS = [0, 400, 1000];
@@ -77,6 +77,8 @@ export default function AdminLogin() {
   useEffect(() => {
     if (!authLoading && role === 'staff') {
       setLocation('/staff/settings');
+    } else if (!authLoading && role === 'client') {
+      setLocation('/account');
     } else if (!authLoading && isAdmin) {
       setLocation('/admin');
     } else if (!authLoading && role === 'user') {
@@ -110,6 +112,8 @@ export default function AdminLogin() {
 
       if (me.role === 'staff') {
         setLocation('/staff/settings');
+      } else if (me.role === 'client') {
+        setLocation('/account');
       } else if (me.role === 'admin') {
         setLocation('/admin');
       } else {

@@ -9,14 +9,15 @@ See: .paul/PROJECT.md (updated 2026-04-04)
 
 ## Current Position
 
-Milestone: v0.9 Blog Autopost + Login DB SCRAM Debug + Login Loop — **Complete (code)**
-Phase: 1 of 1 (Runtime DB Auth Investigation) — Complete
-Plan: 09-01 — UNIFY complete
-Status: Phase 9 loop closed; deploy + production log capture still pending as deferred ops work
-Last activity: 2026-04-05 — UNIFY closed; phase 9 complete
+Milestone: v1.0 Client Portal & Self-Service Booking Management — **IN PROGRESS**
+Phase: 1 of 3 (Client Role + Booking Ownership) — Planning
+Plan: 10-01 — UNIFY complete
+Status: Loop closed; ready for next PLAN (10-02)
+Last activity: 2026-04-05 — UNIFY closed 10-01: client role foundation complete
 
 Progress:
-- Milestone: [████████████] 100% (code complete; production validation deferred)
+- Milestone: [░░░░░░░░░░░░] 0%
+- Phase 1: [░░░░░░░░░░░░] 0%
 
 ## Loop Position
 
@@ -60,9 +61,9 @@ Branch: main
 ## Session Continuity
 
 Last session: 2026-04-05
-Stopped at: UNIFY closed for phase 09-01; v0.9 loop complete
-Next action: /paul:plan — begin v1.0 Phase 1 (Client Role + Booking Ownership)
-Resume file: .paul/phases/09-runtime-db-scram-stability/09-01-SUMMARY.md
+Stopped at: UNIFY closed for 10-01; client role foundation complete
+Next action: /paul:plan — begin 10-02 (booking ownership: bookings.userId FK + client autofill)
+Resume file: .paul/phases/10-client-portal-booking-ownership/10-01-SUMMARY.md
 
 ---
 *STATE.md — Updated after every significant action*

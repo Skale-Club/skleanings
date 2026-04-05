@@ -23,7 +23,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Loader2, User as UserIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, User as UserIcon, Users, UserCheck } from "lucide-react";
 import { UserDialog } from "./UserDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +35,7 @@ export function UsersSection() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | undefined>();
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
+    const [showClients, setShowClients] = useState(false);
 
     const { data: users, isLoading } = useQuery<User[]>({
         queryKey: ["/api/users"],
@@ -86,17 +87,49 @@ export function UsersSection() {
         );
     }
 
+    const teamUsers = users?.filter(u => u.role !== 'client') ?? [];
+    const clientUsers = users?.filter(u => u.role === 'client') ?? [];
+    const visibleUsers = showClients ? clientUsers : teamUsers;
+
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-2xl font-bold tracking-tight">Users</h2>
-                    <p className="text-muted-foreground text-sm mt-1">Manage platform users and cleaning professionals.</p>
+                    <h2 className="text-2xl font-bold tracking-tight">
+                        {showClients ? 'Clients' : 'Team'}
+                    </h2>
+                    <p className="text-muted-foreground text-sm mt-1">
+                        {showClients
+                            ? 'Customer accounts with access to the self-service portal.'
+                            : 'Manage admins, receptionists, and cleaning professionals.'}
+                    </p>
                 </div>
-                <Button onClick={handleCreate}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add User
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant={showClients ? 'default' : 'outline'}
+                        onClick={() => setShowClients(true)}
+                    >
+                        <UserCheck className="mr-2 h-4 w-4" />
+                        Clients
+                        {clientUsers.length > 0 && (
+                            <span className="ml-1.5 rounded-full bg-white/20 px-1.5 py-0.5 text-xs font-medium">
+                                {clientUsers.length}
+                            </span>
+                        )}
+                    </Button>
+                    {!showClients && (
+                        <Button onClick={handleCreate}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add User
+                        </Button>
+                    )}
+                    {showClients && (
+                        <Button variant="outline" onClick={() => setShowClients(false)}>
+                            <Users className="mr-2 h-4 w-4" />
+                            Team
+                        </Button>
+                    )}
+                </div>
             </div>
 
             <div className="rounded-md border">
@@ -110,7 +143,7 @@ export function UsersSection() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {users?.map((user) => (
+                        {visibleUsers.map((user) => (
                             <TableRow key={user.id}>
                                 <TableCell className="flex items-center gap-2">
                                     <Avatar className="h-8 w-8">
@@ -124,12 +157,15 @@ export function UsersSection() {
                                     {user.role === 'admin' && <Badge variant="default">Admin</Badge>}
                                     {user.role === 'user' && <Badge variant="secondary">User</Badge>}
                                     {user.role === 'staff' && <Badge variant="outline">Staff</Badge>}
+                                    {user.role === 'client' && <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">Client</Badge>}
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <div className="flex justify-end gap-2">
-                                        <Button variant="ghost" size="icon" onClick={() => handleEdit(user)}>
-                                            <Pencil className="h-4 w-4" />
-                                        </Button>
+                                        {!showClients && (
+                                            <Button variant="ghost" size="icon" onClick={() => handleEdit(user)}>
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
+                                        )}
                                         <Button variant="ghost" size="icon" onClick={() => setUserToDelete(user)}>
                                             <Trash2 className="h-4 w-4 text-destructive" />
                                         </Button>
@@ -137,10 +173,10 @@ export function UsersSection() {
                                 </TableCell>
                             </TableRow>
                         ))}
-                        {users?.length === 0 && (
+                        {visibleUsers.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={4} className="text-center text-muted-foreground">
-                                    No users found
+                                <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                                    {showClients ? 'No clients yet.' : 'No team members found.'}
                                 </TableCell>
                             </TableRow>
                         )}

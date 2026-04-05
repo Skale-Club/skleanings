@@ -256,6 +256,15 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
   next();
 }
 
+export async function requireClient(req: Request, res: Response, next: NextFunction) {
+  const user = await getAuthenticatedUser(req);
+  if (!user) return res.status(401).json({ message: "Authentication required" });
+  if (user.role !== "client") {
+    return res.status(403).json({ message: "Client access required" });
+  }
+  next();
+}
+
 export async function getAuthMe(req: Request, res: Response) {
   const user = await getAuthenticatedUser(req);
   if (!user) return res.status(401).json({ message: "Not authenticated" });
