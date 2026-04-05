@@ -9,17 +9,38 @@ if (!process.env.VERCEL) {
 
 const isServerless = !!process.env.VERCEL;
 
-// Serverless: POSTGRES_URL (pgBouncer pooler, port 6543) is the only reachable host from Vercel.
-// Using postgres.js driver instead of pg — handles pgBouncer SCRAM-SHA-256 correctly.
+function getHost(connectionString: string): string {
+  try {
+    return new URL(connectionString).host;
+  } catch {
+    return "invalid";
+  }
+}
+
+const databaseUrl = process.env.DATABASE_URL || "";
+const pooledUrl = process.env.POSTGRES_URL || "";
+const nonPoolingUrl = process.env.POSTGRES_URL_NON_POOLING || "";
+
+// In Vercel production, DATABASE_URL points at the direct Supabase host (`db.<ref>.supabase.co`),
+// while POSTGRES_URL goes through the pooler. The pooler is currently failing with
+// SASL_SIGNATURE_MISMATCH in runtime logs, so prefer DATABASE_URL when available.
 const DATABASE_URL = isServerless
-  ? process.env.POSTGRES_URL || process.env.DATABASE_URL || process.env.POSTGRES_URL_NON_POOLING || ""
-  : process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_URL_NON_POOLING || "";
+  ? databaseUrl || pooledUrl || nonPoolingUrl
+  : databaseUrl || pooledUrl || nonPoolingUrl;
+
+const connectionSource = DATABASE_URL === databaseUrl
+  ? "DATABASE_URL"
+  : DATABASE_URL === pooledUrl
+    ? "POSTGRES_URL"
+    : "POSTGRES_URL_NON_POOLING";
 
 if (!DATABASE_URL) {
   throw new Error(
     "DATABASE_URL, POSTGRES_URL, or POSTGRES_URL_NON_POOLING must be set. Did you forget to provision a database?",
   );
 }
+
+console.log(`[DB] Using ${connectionSource} (${getHost(DATABASE_URL)})`);
 
 export const connection = postgres(DATABASE_URL, {
   ssl: "require",
