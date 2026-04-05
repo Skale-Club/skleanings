@@ -120,6 +120,8 @@ export const bookings = pgTable("bookings", {
   ghlSyncStatus: text("ghl_sync_status").default("pending"), // pending, synced, failed
   // Staff assignment (nullable — single-operator deployments have no staff selection)
   staffMemberId: integer("staff_member_id").references(() => staffMembers.id, { onDelete: "set null" }),
+  // Client ownership (nullable — guest bookings have no userId)
+  userId: text("user_id").references(() => users.id),
   // Stripe payment fields (nullable — only set for online payments)
   stripeSessionId: text("stripe_session_id"),
   stripePaymentStatus: text("stripe_payment_status"), // paid, unpaid, no_payment_required
@@ -347,6 +349,7 @@ export const insertBookingSchemaBase = createInsertSchema(bookings).omit({
   ghlAppointmentId: true,
   ghlContactId: true,
   ghlSyncStatus: true,
+  userId: true,
 }).extend({
   // Frontend sends cart items with all pricing details (new format)
   cartItems: z.array(cartItemSchema).optional(),

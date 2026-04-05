@@ -144,12 +144,13 @@ export interface IStorage {
   setServiceFrequencies(serviceId: number, frequencies: Omit<InsertServiceFrequency, 'serviceId'>[]): Promise<ServiceFrequency[]>;
 
   // Bookings
-  createBooking(booking: InsertBooking & { totalPrice: string, totalDurationMinutes: number, endTime: string, bookingItemsData?: any[] }): Promise<Booking>;
+  createBooking(booking: InsertBooking & { totalPrice: string, totalDurationMinutes: number, endTime: string, bookingItemsData?: any[], userId?: string | null }): Promise<Booking>;
   getBookings(limit?: number): Promise<Booking[]>;
   getBookingsByDate(date: string): Promise<Booking[]>;
   getBookingsByDateAndStaff(date: string, staffMemberId: number): Promise<Booking[]>;
   getBooking(id: number): Promise<Booking | undefined>;
   getBookingByStripeSessionId(sessionId: string): Promise<Booking | undefined>;
+  getBookingsByUserId(userId: string): Promise<Booking[]>;
   updateBookingStripeFields(bookingId: number, stripeSessionId: string, stripePaymentStatus?: string): Promise<void>;
   updateBooking(
     id: number,
@@ -626,6 +627,7 @@ export class DatabaseStorage implements IStorage {
         totalPrice: booking.totalPrice,
         paymentMethod: booking.paymentMethod,
         status: 'pending',
+        userId: booking.userId ?? null,
       }).returning();
 
       // 2. Create Booking Items
@@ -698,6 +700,14 @@ export class DatabaseStorage implements IStorage {
       .where(eq(bookings.stripeSessionId, sessionId))
       .limit(1);
     return booking;
+  }
+
+  async getBookingsByUserId(userId: string): Promise<Booking[]> {
+    return await db
+      .select()
+      .from(bookings)
+      .where(eq(bookings.userId, userId))
+      .orderBy(desc(bookings.createdAt));
   }
 
   async updateBookingStripeFields(bookingId: number, stripeSessionId: string, stripePaymentStatus?: string): Promise<void> {

@@ -327,11 +327,11 @@ GitHub Actions blog autopost and interactive login both still show intermittent 
 
 ---
 
-## v1.0 — Client Portal & Self-Service Booking Management
+## v1.0 — Client Portal & Self-Service Booking Management ← **Current**
 
 Add a fourth authenticated role, `client`, for end customers. A client can sign in to a dedicated account area, update their personal information, see bookings that belong to them, and cancel or reschedule their own upcoming bookings without admin assistance.
 
-### Phase 1: Client Role + Booking Ownership
+### Phase 1: Client Role + Booking Ownership ✅ Complete — 2026-04-05
 
 **Goal:** The system can authenticate a `client` role, store customer profile data on the user record, and associate bookings to a specific authenticated client without breaking guest booking flow.
 **Depends on:** v0.6 (unified users + role-based auth)
@@ -344,8 +344,8 @@ Add a fourth authenticated role, `client`, for end customers. A client can sign 
 - Define ownership fallback for legacy bookings by confirmed email match until newer bookings are explicitly linked
 
 **Plans:**
-- [ ] 10-01: Add `client` role support across auth, redirects, and account route guards
-- [ ] 10-02: Add booking ownership (`bookings.userId`) and authenticated-booking autofill/linking
+- [x] 10-01: Add `client` role support across auth, redirects, and account route guards ✅ 2026-04-05
+- [x] 10-02: Add booking ownership (`bookings.userId`) and authenticated-booking autofill/linking ✅ 2026-04-05
 
 ### Phase 2: Client Self-Service Booking API
 
