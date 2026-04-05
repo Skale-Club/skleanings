@@ -37,21 +37,29 @@ A full-stack service booking platform for a cleaning company. Customers can brow
 
 ### Environment Variables
 
-Create a `.env` file with the following:
+Copy `.env.example` to `.env` and fill in your own values:
+
+```bash
+cp .env.example .env
+npm run env:check
+```
+
+Minimum variables to boot locally:
 
 ```env
-# Required
 DATABASE_URL=postgresql://user:password@host:port/database
 SESSION_SECRET=your-session-secret
-
-# Supabase Authentication (Required for admin login)
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
-
-# Legacy admin credentials (deprecated, use Supabase instead)
+VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 ADMIN_EMAIL=admin@example.com
-ADMIN_PASSWORD_HASH=bcrypt-hashed-password
 ```
+
+Important production notes:
+
+- On Vercel/serverless, configure `POSTGRES_URL` with the pooled Supabase connection string.
+- Keep `DATABASE_URL` and `POSTGRES_URL` pointed at the same database project.
+- Set `CRON_SECRET` if you use the blog autopost cron endpoint.
+- Never commit real `.env` files, Vercel env pulls, or connection strings with credentials.
 
 **Note:** See [SUPABASE_AUTH_SETUP.md](docs/SUPABASE_AUTH_SETUP.md) for detailed Supabase configuration instructions.
 
@@ -71,6 +79,9 @@ Configure these repository secrets:
 # Install dependencies
 npm install
 
+# Validate env
+npm run env:check
+
 # Push database schema
 npm run db:push
 
@@ -88,6 +99,7 @@ The app will be available at `http://localhost:5000`.
 | `npm run build` | Build for production |
 | `npm run start` | Run production server |
 | `npm run check` | TypeScript type checking |
+| `npm run env:check` | Validate required env vars and common deployment mistakes |
 | `npm run db:push` | Apply database schema changes |
 
 ## Project Structure
@@ -133,3 +145,14 @@ shared/
 ## License
 
 MIT
+
+## Open-Source Hardening
+
+If this repository becomes public, keep these rules in place:
+
+- Treat `.env.example` as the only public source of configuration shape. It should contain placeholders only.
+- Rotate all existing production secrets before opening the repository.
+- Keep GitHub Actions secrets such as `CRON_SECRET` in repository/environment secrets, never in workflow files.
+- Require `npm run env:check` before deploys and when provisioning new environments.
+- Prefer pooled Postgres URLs (`POSTGRES_URL`) on serverless platforms like Vercel.
+- Keep one canonical production checklist for forks: database, Supabase auth, cron secret, site URL, and provider API keys.
