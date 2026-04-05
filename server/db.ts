@@ -17,18 +17,43 @@ function getHost(connectionString: string): string {
   }
 }
 
+function mergePoolerPassword(pooledConnectionString: string, directConnectionString: string): string {
+  try {
+    const pooled = new URL(pooledConnectionString);
+    const direct = new URL(directConnectionString);
+
+    if (!pooled.password && !direct.password) {
+      return pooledConnectionString;
+    }
+
+    if (pooled.password === direct.password) {
+      return pooledConnectionString;
+    }
+
+    pooled.password = direct.password;
+    return pooled.toString();
+  } catch {
+    return pooledConnectionString;
+  }
+}
+
 const databaseUrl = process.env.DATABASE_URL || "";
 const pooledUrl = process.env.POSTGRES_URL || "";
 const nonPoolingUrl = process.env.POSTGRES_URL_NON_POOLING || "";
 
-// In Vercel production, DATABASE_URL points at the direct Supabase host (`db.<ref>.supabase.co`),
-// while POSTGRES_URL goes through the pooler. The pooler is currently failing with
-// SASL_SIGNATURE_MISMATCH in runtime logs, so prefer DATABASE_URL when available.
+const repairedPooledUrl = pooledUrl && databaseUrl
+  ? mergePoolerPassword(pooledUrl, databaseUrl)
+  : pooledUrl;
+
+// On Vercel, the direct `db.<ref>.supabase.co` host has been failing DNS resolution,
+// while the pooler works if we reuse the password embedded in DATABASE_URL.
 const DATABASE_URL = isServerless
-  ? databaseUrl || pooledUrl || nonPoolingUrl
+  ? repairedPooledUrl || pooledUrl || databaseUrl || nonPoolingUrl
   : databaseUrl || pooledUrl || nonPoolingUrl;
 
-const connectionSource = DATABASE_URL === databaseUrl
+const connectionSource = DATABASE_URL === repairedPooledUrl && repairedPooledUrl !== pooledUrl
+  ? "POSTGRES_URL+DATABASE_URL_PASSWORD"
+  : DATABASE_URL === databaseUrl
   ? "DATABASE_URL"
   : DATABASE_URL === pooledUrl
     ? "POSTGRES_URL"
