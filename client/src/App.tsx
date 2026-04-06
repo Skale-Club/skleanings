@@ -73,6 +73,7 @@ const ServiceAreas = lazy(() => import("@/pages/ServiceAreas").then(m => ({ defa
 const Team = lazy(() => import("@/pages/Team").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const StaffSettings = lazy(() => import("@/pages/StaffSettings").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const AccountShell = lazy(() => import("@/pages/AccountShell").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const ClientLogin = lazy(() => import("@/pages/ClientLogin").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 
 function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const { data: settings } = useQuery<CompanySettings>({
@@ -143,6 +144,7 @@ function Router() {
     return (
       <Suspense fallback={fallback}>
         <Switch>
+          <Route path="/account/login" component={ClientLogin} />
           <Route path="/account" component={AccountShell} />
           <Route path="/account/:rest*" component={AccountShell} />
           <Route component={NotFound} />

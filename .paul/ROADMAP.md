@@ -6,6 +6,12 @@ Skleanings is a booking platform for a cleaning company. The current milestone (
 
 ## Current Milestone
 
+**v1.0 — Client Portal & Self-Service Booking Management** (v1.0.0)
+Status: ✅ Complete — 2026-04-05
+Phases: 3 of 3 complete
+
+## Previously Completed
+
 **v0.3 — Stripe Payments** (v0.3.0)
 Status: ✅ Complete — 2026-04-02
 Phases: 3 of 3 complete
@@ -365,7 +371,7 @@ Add a fourth authenticated role, `client`, for end customers. A client can sign 
 - [x] 11-02: Self-service cancellation and reschedule endpoints ✅ 2026-04-05
 - [x] 11-03: External sync and notification handling for client-initiated changes ✅ 2026-04-05
 
-### Phase 3: Client Portal UI
+### Phase 3: Client Portal UI ✅ Complete — 2026-04-05
 
 **Goal:** Clients have a simple account area where they can sign in, edit profile details, review booking history/upcoming bookings, and complete cancel/reschedule flows.
 **Depends on:** Phase 2 (client API)
@@ -379,10 +385,10 @@ Add a fourth authenticated role, `client`, for end customers. A client can sign 
 - Clear handling for legacy bookings that are visible by email match but not yet explicitly linked
 
 **Plans:**
-- [ ] 12-01: Client login/account shell + role-based routing
-- [ ] 12-02: Profile editor + own bookings list UI
-- [ ] 12-03: Cancel/reschedule UX and account-state polish
+- [x] 12-01: Client login/account shell + role-based routing ✅ 2026-04-05
+- [x] 12-02: Profile editor + own bookings list UI ✅ 2026-04-05
+- [x] 12-03: Cancel/reschedule UX and account-state polish ✅ 2026-04-05
 
 ---
 *Roadmap created: 2026-04-02*
-*Last updated: 2026-04-04 — added v1.0 client portal planning after v0.9*
+*Last updated: 2026-04-05 — v1.0 Client Portal milestone complete*

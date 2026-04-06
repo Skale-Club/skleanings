@@ -15,9 +15,9 @@ Customers can book cleaning services with a specific professional, with a unifie
 | Attribute | Value |
 |-----------|-------|
 | Type | Application |
-| Version | 0.2.0 |
-| Status | Active — v0.2 Staff Members shipped, planning v0.3 |
-| Last Updated | 2026-04-02 |
+| Version | 1.0.0 |
+| Status | Active — v1.0 Client Portal shipped |
+| Last Updated | 2026-04-05 |
 
 **Production:** skleanings.vercel.app (inferred from Vercel config)
 
@@ -52,6 +52,15 @@ Customers can book cleaning services with a specific professional, with a unifie
 
 ### Active (In Progress)
 None.
+
+### Validated (v1.0 Phase 3 complete)
+- [x] Client login page (ClientLogin.tsx) with role=client redirect to /account — v1.0 Phase 3
+- [x] AccountShell.tsx — client account area with profile + bookings tab navigation — v1.0 Phase 3
+- [x] ProfileSection — name/phone/avatar editor using PATCH /api/client/me — v1.0 Phase 3
+- [x] BookingsSection — client booking list with status badges + eligibility-gated action buttons — v1.0 Phase 3
+- [x] CancelBookingDialog — AlertDialog confirm-to-cancel flow calling POST /api/client/bookings/:id/cancel — v1.0 Phase 3
+- [x] RescheduleBookingDialog — date + slot picker calling POST /api/client/bookings/:id/reschedule — v1.0 Phase 3
+- [x] Full client self-service cycle: login → view bookings → cancel or reschedule — v1.0 Phase 3
 
 ### Validated (v1.0 Phase 2 complete)
 - [x] GET /api/client/me — returns authenticated client's user record — v1.0 Phase 2
@@ -156,6 +165,8 @@ None.
 | Client router uses (req as any).user from requireClient (no re-auth) | requireClient already calls getAuthenticatedUser and sets req.user; double call = double Supabase round-trip | 2026-04-05 | Active |
 | getClientBookings uses two parallel queries + in-process merge | Avoids complex OR on nullable column; Set-based dedup is straightforward | 2026-04-05 | Active |
 | Client cancel/reschedule sync is fire-and-forget | HTTP response speed — GHL/notification latency must not block client | 2026-04-05 | Active |
+| AlertDialog for cancel, Dialog for reschedule | AlertDialog has correct destructive/confirm semantics; Dialog suits multi-step picker | 2026-04-05 | Active |
+| onError: toast only, no onClose in dialogs | User should be able to retry without reopening the dialog | 2026-04-05 | Active |
 
 ## Success Metrics
 
@@ -190,4 +201,4 @@ None.
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-04-04 after Phase 06-05 — v0.6 Unified Users & Roles milestone complete*
+*Last updated: 2026-04-05 after Phase 12 — v1.0 Client Portal & Self-Service Booking Management milestone complete*

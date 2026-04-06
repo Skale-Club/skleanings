@@ -4,11 +4,11 @@
   "milestone": {
     "name": "v1.0 Client Portal & Self-Service Booking Management",
     "version": "1.0.0",
-    "status": "in_progress"
+    "status": "complete"
   },
   "phase": {
-    "number": 10,
-    "name": "Client Role + Booking Ownership",
+    "number": 12,
+    "name": "Client Portal UI",
     "status": "complete"
   },
   "loop": {
