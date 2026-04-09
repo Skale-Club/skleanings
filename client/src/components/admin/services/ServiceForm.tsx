@@ -1,0 +1,415 @@
+import { useEffect, useRef, useState } from 'react';
+import type { Category, Service, Subcategory } from '@shared/schema';
+import { authenticatedRequest } from '@/lib/queryClient';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  DialogClose,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Image, Loader2, Pencil } from 'lucide-react';
+
+// ─── Pricing types ────────────────────────────────────────────────────────────
+
+export type PricingType = 'fixed_item' | 'area_based' | 'base_plus_addons' | 'custom_quote';
+
+export interface AreaSizePreset {
+  name: string;
+  sqft: number | null;
+  price: number;
+}
+
+export interface ServiceOptionInput {
+  id?: number;
+  name: string;
+  price: string;
+  maxQuantity?: number;
+  order?: number;
+}
+
+export interface ServiceFrequencyInput {
+  id?: number;
+  name: string;
+  discountPercent: string;
+  order?: number;
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+export function ServiceForm({
+  service, categories, subcategories, allServices, addonRelationships,
+  onSubmit, isLoading, getAccessToken,
+}: {
+  service: Service | null;
+  categories: Category[];
+  subcategories: Subcategory[];
+  allServices: Service[];
+  addonRelationships: { id: number; serviceId: number; addonServiceId: number }[];
+  onSubmit: (data: Partial<Service> & { addonIds?: number[]; options?: ServiceOptionInput[]; frequencies?: ServiceFrequencyInput[] }) => void;
+  isLoading: boolean;
+  getAccessToken: () => Promise<string | null>;
+}) {
+  const [name, setName] = useState(service?.name || '');
+  const [description, setDescription] = useState(service?.description || '');
+  const [price, setPrice] = useState(service?.price || '');
+  const [durationHours, setDurationHours] = useState(service ? Math.floor(service.durationMinutes / 60) : 0);
+  const [durationMinutes, setDurationMinutes] = useState(service ? service.durationMinutes % 60 : 0);
+  const [categoryId, setCategoryId] = useState(service?.categoryId?.toString() || '');
+  const [subcategoryId, setSubcategoryId] = useState(service?.subcategoryId?.toString() || '');
+  const [imageUrl, setImageUrl] = useState(service?.imageUrl || '');
+  const [isHidden, setIsHidden] = useState(service?.isHidden || false);
+  const [addonSearch, setAddonSearch] = useState('');
+  const [selectedAddons, setSelectedAddons] = useState<number[]>(() => {
+    if (!service || !Array.isArray(addonRelationships)) return [];
+    return addonRelationships.filter(r => r.serviceId === service.id).map(r => r.addonServiceId);
+  });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [pricingType, setPricingType] = useState<PricingType>((service as any)?.pricingType || 'fixed_item');
+  const [basePrice, setBasePrice] = useState((service as any)?.basePrice || '');
+  const [pricePerUnit, setPricePerUnit] = useState((service as any)?.pricePerUnit || '');
+  const [minimumPrice, setMinimumPrice] = useState((service as any)?.minimumPrice || '');
+  const [areaSizes, setAreaSizes] = useState<AreaSizePreset[]>(() => {
+    const sizes = (service as any)?.areaSizes;
+    if (Array.isArray(sizes)) return sizes;
+    return [{ name: 'Small Room', sqft: 100, price: 80 }];
+  });
+
+  const [serviceOptions, setServiceOptions] = useState<ServiceOptionInput[]>([]);
+  const [serviceFrequencies, setServiceFrequencies] = useState<ServiceFrequencyInput[]>([]);
+
+  useEffect(() => {
+    if (service?.id && pricingType === 'base_plus_addons') {
+      fetch(`/api/services/${service.id}/options`)
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            setServiceOptions(data.map((o: any) => ({ id: o.id, name: o.name, price: o.price, maxQuantity: o.maxQuantity, order: o.order })));
+          }
+        })
+        .catch(console.error);
+
+      fetch(`/api/services/${service.id}/frequencies`)
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            setServiceFrequencies(data.map((f: any) => ({ id: f.id, name: f.name, discountPercent: f.discountPercent, order: f.order })));
+          }
+        })
+        .catch(console.error);
+    }
+  }, [service?.id, pricingType]);
+
+  const filteredSubcategories = subcategories.filter(sub => sub.categoryId === Number(categoryId));
+  const availableAddons = allServices.filter(s => s.id !== service?.id && s.name.toLowerCase().includes(addonSearch.toLowerCase()));
+
+  const handleAddonToggle = (addonId: number) => {
+    setSelectedAddons(prev => prev.includes(addonId) ? prev.filter(id => id !== addonId) : [...prev, addonId]);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const token = await getAccessToken();
+      if (!token) { console.error('Authentication required'); return; }
+      const uploadRes = await authenticatedRequest('POST', '/api/upload', token);
+      const { uploadURL, objectPath } = await uploadRes.json() as { uploadURL: string; objectPath: string };
+      const uploadFetchRes = await fetch(uploadURL, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+      if (!uploadFetchRes.ok) throw new Error('Upload to storage failed');
+      setImageUrl(objectPath);
+    } catch (err) {
+      console.error('Upload failed', err);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const data: Partial<Service> & { addonIds?: number[]; options?: ServiceOptionInput[]; frequencies?: ServiceFrequencyInput[] } = {
+      name, description, price: String(price),
+      durationMinutes: (durationHours * 60) + durationMinutes,
+      categoryId: Number(categoryId), imageUrl, isHidden, addonIds: selectedAddons, pricingType,
+    } as any;
+
+    if (subcategoryId) data.subcategoryId = Number(subcategoryId);
+
+    if (pricingType === 'area_based') {
+      (data as any).areaSizes = areaSizes;
+      (data as any).pricePerUnit = pricePerUnit || null;
+      (data as any).minimumPrice = minimumPrice || null;
+    } else if (pricingType === 'base_plus_addons') {
+      (data as any).basePrice = basePrice || null;
+      data.options = serviceOptions;
+      data.frequencies = serviceFrequencies;
+    } else if (pricingType === 'custom_quote') {
+      (data as any).minimumPrice = minimumPrice || null;
+    }
+
+    onSubmit(data);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <DialogHeader>
+        <DialogTitle>{service ? 'Edit Service' : 'Add Service'}</DialogTitle>
+      </DialogHeader>
+      <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+        <div className="space-y-2">
+          <Label htmlFor="name">Service Name</Label>
+          <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required data-testid="input-service-name" />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="category">Category</Label>
+          <Select value={categoryId} onValueChange={(val) => { setCategoryId(val); setSubcategoryId(''); }} required>
+            <SelectTrigger data-testid="select-service-category">
+              <SelectValue placeholder="Select a category" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map(cat => <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {filteredSubcategories.length > 0 && (
+          <div className="space-y-2">
+            <Label htmlFor="subcategory">Subcategory (Optional)</Label>
+            <Select value={subcategoryId || "none"} onValueChange={(val) => setSubcategoryId(val === "none" ? '' : val)}>
+              <SelectTrigger data-testid="select-service-subcategory">
+                <SelectValue placeholder="Select a subcategory" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {filteredSubcategories.map(sub => <SelectItem key={sub.id} value={String(sub.id)}>{sub.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <Label htmlFor="description">Description</Label>
+          <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} data-testid="input-service-description" />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Pricing Type</Label>
+          <Select value={pricingType} onValueChange={(val) => setPricingType(val as PricingType)}>
+            <SelectTrigger><SelectValue placeholder="Select pricing type" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="fixed_item">Fixed Price per Item</SelectItem>
+              <SelectItem value="area_based">Price by Area (sqft)</SelectItem>
+              <SelectItem value="base_plus_addons">Base + Add-ons</SelectItem>
+              <SelectItem value="custom_quote">Custom Quote</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            {pricingType === 'fixed_item' && 'Each unit has a fixed price (e.g., $150 per sofa)'}
+            {pricingType === 'area_based' && 'Price based on area size with preset options (e.g., carpet cleaning)'}
+            {pricingType === 'base_plus_addons' && 'Base price + optional add-ons with frequency discounts (e.g., house cleaning)'}
+            {pricingType === 'custom_quote' && 'Customer describes needs, team contacts with quote'}
+          </p>
+        </div>
+
+        {pricingType === 'fixed_item' && (
+          <div className="space-y-2">
+            <Label htmlFor="price">Price (USD)</Label>
+            <Input id="price" type="number" step="0.01" min="0" value={price} onChange={(e) => setPrice(e.target.value)} required data-testid="input-service-price" />
+          </div>
+        )}
+
+        {pricingType === 'area_based' && (
+          <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+            <h4 className="font-semibold text-sm">Area-Based Pricing</h4>
+            <div className="space-y-2">
+              <Label>Size Presets</Label>
+              {areaSizes.map((size, index) => (
+                <div key={index} className="flex gap-2 items-center">
+                  <Input placeholder="Name (e.g., Small Room)" value={size.name} onChange={(e) => { const u = [...areaSizes]; u[index].name = e.target.value; setAreaSizes(u); }} className="flex-1" />
+                  <Input placeholder="Sqft" type="number" value={size.sqft || ''} onChange={(e) => { const u = [...areaSizes]; u[index].sqft = e.target.value ? Number(e.target.value) : null; setAreaSizes(u); }} className="w-20" />
+                  <Input placeholder="Price" type="number" step="0.01" value={size.price} onChange={(e) => { const u = [...areaSizes]; u[index].price = Number(e.target.value); setAreaSizes(u); }} className="w-24" />
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setAreaSizes(areaSizes.filter((_, i) => i !== index))}>✕</Button>
+                </div>
+              ))}
+              <Button type="button" variant="outline" size="sm" onClick={() => setAreaSizes([...areaSizes, { name: '', sqft: null, price: 0 }])}>+ Add Size Option</Button>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Price per Sqft (for custom size)</Label>
+                <Input type="number" step="0.01" value={pricePerUnit} onChange={(e) => setPricePerUnit(e.target.value)} placeholder="0.75" />
+              </div>
+              <div className="space-y-2">
+                <Label>Minimum Price</Label>
+                <Input type="number" step="0.01" value={minimumPrice} onChange={(e) => setMinimumPrice(e.target.value)} placeholder="50.00" />
+              </div>
+            </div>
+            <input type="hidden" value={areaSizes[0]?.price || minimumPrice || '0'} />
+          </div>
+        )}
+
+        {pricingType === 'base_plus_addons' && (
+          <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+            <h4 className="font-semibold text-sm">Base + Add-ons Pricing</h4>
+            <div className="space-y-2">
+              <Label>Base Price (USD)</Label>
+              <Input type="number" step="0.01" value={basePrice} onChange={(e) => { setBasePrice(e.target.value); setPrice(e.target.value); }} placeholder="120.00" required />
+            </div>
+            <div className="space-y-2">
+              <Label>Add-on Options</Label>
+              <p className="text-xs text-muted-foreground">Additional services customer can add (e.g., Extra Bedroom +$20)</p>
+              {serviceOptions.map((opt, index) => (
+                <div key={index} className="flex gap-2 items-center">
+                  <Input placeholder="Option name" value={opt.name} onChange={(e) => { const u = [...serviceOptions]; u[index].name = e.target.value; setServiceOptions(u); }} className="flex-1" />
+                  <Input placeholder="Price" type="number" step="0.01" value={opt.price} onChange={(e) => { const u = [...serviceOptions]; u[index].price = e.target.value; setServiceOptions(u); }} className="w-24" />
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setServiceOptions(serviceOptions.filter((_, i) => i !== index))}>✕</Button>
+                </div>
+              ))}
+              <Button type="button" variant="outline" size="sm" onClick={() => setServiceOptions([...serviceOptions, { name: '', price: '' }])}>+ Add Option</Button>
+            </div>
+            <div className="space-y-2">
+              <Label>Frequency Options</Label>
+              <p className="text-xs text-muted-foreground">Recurring service discounts (e.g., Weekly -15%)</p>
+              {serviceFrequencies.map((freq, index) => (
+                <div key={index} className="flex gap-2 items-center">
+                  <Input placeholder="Frequency name" value={freq.name} onChange={(e) => { const u = [...serviceFrequencies]; u[index].name = e.target.value; setServiceFrequencies(u); }} className="flex-1" />
+                  <Input placeholder="Discount %" type="number" step="0.01" value={freq.discountPercent} onChange={(e) => { const u = [...serviceFrequencies]; u[index].discountPercent = e.target.value; setServiceFrequencies(u); }} className="w-24" />
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setServiceFrequencies(serviceFrequencies.filter((_, i) => i !== index))}>✕</Button>
+                </div>
+              ))}
+              <Button type="button" variant="outline" size="sm" onClick={() => setServiceFrequencies([...serviceFrequencies, { name: '', discountPercent: '0' }])}>+ Add Frequency</Button>
+            </div>
+          </div>
+        )}
+
+        {pricingType === 'custom_quote' && (
+          <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+            <h4 className="font-semibold text-sm">Custom Quote Pricing</h4>
+            <p className="text-xs text-muted-foreground">Customer will describe their needs and your team will contact them with a quote. A minimum charge applies to the booking.</p>
+            <div className="space-y-2">
+              <Label>Minimum Price (USD)</Label>
+              <Input type="number" step="0.01" value={minimumPrice} onChange={(e) => { setMinimumPrice(e.target.value); setPrice(e.target.value); }} placeholder="150.00" required />
+            </div>
+          </div>
+        )}
+
+        {pricingType !== 'fixed_item' && (
+          <input type="hidden" name="price" value={
+            pricingType === 'area_based' ? (areaSizes[0]?.price || minimumPrice || '0') :
+              pricingType === 'base_plus_addons' ? (basePrice || '0') : (minimumPrice || '0')
+          } />
+        )}
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="durationHours">Duration (Hours)</Label>
+            <Input id="durationHours" type="number" min="0" value={durationHours} onChange={(e) => setDurationHours(Number(e.target.value))} data-testid="input-service-hours" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="durationMinutes">Duration (Minutes)</Label>
+            <Input id="durationMinutes" type="number" min="0" max="59" value={durationMinutes} onChange={(e) => setDurationMinutes(Number(e.target.value))} data-testid="input-service-minutes" />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Service Image</Label>
+          <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} data-testid="input-service-image-upload" />
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            className="relative w-full aspect-[4/3] bg-muted rounded-lg overflow-hidden border border-dashed border-border cursor-pointer hover:bg-muted/80 transition-colors flex items-center justify-center group"
+          >
+            {imageUrl ? (
+              <>
+                <img src={imageUrl} alt="Service preview" className="absolute inset-0 w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <div className="text-white flex flex-col items-center gap-2">
+                    <Pencil className="h-8 w-8" />
+                    <span className="text-sm font-medium">Change Image</span>
+                  </div>
+                </div>
+                <div className="absolute top-2 right-2 bg-black/50 text-white text-[10px] px-1.5 py-0.5 rounded backdrop-blur-sm">4:3 Preview</div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                <div className="h-12 w-12 rounded-full bg-background flex items-center justify-center border shadow-sm">
+                  <Image className="h-6 w-6" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-medium">Click to upload</p>
+                  <p className="text-xs">4:3 aspect ratio recommended</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-2 pt-2">
+          <Checkbox id="isHidden" checked={isHidden} onCheckedChange={(checked) => setIsHidden(!!checked)} data-testid="checkbox-service-hidden" />
+          <Label htmlFor="isHidden" className="text-sm font-normal cursor-pointer">
+            Hide from main services list (Service will only show as add-on)
+          </Label>
+        </div>
+
+        {service && allServices.length > 1 && (
+          <div className="space-y-2 pt-2">
+            <Label>Suggested Add-ons</Label>
+            <p className="text-xs text-muted-foreground">Choose which services to suggest when this is added</p>
+            <div className="space-y-2 border rounded-md p-3 bg-muted">
+              <Input placeholder="Search services..." value={addonSearch} onChange={(e) => setAddonSearch(e.target.value)} className="h-8 text-sm mb-2" />
+              <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
+                {availableAddons.length > 0 ? (
+                  availableAddons.map(addon => (
+                    <div key={addon.id} className="flex items-center space-x-2 py-1 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded px-1 transition-colors">
+                      <Checkbox id={`addon-${addon.id}`} checked={selectedAddons.includes(addon.id)} onCheckedChange={() => handleAddonToggle(addon.id)} data-testid={`checkbox-addon-${addon.id}`} />
+                      <Label htmlFor={`addon-${addon.id}`} className="text-sm font-normal cursor-pointer flex-1 flex justify-between items-center">
+                        <span className="truncate">{addon.name}</span>
+                        <span className="text-xs text-muted-foreground ml-2">${addon.price}</span>
+                      </Label>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-center py-4 text-muted-foreground">No services found</p>
+                )}
+              </div>
+              {selectedAddons.length > 0 && (
+                <div className="pt-2 border-t mt-2 flex flex-wrap gap-1">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground w-full mb-1">Selected:</span>
+                  {selectedAddons.map(id => {
+                    const s = allServices.find(as => as.id === id);
+                    if (!s) return null;
+                    return (
+                      <Badge key={id} variant="secondary" className="text-[10px] py-0 h-5 border-0 bg-primary/10 text-primary dark:bg-primary/20">
+                        {s.name}
+                        <button onClick={(e) => { e.preventDefault(); handleAddonToggle(id); }} className="ml-1 hover:text-primary/70">x</button>
+                      </Badge>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+      <DialogFooter>
+        <DialogClose asChild>
+          <Button variant="outline" type="button">Cancel</Button>
+        </DialogClose>
+        <Button type="submit" disabled={isLoading || !categoryId} data-testid="button-save-service">
+          {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          {service ? 'Update' : 'Create'}
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+}

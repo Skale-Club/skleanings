@@ -16,7 +16,6 @@ export const users = pgTable("users", {
   lastName: text("last_name"),
   phone: text("phone"),
   profileImageUrl: text("profile_image_url"),
-  role: text("role").notNull().default("admin"),
   isAdmin: boolean("is_admin").default(false),
   role: text("role").notNull().default("viewer"), // 'admin' | 'staff' | 'viewer'
   createdAt: timestamp("created_at").defaultNow(),
@@ -784,7 +783,6 @@ export type InsertTimeSlotLock = z.infer<typeof insertTimeSlotLockSchema>;
 // Staff members who perform services (barber-shop model)
 export const staffMembers = pgTable("staff_members", {
   id: serial("id").primaryKey(),
-  userId: text("user_id").references(() => users.id),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   email: text("email").unique(),
