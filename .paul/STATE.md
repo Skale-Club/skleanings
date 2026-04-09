@@ -4,27 +4,25 @@
 
 See: .paul/PROJECT.md (updated 2026-04-02)
 
-**Core value:** Customers can book cleaning services with a specific professional, with a unified calendar that automatically resolves availability conflicts across staff members and their external Google Calendar events.
-**Current focus:** v0.5 Google Calendar Reconnect Notifications — **COMPLETE** ✅
+**Current focus:** v0.7 — Website Section Tabs + Component Refactor
 
 ## Current Position
 
-Milestone: v0.5 Google Calendar Reconnect Notifications — **COMPLETE** ✅
-Phase: 1 of 1 (Reconnect Detection & Notifications) — Complete
-Plan: 05-02 unified — all plans complete
-Status: Milestone complete
-Last activity: 2026-04-02 — v0.5 complete: full reconnect detection + notifications + banner
+Milestone: v0.7 — Website Section Refactor
+Phase: 1 of 1 (Website Tabs) — Complete
+Plan: 07-01-01 complete
+Status: UNIFY done
 
 Progress:
-- Milestone: [██████████] 100% ✓
-- Phase 1: [██████████] 100% ✓
+- v0.6 Milestone: [██████████] 100% ✓ (complete)
+- v0.7 Phase 1: [██████████] 100% ✓ (complete)
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [v0.5 milestone complete]
+  ✓        ✓        ✓     [Phase complete]
 ```
 
 ## Accumulated Context
@@ -32,24 +30,19 @@ PLAN ──▶ APPLY ──▶ UNIFY
 ### Decisions
 | Decision | Context | Impact |
 |----------|---------|--------|
-| Conditional DB write on needsReconnect | Only update when currently false | Prevents duplicate SMS on repeated token failures |
-| Notification path fully try/catch wrapped | Called from availability engine | Failure never breaks booking flow |
-| Stripe Checkout (redirect) not Elements | Simpler PCI scope, Stripe handles card UI | No frontend card form needed |
-| stripeSessionId on bookings | Links booking to Stripe Checkout session for verification | Webhook + verify endpoint can look up booking by sessionId |
+| Sub-components in website/ subfolder | Group related files, avoid cluttering admin/ root | Easier to find |
+| Shared props via WebsiteTabProps interface | All six tabs need most of the same state | Avoids prop drilling chains |
+| Zero behavior change | Pure refactor — save logic stays in parent | No regression risk |
+| triggerAutoSave in WebsiteTabProps | HeroTab needs it for direct field onChange | Complete props contract |
 
 ### Deferred Issues
-None.
-
-### Blockers/Concerns
-- `npm run db:push` required before deploying v0.5 (needsReconnect + lastDisconnectedAt columns)
-- Stripe account and API keys needed for live testing (test mode keys fine for dev)
+- GHL integration should be made fully optional — deferred from v0.6
 
 ## Session Continuity
 
-Last session: 2026-04-02
-Stopped at: v0.5 milestone complete — all plans unified
-Next action: Merge feature/google-calendar-reconnect-notifications → dev, run db:push
-Resume file: .paul/phases/05-gcal-reconnect-notifications/05-02-SUMMARY.md
+Last session: 2026-04-09
+Stopped at: v0.7 milestone complete
+Next action: Start next milestone or user-directed task
 
 ---
 *STATE.md — Updated after every significant action*

@@ -9,6 +9,7 @@ import authRouter from "./routes/auth";
 import catalogRouter from "./routes/catalog";
 import availabilityRouter from "./routes/availability";
 import bookingsRouter from "./routes/bookings";
+import contactsRouter from "./routes/contacts";
 import companyRouter from "./routes/company";
 import blogRouter from "./routes/blog";
 import faqsRouter from "./routes/faqs";
@@ -44,6 +45,9 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // Bookings routes (mounted at /api/bookings)
   app.use("/api/bookings", bookingsRouter);
+
+  // Contacts routes (mounted at /api/contacts)
+  app.use("/api/contacts", contactsRouter);
 
   // Blog routes (mounted at /api/blog)
   app.use("/api/blog", blogRouter);

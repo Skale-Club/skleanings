@@ -1,6 +1,7 @@
 
 import { Request, Response, NextFunction } from "express";
 import { createClient } from '@supabase/supabase-js';
+import { storage } from "../storage";
 
 // Supabase client for auth verification
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -46,5 +47,29 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
         next();
     } catch (error) {
         return res.status(500).json({ message: 'Failed to verify admin status' });
+    }
+}
+
+// Staff authentication middleware - validates token and checks DB role (admin|staff)
+export async function requireStaff(req: Request, res: Response, next: NextFunction) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+        return res.status(401).json({ message: 'Authentication required' });
+    }
+    const token = authHeader.split('Bearer ')[1];
+    try {
+        const { data: { user }, error } = await supabase.auth.getUser(token);
+        if (error || !user) {
+            return res.status(401).json({ message: 'Authentication required' });
+        }
+        const dbUser = await storage.getUserByEmail(user.email!);
+        if (!dbUser || !['admin', 'staff'].includes(dbUser.role)) {
+            return res.status(403).json({ message: 'Staff access required' });
+        }
+        (req as any).user = user;
+        (req as any).dbUser = dbUser;
+        next();
+    } catch (error) {
+        return res.status(500).json({ message: 'Failed to verify staff status' });
     }
 }

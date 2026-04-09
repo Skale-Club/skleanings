@@ -2,8 +2,10 @@ import { useCallback, useEffect, useState, type CSSProperties } from 'react';
 import { Redirect, useLocation, useRoute } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import {
+  BookUser,
   Building2,
   Calendar,
+  CalendarDays,
   Clock,
   FileText,
   FolderOpen,
@@ -38,9 +40,14 @@ import { AvailabilitySection } from '@/components/admin/AvailabilitySection';
 import { AdminChatLayout } from '@/components/chat/admin/AdminChatLayout';
 import { IntegrationsSection } from '@/components/admin/IntegrationsSection';
 import { BlogSection } from '@/components/admin/BlogSection';
+import { AppointmentsCalendarSection } from '@/components/admin/AppointmentsCalendarSection';
+import { ContactsSection } from '@/components/admin/ContactsSection';
+import { useMe } from '@/hooks/useMe';
 
 const menuItems: AdminMenuItem[] = [
   { id: 'dashboard', title: 'Dashboard', icon: LayoutDashboard },
+  { id: 'calendar', title: 'Calendar', icon: CalendarDays },
+  { id: 'contacts', title: 'Contacts', icon: BookUser },
   { id: 'company', title: 'Company Infos', icon: Building2 },
   { id: 'hero', title: 'Website', icon: Image },
   { id: 'categories', title: 'Categories', icon: FolderOpen },
@@ -64,6 +71,10 @@ function AdminContent() {
   const activeSection: AdminSection = sectionFromUrl && menuItems.some((i) => i.id === sectionFromUrl)
     ? sectionFromUrl
     : 'dashboard';
+
+  const { isAdmin: roleIsAdmin, isStaff, staffMemberId: myStaffMemberId } = useMe();
+
+  const STAFF_ALLOWED_SECTIONS: AdminSection[] = ['dashboard', 'calendar'];
 
   const [blogResetSignal, setBlogResetSignal] = useState(0);
   const [sectionsOrder, setSectionsOrder] = useState<AdminSection[]>(menuItems.map((item) => item.id));
@@ -125,7 +136,7 @@ function AdminContent() {
         companySettings={companySettings}
         email={email}
         menuItems={menuItems}
-        sectionsOrder={sectionsOrder}
+        sectionsOrder={isStaff ? sectionsOrder.filter(id => STAFF_ALLOWED_SECTIONS.includes(id as AdminSection)) : sectionsOrder}
         activeSection={activeSection}
         onSectionSelect={handleSectionSelect}
         onSectionsReorder={updateSectionOrder}
@@ -151,6 +162,13 @@ function AdminContent() {
               }}
             />
           )}
+          {activeSection === 'calendar' && (
+            <AppointmentsCalendarSection
+              getAccessToken={getAccessToken}
+              staffMemberId={isStaff ? myStaffMemberId : null}
+            />
+          )}
+          {activeSection === 'contacts' && <ContactsSection />}
           {activeSection === 'categories' && <CategoriesSection getAccessToken={getAccessToken} />}
           {activeSection === 'services' && <ServicesSection getAccessToken={getAccessToken} />}
           {activeSection === 'bookings' && <BookingsSection getAccessToken={getAccessToken} />}

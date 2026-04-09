@@ -6,11 +6,110 @@ Skleanings is a booking platform for a cleaning company. The current milestone (
 
 ## Current Milestone
 
+**v0.6 — Appointments Calendar + Contacts** (v0.6.0)
+Status: ✅ Complete — 2026-04-09
+Phases: 4 of 4 complete
+
+## Completed Milestone (previous)
+
+**v0.5 — Google Calendar Reconnect Notifications** (v0.5.0)
+Status: ✅ Complete — 2026-04-02
+Phases: 1 of 1 complete
+
+---
+
+## v0.6 — Appointments Calendar + Contacts
+
+Admin gains a full visual calendar of all appointments (like Google Calendar) with per-staff color coding and GCal overlay, plus a Contacts page that deduplicates customer data from bookings into a manageable CRM-like interface. User roles are extended to support future staff logins.
+
+### Phase 1: DB Foundation `[06-01]` ✅ Complete — 2026-04-09
+
+**Goal:** `contacts` table exists with deduped customer records; bookings linked to contacts; `users.role` field replaces binary `isAdmin`; `staffMembers.userId` links staff to user accounts for future login.
+**Depends on:** Nothing (schema-first)
+
+**Scope:**
+- `contacts` table: `id`, `name`, `email` (unique), `phone`, `address`, `ghlContactId`, `notes`, `createdAt`, `updatedAt`
+- Add `contactId` FK (nullable) to `bookings` table
+- Migration: backfill contacts from distinct email/phone in existing bookings; link `bookings.contactId`
+- Add `role: 'admin' | 'staff' | 'viewer'` to `users` table (replaces `isAdmin`, keep `isAdmin` computed for backward compat)
+- Add `userId` (nullable FK → users) to `staffMembers` table
+- IStorage methods: `upsertContact`, `getContact`, `listContacts`, `getContactBookings`, `linkContactToBooking`
+
+**Plans:**
+- [ ] 06-01-01: contacts table + bookings.contactId + storage methods
+- [ ] 06-01-02: users.role + staffMembers.userId + auth middleware update
+
+### Phase 2: Appointments Calendar Tab `[06-02]` ✅ Complete — 2026-04-09
+
+**Goal:** New "Calendar" tab in admin dashboard shows all bookings as visual calendar events — day/week/month views, per-staff color coding, GCal busy-time overlays, click-to-edit.
+**Depends on:** Phase 1 (for contact linking on event detail)
+
+**Scope:**
+- Install `react-big-calendar` + `date-fns` localizer
+- New `AppointmentsCalendarSection` component in `client/src/components/admin/`
+- Views: Month / Week / Day toggle
+- Each booking → calendar event with: customer name, time, staff color, status chip
+- Per-staff color legend + filter checkboxes (show/hide staff)
+- Status filter: All / Pending / Confirmed / Completed / Cancelled
+- GCal busy-time overlay: gray non-interactive blocks fetched from `GET /api/staff/:id/availability?date=`
+- Click event → opens existing booking edit dialog (reuse `BookingsSection` edit modal)
+- Click empty slot → opens new booking dialog pre-filled with date/time/staff
+- `GET /api/bookings?from=&to=` date range query (add to existing bookings endpoint)
+- Add "Calendar" nav item to Admin sidebar
+
+**Plans:**
+- [ ] 06-02-01: Calendar API endpoint (date range) + react-big-calendar setup
+- [ ] 06-02-02: Calendar UI — views, events, staff colors, filters
+- [ ] 06-02-03: GCal overlay + click interactions (edit + create)
+
+### Phase 3: Contacts Page `[06-03]` ✅ Complete — 2026-04-09
+
+**Goal:** New "Contacts" admin tab lists all deduped contacts with search/filter; contact detail shows profile, booking history, total spend, GHL sync status, and internal notes.
+**Depends on:** Phase 1 (contacts table must exist)
+
+**Scope:**
+- New `ContactsSection` component in `client/src/components/admin/`
+- List view: searchable table — name, email, phone, last booking date, total spend, booking count, GHL badge
+- Contact detail panel (slide-in or page): full profile, editable notes, GHL external link
+- Booking history list per contact (linked via `contactId`)
+- On new booking creation: `upsertContact` runs first, then `contactId` stored on booking
+- `GET /api/contacts` — paginated list with search
+- `GET /api/contacts/:id` — single contact with booking history
+- `PUT /api/contacts/:id` — update notes/profile
+- Add "Contacts" nav item to Admin sidebar
+
+**Plans:**
+- [x] 06-03-01: Contacts API endpoints + storage methods + upsertContact wiring ✅ 2026-04-09
+- [x] 06-03-02: ContactsSection UI — list + search + GHL badge ✅ 2026-04-09
+- [x] 06-03-03: Contact detail sheet + booking history + notes ✅ 2026-04-09
+
+### Phase 4: Staff User Roles `[06-04]` ✅ Complete — 2026-04-09
+
+**Goal:** Staff members can be linked to user accounts; role-scoped views hide irrelevant admin sections from non-admin users; `requireAdmin` / `requireStaff` middleware enforces access.
+**Depends on:** Phase 1 (users.role + staffMembers.userId must exist)
+
+**Scope:**
+- `requireStaff` middleware: allows `role = 'admin' | 'staff'`; rejects `'viewer'` and unauthenticated
+- Staff-scoped admin view: logged-in staff sees only "Calendar" (filtered to their bookings) and their profile — not full admin
+- Admin sidebar conditionally renders sections based on `role`
+- `GET /api/me` returns `role` + linked `staffMemberId` for frontend routing
+- Users section: admin can set `role` and link a user to a staff member
+- Backward compat: `isAdmin` remains derived from `role === 'admin'` — no existing auth breaks
+
+**Plans:**
+- [x] 06-04-01: requireStaff middleware + staff-link endpoint ✅ 2026-04-09
+- [x] 06-04-02: Frontend role-aware sidebar + staff-scoped calendar view ✅ 2026-04-09
+- [x] 06-04-03: Users section — role assignment + user↔staff linking UI ✅ 2026-04-09
+
+---
+
+## Previously Completed Milestones
+
 **v0.3 — Stripe Payments** (v0.3.0)
 Status: ✅ Complete — 2026-04-02
 Phases: 3 of 3 complete
 
-## Completed Milestone
+## Previously Completed (archived)
 
 **v0.2 — Staff Members** (v0.2.0)
 Status: ✅ Complete — 2026-04-02

@@ -4,7 +4,7 @@ import { z } from "zod";
 import { storage } from "../storage";
 import { requireAdmin } from "../lib/auth";
 import { insertStaffMemberSchema } from "@shared/schema";
-import { getAuthUrl, exchangeCodeForTokens } from "../lib/google-calendar";
+import { getAuthUrl, exchangeCodeForTokens, getStaffBusyTimes } from "../lib/google-calendar";
 
 const router = Router();
 
@@ -185,6 +185,20 @@ router.put("/:id/availability", requireAdmin, async (req, res) => {
 });
 
 // ─── Google Calendar OAuth ─────────────────────────────────────────────────────
+
+// GET /api/staff/:id/calendar/busy?date=YYYY-MM-DD — GCal busy times for a date (cached)
+router.get("/:id/calendar/busy", requireAdmin, async (req, res) => {
+  try {
+    const date = req.query.date;
+    if (!date || typeof date !== 'string') {
+      return res.status(400).json({ message: "date query param required (YYYY-MM-DD)" });
+    }
+    const busyTimes = await getStaffBusyTimes(Number(req.params.id), date);
+    res.json({ busyTimes });
+  } catch (err) {
+    res.json({ busyTimes: [] }); // fail gracefully — GCal overlay is best-effort
+  }
+});
 
 // GET /api/staff/:id/calendar/status — connection state
 router.get("/:id/calendar/status", requireAdmin, async (req, res) => {

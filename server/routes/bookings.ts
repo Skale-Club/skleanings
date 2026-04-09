@@ -17,8 +17,13 @@ const router = Router();
 // Bookings
 router.get('/', requireAdmin, async (req, res) => {
     try {
-        const limit = req.query.limit ? Number(req.query.limit) : 50;
-        const bookings = await storage.getBookings(limit);
+        const { from, to, limit } = req.query;
+        if (from && to && typeof from === 'string' && typeof to === 'string') {
+            const bookings = await storage.getBookingsByDateRange(from, to);
+            return res.json(bookings);
+        }
+        const limitNum = limit ? Number(limit) : 50;
+        const bookings = await storage.getBookings(limitNum);
         res.json(bookings);
     } catch (err) {
         res.status(500).json({ message: (err as Error).message });
@@ -90,6 +95,20 @@ router.post('/', async (req, res) => {
             ...validatedData,
             bookingItemsData,
         });
+
+        // Auto-link contact: upsert by email/phone, then set contactId on booking
+        try {
+            const contact = await storage.upsertContact({
+                name: validatedData.customerName,
+                email: validatedData.customerEmail || undefined,
+                phone: validatedData.customerPhone,
+                address: validatedData.customerAddress || undefined,
+            });
+            await storage.updateBookingContactId(booking.id, contact.id);
+        } catch (contactErr) {
+            // Non-blocking: contact linking failure never breaks booking creation
+            console.error("Contact upsert error:", contactErr);
+        }
 
         // Sync to GHL if enabled (non-blocking for booking creation)
         const ghlSync = await syncBookingToGhl(booking);

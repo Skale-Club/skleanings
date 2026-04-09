@@ -2,6 +2,19 @@ import { OAuth2Client } from "google-auth-library";
 import { storage } from "../storage";
 import { sendCalendarDisconnectNotification } from "../integrations/twilio";
 
+// In-memory cache for GCal busy times — 10-minute TTL
+// Key: `${staffMemberId}:${date}` → { data, expiresAt }
+const busyTimesCache = new Map<string, {
+  data: { start: string; end: string }[];
+  expiresAt: number;
+}>();
+
+const BUSY_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+export function clearBusyTimesCache(staffMemberId: number, date: string): void {
+  busyTimesCache.delete(`${staffMemberId}:${date}`);
+}
+
 async function createOAuth2Client(): Promise<OAuth2Client> {
   const creds = await storage.getIntegrationSettings("google-calendar");
   if (!creds?.apiKey || !creds?.locationId) {
@@ -115,6 +128,13 @@ export async function getStaffBusyTimes(
   timeZone: string = "America/New_York"
 ): Promise<{ start: string; end: string }[]> {
   try {
+    // Check cache first
+    const cacheKey = `${staffMemberId}:${date}`;
+    const cached = busyTimesCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.data;
+    }
+
     const accessToken = await getValidAccessToken(staffMemberId);
     if (!accessToken) return [];
 
@@ -149,7 +169,7 @@ export async function getStaffBusyTimes(
 
     const busyIntervals = data.calendars?.[record.calendarId]?.busy ?? [];
 
-    return busyIntervals.map((interval) => ({
+    const result = busyIntervals.map((interval) => ({
       start: new Date(interval.start).toLocaleTimeString("en-US", {
         hour: "2-digit",
         minute: "2-digit",
@@ -163,6 +183,9 @@ export async function getStaffBusyTimes(
         timeZone,
       }),
     }));
+
+    busyTimesCache.set(cacheKey, { data: result, expiresAt: Date.now() + BUSY_CACHE_TTL_MS });
+    return result;
   } catch {
     return [];
   }

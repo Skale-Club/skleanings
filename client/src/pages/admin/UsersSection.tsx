@@ -118,11 +118,19 @@ export function UsersSection() {
                                 </TableCell>
                                 <TableCell>{user.email}</TableCell>
                                 <TableCell>
-                                    {user.isAdmin ? (
-                                        <Badge variant="default">Admin</Badge>
-                                    ) : (
-                                        <Badge variant="secondary">User</Badge>
-                                    )}
+                                    {(() => {
+                                        const r = user.role ?? (user.isAdmin ? 'admin' : 'viewer');
+                                        const colors: Record<string, string> = {
+                                            admin: 'bg-blue-100 text-blue-700 border-blue-200',
+                                            staff: 'bg-green-100 text-green-700 border-green-200',
+                                            viewer: 'bg-gray-100 text-gray-600 border-gray-200',
+                                        };
+                                        return (
+                                            <Badge variant="outline" className={`text-xs ${colors[r] ?? ''}`}>
+                                                {r.charAt(0).toUpperCase() + r.slice(1)}
+                                            </Badge>
+                                        );
+                                    })()}
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <div className="flex justify-end gap-2">

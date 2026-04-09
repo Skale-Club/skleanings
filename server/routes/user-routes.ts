@@ -35,6 +35,27 @@ router.patch("/:id", requireAdmin, async (req, res) => {
     res.json(updated);
 });
 
+// PATCH /api/users/:id/staff-link — links/unlinks user to a staff member
+router.patch("/:id/staff-link", requireAdmin, async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const { staffMemberId } = req.body;
+        if (staffMemberId !== null && staffMemberId !== undefined) {
+            await storage.linkStaffToUser(Number(staffMemberId), userId);
+        } else {
+            // Clear any existing link by setting userId=null on any linked staff member
+            const allStaff = await storage.getStaffMembers(true);
+            const linked = allStaff.find(s => s.userId === userId);
+            if (linked) {
+                await storage.linkStaffToUser(linked.id, null as any);
+            }
+        }
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ message: (err as Error).message });
+    }
+});
+
 router.delete("/:id", requireAdmin, async (req, res) => {
     const id = req.params.id;
     const user = await storage.getUser(id);

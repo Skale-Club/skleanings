@@ -1,5 +1,6 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
+import "react-big-calendar/lib/css/react-big-calendar.css";
 import "./index.css";
 
 // Fallback: hide loader after 5 seconds even if React fails to mount

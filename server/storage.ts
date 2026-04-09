@@ -84,6 +84,7 @@ import {
   staffServiceAbilities,
   staffAvailability,
   staffGoogleCalendar,
+  contacts,
   type StaffMember,
   type StaffServiceAbility,
   type StaffAvailability,
@@ -92,8 +93,10 @@ import {
   type InsertStaffServiceAbility,
   type InsertStaffAvailability,
   type InsertStaffGoogleCalendar,
+  type Contact,
+  type UserRole,
 } from "@shared/schema";
-import { eq, and, or, gte, lte, inArray, desc, asc, sql, ne } from "drizzle-orm";
+import { eq, and, or, gte, lte, inArray, desc, asc, sql, ne, ilike } from "drizzle-orm";
 import { z } from "zod";
 
 export const insertSubcategorySchema = z.object({
@@ -108,9 +111,11 @@ export interface IStorage {
   getUsers(): Promise<User[]>;
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  updateUserRole(userId: string, role: UserRole): Promise<User>;
   createUser(user: UpsertUser): Promise<User>;
   updateUser(id: string, user: Partial<UpsertUser>): Promise<User>;
   deleteUser(id: string): Promise<void>;
+  linkStaffToUser(staffMemberId: number, userId: string): Promise<void>;
 
   // Categories & Services
   getCategories(): Promise<Category[]>;
@@ -148,6 +153,7 @@ export interface IStorage {
   getBookings(limit?: number): Promise<Booking[]>;
   getBookingsByDate(date: string): Promise<Booking[]>;
   getBookingsByDateAndStaff(date: string, staffMemberId: number): Promise<Booking[]>;
+  getBookingsByDateRange(from: string, to: string): Promise<Booking[]>;
   getBooking(id: number): Promise<Booking | undefined>;
   getBookingByStripeSessionId(sessionId: string): Promise<Booking | undefined>;
   updateBookingStripeFields(bookingId: number, stripeSessionId: string, stripePaymentStatus?: string): Promise<void>;
@@ -278,6 +284,16 @@ export interface IStorage {
   getBookingsPendingSync(): Promise<Booking[]>;
   updateBookingSyncStatus(bookingId: number, status: string, ghlContactId?: string, ghlAppointmentId?: string): Promise<void>;
 
+  // Contacts
+  upsertContact(data: { name: string; email?: string; phone?: string; address?: string; ghlContactId?: string }): Promise<Contact>;
+  getContact(id: number): Promise<Contact | undefined>;
+  getContactByEmailOrPhone(email?: string, phone?: string): Promise<Contact | undefined>;
+  listContacts(search?: string, limit?: number): Promise<Contact[]>;
+  listContactsWithStats(search?: string, limit?: number): Promise<(Contact & { bookingCount: number; totalSpend: number; lastBookingDate: string | null })[]>;
+  getContactBookings(contactId: number): Promise<Booking[]>;
+  updateContact(id: number, data: Partial<Pick<Contact, 'name' | 'email' | 'phone' | 'address' | 'notes'>>): Promise<Contact>;
+  updateBookingContactId(bookingId: number, contactId: number): Promise<void>;
+
   // Staff Members
   getStaffMembers(includeInactive?: boolean): Promise<StaffMember[]>;
   getStaffMember(id: number): Promise<StaffMember | undefined>;
@@ -325,6 +341,13 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db.select().from(users).where(eq(users.email, email));
     return user;
   }
+  async updateUserRole(userId: string, role: UserRole): Promise<User> {
+    const [updated] = await db.update(users)
+      .set({ role, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return updated;
+  }
   async createUser(user: UpsertUser): Promise<User> {
     const [newUser] = await db.insert(users).values(user).returning();
     return newUser;
@@ -335,6 +358,11 @@ export class DatabaseStorage implements IStorage {
   }
   async deleteUser(id: string): Promise<void> {
     await db.delete(users).where(eq(users.id, id));
+  }
+  async linkStaffToUser(staffMemberId: number, userId: string): Promise<void> {
+    await db.update(staffMembers)
+      .set({ userId, updatedAt: new Date() })
+      .where(eq(staffMembers.id, staffMemberId));
   }
 
   private chatSchemaEnsured = false;
@@ -682,6 +710,12 @@ export class DatabaseStorage implements IStorage {
         eq(bookings.staffMemberId, staffMemberId)
       )
     );
+  }
+
+  async getBookingsByDateRange(from: string, to: string): Promise<Booking[]> {
+    return await db.select().from(bookings)
+      .where(and(gte(bookings.bookingDate, from), lte(bookings.bookingDate, to)))
+      .orderBy(asc(bookings.bookingDate), asc(bookings.startTime));
   }
 
   async getBooking(id: number): Promise<Booking | undefined> {
@@ -1517,6 +1551,107 @@ export class DatabaseStorage implements IStorage {
     if (ghlAppointmentId) updates.ghlAppointmentId = ghlAppointmentId;
 
     await db.update(bookings).set(updates).where(eq(bookings.id, bookingId));
+  }
+
+  // ─── Contacts ─────────────────────────────────────────────────────────────
+
+  async upsertContact(data: { name: string; email?: string; phone?: string; address?: string; ghlContactId?: string }): Promise<Contact> {
+    if (data.email) {
+      const existing = await db.select().from(contacts).where(eq(contacts.email, data.email)).limit(1);
+      if (existing[0]) return existing[0];
+    }
+    if (data.phone) {
+      const existing = await db.select().from(contacts).where(eq(contacts.phone, data.phone)).limit(1);
+      if (existing[0]) return existing[0];
+    }
+    const [created] = await db.insert(contacts).values({
+      name: data.name,
+      email: data.email ?? null,
+      phone: data.phone ?? null,
+      address: data.address ?? null,
+      ghlContactId: data.ghlContactId ?? null,
+    }).returning();
+    return created;
+  }
+
+  async getContact(id: number): Promise<Contact | undefined> {
+    const [contact] = await db.select().from(contacts).where(eq(contacts.id, id)).limit(1);
+    return contact;
+  }
+
+  async getContactByEmailOrPhone(email?: string, phone?: string): Promise<Contact | undefined> {
+    if (email) {
+      const [found] = await db.select().from(contacts).where(eq(contacts.email, email)).limit(1);
+      if (found) return found;
+    }
+    if (phone) {
+      const [found] = await db.select().from(contacts).where(eq(contacts.phone, phone)).limit(1);
+      if (found) return found;
+    }
+    return undefined;
+  }
+
+  async listContacts(search?: string, limit: number = 100): Promise<Contact[]> {
+    if (search) {
+      return await db.select().from(contacts).where(
+        or(
+          ilike(contacts.name, `%${search}%`),
+          ilike(contacts.email, `%${search}%`),
+          ilike(contacts.phone, `%${search}%`),
+        )
+      ).orderBy(asc(contacts.name)).limit(limit);
+    }
+    return await db.select().from(contacts).orderBy(asc(contacts.name)).limit(limit);
+  }
+
+  async getContactBookings(contactId: number): Promise<Booking[]> {
+    return await db.select().from(bookings)
+      .where(eq(bookings.contactId, contactId))
+      .orderBy(desc(bookings.bookingDate));
+  }
+
+  async updateContact(id: number, data: Partial<Pick<Contact, 'name' | 'email' | 'phone' | 'address' | 'notes'>>): Promise<Contact> {
+    const [updated] = await db.update(contacts)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(contacts.id, id))
+      .returning();
+    return updated;
+  }
+
+  async listContactsWithStats(search?: string, limit: number = 100): Promise<(Contact & { bookingCount: number; totalSpend: number; lastBookingDate: string | null })[]> {
+    const searchClause = search
+      ? sql`AND (c.name ILIKE ${`%${search}%`} OR c.email ILIKE ${`%${search}%`} OR c.phone ILIKE ${`%${search}%`})`
+      : sql``;
+
+    const rows = await db.execute(sql`
+      SELECT
+        c.*,
+        COALESCE(b.booking_count, 0)::int AS "bookingCount",
+        COALESCE(b.total_spend, 0)::numeric AS "totalSpend",
+        b.last_booking_date AS "lastBookingDate"
+      FROM contacts c
+      LEFT JOIN (
+        SELECT
+          contact_id,
+          COUNT(*)::int AS booking_count,
+          SUM(total_price::numeric) AS total_spend,
+          MAX(booking_date) AS last_booking_date
+        FROM bookings
+        WHERE contact_id IS NOT NULL
+        GROUP BY contact_id
+      ) b ON b.contact_id = c.id
+      WHERE TRUE ${searchClause}
+      ORDER BY c.name ASC
+      LIMIT ${limit}
+    `);
+
+    return rows.rows as (Contact & { bookingCount: number; totalSpend: number; lastBookingDate: string | null })[];
+  }
+
+  async updateBookingContactId(bookingId: number, contactId: number): Promise<void> {
+    await db.update(bookings)
+      .set({ contactId })
+      .where(eq(bookings.id, bookingId));
   }
 
   // ─── Staff Members ────────────────────────────────────────────────────────
