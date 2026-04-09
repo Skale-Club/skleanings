@@ -64,7 +64,7 @@ const menuItems: AdminMenuItem[] = [
 
 function AdminContent() {
   const { toast } = useToast();
-  const { isAdmin, role, email, loading, signOut, getAccessToken } = useAdminAuth();
+  const { user, isAdmin, role, email, loading, signOut, getAccessToken } = useAdminAuth();
   const [, setLocation] = useLocation();
 
   // Redirect staff to their own settings page
@@ -125,7 +125,21 @@ function AdminContent() {
     }
   }, [activeSection, setLocation]);
 
-  if (!loading && !isAdmin) {
+  if (!loading && role === 'staff') {
+    return <Redirect to="/staff/settings" />;
+  }
+
+  if (!loading && role === 'user') {
+    return <Redirect to="/" />;
+  }
+
+  if (!loading && !isAdmin && role !== null) {
+    return <Redirect to="/admin/login" />;
+  }
+
+  if (!loading && user && role === null) {
+    // Role fetch finished but returned nothing (DB error, 401, etc.) — redirect to login.
+    // Staying on this route with role=null causes an infinite spinner.
     return <Redirect to="/admin/login" />;
   }
 

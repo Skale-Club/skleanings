@@ -15,6 +15,16 @@ const availabilityItemSchema = z.object({
   isAvailable: z.boolean(),
 });
 
+async function canManageStaffCalendar(req: any, staffId: number) {
+  const user = req.user;
+  if (!user) return false;
+  if (user.role === "admin") return true;
+  if (user.role !== "staff") return false;
+
+  const member = await storage.getStaffMemberByUserId(user.id);
+  return member?.id === staffId;
+}
+
 // ─── Public endpoints (used by booking flow) ──────────────────────────────────
 
 // GET /api/staff — list active staff members
@@ -236,7 +246,12 @@ router.get("/:id/calendar/busy", requireAdmin, async (req, res) => {
 // GET /api/staff/:id/calendar/status — connection state
 router.get("/:id/calendar/status", requireAuth, async (req, res) => {
   try {
-    const record = await storage.getStaffGoogleCalendar(Number(req.params.id));
+    const staffId = Number(req.params.id);
+    if (!(await canManageStaffCalendar(req, staffId))) {
+      return res.status(403).json({ message: "Insufficient permissions" });
+    }
+
+    const record = await storage.getStaffGoogleCalendar(staffId);
     if (!record) return res.json({ connected: false, needsReconnect: false });
     res.json({ connected: !record.needsReconnect, calendarId: record.calendarId, connectedAt: record.connectedAt, needsReconnect: record.needsReconnect });
   } catch (err) {
@@ -247,13 +262,18 @@ router.get("/:id/calendar/status", requireAuth, async (req, res) => {
 // GET /api/staff/:id/calendar/connect — initiate OAuth flow
 router.get("/:id/calendar/connect", requireAuth, async (req, res) => {
   try {
+    const staffId = Number(req.params.id);
+    if (!(await canManageStaffCalendar(req, staffId))) {
+      return res.status(403).json({ message: "Insufficient permissions" });
+    }
+
     const creds = await storage.getIntegrationSettings("google-calendar");
     if (!creds?.apiKey || !creds?.locationId) {
       return res.status(501).json({ message: "Google Calendar integration is not configured. Add credentials in Admin → Integrations." });
     }
     const user = (req as any).user;
     const redirectTo: "staff" | "admin" = user?.role === "staff" ? "staff" : "admin";
-    const url = await getAuthUrl(Number(req.params.id), redirectTo);
+    const url = await getAuthUrl(staffId, redirectTo);
     res.redirect(url);
   } catch (err) {
     res.status(500).json({ message: (err as Error).message });
@@ -263,7 +283,12 @@ router.get("/:id/calendar/connect", requireAuth, async (req, res) => {
 // DELETE /api/staff/:id/calendar — disconnect Google Calendar
 router.delete("/:id/calendar", requireAuth, async (req, res) => {
   try {
-    await storage.deleteStaffGoogleCalendar(Number(req.params.id));
+    const staffId = Number(req.params.id);
+    if (!(await canManageStaffCalendar(req, staffId))) {
+      return res.status(403).json({ message: "Insufficient permissions" });
+    }
+
+    await storage.deleteStaffGoogleCalendar(staffId);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ message: (err as Error).message });
@@ -273,7 +298,12 @@ router.delete("/:id/calendar", requireAuth, async (req, res) => {
 // POST /api/staff/:id/calendar/clear-reconnect — clear needsReconnect flag after re-auth
 router.post("/:id/calendar/clear-reconnect", requireAuth, async (req, res) => {
   try {
-    await storage.clearCalendarNeedsReconnect(Number(req.params.id));
+    const staffId = Number(req.params.id);
+    if (!(await canManageStaffCalendar(req, staffId))) {
+      return res.status(403).json({ message: "Insufficient permissions" });
+    }
+
+    await storage.clearCalendarNeedsReconnect(staffId);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ message: (err as Error).message });

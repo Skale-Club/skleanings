@@ -6,6 +6,7 @@ import type {
   CompanySettings,
   Service,
   Subcategory,
+  User,
 } from "@shared/schema";
 
 let adminClient: SupabaseClient | null = null;
@@ -81,6 +82,44 @@ export async function getFallbackChatSettings(): Promise<ChatSettings | null> {
   return data ? camelizeKeys<ChatSettings>(data) : null;
 }
 
+export async function getFallbackUserById(id: string): Promise<User | null> {
+  const client = getAdminClient();
+  const data = await runQuery(
+    client.from("users").select("*").eq("id", id).limit(1).maybeSingle(),
+  );
+
+  return data ? (camelizeKeys(data) as User) : null;
+}
+
+export async function getFallbackUserByEmail(email: string): Promise<User | null> {
+  const client = getAdminClient();
+  const data = await runQuery(
+    client.from("users").select("*").eq("email", email).limit(1).maybeSingle(),
+  );
+
+  return data ? (camelizeKeys(data) as User) : null;
+}
+
+export async function createFallbackUser(user: Partial<User> & { id: string; email: string; role: string }): Promise<User> {
+  const client = getAdminClient();
+  const payload = {
+    id: user.id,
+    email: user.email,
+    first_name: user.firstName ?? null,
+    last_name: user.lastName ?? null,
+    phone: user.phone ?? null,
+    profile_image_url: user.profileImageUrl ?? null,
+    role: user.role,
+    is_admin: user.isAdmin ?? (user.role === "admin"),
+  };
+
+  const data = await runQuery(
+    client.from("users").insert(payload).select("*").single(),
+  );
+
+  return camelizeKeys(data as unknown as User) as User;
+}
+
 export async function getFallbackCategories(): Promise<Category[]> {
   const client = getAdminClient();
   const data = await runQuery(
@@ -145,6 +184,22 @@ export async function getFallbackPublishedBlogPosts(limit = 10, offset = 0): Pro
       .range(offset, Math.max(offset + limit - 1, offset)),
   );
 
+  return camelizeKeys<BlogPost[]>(data ?? []);
+}
+
+export async function getFallbackBlogPosts(status?: string, limit = 100, offset = 0): Promise<BlogPost[]> {
+  const client = getAdminClient();
+  let query = client
+    .from("blog_posts")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .range(offset, Math.max(offset + limit - 1, offset));
+
+  if (status) {
+    query = query.eq("status", status);
+  }
+
+  const data = await runQuery(query);
   return camelizeKeys<BlogPost[]>(data ?? []);
 }
 

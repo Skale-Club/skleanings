@@ -1,20 +1,63 @@
-import { drizzle } from "drizzle-orm/node-postgres";
-import pg from "pg";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import * as schema from "@shared/schema";
 import * as dotenv from "dotenv";
 
-// Carregar .env apenas se não estiver no Vercel (Vercel injeta variáveis automaticamente)
 if (!process.env.VERCEL) {
   dotenv.config();
 }
 
 const isServerless = !!process.env.VERCEL;
 
-const DATABASE_URL = isServerless
-  ? process.env.POSTGRES_URL || process.env.DATABASE_URL || process.env.POSTGRES_URL_NON_POOLING || ""
-  : process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_URL_NON_POOLING || "";
+function getHost(connectionString: string): string {
+  try {
+    return new URL(connectionString).host;
+  } catch {
+    return "invalid";
+  }
+}
 
-const { Pool } = pg;
+function mergePoolerPassword(pooledConnectionString: string, directConnectionString: string): string {
+  try {
+    const pooled = new URL(pooledConnectionString);
+    const direct = new URL(directConnectionString);
+
+    if (!pooled.password && !direct.password) {
+      return pooledConnectionString;
+    }
+
+    if (pooled.password === direct.password) {
+      return pooledConnectionString;
+    }
+
+    pooled.password = direct.password;
+    return pooled.toString();
+  } catch {
+    return pooledConnectionString;
+  }
+}
+
+const databaseUrl = process.env.DATABASE_URL || "";
+const pooledUrl = process.env.POSTGRES_URL || "";
+const nonPoolingUrl = process.env.POSTGRES_URL_NON_POOLING || "";
+
+const repairedPooledUrl = pooledUrl && databaseUrl
+  ? mergePoolerPassword(pooledUrl, databaseUrl)
+  : pooledUrl;
+
+// On Vercel, the direct `db.<ref>.supabase.co` host has been failing DNS resolution,
+// while the pooler works if we reuse the password embedded in DATABASE_URL.
+const DATABASE_URL = isServerless
+  ? repairedPooledUrl || pooledUrl || databaseUrl || nonPoolingUrl
+  : databaseUrl || pooledUrl || nonPoolingUrl;
+
+const connectionSource = DATABASE_URL === repairedPooledUrl && repairedPooledUrl !== pooledUrl
+  ? "POSTGRES_URL+DATABASE_URL_PASSWORD"
+  : DATABASE_URL === databaseUrl
+  ? "DATABASE_URL"
+  : DATABASE_URL === pooledUrl
+    ? "POSTGRES_URL"
+    : "POSTGRES_URL_NON_POOLING";
 
 if (!DATABASE_URL) {
   throw new Error(
@@ -22,26 +65,14 @@ if (!DATABASE_URL) {
   );
 }
 
-const connectionString = DATABASE_URL.replace(/([?&])sslmode=[^&]*(&)?/gi, (_, prefix: string, suffix?: string) => {
-  if (prefix === "?" && suffix) {
-    return "?";
-  }
+console.log(`[DB] Using ${connectionSource} (${getHost(DATABASE_URL)})`);
 
-  return "";
-}).replace(/[?&]$/, "");
-
-// Configurar pool com SSL explícito
-export const pool = new Pool({
-  connectionString,
-  ssl: { rejectUnauthorized: false },
+export const connection = postgres(DATABASE_URL, {
+  ssl: "require",
   max: isServerless ? 1 : 10,
-  idleTimeoutMillis: isServerless ? 5000 : 30000,
-  connectionTimeoutMillis: 8000,
+  idle_timeout: isServerless ? 5 : 30,
+  connect_timeout: 8,
+  prepare: false, // Required for pgBouncer transaction mode
 });
 
-// Avoid process crashes on transient idle-client disconnects (e.g. ECONNRESET from pooler/network).
-pool.on("error", (error) => {
-  console.error("[DB] Pool idle client error:", error);
-});
-
-export const db = drizzle(pool, { schema });
+export const db = drizzle(connection, { schema });

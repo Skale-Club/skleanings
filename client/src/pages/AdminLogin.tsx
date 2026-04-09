@@ -9,6 +9,61 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Lock, Mail, ArrowLeft } from 'lucide-react';
 
+type AuthMeResponse = {
+  role: 'admin' | 'user' | 'staff';
+};
+
+const AUTH_ME_RETRY_DELAYS_MS = [0, 400, 1000];
+
+function wait(ms: number) {
+  return new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function fetchRoleForSession(accessToken: string) {
+  let shouldClearLocalSession = false;
+
+  for (const delay of AUTH_ME_RETRY_DELAYS_MS) {
+    if (delay > 0) {
+      await wait(delay);
+    }
+
+    const meRes = await fetch('/api/auth/me', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      signal: AbortSignal.timeout(8000),
+    });
+
+    if (meRes.ok) {
+      return meRes.json() as Promise<AuthMeResponse>;
+    }
+
+    if (meRes.status === 401 || meRes.status === 403) {
+      shouldClearLocalSession = true;
+      continue;
+    }
+
+    shouldClearLocalSession = false;
+  }
+
+  if (shouldClearLocalSession) {
+    const {
+      data: { session: freshSession },
+    } = await supabase.auth.getSession();
+
+    const hasSameToken =
+      !freshSession?.access_token || freshSession.access_token === accessToken;
+
+    if (hasSameToken) {
+      await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+    }
+
+    throw new Error('Session validation failed. Please try again.');
+  }
+
+  throw new Error('Unable to validate the session right now. Please try again.');
+}
+
 export default function AdminLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -22,29 +77,44 @@ export default function AdminLogin() {
   useEffect(() => {
     if (!authLoading && role === 'staff') {
       setLocation('/staff/settings');
-    } else if (!authLoading && role) {
+    } else if (!authLoading && isAdmin) {
       setLocation('/admin');
+    } else if (!authLoading && role === 'user') {
+      setLocation('/');
     }
-  }, [role, authLoading, setLocation]);
+  }, [role, isAdmin, authLoading, setLocation]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
 
+      const accessToken = data.session?.access_token;
+      if (!accessToken) {
+        throw new Error('Session was not created. Please try again.');
+      }
+
+      const me = await fetchRoleForSession(accessToken);
+
       toast({
         title: 'Login successful',
         description: 'Welcome to the admin dashboard',
       });
 
-      setLocation('/admin');
+      if (me.role === 'staff') {
+        setLocation('/staff/settings');
+      } else if (me.role === 'admin') {
+        setLocation('/admin');
+      } else {
+        setLocation('/');
+      }
     } catch (error: any) {
       toast({
         title: 'Login failed',
@@ -57,12 +127,12 @@ export default function AdminLogin() {
   };
 
   const handleGoogleLogin = async () => {
-    const siteUrl = import.meta.env.VITE_SITE_URL || 'https://skleanings.com';
+    const siteUrl = window.location.origin || import.meta.env.VITE_SITE_URL || 'https://skleanings.com';
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${siteUrl}/admin`,
+          redirectTo: `${siteUrl}/admin/login`,
         },
       });
 

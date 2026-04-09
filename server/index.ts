@@ -8,6 +8,7 @@ import * as dotenv from "dotenv";
 import session from "express-session";
 import MemoryStore from "memorystore";
 import { storage } from "./storage";
+import { assertRuntimeEnv } from "./lib/runtime-env";
 
 if (process.env.NODE_ENV === "production") {
   process.noDeprecation = true;
@@ -17,6 +18,7 @@ if (process.env.NODE_ENV === "production") {
 const env = process.env.NODE_ENV || 'development';
 dotenv.config({ path: `.env.${env}`, override: true });
 dotenv.config({ path: `.env`, override: false }); // fallback
+assertRuntimeEnv();
 
 const app = express();
 const httpServer = createServer(app);
