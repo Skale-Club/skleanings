@@ -360,7 +360,7 @@ export function CategoriesSection({ getAccessToken }: { getAccessToken: () => Pr
               </DialogClose>
               <Button
                 type="submit"
-                className="bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:text-white dark:hover:bg-blue-700 border-0"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 border-0"
                 disabled={
                   !subName ||
                   createSubcategory.isPending ||
@@ -549,7 +549,7 @@ function CategoryForm({ category, onSubmit, isLoading, getAccessToken }: {
         <DialogClose asChild>
           <Button variant="outline" type="button" className="border-0">Cancel</Button>
         </DialogClose>
-        <Button type="submit" disabled={isLoading} data-testid="button-save-category" className="bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:text-white dark:hover:bg-blue-700 border-0">
+        <Button type="submit" disabled={isLoading} data-testid="button-save-category" className="bg-primary text-primary-foreground hover:bg-primary/90 border-0">
           {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
           {category ? 'Update' : 'Create'}
         </Button>
@@ -859,7 +859,7 @@ function CategoryReorderRow({
         )}
         <div className="flex-1 min-w-0 sm:hidden">
           <h3 className="font-semibold truncate">{category.name}</h3>
-          <Badge variant="secondary" className="mt-1 bg-[#FFFF01] text-black font-bold dark:bg-[#FFFF01] dark:text-black">
+          <Badge variant="secondary" className="mt-1 bg-secondary text-secondary-foreground font-bold">
             {serviceCount} services
           </Badge>
           <Badge variant="outline" className="mt-1 border-0 bg-slate-800 text-white dark:bg-slate-700 dark:text-slate-200">
@@ -917,7 +917,7 @@ function CategoryReorderRow({
           <h3 className="font-semibold text-lg truncate">{category.name}</h3>
           <p className="text-sm text-muted-foreground truncate">{category.description}</p>
           <div className="flex items-center gap-2 mt-2 flex-wrap">
-            <Badge variant="secondary" className="bg-[#FFFF01] text-black font-bold dark:bg-[#FFFF01] dark:text-black">
+            <Badge variant="secondary" className="bg-secondary text-secondary-foreground font-bold">
               {serviceCount} services
             </Badge>
             <Badge variant="outline" className="border-0 bg-slate-800 text-white dark:bg-slate-700 dark:text-slate-200">

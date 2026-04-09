@@ -5,6 +5,8 @@ import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
 import { trackPurchase } from "@/lib/analytics";
+import { useCompanySettings } from "@/context/CompanySettingsContext";
+import { DEFAULT_HOMEPAGE_CONTENT } from "@/lib/homepageDefaults";
 
 export default function Confirmation() {
   const { items, totalPrice, clearCart } = useCart();
@@ -12,6 +14,9 @@ export default function Confirmation() {
   const { data: companySettings } = useQuery<CompanySettings>({
     queryKey: ['/api/company-settings'],
   });
+  const { settings } = useCompanySettings();
+  const hc = (settings as any)?.homepageContent;
+  const confirmation = { ...DEFAULT_HOMEPAGE_CONTENT.confirmationSection, ...(hc?.confirmationSection || {}) };
 
   const searchParams = new URLSearchParams(window.location.search);
   const sessionId = searchParams.get("session_id");
@@ -91,7 +96,7 @@ export default function Confirmation() {
           </div>
           <h1 className="text-3xl font-bold text-slate-900 mb-4">Booking Confirmed!</h1>
           <p className="text-slate-600 mb-8 leading-relaxed">
-            Thank you for choosing {companySettings?.companyName || "Skleanings"}. Your payment was successful and your booking is confirmed. We'll see you at the scheduled time.
+            Thank you for choosing {companySettings?.companyName}. {confirmation.paidMessage}
           </p>
           <div className="flex flex-col gap-4">
             <Link href="/">
@@ -120,7 +125,7 @@ export default function Confirmation() {
 
         <h1 className="text-3xl font-bold text-slate-900 mb-4">Booking Confirmed!</h1>
         <p className="text-slate-600 mb-8 leading-relaxed">
-          Thank you for choosing {companySettings?.companyName || "Skleanings"}. We've sent a confirmation email with all the details. Our team will arrive at the scheduled time.
+          Thank you for choosing {companySettings?.companyName}. {confirmation.sitePaymentMessage}
         </p>
 
         <div className="flex flex-col gap-4">

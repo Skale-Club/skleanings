@@ -56,13 +56,13 @@ export default function Contact() {
           </div>
 
           <div className="space-y-8">
-            <div className="p-8 bg-blue-50 rounded-3xl border border-blue-100">
+            <div className="p-8 bg-primary/5 rounded-3xl border border-primary/10">
               <h3 className="text-xl font-bold mb-6">Get in Touch</h3>
               <div className="space-y-6">
                 {settings?.companyPhone && (
                   <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                      <Phone className="w-5 h-5 text-blue-600" />
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <Phone className="w-5 h-5 text-primary" />
                     </div>
                     <div>
                       <p className="font-medium">Call Us</p>
@@ -74,8 +74,8 @@ export default function Contact() {
                 )}
                 {settings?.companyEmail && (
                   <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                      <Mail className="w-5 h-5 text-blue-600" />
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <Mail className="w-5 h-5 text-primary" />
                     </div>
                     <div>
                       <p className="font-medium">Email Us</p>
@@ -87,8 +87,8 @@ export default function Contact() {
                 )}
                 {settings?.companyAddress && (
                   <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                      <MapPin className="w-5 h-5 text-blue-600" />
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <MapPin className="w-5 h-5 text-primary" />
                     </div>
                     <div>
                       <p className="font-medium">Visit Us</p>

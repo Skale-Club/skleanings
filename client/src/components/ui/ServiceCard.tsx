@@ -377,7 +377,7 @@ export function ServiceCard({ service }: ServiceCardProps) {
                   <Button
                     onClick={handleAddToCart}
                     disabled={!canAddToCart()}
-                    className="flex-grow bg-blue-600 hover:bg-blue-700"
+                    className="flex-grow bg-primary hover:bg-primary/90"
                   >
                     Add ${calculatedPrice.toFixed(2)}
                   </Button>
@@ -386,7 +386,7 @@ export function ServiceCard({ service }: ServiceCardProps) {
             ) : (
               <button
                 onClick={() => addItemSimple(service)}
-                className="flex-grow py-3 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 bg-blue-600 text-white hover:bg-blue-700"
+                className="flex-grow py-3 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 Add to Booking
               </button>
@@ -497,7 +497,7 @@ export function ServiceCard({ service }: ServiceCardProps) {
                       ) : (
                         <button
                           onClick={() => addItemSimple(addon)}
-                          className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+                          className="px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-lg hover:bg-primary/90 transition-colors"
                           data-testid={`button-add-addon-${addon.id}`}
                         >
                           Add to Booking

@@ -8,10 +8,16 @@ import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
 import type { BlogPost } from '@shared/schema';
 import { fetchJsonOrThrow } from '@/lib/queryClient';
+import { useCompanySettings } from "@/context/CompanySettingsContext";
+import { DEFAULT_HOMEPAGE_CONTENT } from "@/lib/homepageDefaults";
 
 const POSTS_PER_PAGE = 9;
 
 export default function Blog() {
+  const { settings } = useCompanySettings();
+  const hc = (settings as any)?.homepageContent;
+  const blogPage = { ...DEFAULT_HOMEPAGE_CONTENT.blogPageSection, ...(hc?.blogPageSection || {}) };
+
   const [searchTerm, setSearchTerm] = useState('');
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
@@ -70,10 +76,10 @@ export default function Blog() {
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2" data-testid="text-blog-heading">
-                Our Blog
+                {blogPage.heading}
               </h1>
               <p className="text-base md:text-lg text-muted-foreground max-w-2xl">
-                Tips, guides, and insights about professional cleaning services
+                {blogPage.subtitle}
               </p>
             </div>
             <div className="w-full max-w-md md:max-w-sm">

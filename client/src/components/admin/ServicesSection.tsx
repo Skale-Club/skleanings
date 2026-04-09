@@ -831,7 +831,7 @@ function CategoryReorderRow({
         )}
         <div className="flex-1 min-w-0 sm:hidden">
           <h3 className="font-semibold truncate">{category.name}</h3>
-          <Badge variant="secondary" className="mt-1 bg-[#FFFF01] text-black font-bold dark:bg-[#FFFF01] dark:text-black">
+          <Badge variant="secondary" className="mt-1 bg-secondary text-secondary-foreground font-bold">
             {serviceCount} services
           </Badge>
           <Badge variant="outline" className="mt-1 border-0 bg-slate-800 text-white dark:bg-slate-700 dark:text-slate-200">
@@ -889,7 +889,7 @@ function CategoryReorderRow({
           <h3 className="font-semibold text-lg truncate">{category.name}</h3>
           <p className="text-sm text-muted-foreground truncate">{category.description}</p>
           <div className="flex items-center gap-2 mt-2 flex-wrap">
-            <Badge variant="secondary" className="bg-[#FFFF01] text-black font-bold dark:bg-[#FFFF01] dark:text-black">
+            <Badge variant="secondary" className="bg-secondary text-secondary-foreground font-bold">
               {serviceCount} services
             </Badge>
             <Badge variant="outline" className="border-0 bg-slate-800 text-white dark:bg-slate-700 dark:text-slate-200">
@@ -1585,11 +1585,11 @@ function ServiceForm({ service, categories, subcategories, allServices, addonRel
                     const s = allServices.find(as => as.id === id);
                     if (!s) return null;
                     return (
-                      <Badge key={id} variant="secondary" className="text-[10px] py-0 h-5 border-0 bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                      <Badge key={id} variant="secondary" className="text-[10px] py-0 h-5 border-0 bg-primary/10 text-primary dark:bg-primary/20">
                         {s.name}
                         <button
                           onClick={(e) => { e.preventDefault(); handleAddonToggle(id); }}
-                          className="ml-1 hover:text-blue-900 dark:hover:text-blue-100"
+                          className="ml-1 hover:text-primary/70"
                         >
                           x
                         </button>

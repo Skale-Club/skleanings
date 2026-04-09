@@ -328,7 +328,7 @@ export default function Home() {
   return (
     <div className="pb-0">
       {/* Hero Section */}
-      <section className="relative flex items-center lg:items-center pt-6 lg:pt-4 pb-0 overflow-hidden bg-[#1C53A3] min-h-[65vh] sm:min-h-[50vh] lg:min-h-[500px] xl:min-h-[550px]">
+      <section className="relative flex items-center lg:items-center pt-6 lg:pt-4 pb-0 overflow-hidden bg-primary min-h-[65vh] sm:min-h-[50vh] lg:min-h-[500px] xl:min-h-[550px]">
         <div className="container-custom mx-auto relative z-10 w-full">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-8 items-center lg:items-center lg:-translate-y-5">
             <div className="text-white pt-4 pb-2 lg:pt-12 lg:pb-12 relative z-20">
@@ -355,7 +355,7 @@ export default function Home() {
                 {companySettings?.ctaText && (
                   <Link href="/services" className="w-full sm:w-auto shrink-0">
                     <button
-                      className="w-full px-6 sm:px-8 py-3 sm:py-4 bg-[#FFFF01] hover:bg-[#e6e600] hover:scale-105 text-black font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
+                      className="w-full px-6 sm:px-8 py-3 sm:py-4 bg-secondary hover:bg-secondary/90 hover:scale-105 text-secondary-foreground font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
                       onClick={() => trackCTAClick('hero', companySettings.ctaText || '')}
                       data-testid="button-hero-cta"
                     >
@@ -389,16 +389,16 @@ export default function Home() {
         </div>
 
         {/* Modern Creative Blue Gradient Background */}
-        <div className="absolute inset-0 bg-[#1C53A3]">
+        <div className="absolute inset-0 bg-primary">
           <div className="absolute inset-0 opacity-60" style={{
             background: `
               radial-gradient(circle at 20% 30%, #4facfe 0%, transparent 50%),
               radial-gradient(circle at 80% 20%, #a8d8ff 0%, transparent 50%),
-              radial-gradient(circle at 50% 80%, #1C53A3 0%, transparent 50%),
-              linear-gradient(135deg, #1C53A3 0%, #74abe2 100%)
+              radial-gradient(circle at 50% 80%, hsl(var(--primary)) 0%, transparent 50%),
+              linear-gradient(135deg, hsl(var(--primary)) 0%, #74abe2 100%)
             `
           }}></div>
-          <div className="absolute inset-0 bg-gradient-to-r from-[#1C53A3] via-[#1C53A3]/20 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/20 to-transparent"></div>
         </div>
       </section>
       {/* Trust Badges */}
@@ -411,7 +411,7 @@ export default function Home() {
               const Icon = badgeIconMap[iconKey] || badgeIconMap.star || Star;
               return (
                 <div key={i} className="p-8 flex items-center gap-6 hover:bg-gray-50 transition-colors">
-                  <div className="w-12 h-12 bg-blue-50 text-primary rounded-full flex items-center justify-center shrink-0">
+                  <div className="w-12 h-12 bg-primary/10 text-primary rounded-full flex items-center justify-center shrink-0">
                     <Icon className="w-6 h-6" />
                   </div>
                   <div>
@@ -470,7 +470,7 @@ export default function Home() {
                       {category.description}
                     </p>
                     <button
-                      className="w-full py-2 bg-[#FFFF01] hover:bg-[#e6e600] text-black font-bold rounded-lg opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all"
+                      className="w-full py-2 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold rounded-lg opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all"
                       onClick={() => trackCTAClick('category_card', category.name)}
                     >
                       {homepageContent.categoriesSection?.ctaText || DEFAULT_HOMEPAGE_CONTENT.categoriesSection?.ctaText}

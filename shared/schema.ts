@@ -16,6 +16,7 @@ export const users = pgTable("users", {
   lastName: text("last_name"),
   profileImageUrl: text("profile_image_url"),
   isAdmin: boolean("is_admin").default(false),
+  role: text("role").notNull().default("viewer"), // 'admin' | 'staff' | 'viewer'
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -97,6 +98,24 @@ export const serviceFrequencies = pgTable("service_frequencies", {
   order: integer("order").default(0),
 });
 
+// Customer contacts — deduplicated across bookings by email (primary) or phone (fallback)
+export const contacts = pgTable("contacts", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").unique(),
+  phone: text("phone"),
+  address: text("address"),
+  ghlContactId: text("ghl_contact_id"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertContactSchema = createInsertSchema(contacts).omit({ id: true, createdAt: true, updatedAt: true });
+export type Contact = typeof contacts.$inferSelect;
+export type InsertContact = z.infer<typeof insertContactSchema>;
+export type UserRole = 'admin' | 'staff' | 'viewer';
+
 export const bookings = pgTable("bookings", {
   id: serial("id").primaryKey(),
   customerName: text("customer_name").notNull(),
@@ -121,6 +140,8 @@ export const bookings = pgTable("bookings", {
   // Stripe payment fields (nullable — only set for online payments)
   stripeSessionId: text("stripe_session_id"),
   stripePaymentStatus: text("stripe_payment_status"), // paid, unpaid, no_payment_required
+  // Contact link (nullable — backfilled from existing bookings via migration)
+  contactId: integer("contact_id").references(() => contacts.id, { onDelete: "set null" }),
 });
 
 // GoHighLevel Integration Settings
@@ -456,6 +477,10 @@ export interface BusinessHours {
 }
 
 export interface HomepageContent {
+  brandColors?: {
+    primary?: string;   // hex e.g. '#1C53A3'
+    secondary?: string; // hex e.g. '#FFFF01'
+  };
   heroBadgeImageUrl?: string;
   heroBadgeAlt?: string;
   trustBadges?: { title: string; description: string; icon?: string }[];
@@ -463,6 +488,44 @@ export interface HomepageContent {
   reviewsSection?: { title?: string; subtitle?: string; embedUrl?: string };
   blogSection?: { title?: string; subtitle?: string; viewAllText?: string; readMoreText?: string };
   areasServedSection?: { label?: string; heading?: string; description?: string; ctaText?: string };
+  footerSection?: {
+    tagline?: string;
+    companyLinks?: { label: string; href: string }[];
+    resourceLinks?: { label: string; href: string }[];
+  };
+  aboutSection?: {
+    heading?: string;
+    intro?: string;
+    features?: { title: string; desc: string }[];
+    missionTitle?: string;
+    missionText?: string;
+  };
+  teamSection?: {
+    heading?: string;
+    intro?: string;
+    features?: { title: string; desc: string }[];
+    whyChooseTitle?: string;
+    whyChooseText?: string;
+    stats?: { value: string; label: string }[];
+  };
+  serviceAreasPageSection?: {
+    heading?: string;
+    intro?: string;
+    notFoundTitle?: string;
+    notFoundText?: string;
+  };
+  faqPageSection?: {
+    heading?: string;
+    subtitle?: string;
+  };
+  blogPageSection?: {
+    heading?: string;
+    subtitle?: string;
+  };
+  confirmationSection?: {
+    paidMessage?: string;
+    sitePaymentMessage?: string;
+  };
 }
 
 export const DEFAULT_BUSINESS_HOURS: BusinessHours = {
@@ -729,6 +792,7 @@ export const staffMembers = pgTable("staff_members", {
   order: integer("order").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
 });
 
 // Junction: which services each staff member can perform
@@ -766,6 +830,8 @@ export const insertStaffMemberSchema = createInsertSchema(staffMembers).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  userId: z.string().optional(),
 });
 
 export const insertStaffServiceAbilitySchema = createInsertSchema(staffServiceAbilities).omit({
