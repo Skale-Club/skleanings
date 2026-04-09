@@ -24,13 +24,13 @@ async function createOAuth2Client(): Promise<OAuth2Client> {
   return new OAuth2Client(creds.apiKey, creds.locationId, redirectUri);
 }
 
-export async function getAuthUrl(staffId: number): Promise<string> {
+export async function getAuthUrl(staffId: number, redirectTo: "staff" | "admin" = "admin"): Promise<string> {
   const client = await createOAuth2Client();
   return client.generateAuthUrl({
     access_type: "offline",
     prompt: "consent", // force refresh_token on every connect
     scope: ["https://www.googleapis.com/auth/calendar.readonly"],
-    state: String(staffId),
+    state: `${staffId}:${redirectTo}`,
   });
 }
 

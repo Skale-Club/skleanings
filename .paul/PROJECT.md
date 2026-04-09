@@ -51,7 +51,39 @@ Customers can book cleaning services with a specific professional, with a unifie
 - [x] Staff-aware booking — staffMemberId stored on booking, shown in admin dashboard — Phase 5
 
 ### Active (In Progress)
-None — v0.5 complete.
+None.
+
+### Validated (v0.7 complete)
+- [x] OAuth state encodes `staffId:redirectTo` — callback routes to correct page per initiator role — v0.7
+- [x] Staff lands on /staff/settings after Google OAuth — v0.7
+- [x] Admin lands on /admin/staff after Google OAuth — v0.7 (unchanged behavior preserved)
+- [x] CalendarTab uses `useAdminAuth` + `authenticatedRequest` for all API calls — v0.7
+- [x] `requireAuth` accepts token from query param as fallback for browser-navigation OAuth — v0.7
+
+### Validated (v0.6 Phase 3 complete)
+- [x] GET /api/staff/me + PATCH /api/staff/me — staff edits own profile — v0.6 Phase 3
+- [x] CalendarTab extracted as shared component — v0.6 Phase 3
+- [x] /staff/settings full page: profile form + avatar upload + CalendarTab + logout — v0.6 Phase 3
+- [x] Calendar endpoints (status/connect/disconnect) use requireAuth — v0.6 Phase 3
+
+### Validated (v0.6 Phase 2 complete)
+- [x] Flat users list replacing tabbed UnifiedUsersSection — v0.6 Phase 2
+- [x] Role badges (admin/user/staff) from user.role — v0.6 Phase 2
+- [x] UserDialog role Select (Admin option gated to admins) — v0.6 Phase 2
+- [x] user-routes PATCH/DELETE guards use role === 'admin' — v0.6 Phase 2
+- [x] POST /api/users role=staff auto-creates staffMembers record — v0.6 Phase 2
+- [x] PATCH role→staff idempotent staffMembers bridge — v0.6 Phase 2
+- [x] DELETE staff user cleans up linked staffMembers first — v0.6 Phase 2
+
+### Validated (v0.6 Phase 1 complete)
+- [x] role enum column on users table (admin/user/staff, default admin) — v0.6 Phase 1
+- [x] phone column on users table — v0.6 Phase 1
+- [x] userId FK on staffMembers table — v0.6 Phase 1
+- [x] requireAdmin / requireUser / requireStaff middleware — v0.6 Phase 1
+- [x] AuthContext exposes role — v0.6 Phase 1
+- [x] Login redirects by role (staff → /staff/settings, admin/user → /admin) — v0.6 Phase 1
+- [x] Admin page blocks staff with redirect guard — v0.6 Phase 1
+- [x] /staff/* route group + StaffSettings placeholder — v0.6 Phase 1
 
 ### Validated (v0.5 complete)
 - [x] needsReconnect + lastDisconnectedAt columns on staffGoogleCalendar — v0.5 Phase 1
@@ -106,6 +138,11 @@ None — v0.5 complete.
 | Hide staff UI when count = 1 | Single-operator businesses shouldn't see irrelevant UI | 2026-04-02 | Active |
 | Conditional DB write on needsReconnect | Only update when currently false — prevents duplicate SMS on repeated token failures | 2026-04-02 | Active |
 | Notification path fully try/catch wrapped | Token refresh is called from availability engine — failure must never break booking flow | 2026-04-02 | Active |
+| Post-login always redirects to /admin; Admin.tsx guard handles staff redirect | Avoids race condition — role is fetched async after auth; redirect at login would fire before role is known | 2026-04-04 | Active |
+| /staff route group isolated before /admin in Router() | Clean separation; same pattern as isAdminRoute; /staff/* paths never fall through to admin routes | 2026-04-04 | Active |
+| linkStaffMemberToUser dedicated storage method | userId omitted from InsertStaffMember type by design; updateStaffMember can't accept it | 2026-04-04 | Active |
+| Default role = 'staff' for new users in UserDialog | Least privilege — admin must explicitly elevate to admin/user | 2026-04-04 | Active |
+| requireAuth on calendar endpoints (not requireAdmin) | Staff need to manage their own calendar from /staff/settings without admin privilege | 2026-04-04 | Active |
 
 ## Success Metrics
 
@@ -140,4 +177,4 @@ None — v0.5 complete.
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-04-02 after Phase 05-02 — v0.5 Google Calendar Reconnect Notifications complete*
+*Last updated: 2026-04-04 after Phase 06-05 — v0.6 Unified Users & Roles milestone complete*

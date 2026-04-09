@@ -2,14 +2,14 @@
   "name": "skleanings",
   "version": "0.6.0",
   "milestone": {
-    "name": "v0.6 Appointments Calendar + Contacts",
+    "name": "v0.6 Unified Users & Roles",
     "version": "0.6.0",
     "status": "in_progress"
   },
   "phase": {
-    "number": 1,
-    "name": "DB Foundation",
-    "status": "in_progress"
+    "number": 3,
+    "name": "Staff Personal Settings Page",
+    "status": "not_started"
   },
   "loop": {
     "plan": null,
@@ -17,7 +17,7 @@
   },
   "timestamps": {
     "created_at": "2026-04-02T00:00:00.000Z",
-    "updated_at": "2026-04-09T00:00:00.000Z"
+    "updated_at": "2026-04-04T00:00:00.000Z"
   },
   "satellite": {
     "groom": true

@@ -310,5 +310,99 @@ When a staff member's Google Calendar token expires or becomes invalid, the syst
 - [x] 05-02: "Take Action" banner component + admin wiring ✅ 2026-04-02
 
 ---
+
+## v0.6 — Unified Users & Roles ✅ Complete — 2026-04-04
+
+Single "Users" page with three roles: Admin (owner — full access), User (receptionist — manage staff, view calendars/bookings), Staff (professional — personal settings only). Bridge approach: `users` table gets `role` column; `staffMembers` gets `userId` FK. Existing availability/calendar/booking code stays untouched.
+
+### Phase 1: Schema + Auth + Role Middleware ✅ Complete — 2026-04-04
+
+**Goal:** `users` table has `role` enum column. Auth returns role. Three middleware levels: `requireAdmin`, `requireUser` (admin+user), `requireStaff` (any authenticated). Staff login creates a user record automatically when admin creates staff.
+**Depends on:** Nothing
+
+**Scope:**
+- Add `role` column to `users` table (enum: admin/user/staff, default 'admin' for backward compat)
+- Add `phone` column to `users` table
+- Add `userId` FK to `staffMembers` table
+- Update auth middleware: `requireAdmin` (role=admin), `requireUser` (role=admin|user), `requireStaff` (any auth'd user)
+- Update AuthContext to expose `role`
+- Login redirects: admin/user → /admin, staff → /staff/settings
+- Supabase migration
+
+**Plans:**
+- [x] 06-01: Schema migration + auth middleware + AuthContext role ✅ 2026-04-04
+- [x] 06-02: Login redirect by role + staff route guard ✅ 2026-04-04
+
+### Phase 2: Unified Users Page + Create User Flow ✅ Complete — 2026-04-04
+
+**Goal:** Single flat users list showing all users (admin + user + staff) with role badges. "Add User" dialog with role picker and avatar upload. Creating staff-role user also creates linked staffMembers record.
+**Depends on:** Phase 1
+
+**Scope:**
+- Rewrite UnifiedUsersSection → single flat table (no tabs)
+- Add User dialog: role picker (Admin visible only to admins, User+Staff visible to users), name, email, password, avatar upload
+- Edit User dialog: same fields, role change rules
+- When creating role=staff: auto-create staffMembers record with userId FK
+- Avatar upload using existing Supabase Storage flow (ObjectUploader)
+
+**Plans:**
+- [x] 06-03: Unified users list + Add/Edit user dialog with role picker ✅ 2026-04-04
+- [x] 06-04: Staff creation bridge (auto-create staffMembers on role=staff) ✅ 2026-04-04
+
+### Phase 3: Staff Personal Settings Page ✅ Complete — 2026-04-04
+
+**Goal:** Staff logs in and lands on a personal settings page where they can edit their profile, bio, avatar, and Google Calendar connection. No access to admin pages.
+**Depends on:** Phase 2
+
+**Scope:**
+- New route: /staff/settings
+- StaffSettingsPage component: edit own profile (name, phone, bio, avatar) + CalendarTab
+- Route guard: staff role only sees /staff/* routes
+- Staff navbar: minimal (just settings + logout)
+
+**Plans:**
+- [x] 06-05: Staff settings page + route protection ✅ 2026-04-04
+
+---
+
+## v0.7 — Google Calendar Polish ✅ Complete — 2026-04-04
+
+White-label Google Calendar OAuth: admin configures credentials once, staff just click "Connect Google Calendar" from their personal settings page and land back there after OAuth. Fixes broken callback redirect and unauthenticated API calls in CalendarTab.
+
+### Phase 1: OAuth Flow + Auth Fixes ✅ Complete — 2026-04-04
+
+**Goal:** Staff connects Google Calendar from /staff/settings and returns there after OAuth. All CalendarTab API calls use authenticated requests. Admin connect flow unchanged.
+**Depends on:** v0.6 (staff settings page + requireAuth on calendar endpoints)
+
+**Scope:**
+- `getAuthUrl` encodes `redirectTo` in OAuth state
+- Connect route reads user role, passes `redirectTo` to `getAuthUrl`
+- Callback parses state to route to `/staff/settings` or `/admin/staff`
+- CalendarTab uses `useAdminAuth` + `authenticatedRequest` for all API calls
+- Connect button passes token as query param (browser navigation workaround)
+- `requireAuth` accepts token from query param as fallback
+
+**Plans:**
+- [x] 07-01: OAuth callback redirect + CalendarTab auth ✅ 2026-04-04
+
+---
+
+## v0.8 — Production DB Stability ✅ Complete — 2026-04-04
+
+Vercel serverless functions are timing out (30s) on all DB-touching endpoints because the code uses the non-pooled Neon connection in production instead of the pgBouncer pooler. Fixing the connection priority + a few defensive hardening changes will restore stable production operation.
+
+### Phase 1: Database Connection Fix ← **Current**
+
+**Goal:** All API endpoints respond within normal latency (< 1s) in production; no more 504 timeouts on DB queries.
+**Depends on:** Nothing
+
+**Scope:**
+- `server/db.ts` — swap serverless connection priority to use `POSTGRES_URL` (pgBouncer pooler) first, reduce `connectionTimeoutMillis` from 30s to 8s
+- `client/src/components/admin/CalendarReconnectBanner.tsx` — add `refetchOnWindowFocus: false` to prevent repeated refetches of the most frequently timed-out endpoint
+
+**Plans:**
+- [x] 08-01: Fix DB connection pooling + harden CalendarReconnectBanner query ✅ 2026-04-04
+
+---
 *Roadmap created: 2026-04-02*
-*Last updated: 2026-04-02 — v0.5 milestone complete*
+*Last updated: 2026-04-04 — v0.8 Production DB Stability added*

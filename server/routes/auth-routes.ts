@@ -1,8 +1,10 @@
 import { Router } from "express";
 import { storage } from "../storage";
-import { requireAdmin } from "../lib/auth";
+import { requireAdmin, getAuthMe } from "../lib/auth";
 
 const router = Router();
+
+router.get("/auth/me", getAuthMe);
 
 router.post("/register", async (req, res) => {
     // ... validation ...

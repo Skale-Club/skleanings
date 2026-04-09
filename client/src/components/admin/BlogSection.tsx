@@ -1599,13 +1599,13 @@ export function BlogSection({ resetSignal, getAccessToken }: { resetSignal: numb
                           <img
                             src={post.featureImageUrl}
                             alt={post.title}
-                            className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-md cursor-pointer hover:opacity-80 transition-opacity shrink-0 bg-muted"
+                            className="w-[85px] sm:w-[107px] aspect-[4/3] object-cover rounded-md cursor-pointer hover:opacity-80 transition-opacity shrink-0 bg-muted"
                             onClick={() => handleEdit(post)}
                             data-testid={`img-blog-${post.id}`}
                           />
                         ) : (
                           <div
-                            className="w-16 h-16 sm:w-20 sm:h-20 bg-muted rounded-md flex items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors shrink-0"
+                            className="w-[85px] sm:w-[107px] aspect-[4/3] bg-muted rounded-md flex items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors shrink-0"
                             onClick={() => handleEdit(post)}
                           >
                             <FileText className="w-6 h-6 sm:w-8 sm:h-8 text-muted-foreground/50" />
