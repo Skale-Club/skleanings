@@ -24,9 +24,7 @@ jobs:
 
           RESPONSE_FILE="$(mktemp)"
           STATUS=$(curl -sS -o "${RESPONSE_FILE}" -w "%{http_code}" \
-            -H "apikey: ${SUPABASE_ANON_KEY}" \
-            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
-            "${SUPABASE_URL}/rest/v1/categories?limit=1")
+            "${SUPABASE_URL}/auth/v1/health")
 
           echo "Response status: ${STATUS}"
 
