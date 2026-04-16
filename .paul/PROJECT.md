@@ -51,7 +51,10 @@ Customers can book cleaning services with a specific professional, with a unifie
 - [x] Staff-aware booking — staffMemberId stored on booking, shown in admin dashboard — Phase 5
 
 ### Active (In Progress)
-- [ ] Admin UI: Notifications tab in conversation modal + global NotificationLogsSection — Phase 15
+*(none — v1.1 milestone complete)*
+
+### Validated (v1.1 Phase 15 complete)
+- [x] Admin Leads list shows inline channel icons (SMS/Telegram/GHL) per conversation — one query, client-side map, zero N+1 — Phase 15
 
 ### Validated (v1.1 Phase 14 complete)
 - [x] `server/lib/notification-logger.ts` — `logNotification()` helper (never throws, truncates preview to 5000 chars) — Phase 14
@@ -184,6 +187,8 @@ Customers can book cleaning services with a specific professional, with a unifie
 | `text` for channel/trigger/status in notificationLogs (not pgEnum) | Matches every other enum-like field in codebase; no migration needed for new trigger types | 2026-04-15 | Active |
 | `onDelete: set null` on notificationLogs FK columns | Log row survives deletion of parent conversation or booking — preserves audit trail | 2026-04-15 | Active |
 | One notificationLogs row per recipient per send | Enables per-number/per-chatId filtering; Telegram sends to multiple chatIds = multiple rows | 2026-04-15 | Active |
+| Inline icons per lead row (not tabs/global section) | User requirement was at-a-glance visibility on lead list, not a separate log view | 2026-04-15 | Active |
+| Fetch all logs once (limit=500) + derive map client-side | Avoids N+1 per-conversation fetches; volume is low for a cleaning company | 2026-04-15 | Active |
 
 ## Success Metrics
 
@@ -218,4 +223,4 @@ Customers can book cleaning services with a specific professional, with a unifie
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-04-15 after Phase 13 — v1.1 notification_logs schema + storage layer*
+*Last updated: 2026-04-15 after Phase 15 — v1.1 milestone complete*

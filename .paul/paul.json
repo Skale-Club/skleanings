@@ -4,12 +4,12 @@
   "milestone": {
     "name": "v1.1 Notification Log for Leads and Bookings",
     "version": "1.1.0",
-    "status": "in_progress"
+    "status": "complete"
   },
   "phase": {
-    "number": 14,
-    "name": "Backend — Instrumentation + API",
-    "status": "not_started"
+    "number": 15,
+    "name": "Admin UI — Lead Notification Indicators",
+    "status": "complete"
   },
   "loop": {
     "plan": null,

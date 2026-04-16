@@ -7,8 +7,8 @@ Skleanings is a booking platform for a cleaning company. The current milestone (
 ## Current Milestone
 
 **v1.1 — Notification Log for Leads and Bookings** (v1.1.0)
-Status: In Progress
-Phases: 1 of 3 complete
+Status: ✅ Complete — 2026-04-15
+Phases: 3 of 3 complete
 
 ## Phases
 
@@ -16,7 +16,7 @@ Phases: 1 of 3 complete
 |-------|------|-------|--------|-----------|
 | 13 | Schema + Storage Layer | 1/1 | ✅ Complete | 2026-04-15 |
 | 14 | Backend — Instrumentation + API | 2/2 | ✅ Complete | 2026-04-15 |
-| 15 | Admin UI — Conversation Tab + Global Log | TBD | Not started | - |
+| 15 | Admin UI — Lead Notification Indicators | 1/1 | ✅ Complete | 2026-04-15 |
 
 ## Phase Details
 
@@ -53,22 +53,18 @@ Phases: 1 of 3 complete
 - [x] 14-01: Notification logger helper + Twilio + Telegram instrumentation ✅ 2026-04-15
 - [x] 14-02: GHL instrumentation + API endpoints ✅ 2026-04-15
 
-### Phase 15: Admin UI — Conversation Tab + Global Log
+### Phase 15: Admin UI — Lead Notification Indicators ✅ Complete — 2026-04-15
 
-**Goal:** Admins can see the full notification history for any conversation or booking inside its detail view, and can browse all notifications globally with filters and a preview modal.
+**Goal:** Admins can see at a glance which notification channels fired for each lead in the conversations list.
 **Depends on:** Phase 14 (API endpoints must exist)
-**Research:** Unlikely (uses existing shadcn components: Dialog, Tabs, Badge, Table)
 
-**Scope:**
-- `client/src/components/admin/ConversationsSection.tsx` (or equivalent lead detail modal): add "Notifications" tab — timeline list showing channel icon, recipient, status badge, timestamp, expand for full preview
-- New `client/src/components/admin/NotificationLogsSection.tsx`: global admin section with paginated Table, filter bar (channel, status, date range, recipient search), preview modal (renders SMS plain text; Telegram HTML; GHL JSON)
-- Add "Notification Log" to admin sidebar (after Conversations / Leads)
-- Status badges: green=sent, red=failed, gray=skipped
-- Channel icons: phone icon for SMS, paper-plane for Telegram, link icon for GHL
+**Scope (revised from original):**
+- Inline channel icons (SMS/Telegram/GHL) per lead row in ConversationList — single query, client-side map, zero N+1
+- Original scope (tabs in ChatArea + global section) was corrected by user — inline icons on lead list is the right UX
 
 **Plans:**
-- [ ] 15-01: Notifications tab in conversation/lead detail modal
-- [ ] 15-02: Global NotificationLogsSection + sidebar entry
+- [x] 15-01: Inline channel indicators on lead list rows ✅ 2026-04-15
+- ~~15-02: Global NotificationLogsSection + sidebar entry~~ — cancelled (scope correction)
 
 ---
 
@@ -479,4 +475,4 @@ Add a fourth authenticated role, `client`, for end customers. A client can sign 
 
 ---
 *Roadmap created: 2026-04-02*
-*Last updated: 2026-04-15 — v1.1 Notification Log milestone created*
+*Last updated: 2026-04-15 — v1.1 Notification Log milestone complete*
