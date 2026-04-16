@@ -6,7 +6,71 @@ Skleanings is a booking platform for a cleaning company. The current milestone (
 
 ## Current Milestone
 
-Run `/paul:discuss-milestone` or `/paul:milestone` to define v1.1.
+**v1.1 — Notification Log for Leads and Bookings** (v1.1.0)
+Status: In Progress
+Phases: 1 of 3 complete
+
+## Phases
+
+| Phase | Name | Plans | Status | Completed |
+|-------|------|-------|--------|-----------|
+| 13 | Schema + Storage Layer | 1/1 | ✅ Complete | 2026-04-15 |
+| 14 | Backend — Instrumentation + API | TBD | Not started | - |
+| 15 | Admin UI — Conversation Tab + Global Log | TBD | Not started | - |
+
+## Phase Details
+
+### Phase 13: Schema + Storage Layer
+
+**Goal:** A `notificationLogs` table exists in `shared/schema.ts` with all required columns; `IStorage` has typed methods to insert and query logs; `npm run db:push` migrates the schema cleanly.
+**Depends on:** Nothing (additive-only change)
+**Research:** Unlikely (internal schema patterns established)
+
+**Scope:**
+- New `notificationLogs` table: `id`, `conversationId` (nullable FK → conversations), `bookingId` (nullable FK → bookings), `channel` (enum: sms/telegram/ghl), `trigger` (enum: new_chat/new_booking/calendar_disconnect/client_cancel/client_reschedule), `recipient` (phone number or Telegram chat ID), `preview` (message body, truncated to 5000 chars), `status` (enum: sent/failed/skipped), `errorMessage`, `providerMessageId`, `sentAt`
+- Indexes: `conversationId`, `bookingId`, `sentAt`, `channel`, `status`
+- `IStorage` methods: `createNotificationLog(entry)`, `getNotificationLogsByConversation(conversationId)`, `getNotificationLogsByBooking(bookingId)`, `getNotificationLogs(filters)` (paginated, global)
+- Drizzle insert/select schemas and TypeScript types via `drizzle-zod`
+
+**Plans:**
+- [ ] 13-01: notificationLogs schema + storage methods
+
+### Phase 14: Backend — Instrumentation + API
+
+**Goal:** Every Twilio SMS and Telegram message send (and GHL sync) automatically writes a row to `notification_logs`; two API endpoints expose the log data with filters.
+**Depends on:** Phase 13 (table + storage methods must exist)
+**Research:** Unlikely (wrapping existing functions — no new external APIs)
+
+**Scope:**
+- `server/lib/notification-logger.ts` — `logNotification(entry)` helper: wraps `storage.createNotificationLog`, never throws (try/catch), truncates preview
+- Instrument `server/integrations/twilio.ts`: wrap `sendNewChatNotification`, `sendBookingNotification`, `sendCalendarDisconnectNotification` — log before/after, capture Twilio SID as `providerMessageId`
+- Instrument `server/integrations/telegram.ts`: wrap `sendNewChatNotification`, `sendBookingNotification` — log each chatId as a separate row
+- Instrument `server/integrations/ghl.ts`: log `getOrCreateGHLContact` calls — channel: `ghl`, providerMessageId = GHL contactId
+- `GET /api/conversations/:id/notifications` — returns notification log rows for a specific conversation (admin-gated)
+- `GET /api/admin/notification-logs` — paginated global log with filters: `channel`, `status`, `trigger`, `from`, `to`, `search` (recipient match)
+
+**Plans:**
+- [ ] 14-01: Notification logger helper + Twilio + Telegram instrumentation
+- [ ] 14-02: GHL instrumentation + API endpoints
+
+### Phase 15: Admin UI — Conversation Tab + Global Log
+
+**Goal:** Admins can see the full notification history for any conversation or booking inside its detail view, and can browse all notifications globally with filters and a preview modal.
+**Depends on:** Phase 14 (API endpoints must exist)
+**Research:** Unlikely (uses existing shadcn components: Dialog, Tabs, Badge, Table)
+
+**Scope:**
+- `client/src/components/admin/ConversationsSection.tsx` (or equivalent lead detail modal): add "Notifications" tab — timeline list showing channel icon, recipient, status badge, timestamp, expand for full preview
+- New `client/src/components/admin/NotificationLogsSection.tsx`: global admin section with paginated Table, filter bar (channel, status, date range, recipient search), preview modal (renders SMS plain text; Telegram HTML; GHL JSON)
+- Add "Notification Log" to admin sidebar (after Conversations / Leads)
+- Status badges: green=sent, red=failed, gray=skipped
+- Channel icons: phone icon for SMS, paper-plane for Telegram, link icon for GHL
+
+**Plans:**
+- [ ] 15-01: Notifications tab in conversation/lead detail modal
+- [ ] 15-02: Global NotificationLogsSection + sidebar entry
+
+---
 
 ## Completed Milestones
 
@@ -415,4 +479,4 @@ Add a fourth authenticated role, `client`, for end customers. A client can sign 
 
 ---
 *Roadmap created: 2026-04-02*
-*Last updated: 2026-04-05 — v1.0 Client Portal milestone complete*
+*Last updated: 2026-04-15 — v1.1 Notification Log milestone created*

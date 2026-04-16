@@ -800,3 +800,27 @@ export type InsertStaffMember = z.infer<typeof insertStaffMemberSchema>;
 export type InsertStaffServiceAbility = z.infer<typeof insertStaffServiceAbilitySchema>;
 export type InsertStaffAvailability = z.infer<typeof insertStaffAvailabilitySchema>;
 export type InsertStaffGoogleCalendar = z.infer<typeof insertStaffGoogleCalendarSchema>;
+
+// === NOTIFICATION LOGS ===
+
+export const notificationLogs = pgTable("notification_logs", {
+  id: serial("id").primaryKey(),
+  conversationId: uuid("conversation_id").references(() => conversations.id, { onDelete: "set null" }),
+  bookingId: integer("booking_id").references(() => bookings.id, { onDelete: "set null" }),
+  channel: text("channel").notNull(),            // 'sms' | 'telegram' | 'ghl'
+  trigger: text("trigger").notNull(),             // 'new_chat' | 'new_booking' | 'calendar_disconnect' | 'client_cancel' | 'client_reschedule'
+  recipient: text("recipient").notNull(),         // phone number or Telegram chat ID
+  preview: text("preview").notNull(),             // message body, truncated to 5000 chars before insert
+  status: text("status").notNull(),               // 'sent' | 'failed' | 'skipped'
+  errorMessage: text("error_message"),
+  providerMessageId: text("provider_message_id"), // Twilio SID, Telegram message_id, GHL contactId
+  sentAt: timestamp("sent_at").defaultNow().notNull(),
+});
+
+export const insertNotificationLogSchema = createInsertSchema(notificationLogs).omit({
+  id: true,
+  sentAt: true,
+});
+
+export type NotificationLog = typeof notificationLogs.$inferSelect;
+export type InsertNotificationLog = z.infer<typeof insertNotificationLogSchema>;

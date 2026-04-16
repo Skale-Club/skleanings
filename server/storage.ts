@@ -92,8 +92,11 @@ import {
   type InsertStaffServiceAbility,
   type InsertStaffAvailability,
   type InsertStaffGoogleCalendar,
+  notificationLogs,
+  type NotificationLog,
+  type InsertNotificationLog,
 } from "@shared/schema";
-import { eq, and, or, gte, lte, inArray, desc, asc, sql, ne, isNull } from "drizzle-orm";
+import { eq, and, or, gte, lte, inArray, desc, asc, sql, ne, isNull, like } from "drizzle-orm";
 import { z } from "zod";
 
 export const insertSubcategorySchema = z.object({
@@ -315,6 +318,21 @@ export interface IStorage {
     needsReconnect: boolean;
     lastDisconnectedAt: Date | null;
   }>>;
+
+  // Notification Logs
+  createNotificationLog(entry: InsertNotificationLog): Promise<NotificationLog>;
+  getNotificationLogsByConversation(conversationId: string): Promise<NotificationLog[]>;
+  getNotificationLogsByBooking(bookingId: number): Promise<NotificationLog[]>;
+  getNotificationLogs(filters: {
+    channel?: string;
+    status?: string;
+    trigger?: string;
+    search?: string;
+    from?: Date;
+    to?: Date;
+    limit?: number;
+    offset?: number;
+  }): Promise<NotificationLog[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1746,6 +1764,56 @@ export class DatabaseStorage implements IStorage {
       needsReconnect: row.needsReconnect ?? false,
       lastDisconnectedAt: row.lastDisconnectedAt ?? null,
     }));
+  }
+
+  // ─── Notification Logs ─────────────────────────────────────────────────────
+
+  async createNotificationLog(entry: InsertNotificationLog): Promise<NotificationLog> {
+    const [row] = await db.insert(notificationLogs).values(entry).returning();
+    return row;
+  }
+
+  async getNotificationLogsByConversation(conversationId: string): Promise<NotificationLog[]> {
+    return db
+      .select()
+      .from(notificationLogs)
+      .where(eq(notificationLogs.conversationId, conversationId))
+      .orderBy(desc(notificationLogs.sentAt));
+  }
+
+  async getNotificationLogsByBooking(bookingId: number): Promise<NotificationLog[]> {
+    return db
+      .select()
+      .from(notificationLogs)
+      .where(eq(notificationLogs.bookingId, bookingId))
+      .orderBy(desc(notificationLogs.sentAt));
+  }
+
+  async getNotificationLogs(filters: {
+    channel?: string;
+    status?: string;
+    trigger?: string;
+    search?: string;
+    from?: Date;
+    to?: Date;
+    limit?: number;
+    offset?: number;
+  }): Promise<NotificationLog[]> {
+    const conditions = [];
+    if (filters.channel) conditions.push(eq(notificationLogs.channel, filters.channel));
+    if (filters.status) conditions.push(eq(notificationLogs.status, filters.status));
+    if (filters.trigger) conditions.push(eq(notificationLogs.trigger, filters.trigger));
+    if (filters.search) conditions.push(like(notificationLogs.recipient, `%${filters.search}%`));
+    if (filters.from) conditions.push(gte(notificationLogs.sentAt, filters.from));
+    if (filters.to) conditions.push(lte(notificationLogs.sentAt, filters.to));
+
+    return db
+      .select()
+      .from(notificationLogs)
+      .where(conditions.length ? and(...conditions) : undefined)
+      .orderBy(desc(notificationLogs.sentAt))
+      .limit(filters.limit ?? 50)
+      .offset(filters.offset ?? 0);
   }
 }
 

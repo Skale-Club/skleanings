@@ -5,25 +5,26 @@
 See: .paul/PROJECT.md (updated 2026-04-05)
 
 **Core value:** Customers can book cleaning services with a specific professional, with a unified calendar that automatically resolves availability conflicts across staff members and their external Google Calendar events.
-**Current focus:** Awaiting next milestone
+**Current focus:** v1.1 — Notification Log for Leads and Bookings
 
 ## Current Position
 
-Milestone: Awaiting next milestone
-Phase: None active
-Plan: None
-Status: v1.0 Client Portal & Self-Service Booking Management complete — ready for next
-Last activity: 2026-04-05 — Milestone v1.0 complete and archived
+Milestone: v1.1 — Notification Log for Leads and Bookings
+Phase: 14 of 3 (Backend — Instrumentation + API) — Ready to plan
+Plan: Not started
+Status: Phase 13 complete — ready to plan Phase 14
+Last activity: 2026-04-15 — Phase 13 complete, transitioned to Phase 14
 
 Progress:
-- v1.0 milestone: [████████████] 100% ✓
+- v1.1 Notification Log: [███░░░░░░░] 33%
+- Phase 13: [████████████] 100% ✓
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ○        ○        ○     [Milestone complete — ready for next]
+  ✓        ✓        ✓     [Loop complete — ready for next PLAN]
 ```
 
 ## Accumulated Context
@@ -33,30 +34,30 @@ PLAN ──▶ APPLY ──▶ UNIFY
 |----------|---------|--------|
 | `client` role in role enum (not separate table) | Consistent with existing role model | Reuses all auth middleware patterns |
 | `bookings.userId` nullable FK | Guest bookings must remain supported | Ownership is opt-in; backward compatible |
-| Legacy bookings: email-match via two parallel queries | Avoids complex OR on nullable column | Set dedup is clean |
-| Client router re-uses `req.user` from `requireClient` | Avoids double Supabase round-trip | Zero-cost re-auth in handlers |
-| GHL/notification sync is fire-and-forget | Client HTTP response must not block | Background sync, failure logged |
-| AlertDialog for cancel, Dialog for reschedule | Correct shadcn semantics per action type | Consistent UX conventions |
-| onError: toast only, no onClose | User can retry without reopening | Better UX for transient errors |
+| `notificationLogs` rows are additive only | Log must never break notification send | logger.ts (Phase 14) always try/catch wraps DB insert |
+| One row per recipient per send | Twilio/Telegram may have multiple recipients | Enables per-number filtering in the global log |
+| `text` for channel/trigger/status (not pgEnum) | Matches all enum-like fields in codebase | No migration needed for new trigger types |
+| `onDelete: set null` on FK columns | Log survives parent deletion | Historical audit trail preserved |
 
 ### Deferred Issues
 - Verify if SCRAM error source is pooled URL only or shared across all DB URLs.
 - Token in query param for OAuth appears in server logs — acceptable for internal use.
+- Notification log retention/TTL — no TTL for now; table volume is low.
+- Resend (failed notification) button in UI — deferred to v1.2 if failure rate warrants it.
 
 ### Blockers/Concerns
 - Stripe account and API keys needed for live payment testing
 
 ### Git State
-Last commit: 2e31fe9
+Last commit: 574e796
 Branch: main
-Tag: v1.0.0
 
 ## Session Continuity
 
-Last session: 2026-04-05
-Stopped at: v1.0 milestone complete and archived
-Next action: /paul:discuss-milestone or /paul:milestone
-Resume file: .paul/MILESTONES.md
+Last session: 2026-04-15
+Stopped at: Phase 13 complete — schema + storage layer shipped
+Next action: /paul:plan for Phase 14 (Backend — Instrumentation + API)
+Resume file: .paul/ROADMAP.md
 
 ---
 *STATE.md — Updated after every significant action*

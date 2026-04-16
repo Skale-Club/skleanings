@@ -51,7 +51,15 @@ Customers can book cleaning services with a specific professional, with a unifie
 - [x] Staff-aware booking — staffMemberId stored on booking, shown in admin dashboard — Phase 5
 
 ### Active (In Progress)
-None.
+- [ ] Instrument Twilio/Telegram/GHL sends to log to notification_logs table — Phase 14
+- [ ] API endpoints: GET /api/conversations/:id/notifications + GET /api/admin/notification-logs — Phase 14
+- [ ] Admin UI: Notifications tab in conversation modal + global NotificationLogsSection — Phase 15
+
+### Validated (v1.1 Phase 13 complete)
+- [x] `notificationLogs` table in shared/schema.ts with nullable conversationId + bookingId FKs — Phase 13
+- [x] `insertNotificationLogSchema`, `NotificationLog`, `InsertNotificationLog` exported from shared/schema.ts — Phase 13
+- [x] `IStorage` extended: `createNotificationLog`, `getNotificationLogsByConversation`, `getNotificationLogsByBooking`, `getNotificationLogs(filters)` — Phase 13
+- [x] `DatabaseStorage` implements all 4 methods with Drizzle dynamic filter pattern — Phase 13
 
 ### Validated (v1.0 Phase 3 complete)
 - [x] Client login page (ClientLogin.tsx) with role=client redirect to /account — v1.0 Phase 3
@@ -167,6 +175,9 @@ None.
 | Client cancel/reschedule sync is fire-and-forget | HTTP response speed — GHL/notification latency must not block client | 2026-04-05 | Active |
 | AlertDialog for cancel, Dialog for reschedule | AlertDialog has correct destructive/confirm semantics; Dialog suits multi-step picker | 2026-04-05 | Active |
 | onError: toast only, no onClose in dialogs | User should be able to retry without reopening the dialog | 2026-04-05 | Active |
+| `text` for channel/trigger/status in notificationLogs (not pgEnum) | Matches every other enum-like field in codebase; no migration needed for new trigger types | 2026-04-15 | Active |
+| `onDelete: set null` on notificationLogs FK columns | Log row survives deletion of parent conversation or booking — preserves audit trail | 2026-04-15 | Active |
+| One notificationLogs row per recipient per send | Enables per-number/per-chatId filtering; Telegram sends to multiple chatIds = multiple rows | 2026-04-15 | Active |
 
 ## Success Metrics
 
@@ -201,4 +212,4 @@ None.
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-04-05 after Phase 12 — v1.0 Client Portal & Self-Service Booking Management milestone complete*
+*Last updated: 2026-04-15 after Phase 13 — v1.1 notification_logs schema + storage layer*
