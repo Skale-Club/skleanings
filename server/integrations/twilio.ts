@@ -5,6 +5,7 @@ import {
   buildNewChatNotification,
   renderNotificationPlain,
 } from "../lib/notification-templates";
+import { logNotification } from "../lib/notification-logger";
 
 export async function sendNewChatNotification(
   twilioSettings: TwilioSettings,
@@ -28,11 +29,33 @@ export async function sendNewChatNotification(
     );
 
     for (const phoneNumber of twilioSettings.toPhoneNumbers) {
-      await client.messages.create({
-        body: message,
-        from: twilioSettings.fromPhoneNumber,
-        to: phoneNumber,
-      });
+      try {
+        const result = await client.messages.create({
+          body: message,
+          from: twilioSettings.fromPhoneNumber,
+          to: phoneNumber,
+        });
+        await logNotification({
+          channel: "sms",
+          trigger: "new_chat",
+          recipient: phoneNumber,
+          preview: message,
+          status: "sent",
+          providerMessageId: result.sid,
+          conversationId,
+        });
+      } catch (err: any) {
+        await logNotification({
+          channel: "sms",
+          trigger: "new_chat",
+          recipient: phoneNumber,
+          preview: message,
+          status: "failed",
+          errorMessage: err?.message,
+          conversationId,
+        });
+        throw err;
+      }
     }
 
     return { success: true };
@@ -56,11 +79,31 @@ export async function sendCalendarDisconnectNotification(
     const body = `⚠️ Google Calendar disconnected for ${staffName}. Please reconnect at Admin → Staff → Calendar.`;
 
     for (const phoneNumber of twilioSettings.toPhoneNumbers) {
-      await client.messages.create({
-        body,
-        from: twilioSettings.fromPhoneNumber,
-        to: phoneNumber,
-      });
+      try {
+        const result = await client.messages.create({
+          body,
+          from: twilioSettings.fromPhoneNumber,
+          to: phoneNumber,
+        });
+        await logNotification({
+          channel: "sms",
+          trigger: "calendar_disconnect",
+          recipient: phoneNumber,
+          preview: body,
+          status: "sent",
+          providerMessageId: result.sid,
+        });
+      } catch (err: any) {
+        await logNotification({
+          channel: "sms",
+          trigger: "calendar_disconnect",
+          recipient: phoneNumber,
+          preview: body,
+          status: "failed",
+          errorMessage: err?.message,
+        });
+        throw err;
+      }
     }
 
     return { success: true };
@@ -74,7 +117,8 @@ export async function sendBookingNotification(
   booking: BookingNotificationPayload,
   serviceNames: string[],
   twilioSettings: TwilioSettings,
-  companyName?: string
+  companyName?: string,
+  bookingId?: number
 ): Promise<{ success: boolean; message?: string }> {
   try {
     if (!twilioSettings.enabled || !twilioSettings.accountSid || !twilioSettings.authToken || !twilioSettings.fromPhoneNumber || !twilioSettings.toPhoneNumbers || twilioSettings.toPhoneNumbers.length === 0) {
@@ -88,11 +132,33 @@ export async function sendBookingNotification(
     );
 
     for (const phoneNumber of twilioSettings.toPhoneNumbers) {
-      await client.messages.create({
-        body: message,
-        from: twilioSettings.fromPhoneNumber,
-        to: phoneNumber,
-      });
+      try {
+        const result = await client.messages.create({
+          body: message,
+          from: twilioSettings.fromPhoneNumber,
+          to: phoneNumber,
+        });
+        await logNotification({
+          channel: "sms",
+          trigger: "new_booking",
+          recipient: phoneNumber,
+          preview: message,
+          status: "sent",
+          providerMessageId: result.sid,
+          bookingId,
+        });
+      } catch (err: any) {
+        await logNotification({
+          channel: "sms",
+          trigger: "new_booking",
+          recipient: phoneNumber,
+          preview: message,
+          status: "failed",
+          errorMessage: err?.message,
+          bookingId,
+        });
+        throw err;
+      }
     }
 
     return { success: true };

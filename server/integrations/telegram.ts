@@ -5,6 +5,7 @@ import {
   buildNewChatNotification,
   renderNotificationHtml,
 } from "../lib/notification-templates";
+import { logNotification } from "../lib/notification-logger";
 
 const TELEGRAM_API_BASE = "https://api.telegram.org";
 const TELEGRAM_MAX_MESSAGE_LENGTH = 4096;
@@ -103,7 +104,8 @@ export async function sendTelegramMessage(
 export async function sendMessageToAll(
   settings: TelegramSettings,
   text: string,
-  parseMode: "HTML" | "MarkdownV2" = "HTML"
+  parseMode: "HTML" | "MarkdownV2" = "HTML",
+  logContext?: { trigger: string; conversationId?: string; bookingId?: number }
 ): Promise<{ success: boolean; message?: string }> {
   if (!settings.enabled) {
     return { success: false, message: "Telegram notifications are disabled" };
@@ -118,6 +120,18 @@ export async function sendMessageToAll(
 
   for (const chatId of chatIds) {
     const result = await sendTelegramMessage(settings.botToken as string, chatId, text, parseMode);
+    if (logContext) {
+      await logNotification({
+        channel: "telegram",
+        trigger: logContext.trigger,
+        recipient: chatId,
+        preview: text,
+        status: result.success ? "sent" : "failed",
+        errorMessage: result.success ? undefined : result.message,
+        conversationId: logContext.conversationId,
+        bookingId: logContext.bookingId,
+      });
+    }
     if (!result.success) {
       failures.push(`${chatId}: ${result.message || "unknown error"}`);
     }
@@ -147,14 +161,15 @@ export async function sendNewChatNotification(
     buildNewChatNotification(conversationId, pageUrl, companyName)
   );
 
-  return sendMessageToAll(settings, message, "HTML");
+  return sendMessageToAll(settings, message, "HTML", { trigger: "new_chat", conversationId });
 }
 
 export async function sendBookingNotification(
   booking: BookingNotificationPayload,
   serviceNames: string[],
   settings: TelegramSettings,
-  companyName?: string
+  companyName?: string,
+  bookingId?: number
 ): Promise<{ success: boolean; message?: string }> {
   if (!settings.enabled) {
     return { success: false, message: "Telegram notifications are disabled" };
@@ -164,7 +179,7 @@ export async function sendBookingNotification(
     buildBookingNotification(booking, serviceNames, companyName)
   );
 
-  return sendMessageToAll(settings, message, "HTML");
+  return sendMessageToAll(settings, message, "HTML", { trigger: "new_booking", bookingId });
 }
 
 export async function sendTelegramTestMessage(

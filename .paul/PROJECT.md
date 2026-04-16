@@ -51,9 +51,15 @@ Customers can book cleaning services with a specific professional, with a unifie
 - [x] Staff-aware booking — staffMemberId stored on booking, shown in admin dashboard — Phase 5
 
 ### Active (In Progress)
-- [ ] Instrument Twilio/Telegram/GHL sends to log to notification_logs table — Phase 14
-- [ ] API endpoints: GET /api/conversations/:id/notifications + GET /api/admin/notification-logs — Phase 14
 - [ ] Admin UI: Notifications tab in conversation modal + global NotificationLogsSection — Phase 15
+
+### Validated (v1.1 Phase 14 complete)
+- [x] `server/lib/notification-logger.ts` — `logNotification()` helper (never throws, truncates preview to 5000 chars) — Phase 14
+- [x] Twilio `sendNewChatNotification`, `sendBookingNotification`, `sendCalendarDisconnectNotification` instrumented — one log row per phone number, Twilio SID captured — Phase 14
+- [x] Telegram `sendMessageToAll` instrumented via optional `logContext` — one log row per chatId; test sends unaffected — Phase 14
+- [x] GHL `getOrCreateGHLContact` instrumented at both call sites: `syncBookingToGhl` (trigger=new_booking) and `updateContactHandler` (trigger=new_chat) — Phase 14
+- [x] `GET /api/conversations/:id/notifications` — admin-gated per-conversation notification log — Phase 14
+- [x] `GET /api/admin/notification-logs` — paginated global log with channel/status/trigger/from/to/search filters — Phase 14
 
 ### Validated (v1.1 Phase 13 complete)
 - [x] `notificationLogs` table in shared/schema.ts with nullable conversationId + bookingId FKs — Phase 13

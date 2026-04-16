@@ -19,6 +19,7 @@ import authRoutes from "./routes/auth-routes";
 import staffRouter from "./routes/staff";
 import paymentsRouter from "./routes/payments";
 import clientRouter from "./routes/client";
+import notificationLogsRouter from "./routes/notification-logs";
 
 export async function registerRoutes(server: Server, app: Express) {
   // Mount routers
@@ -63,4 +64,7 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // Client portal routes (mounted at /api/client)
   app.use("/api/client", clientRouter);
+
+  // Notification log routes (/api/conversations/:id/notifications + /api/admin/notification-logs)
+  app.use("/api", notificationLogsRouter);
 }

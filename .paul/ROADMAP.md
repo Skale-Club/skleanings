@@ -15,7 +15,7 @@ Phases: 1 of 3 complete
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
 | 13 | Schema + Storage Layer | 1/1 | ✅ Complete | 2026-04-15 |
-| 14 | Backend — Instrumentation + API | TBD | Not started | - |
+| 14 | Backend — Instrumentation + API | 2/2 | ✅ Complete | 2026-04-15 |
 | 15 | Admin UI — Conversation Tab + Global Log | TBD | Not started | - |
 
 ## Phase Details
@@ -50,8 +50,8 @@ Phases: 1 of 3 complete
 - `GET /api/admin/notification-logs` — paginated global log with filters: `channel`, `status`, `trigger`, `from`, `to`, `search` (recipient match)
 
 **Plans:**
-- [ ] 14-01: Notification logger helper + Twilio + Telegram instrumentation
-- [ ] 14-02: GHL instrumentation + API endpoints
+- [x] 14-01: Notification logger helper + Twilio + Telegram instrumentation ✅ 2026-04-15
+- [x] 14-02: GHL instrumentation + API endpoints ✅ 2026-04-15
 
 ### Phase 15: Admin UI — Conversation Tab + Global Log
 

@@ -127,7 +127,8 @@ router.post('/', async (req, res) => {
                         booking,
                         serviceNames,
                         twilioSettings,
-                        companySettings?.companyName || 'the business'
+                        companySettings?.companyName || 'the business',
+                        booking.id
                     );
                 } catch (twilioError) {
                     console.error("Twilio Notification Error:", twilioError);
@@ -140,7 +141,8 @@ router.post('/', async (req, res) => {
                         booking,
                         serviceNames,
                         telegramSettings,
-                        companySettings?.companyName || 'the business'
+                        companySettings?.companyName || 'the business',
+                        booking.id
                     );
                 } catch (telegramError) {
                     console.error("Telegram Notification Error:", telegramError);

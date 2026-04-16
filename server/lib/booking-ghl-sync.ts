@@ -5,6 +5,7 @@ import {
   getOrCreateGHLContact,
   formatDateTimeWithTimezone,
 } from "../integrations/ghl";
+import { logNotification } from "./notification-logger";
 
 export interface BookingGhlSyncResult {
   attempted: boolean;
@@ -38,6 +39,17 @@ export async function syncBookingToGhl(
       lastName,
       phone: booking.customerPhone,
       address: booking.customerAddress,
+    });
+
+    await logNotification({
+      channel: "ghl",
+      trigger: "new_booking",
+      recipient: booking.customerEmail || booking.customerPhone,
+      preview: `Contact: ${booking.customerName} (${booking.customerPhone})`,
+      status: contactResult.success && contactResult.contactId ? "sent" : "failed",
+      providerMessageId: contactResult.contactId,
+      errorMessage: contactResult.success ? undefined : contactResult.message,
+      bookingId: booking.id,
     });
 
     if (!contactResult.success || !contactResult.contactId) {
