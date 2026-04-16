@@ -119,7 +119,7 @@ export function CalendarReconnectBanner({
                   <TableCell>
                     <a
                       href={`/api/staff/${staff.staffMemberId}/calendar/connect`}
-                      className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-800"
+                      className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80"
                     >
                       <RefreshCw className="h-3.5 w-3.5" />
                       Reconnect

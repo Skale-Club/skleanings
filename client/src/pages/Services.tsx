@@ -167,7 +167,7 @@ export default function Services() {
                     className={clsx(
                       "px-6 py-2.5 rounded-full font-medium transition-all duration-200 whitespace-nowrap shrink-0",
                       selectedCategory === cat.id
-                        ? "bg-blue-600 text-white"
+                        ? "bg-primary text-primary-foreground"
                         : "bg-white text-slate-600 border border-gray-200 hover:bg-gray-50"
                     )}
                     data-testid={`button-filter-category-${cat.id}`}
@@ -208,7 +208,7 @@ export default function Services() {
                 className={clsx(
                   "px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap shrink-0",
                   selectedSubcategory === sub.id
-                    ? "bg-blue-600 text-white"
+                    ? "bg-primary text-primary-foreground"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                 )}
                 data-testid={`button-filter-subcategory-${sub.id}`}

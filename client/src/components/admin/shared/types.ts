@@ -2,6 +2,8 @@ import type { HomepageContent } from '@shared/schema';
 
 export type AdminSection =
   | 'dashboard'
+  | 'calendar'
+  | 'contacts'
   | 'categories'
   | 'services'
   | 'bookings'

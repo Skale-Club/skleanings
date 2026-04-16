@@ -140,7 +140,7 @@ export function renderMarkdown(text: string, onInternalNav?: (path: string) => v
           href={url}
           onClick={handleClick}
           rel="noopener noreferrer"
-          className="text-blue-600 underline underline-offset-2"
+          className="text-primary underline underline-offset-2"
         >
           {label}
         </a>

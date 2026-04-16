@@ -7,6 +7,7 @@ import { CartProvider } from "@/context/CartContext";
 import { AuthProvider, useAdminAuth } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { CompanySettingsProvider, useCompanySettings } from "@/context/CompanySettingsContext";
+import { BrandColorInjector } from "@/components/BrandColorInjector";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useSEO } from "@/hooks/use-seo";
@@ -223,6 +224,7 @@ function App() {
       <ThemeProvider>
         <QueryClientProvider client={queryClient}>
           <CompanySettingsProvider>
+            <BrandColorInjector />
             <TooltipProvider>
               <AuthProvider>
                 <AuthCallbackRedirect />

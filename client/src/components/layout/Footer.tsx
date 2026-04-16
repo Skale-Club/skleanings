@@ -1,7 +1,8 @@
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useCompanySettings } from "@/context/CompanySettingsContext";
-import type { Category, Service } from "@shared/schema";
+import { DEFAULT_HOMEPAGE_CONTENT } from "@/lib/homepageDefaults";
+import type { Category, Service, HomepageContent } from "@shared/schema";
 import {
   SiFacebook,
   SiInstagram,
@@ -33,9 +34,17 @@ export function Footer() {
   });
 
   // Filter categories that have at least one service
-  const activeCategories = categories?.filter(category => 
+  const activeCategories = categories?.filter(category =>
     services?.some(service => service.categoryId === category.id)
   );
+
+  const homepageContent = (companySettings as any)?.homepageContent as HomepageContent | undefined;
+  const footerSection = {
+    ...DEFAULT_HOMEPAGE_CONTENT.footerSection,
+    ...(homepageContent?.footerSection || {}),
+  };
+  const companyLinks = footerSection.companyLinks ?? DEFAULT_HOMEPAGE_CONTENT.footerSection!.companyLinks!;
+  const resourceLinks = footerSection.resourceLinks ?? DEFAULT_HOMEPAGE_CONTENT.footerSection!.resourceLinks!;
 
   return (
     <footer className="bg-slate-900 text-slate-200 py-6 pt-[40px] pb-[40px]">
@@ -61,8 +70,7 @@ export function Footer() {
             ) : null}
           </Link>
           <p className="text-slate-400 max-w-sm mb-6 text-[14px]">
-            Professional cleaning services. 
-            We provide upfront pricing and easy online booking for your convenience.
+            {footerSection.tagline}
           </p>
           
           {companySettings && (companySettings as any).socialLinks && Array.isArray((companySettings as any).socialLinks) && (companySettings as any).socialLinks.length > 0 && (
@@ -111,22 +119,31 @@ export function Footer() {
           </ul>
         </div>
         
-        <div>
-          <h4 className="font-bold text-white mb-4">Company</h4>
-          <ul className="space-y-2 text-sm text-slate-400">
-            <li><Link href="/about" className="hover:text-primary transition-colors">About Us</Link></li>
-            <li><Link href="/contact" className="hover:text-primary transition-colors">Contact</Link></li>
-            <li><Link href="/team" className="hover:text-primary transition-colors">Our Team</Link></li>
-          </ul>
-        </div>
+        {companyLinks.length > 0 && (
+          <div>
+            <h4 className="font-bold text-white mb-4">Company</h4>
+            <ul className="space-y-2 text-sm text-slate-400">
+              {companyLinks.map((link, i) => (
+                <li key={i}>
+                  <Link href={link.href} className="hover:text-primary transition-colors">{link.label}</Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
-        <div>
-          <h4 className="font-bold text-white mb-4">Resources</h4>
-          <ul className="space-y-2 text-sm text-slate-400">
-            <li><Link href="/blog" className="hover:text-primary transition-colors">Blog</Link></li>
-            <li><Link href="/faq" className="hover:text-primary transition-colors">FAQ</Link></li>
-          </ul>
-        </div>
+        {resourceLinks.length > 0 && (
+          <div>
+            <h4 className="font-bold text-white mb-4">Resources</h4>
+            <ul className="space-y-2 text-sm text-slate-400">
+              {resourceLinks.map((link, i) => (
+                <li key={i}>
+                  <Link href={link.href} className="hover:text-primary transition-colors">{link.label}</Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
       <div className="container-custom mx-auto mt-6 pt-6 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-500 text-sm">
         <p>© {new Date().getFullYear()} {companySettings?.companyName || ''}. All rights reserved.</p>

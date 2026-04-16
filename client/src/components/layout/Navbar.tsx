@@ -54,7 +54,7 @@ export function Navbar() {
                 className="h-[27px] md:h-9 w-auto"
               />
             ) : companySettings?.companyName ? (
-              <span className="text-xl md:text-2xl font-bold text-[#1D1D1D]">
+              <span className="text-xl md:text-2xl font-bold text-foreground">
                 {companySettings.companyName}
               </span>
             ) : null}
@@ -62,15 +62,15 @@ export function Navbar() {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-8">
-            <Link href="/services" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors cursor-pointer">Services</Link>
+            <Link href="/services" className="text-sm font-semibold text-foreground hover:text-primary transition-colors cursor-pointer">Services</Link>
             <button
               onClick={() => handleHashNavigation('areas-served')}
-              className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors cursor-pointer"
+              className="text-sm font-semibold text-foreground hover:text-primary transition-colors cursor-pointer"
             >
               Areas Served
             </button>
-            <Link href="/blog" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors cursor-pointer">Blog</Link>
-            <Link href="/faq" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors cursor-pointer">FAQ</Link>
+            <Link href="/blog" className="text-sm font-semibold text-foreground hover:text-primary transition-colors cursor-pointer">Blog</Link>
+            <Link href="/faq" className="text-sm font-semibold text-foreground hover:text-primary transition-colors cursor-pointer">FAQ</Link>
 
             {displayPhone && (
               <a

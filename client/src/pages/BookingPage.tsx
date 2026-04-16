@@ -122,15 +122,14 @@ export default function BookingPage() {
 
   const calendarRef = useRef<HTMLDivElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
+  const slotsRef = useRef<HTMLDivElement>(null);
 
   const handleTimeSelect = (time: string) => {
     setSelectedTime(time);
-    // On mobile, scroll to the booking summary after selecting a time
-    if (window.innerWidth < 1024 && summaryRef.current) {
-      setTimeout(() => {
-        summaryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
-    }
+    // Scroll to booking summary after selecting a time (only if not already visible)
+    setTimeout(() => {
+      summaryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
   };
 
   useEffect(() => {
@@ -339,6 +338,10 @@ export default function BookingPage() {
                                   onClick={() => {
                                     setSelectedDate(dateStr);
                                     setSelectedTime("");
+                                    // Scroll to time slots after date selection (only if not already visible)
+                                    setTimeout(() => {
+                                      slotsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                                    }, 100);
                                   }}
                                   className={clsx(
                                     "h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all relative shrink-0",
@@ -369,7 +372,7 @@ export default function BookingPage() {
                   </div>
 
                   {/* Slots Column */}
-                  <div className="relative max-h-[440px] overflow-y-auto">
+                  <div ref={slotsRef} className="relative max-h-[440px] overflow-y-auto">
                     <div className="space-y-3">
                       {isSlotsPending ? (
                         [1, 2, 3, 4, 5].map(i => (
@@ -546,7 +549,7 @@ export default function BookingPage() {
                       <label className={clsx(
                         "p-4 rounded-xl border cursor-pointer transition-all flex flex-col items-center gap-2 text-center",
                         form.watch("paymentMethod") === "site"
-                          ? "border-primary bg-blue-50 text-primary ring-1 ring-primary"
+                          ? "border-primary bg-primary/5 text-primary ring-1 ring-primary"
                           : "border-gray-200 hover:bg-slate-50"
                       )}>
                         <input type="radio" value="site" {...form.register("paymentMethod")} className="hidden" />
@@ -556,7 +559,7 @@ export default function BookingPage() {
                       <label className={clsx(
                         "p-4 rounded-xl border cursor-pointer transition-all flex flex-col items-center gap-2 text-center",
                         form.watch("paymentMethod") === "online"
-                          ? "border-primary bg-blue-50 text-primary ring-1 ring-primary"
+                          ? "border-primary bg-primary/5 text-primary ring-1 ring-primary"
                           : "border-gray-200 hover:bg-slate-50"
                       )}>
                         <input type="radio" value="online" {...form.register("paymentMethod")} className="hidden" />

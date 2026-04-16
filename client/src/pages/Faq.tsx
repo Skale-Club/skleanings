@@ -8,8 +8,14 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Loader2 } from 'lucide-react';
+import { useCompanySettings } from "@/context/CompanySettingsContext";
+import { DEFAULT_HOMEPAGE_CONTENT } from "@/lib/homepageDefaults";
 
 export default function FaqPage() {
+  const { settings } = useCompanySettings();
+  const hc = (settings as any)?.homepageContent;
+  const faqPage = { ...DEFAULT_HOMEPAGE_CONTENT.faqPageSection, ...(hc?.faqPageSection || {}) };
+
   const { data: faqs, isLoading } = useQuery<Faq[]>({
     queryKey: ['/api/faqs']
   });
@@ -51,10 +57,8 @@ export default function FaqPage() {
     <div className="min-h-screen bg-[#F8FAFC]">
       <div className="container-custom mx-auto py-20">
         <div className="text-center mb-12">
-          <h1 className="text-3xl md:text-5xl font-bold mb-4">Frequently Asked Questions</h1>
-          <p className="text-slate-600 max-w-2xl mx-auto text-lg">
-            Find answers to common questions about our cleaning services.
-          </p>
+          <h1 className="text-3xl md:text-5xl font-bold mb-4">{faqPage.heading}</h1>
+          <p className="text-slate-600 max-w-2xl mx-auto text-lg">{faqPage.subtitle}</p>
         </div>
         
         {isLoading ? (

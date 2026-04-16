@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(where supabase:*)",
+      "Bash(npx supabase:*)",
+      "Skill(paul:unify)",
+      "Skill(paul:unify:*)",
+      "Skill(paul:plan)",
+      "Skill(paul:plan:*)"
+    ]
+  }
+}
