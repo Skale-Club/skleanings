@@ -17,7 +17,7 @@ import { FooterTab } from './website/FooterTab';
 import { PagesTab } from './website/PagesTab';
 import { ColorsTab } from './website/ColorsTab';
 import type { WebsiteTabProps } from './website/types';
-import { useHashTab } from '@/hooks/use-hash-tab';
+import { useSlugTab } from '@/hooks/use-slug-tab';
 
 const WEBSITE_TABS = ['hero', 'badges', 'categories', 'reviews', 'blog', 'areas', 'footer', 'pages', 'colors'] as const;
 
@@ -27,7 +27,7 @@ export function HeroSettingsSection({ getAccessToken }: { getAccessToken: () => 
     queryKey: ['/api/company-settings']
   });
 
-  const [activeTab, setActiveTab] = useHashTab('hero', WEBSITE_TABS);
+  const [activeTab, setActiveTab] = useSlugTab('/admin/hero', 'hero', WEBSITE_TABS);
   const [heroTitle, setHeroTitle] = useState('');
   const [heroSubtitle, setHeroSubtitle] = useState('');
   const [heroImageUrl, setHeroImageUrl] = useState('');

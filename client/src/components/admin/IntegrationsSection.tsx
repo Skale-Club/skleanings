@@ -6,12 +6,12 @@ import { StripeTab } from './integrations/StripeTab';
 import { CalendarTab } from './integrations/CalendarTab';
 import { AnalyticsTab } from './integrations/AnalyticsTab';
 import { MessagingTab } from './integrations/MessagingTab';
-import { useHashTab } from '@/hooks/use-hash-tab';
+import { useSlugTab } from '@/hooks/use-slug-tab';
 
 const INTEGRATION_TABS = ['ai', 'ghl', 'stripe', 'calendar', 'analytics', 'messaging'] as const;
 
 export function IntegrationsSection({ getAccessToken }: { getAccessToken: () => Promise<string | null> }) {
-  const [activeTab, setActiveTab] = useHashTab('ai', INTEGRATION_TABS);
+  const [activeTab, setActiveTab] = useSlugTab('/admin/integrations', 'ai', INTEGRATION_TABS);
 
   return (
     <div className="space-y-6">
