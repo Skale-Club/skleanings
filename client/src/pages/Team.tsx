@@ -2,6 +2,7 @@ import { Users, Award, Heart, Star } from "lucide-react";
 import { useCompanySettings } from "@/context/CompanySettingsContext";
 import { DEFAULT_HOMEPAGE_CONTENT } from "@/lib/homepageDefaults";
 import type { HomepageContent } from "@shared/schema";
+import { PageHero, FeaturesGrid } from "@/components/shared";
 
 const ICONS = [Users, Award, Heart, Star];
 
@@ -9,29 +10,14 @@ export default function Team() {
   const { settings } = useCompanySettings();
   const hc = settings?.homepageContent as HomepageContent | undefined;
   const team = { ...DEFAULT_HOMEPAGE_CONTENT.teamSection, ...(hc?.teamSection || {}) };
-  const features: { title: string; desc: string }[] = team.features ?? DEFAULT_HOMEPAGE_CONTENT.teamSection!.features!;
-  const stats: { value: string; label: string }[] = team.stats ?? DEFAULT_HOMEPAGE_CONTENT.teamSection!.stats!;
+  const features = team.features ?? DEFAULT_HOMEPAGE_CONTENT.teamSection!.features!;
+  const stats = team.stats ?? DEFAULT_HOMEPAGE_CONTENT.teamSection!.stats!;
 
   return (
     <div className="pt-24 pb-20">
       <section className="container-custom mx-auto mb-20">
-        <div className="max-w-3xl">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6">{team.heading}</h1>
-          <p className="text-xl text-slate-600 leading-relaxed mb-8">{team.intro}</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-12">
-          {features.map((item, i) => {
-            const Icon = ICONS[i % ICONS.length];
-            return (
-              <div key={i} className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                <Icon className="w-10 h-10 text-primary mb-4" />
-                <h3 className="text-xl font-bold mb-2">{item.title}</h3>
-                <p className="text-slate-600">{item.desc}</p>
-              </div>
-            );
-          })}
-        </div>
+        <PageHero heading={team.heading} intro={team.intro} />
+        <FeaturesGrid features={features} icons={ICONS} />
       </section>
 
       <section className="bg-slate-900 text-white py-20">

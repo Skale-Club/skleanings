@@ -10,6 +10,7 @@ import {
 import { Loader2 } from 'lucide-react';
 import { useCompanySettings } from "@/context/CompanySettingsContext";
 import { DEFAULT_HOMEPAGE_CONTENT } from "@/lib/homepageDefaults";
+import { PageHero } from "@/components/shared";
 
 export default function FaqPage() {
   const { settings } = useCompanySettings();
@@ -56,10 +57,7 @@ export default function FaqPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
       <div className="container-custom mx-auto py-20">
-        <div className="text-center mb-12">
-          <h1 className="text-3xl md:text-5xl font-bold mb-4">{faqPage.heading}</h1>
-          <p className="text-slate-600 max-w-2xl mx-auto text-lg">{faqPage.subtitle}</p>
-        </div>
+        <PageHero heading={faqPage.heading} intro={faqPage.subtitle} align="center" />
         
         {isLoading ? (
           <div className="flex justify-center py-12">
