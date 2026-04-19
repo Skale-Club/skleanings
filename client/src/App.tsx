@@ -160,7 +160,8 @@ function Router() {
         <Switch>
           <Route path="/admin/login" component={AdminLogin} />
           <Route path="/admin" component={Admin} />
-          <Route path="/admin/:rest*" component={Admin} />
+          <Route path="/admin/:section" component={Admin} />
+          <Route path="/admin/:section/:tab" component={Admin} />
           <Route component={NotFound} />
         </Switch>
       </Suspense>
