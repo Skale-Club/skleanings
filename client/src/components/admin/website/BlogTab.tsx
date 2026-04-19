@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { DEFAULT_HOMEPAGE_CONTENT } from '@/lib/homepageDefaults';
+import { SettingsCard } from '@/components/admin/shared/SettingsCard';
 import type { WebsiteTabProps } from './types';
 
 export function BlogTab({ homepageContent, updateHomepageContent, savedFields }: WebsiteTabProps) {
@@ -15,11 +16,7 @@ export function BlogTab({ homepageContent, updateHomepageContent, savedFields }:
     savedFields[field] ? <Check className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600 w-4 h-4" /> : null;
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-base font-semibold flex items-center gap-2">
-        <FileText className="w-4 h-4 text-primary" />
-        Blog Section
-      </h3>
+    <SettingsCard icon={FileText} title="Blog Section">
       <div className="space-y-2">
         <Label>Title</Label>
         <div className="relative">
@@ -97,6 +94,6 @@ export function BlogTab({ homepageContent, updateHomepageContent, savedFields }:
           <SavedIndicator field="homepageContent.blogSection.readMoreText" />
         </div>
       </div>
-    </div>
+    </SettingsCard>
   );
 }

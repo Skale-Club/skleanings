@@ -1,9 +1,10 @@
-import { Check, FileText, Plus, Trash2 } from 'lucide-react';
+import { Check, FileText, Plus, Trash2, Info, Users, MapPin, HelpCircle, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { DEFAULT_HOMEPAGE_CONTENT } from '@/lib/homepageDefaults';
+import { SettingsCard } from '@/components/admin/shared/SettingsCard';
 import type { WebsiteTabProps } from './types';
 
 export function PagesTab({ homepageContent, updateHomepageContent, savedFields }: WebsiteTabProps) {
@@ -31,15 +32,8 @@ export function PagesTab({ homepageContent, updateHomepageContent, savedFields }
     }), fk ? `homepageContent.${String(section)}.${fk}` : undefined);
 
   return (
-    <div className="space-y-10">
-      <h3 className="text-base font-semibold flex items-center gap-2">
-        <FileText className="w-4 h-4 text-primary" />
-        Page Content
-      </h3>
-
-      {/* ── About Page ─────────────────────────────────── */}
-      <section className="space-y-4 border-t pt-6">
-        <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">About Page</h4>
+    <div className="space-y-6">
+      <SettingsCard icon={Info} title="About Page">
 
         <div className="space-y-2">
           <Label>Heading</Label>
@@ -107,11 +101,9 @@ export function PagesTab({ homepageContent, updateHomepageContent, savedFields }
             <SavedIndicator field={field('aboutSection', 'missionText')} />
           </div>
         </div>
-      </section>
+      </SettingsCard>
 
-      {/* ── Team Page ───────────────────────────────────── */}
-      <section className="space-y-4 border-t pt-6">
-        <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Team Page</h4>
+      <SettingsCard icon={Users} title="Team Page">
 
         <div className="space-y-2">
           <Label>Heading</Label>
@@ -202,12 +194,9 @@ export function PagesTab({ homepageContent, updateHomepageContent, savedFields }
             </div>
           ))}
         </div>
-      </section>
+      </SettingsCard>
 
-      {/* ── Service Areas Page ──────────────────────────── */}
-      <section className="space-y-4 border-t pt-6">
-        <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Service Areas Page</h4>
-
+      <SettingsCard icon={MapPin} title="Service Areas Page">
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label>Heading</Label>
@@ -238,11 +227,9 @@ export function PagesTab({ homepageContent, updateHomepageContent, savedFields }
             <SavedIndicator field={field('serviceAreasPageSection', 'notFoundText')} />
           </div>
         </div>
-      </section>
+      </SettingsCard>
 
-      {/* ── FAQ Page ────────────────────────────────────── */}
-      <section className="space-y-4 border-t pt-6">
-        <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">FAQ Page</h4>
+      <SettingsCard icon={HelpCircle} title="FAQ Page">
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label>Heading</Label>
@@ -259,11 +246,9 @@ export function PagesTab({ homepageContent, updateHomepageContent, savedFields }
             </div>
           </div>
         </div>
-      </section>
+      </SettingsCard>
 
-      {/* ── Blog Page ───────────────────────────────────── */}
-      <section className="space-y-4 border-t pt-6">
-        <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Blog Page</h4>
+      <SettingsCard icon={FileText} title="Blog Page">
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label>Heading</Label>
@@ -280,11 +265,9 @@ export function PagesTab({ homepageContent, updateHomepageContent, savedFields }
             </div>
           </div>
         </div>
-      </section>
+      </SettingsCard>
 
-      {/* ── Confirmation Page ───────────────────────────── */}
-      <section className="space-y-4 border-t pt-6">
-        <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Booking Confirmation Page</h4>
+      <SettingsCard icon={CheckCircle2} title="Booking Confirmation Page">
         <div className="space-y-2">
           <Label>Message (Online Payment)</Label>
           <div className="relative">
@@ -299,7 +282,7 @@ export function PagesTab({ homepageContent, updateHomepageContent, savedFields }
             <SavedIndicator field={field('confirmationSection', 'sitePaymentMessage')} />
           </div>
         </div>
-      </section>
+      </SettingsCard>
     </div>
   );
 }
