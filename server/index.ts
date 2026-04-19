@@ -91,7 +91,7 @@ app.use((req, res, next) => {
 
 (async () => {
   const { startCronJobs } = await import("./services/cron");
-  startCronJobs();
+  await startCronJobs();
 
   // DISABLED: DDL operations cause 504 timeout in serverless environments
   // Schema migrations should be done via `npm run db:push` during deployment
