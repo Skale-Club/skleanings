@@ -109,3 +109,6 @@ replit.nix
 
 .vercel
 .env.vercel
+
+# Claude Code runtime
+.claude/scheduled_tasks.lock
