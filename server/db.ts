@@ -38,7 +38,12 @@ function isScramHandshakeError(error: unknown): boolean {
   }
 
   const message = error.message.toLowerCase();
-  return message.includes("server signature is missing") || message.includes("scram-server-final-message");
+  return (
+    message.includes("server signature is missing") ||
+    message.includes("scram-server-final-message") ||
+    message.includes("sasl_signature_mismatch") ||
+    message.includes("did not return the correct signature")
+  );
 }
 
 function mergePoolerPassword(pooledConnectionString: string, directConnectionString: string): string {

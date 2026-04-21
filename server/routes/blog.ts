@@ -21,7 +21,12 @@ const SCRAM_RETRY_DELAY_MS = 300;
 function isColdStartScramError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
   const message = error.message.toLowerCase();
-  return message.includes("server signature is missing") || message.includes("scram-server-final-message");
+  return (
+    message.includes("server signature is missing") ||
+    message.includes("scram-server-final-message") ||
+    message.includes("sasl_signature_mismatch") ||
+    message.includes("did not return the correct signature")
+  );
 }
 
 async function withColdStartDbRetry<T>(operation: () => Promise<T>): Promise<T> {
