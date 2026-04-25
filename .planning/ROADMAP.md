@@ -11,7 +11,7 @@
 
 - [x] **Phase 10: Schema, Capture & Classification** — Database tables, Supabase migration, traffic classifier, session endpoint, and UTM capture hook (completed 2026-04-25)
 - [x] **Phase 11: Booking Flow Attribution** — Link bookings to sessions, conversion event recording with dual first/last-touch writes, Stripe attribution preservation (completed 2026-04-25)
-- [ ] **Phase 12: Marketing Dashboard UI** — Admin marketing section with Overview, Sources, Campaigns, Conversions, filters, and empty states
+- [x] **Phase 12: Marketing Dashboard UI** — Admin marketing section with Overview, Sources, Campaigns, Conversions, filters, and empty states (completed 2026-04-25)
 - [ ] **Phase 13: Visitor Journey & GHL Sync** — Visitor journey view, Conversions detail list, GoHighLevel UTM field sync
 
 ---
@@ -62,7 +62,7 @@
 **Plans**: 3 plans
   - [x] 12-01-PLAN.md — AdminSection type fix + analytics-display.ts utility + aggregate storage functions + GET endpoints
   - [x] 12-02-PLAN.md — MarketingSection shell + date filter state + tab navigation + Admin.tsx registration
-  - [ ] 12-03-PLAN.md — MarketingOverviewTab + MarketingSourcesTab + MarketingCampaignsTab full implementations
+  - [x] 12-03-PLAN.md — MarketingOverviewTab + MarketingSourcesTab + MarketingCampaignsTab full implementations
 **UI hint**: yes
 
 ### Phase 13: Visitor Journey & GHL Sync
@@ -86,7 +86,7 @@
 |-------|----------------|--------|-----------|
 | 10. Schema, Capture & Classification | 3/3 | Complete   | 2026-04-25 |
 | 11. Booking Flow Attribution | 3/3 | Complete    | 2026-04-25 |
-| 12. Marketing Dashboard UI | 2/3 | In Progress|  |
+| 12. Marketing Dashboard UI | 3/3 | Complete   | 2026-04-25 |
 | 13. Visitor Journey & GHL Sync | 0/? | Not started | - |
 
 ---

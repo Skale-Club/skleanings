@@ -30,25 +30,25 @@
 
 ### Marketing Overview Dashboard
 
-- [ ] **OVERVIEW-01**: Admin can view total visitors, total bookings (from tracked sessions), overall conversion rate, and total booking revenue attributed to tracked marketing sessions in one overview panel
-- [ ] **OVERVIEW-02**: Admin can see the top performing source, top performing campaign, and top performing landing page at a glance
-- [ ] **OVERVIEW-03**: Admin can see a trend chart showing visitors and bookings per day over the selected time period
-- [ ] **OVERVIEW-04**: Admin can see the most recent conversions (source, campaign, booking value, time) in the overview without clicking into a separate view
-- [ ] **OVERVIEW-05**: The overview communicates clearly when there is not enough data yet (first-time empty state explains when collection started)
+- [x] **OVERVIEW-01**: Admin can view total visitors, total bookings (from tracked sessions), overall conversion rate, and total booking revenue attributed to tracked marketing sessions in one overview panel
+- [x] **OVERVIEW-02**: Admin can see the top performing source, top performing campaign, and top performing landing page at a glance
+- [x] **OVERVIEW-03**: Admin can see a trend chart showing visitors and bookings per day over the selected time period
+- [x] **OVERVIEW-04**: Admin can see the most recent conversions (source, campaign, booking value, time) in the overview without clicking into a separate view
+- [x] **OVERVIEW-05**: The overview communicates clearly when there is not enough data yet (first-time empty state explains when collection started)
 
 ### Source Performance
 
-- [ ] **SOURCES-01**: Admin can see marketing performance grouped by traffic source in a table showing visitors, bookings, conversion rate, and total revenue per source
-- [ ] **SOURCES-02**: For each source, admin can see the best performing campaign and the best performing landing page from that source
-- [ ] **SOURCES-03**: Direct and Unknown traffic is always shown (never hidden) with a plain-language tooltip explaining what these categories mean
-- [ ] **SOURCES-04**: Source labels use business-friendly names (e.g., "Google Ads", "Facebook", "Organic Search", "Direct") — raw UTM values are not shown in this view
+- [x] **SOURCES-01**: Admin can see marketing performance grouped by traffic source in a table showing visitors, bookings, conversion rate, and total revenue per source
+- [x] **SOURCES-02**: For each source, admin can see the best performing campaign and the best performing landing page from that source
+- [x] **SOURCES-03**: Direct and Unknown traffic is always shown (never hidden) with a plain-language tooltip explaining what these categories mean
+- [x] **SOURCES-04**: Source labels use business-friendly names (e.g., "Google Ads", "Facebook", "Organic Search", "Direct") — raw UTM values are not shown in this view
 
 ### Campaign Performance
 
-- [ ] **CAMP-01**: Admin can see marketing performance grouped by campaign name in a table showing source, medium, visitors, bookings, conversion rate, and total revenue per campaign
-- [ ] **CAMP-02**: Admin can identify campaigns that brought traffic but produced zero bookings ("campaigns with no conversions")
-- [ ] **CAMP-03**: For each campaign, admin can see which landing pages received traffic from that campaign
-- [ ] **CAMP-04**: Campaigns from different sources are distinguished so "Summer Sale" from Google and "Summer Sale" from Facebook appear as separate rows
+- [x] **CAMP-01**: Admin can see marketing performance grouped by campaign name in a table showing source, medium, visitors, bookings, conversion rate, and total revenue per campaign
+- [x] **CAMP-02**: Admin can identify campaigns that brought traffic but produced zero bookings ("campaigns with no conversions")
+- [x] **CAMP-03**: For each campaign, admin can see which landing pages received traffic from that campaign
+- [x] **CAMP-04**: Campaigns from different sources are distinguished so "Summer Sale" from Google and "Summer Sale" from Facebook appear as separate rows
 
 ### Conversions View
 
@@ -70,8 +70,8 @@
 ### Admin Navigation & UX
 
 - [x] **UX-01**: The marketing intelligence section is accessible from the existing admin sidebar navigation under a clear label ("Marketing" or "UTM Tracking")
-- [ ] **UX-02**: All labels throughout the marketing section use business-friendly language — field names like "First Source", "Last Source", "Campaign", "Landing Page", "Visitors", "Bookings", "Conversion Rate" instead of raw parameter names
-- [ ] **UX-03**: Each dashboard view has a meaningful empty state that explains what it shows and when data will appear
+- [x] **UX-02**: All labels throughout the marketing section use business-friendly language — field names like "First Source", "Last Source", "Campaign", "Landing Page", "Visitors", "Bookings", "Conversion Rate" instead of raw parameter names
+- [x] **UX-03**: Each dashboard view has a meaningful empty state that explains what it shows and when data will appear
 
 ### GoHighLevel UTM Sync
 
@@ -132,19 +132,19 @@
 | EVENTS-03 | Phase 11 | Complete |
 | EVENTS-04 | Phase 11 | Complete |
 | EVENTS-05 | Phase 11 | Complete |
-| OVERVIEW-01 | Phase 12 | Pending |
-| OVERVIEW-02 | Phase 12 | Pending |
-| OVERVIEW-03 | Phase 12 | Pending |
-| OVERVIEW-04 | Phase 12 | Pending |
-| OVERVIEW-05 | Phase 12 | Pending |
-| SOURCES-01 | Phase 12 | Pending |
-| SOURCES-02 | Phase 12 | Pending |
-| SOURCES-03 | Phase 12 | Pending |
-| SOURCES-04 | Phase 12 | Pending |
-| CAMP-01 | Phase 12 | Pending |
-| CAMP-02 | Phase 12 | Pending |
-| CAMP-03 | Phase 12 | Pending |
-| CAMP-04 | Phase 12 | Pending |
+| OVERVIEW-01 | Phase 12 | Complete |
+| OVERVIEW-02 | Phase 12 | Complete |
+| OVERVIEW-03 | Phase 12 | Complete |
+| OVERVIEW-04 | Phase 12 | Complete |
+| OVERVIEW-05 | Phase 12 | Complete |
+| SOURCES-01 | Phase 12 | Complete |
+| SOURCES-02 | Phase 12 | Complete |
+| SOURCES-03 | Phase 12 | Complete |
+| SOURCES-04 | Phase 12 | Complete |
+| CAMP-01 | Phase 12 | Complete |
+| CAMP-02 | Phase 12 | Complete |
+| CAMP-03 | Phase 12 | Complete |
+| CAMP-04 | Phase 12 | Complete |
 | CONV-01 | Phase 13 | Pending |
 | CONV-02 | Phase 13 | Pending |
 | CONV-03 | Phase 13 | Pending |
@@ -154,8 +154,8 @@
 | FILTER-02 | Phase 12 | Complete |
 | FILTER-03 | Phase 12 | Complete |
 | UX-01 | Phase 12 | Complete |
-| UX-02 | Phase 12 | Pending |
-| UX-03 | Phase 12 | Pending |
+| UX-02 | Phase 12 | Complete |
+| UX-03 | Phase 12 | Complete |
 | GHL-01 | Phase 13 | Pending |
 | GHL-02 | Phase 13 | Pending |
 
