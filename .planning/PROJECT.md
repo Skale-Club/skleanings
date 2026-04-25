@@ -36,14 +36,11 @@ Customers can discover, book, and pay for cleaning services online without calli
 - ✓ Contacts, appointments calendar, staff roles, and user management in admin — v0 core
 - ✓ Website/integrations admin tab with dynamic brand colors — v0 core
 - ✓ DB connection stability via postgres.js (SCRAM/pgBouncer fix) — phase 09
+- ✓ UTM session capture (all 6 params + referrer + landing page), traffic classification, first/last-touch attribution — Phase 10
+- ✓ Booking flow attribution — visitorId wired through direct and Stripe paths, booking_started and chat_initiated events — Phase 11
 
 ### Active
 
-- [ ] UTM session capture — record all 6 UTM params + referrer + landing page on first page load
-- [ ] Automatic traffic source classification (organic, social, referral, paid, direct, unknown)
-- [ ] First-touch attribution preserved for visitor lifetime
-- [ ] Last-touch attribution updated on each meaningful visit or conversion
-- [ ] Conversion events stored with attribution data (booking completed, form submit, phone click, quote request)
 - [ ] Marketing Overview dashboard (visitors, leads, conversions, conversion rate, top source/campaign/landing page, trends)
 - [ ] Campaign Performance view (per-campaign: visitors, conversions, conversion rate, landing pages used)
 - [ ] Source Performance view (grouped by source: visitors, conversions, conversion rate, best campaign)
@@ -107,4 +104,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-25 after v1.0 milestone start*
+*Last updated: 2026-04-25 after Phase 11 complete*
