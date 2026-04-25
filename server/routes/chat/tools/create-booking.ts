@@ -368,7 +368,8 @@ export const createBookingHandler: ToolHandler<CreateBookingInput> = async (
                         booking,
                         serviceNamesForNotification,
                         twilioSettings,
-                        company?.companyName || 'the business'
+                        company?.companyName || 'the business',
+                        booking.id
                     );
                 } catch (twilioError) {
                     console.error('[create_booking] Twilio Notification Error:', twilioError);
@@ -381,7 +382,8 @@ export const createBookingHandler: ToolHandler<CreateBookingInput> = async (
                         booking,
                         serviceNamesForNotification,
                         telegramSettings,
-                        company?.companyName || 'the business'
+                        company?.companyName || 'the business',
+                        booking.id
                     );
                 } catch (telegramError) {
                     console.error('[create_booking] Telegram Notification Error:', telegramError);

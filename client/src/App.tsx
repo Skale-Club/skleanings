@@ -73,6 +73,8 @@ const BlogPost = lazy(() => import("@/pages/BlogPost").then(m => ({ default: () 
 const ServiceAreas = lazy(() => import("@/pages/ServiceAreas").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Team = lazy(() => import("@/pages/Team").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const StaffSettings = lazy(() => import("@/pages/StaffSettings").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const AccountShell = lazy(() => import("@/pages/AccountShell").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const ClientLogin = lazy(() => import("@/pages/ClientLogin").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 
 function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const { data: settings } = useQuery<CompanySettings>({
@@ -110,6 +112,7 @@ function Router() {
   const { isInitialLoad } = useContext(InitialLoadContext);
   const isAdminRoute = location.startsWith('/admin');
   const isStaffRoute = location.startsWith('/staff');
+  const isAccountRoute = location.startsWith('/account');
   const prevLocation = useRef(location);
 
   // Scroll to top when navigating to a new page (not hash links)
@@ -138,13 +141,27 @@ function Router() {
     );
   }
 
+  if (isAccountRoute) {
+    return (
+      <Suspense fallback={fallback}>
+        <Switch>
+          <Route path="/account/login" component={ClientLogin} />
+          <Route path="/account" component={AccountShell} />
+          <Route path="/account/:rest*" component={AccountShell} />
+          <Route component={NotFound} />
+        </Switch>
+      </Suspense>
+    );
+  }
+
   if (isAdminRoute) {
     return (
       <Suspense fallback={fallback}>
         <Switch>
           <Route path="/admin/login" component={AdminLogin} />
           <Route path="/admin" component={Admin} />
-          <Route path="/admin/:rest*" component={Admin} />
+          <Route path="/admin/:section" component={Admin} />
+          <Route path="/admin/:section/:tab" component={Admin} />
           <Route component={NotFound} />
         </Switch>
       </Suspense>

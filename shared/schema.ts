@@ -183,6 +183,8 @@ export const bookings = pgTable("bookings", {
   ghlSyncStatus: text("ghl_sync_status").default("pending"), // pending, synced, failed
   // Staff assignment (nullable — single-operator deployments have no staff selection)
   staffMemberId: integer("staff_member_id").references(() => staffMembers.id, { onDelete: "set null" }),
+  // Client ownership (nullable — guest bookings have no userId)
+  userId: text("user_id").references(() => users.id),
   // Stripe payment fields (nullable — only set for online payments)
   stripeSessionId: text("stripe_session_id"),
   stripePaymentStatus: text("stripe_payment_status"), // paid, unpaid, no_payment_required
@@ -454,6 +456,7 @@ export const insertBookingSchemaBase = createInsertSchema(bookings).omit({
   ghlAppointmentId: true,
   ghlContactId: true,
   ghlSyncStatus: true,
+  userId: true,
 }).extend({
   // Frontend sends cart items with all pricing details (new format)
   cartItems: z.array(cartItemSchema).optional(),
@@ -948,3 +951,27 @@ export type InsertStaffMember = z.infer<typeof insertStaffMemberSchema>;
 export type InsertStaffServiceAbility = z.infer<typeof insertStaffServiceAbilitySchema>;
 export type InsertStaffAvailability = z.infer<typeof insertStaffAvailabilitySchema>;
 export type InsertStaffGoogleCalendar = z.infer<typeof insertStaffGoogleCalendarSchema>;
+
+// === NOTIFICATION LOGS ===
+
+export const notificationLogs = pgTable("notification_logs", {
+  id: serial("id").primaryKey(),
+  conversationId: uuid("conversation_id").references(() => conversations.id, { onDelete: "set null" }),
+  bookingId: integer("booking_id").references(() => bookings.id, { onDelete: "set null" }),
+  channel: text("channel").notNull(),            // 'sms' | 'telegram' | 'ghl'
+  trigger: text("trigger").notNull(),             // 'new_chat' | 'new_booking' | 'calendar_disconnect' | 'client_cancel' | 'client_reschedule'
+  recipient: text("recipient").notNull(),         // phone number or Telegram chat ID
+  preview: text("preview").notNull(),             // message body, truncated to 5000 chars before insert
+  status: text("status").notNull(),               // 'sent' | 'failed' | 'skipped'
+  errorMessage: text("error_message"),
+  providerMessageId: text("provider_message_id"), // Twilio SID, Telegram message_id, GHL contactId
+  sentAt: timestamp("sent_at").defaultNow().notNull(),
+});
+
+export const insertNotificationLogSchema = createInsertSchema(notificationLogs).omit({
+  id: true,
+  sentAt: true,
+});
+
+export type NotificationLog = typeof notificationLogs.$inferSelect;
+export type InsertNotificationLog = z.infer<typeof insertNotificationLogSchema>;

@@ -2,6 +2,7 @@ import { Building2, CheckCircle, Users, Award } from "lucide-react";
 import { useCompanySettings } from "@/context/CompanySettingsContext";
 import { DEFAULT_HOMEPAGE_CONTENT } from "@/lib/homepageDefaults";
 import type { HomepageContent } from "@shared/schema";
+import { PageHero, FeaturesGrid } from "@/components/shared";
 
 const ICONS = [Building2, CheckCircle, Users, Award];
 
@@ -9,28 +10,13 @@ export default function AboutUs() {
   const { settings } = useCompanySettings();
   const hc = settings?.homepageContent as HomepageContent | undefined;
   const about = { ...DEFAULT_HOMEPAGE_CONTENT.aboutSection, ...(hc?.aboutSection || {}) };
-  const features: { title: string; desc: string }[] = about.features ?? DEFAULT_HOMEPAGE_CONTENT.aboutSection!.features!;
+  const features = about.features ?? DEFAULT_HOMEPAGE_CONTENT.aboutSection!.features!;
 
   return (
     <div className="pt-24 pb-0">
       <section className="container-custom mx-auto mb-20">
-        <div className="max-w-3xl">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6">{about.heading}</h1>
-          <p className="text-xl text-slate-600 leading-relaxed mb-8">{about.intro}</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-12">
-          {features.map((item, i) => {
-            const Icon = ICONS[i % ICONS.length];
-            return (
-              <div key={i} className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                <Icon className="w-10 h-10 text-primary mb-4" />
-                <h3 className="text-xl font-bold mb-2">{item.title}</h3>
-                <p className="text-slate-600">{item.desc}</p>
-              </div>
-            );
-          })}
-        </div>
+        <PageHero heading={about.heading} intro={about.intro} />
+        <FeaturesGrid features={features} icons={ICONS} />
       </section>
 
       <section className="bg-slate-950 text-white py-20">

@@ -15,9 +15,9 @@ Customers can book cleaning services with a specific professional, with a unifie
 | Attribute | Value |
 |-----------|-------|
 | Type | Application |
-| Version | 0.2.0 |
-| Status | Active — v0.2 Staff Members shipped, planning v0.3 |
-| Last Updated | 2026-04-02 |
+| Version | 1.0.0 |
+| Status | Active — v1.0 Client Portal shipped |
+| Last Updated | 2026-04-05 |
 
 **Production:** skleanings.vercel.app (inferred from Vercel config)
 
@@ -51,7 +51,43 @@ Customers can book cleaning services with a specific professional, with a unifie
 - [x] Staff-aware booking — staffMemberId stored on booking, shown in admin dashboard — Phase 5
 
 ### Active (In Progress)
-None.
+*(none — v1.1 milestone complete)*
+
+### Validated (v1.1 Phase 15 complete)
+- [x] Admin Leads list shows inline channel icons (SMS/Telegram/GHL) per conversation — one query, client-side map, zero N+1 — Phase 15
+
+### Validated (v1.1 Phase 14 complete)
+- [x] `server/lib/notification-logger.ts` — `logNotification()` helper (never throws, truncates preview to 5000 chars) — Phase 14
+- [x] Twilio `sendNewChatNotification`, `sendBookingNotification`, `sendCalendarDisconnectNotification` instrumented — one log row per phone number, Twilio SID captured — Phase 14
+- [x] Telegram `sendMessageToAll` instrumented via optional `logContext` — one log row per chatId; test sends unaffected — Phase 14
+- [x] GHL `getOrCreateGHLContact` instrumented at both call sites: `syncBookingToGhl` (trigger=new_booking) and `updateContactHandler` (trigger=new_chat) — Phase 14
+- [x] `GET /api/conversations/:id/notifications` — admin-gated per-conversation notification log — Phase 14
+- [x] `GET /api/admin/notification-logs` — paginated global log with channel/status/trigger/from/to/search filters — Phase 14
+
+### Validated (v1.1 Phase 13 complete)
+- [x] `notificationLogs` table in shared/schema.ts with nullable conversationId + bookingId FKs — Phase 13
+- [x] `insertNotificationLogSchema`, `NotificationLog`, `InsertNotificationLog` exported from shared/schema.ts — Phase 13
+- [x] `IStorage` extended: `createNotificationLog`, `getNotificationLogsByConversation`, `getNotificationLogsByBooking`, `getNotificationLogs(filters)` — Phase 13
+- [x] `DatabaseStorage` implements all 4 methods with Drizzle dynamic filter pattern — Phase 13
+
+### Validated (v1.0 Phase 3 complete)
+- [x] Client login page (ClientLogin.tsx) with role=client redirect to /account — v1.0 Phase 3
+- [x] AccountShell.tsx — client account area with profile + bookings tab navigation — v1.0 Phase 3
+- [x] ProfileSection — name/phone/avatar editor using PATCH /api/client/me — v1.0 Phase 3
+- [x] BookingsSection — client booking list with status badges + eligibility-gated action buttons — v1.0 Phase 3
+- [x] CancelBookingDialog — AlertDialog confirm-to-cancel flow calling POST /api/client/bookings/:id/cancel — v1.0 Phase 3
+- [x] RescheduleBookingDialog — date + slot picker calling POST /api/client/bookings/:id/reschedule — v1.0 Phase 3
+- [x] Full client self-service cycle: login → view bookings → cancel or reschedule — v1.0 Phase 3
+
+### Validated (v1.0 Phase 2 complete)
+- [x] GET /api/client/me — returns authenticated client's user record — v1.0 Phase 2
+- [x] PATCH /api/client/me — updates name/phone/avatar (role-safe Zod allow-list) — v1.0 Phase 2
+- [x] GET /api/client/bookings — merged userId + email-match legacy bookings list — v1.0 Phase 2
+- [x] GET /api/client/bookings/:id — single booking with ownership check (403 on mismatch) — v1.0 Phase 2
+- [x] POST /api/client/bookings/:id/cancel — ownership + status + date-window guarded cancel — v1.0 Phase 2
+- [x] POST /api/client/bookings/:id/reschedule — availability-checked reschedule with self-exclusion — v1.0 Phase 2
+- [x] GHL appointment delete/update on client-initiated changes (fire-and-forget) — v1.0 Phase 2
+- [x] Admin Twilio + Telegram notifications for client cancel/reschedule — v1.0 Phase 2
 
 ### Validated (v0.7 complete)
 - [x] OAuth state encodes `staffId:redirectTo` — callback routes to correct page per initiator role — v0.7
@@ -143,6 +179,16 @@ None.
 | linkStaffMemberToUser dedicated storage method | userId omitted from InsertStaffMember type by design; updateStaffMember can't accept it | 2026-04-04 | Active |
 | Default role = 'staff' for new users in UserDialog | Least privilege — admin must explicitly elevate to admin/user | 2026-04-04 | Active |
 | requireAuth on calendar endpoints (not requireAdmin) | Staff need to manage their own calendar from /staff/settings without admin privilege | 2026-04-04 | Active |
+| Client router uses (req as any).user from requireClient (no re-auth) | requireClient already calls getAuthenticatedUser and sets req.user; double call = double Supabase round-trip | 2026-04-05 | Active |
+| getClientBookings uses two parallel queries + in-process merge | Avoids complex OR on nullable column; Set-based dedup is straightforward | 2026-04-05 | Active |
+| Client cancel/reschedule sync is fire-and-forget | HTTP response speed — GHL/notification latency must not block client | 2026-04-05 | Active |
+| AlertDialog for cancel, Dialog for reschedule | AlertDialog has correct destructive/confirm semantics; Dialog suits multi-step picker | 2026-04-05 | Active |
+| onError: toast only, no onClose in dialogs | User should be able to retry without reopening the dialog | 2026-04-05 | Active |
+| `text` for channel/trigger/status in notificationLogs (not pgEnum) | Matches every other enum-like field in codebase; no migration needed for new trigger types | 2026-04-15 | Active |
+| `onDelete: set null` on notificationLogs FK columns | Log row survives deletion of parent conversation or booking — preserves audit trail | 2026-04-15 | Active |
+| One notificationLogs row per recipient per send | Enables per-number/per-chatId filtering; Telegram sends to multiple chatIds = multiple rows | 2026-04-15 | Active |
+| Inline icons per lead row (not tabs/global section) | User requirement was at-a-glance visibility on lead list, not a separate log view | 2026-04-15 | Active |
+| Fetch all logs once (limit=500) + derive map client-side | Avoids N+1 per-conversation fetches; volume is low for a cleaning company | 2026-04-15 | Active |
 
 ## Success Metrics
 
@@ -177,4 +223,4 @@ None.
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-04-04 after Phase 06-05 — v0.6 Unified Users & Roles milestone complete*
+*Last updated: 2026-04-15 after Phase 15 — v1.1 milestone complete*

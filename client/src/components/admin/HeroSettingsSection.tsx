@@ -17,6 +17,9 @@ import { FooterTab } from './website/FooterTab';
 import { PagesTab } from './website/PagesTab';
 import { ColorsTab } from './website/ColorsTab';
 import type { WebsiteTabProps } from './website/types';
+import { useSlugTab } from '@/hooks/use-slug-tab';
+
+const WEBSITE_TABS = ['hero', 'badges', 'categories', 'reviews', 'blog', 'areas', 'footer', 'pages', 'colors'] as const;
 
 export function HeroSettingsSection({ getAccessToken }: { getAccessToken: () => Promise<string | null> }) {
   const { toast } = useToast();
@@ -24,6 +27,7 @@ export function HeroSettingsSection({ getAccessToken }: { getAccessToken: () => 
     queryKey: ['/api/company-settings']
   });
 
+  const [activeTab, setActiveTab] = useSlugTab('/admin/hero', 'hero', WEBSITE_TABS);
   const [heroTitle, setHeroTitle] = useState('');
   const [heroSubtitle, setHeroSubtitle] = useState('');
   const [heroImageUrl, setHeroImageUrl] = useState('');
@@ -150,7 +154,7 @@ export function HeroSettingsSection({ getAccessToken }: { getAccessToken: () => 
         )}
       </div>
 
-      <Tabs defaultValue="hero">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="hero">Hero</TabsTrigger>
           <TabsTrigger value="badges">Trust Badges</TabsTrigger>

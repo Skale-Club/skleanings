@@ -19,6 +19,9 @@ import userRoutes from "./routes/user-routes";
 import authRoutes from "./routes/auth-routes";
 import staffRouter from "./routes/staff";
 import paymentsRouter from "./routes/payments";
+import analyticsRouter from "./routes/analytics";
+import clientRouter from "./routes/client";
+import notificationLogsRouter from "./routes/notification-logs";
 
 export async function registerRoutes(server: Server, app: Express) {
   // Mount routers
@@ -63,4 +66,13 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // Payment routes (mounted at /api/payments)
   app.use("/api/payments", paymentsRouter);
+
+  // Analytics routes (public POST /api/analytics/session)
+  app.use("/api/analytics", analyticsRouter);
+
+  // Client portal routes (mounted at /api/client)
+  app.use("/api/client", clientRouter);
+
+  // Notification log routes (/api/conversations/:id/notifications + /api/admin/notification-logs)
+  app.use("/api", notificationLogsRouter);
 }

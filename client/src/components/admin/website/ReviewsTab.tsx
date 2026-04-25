@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { DEFAULT_HOMEPAGE_CONTENT } from '@/lib/homepageDefaults';
+import { SettingsCard } from '@/components/admin/shared/SettingsCard';
 import type { WebsiteTabProps } from './types';
 
 export function ReviewsTab({ homepageContent, updateHomepageContent, savedFields }: WebsiteTabProps) {
@@ -15,11 +16,7 @@ export function ReviewsTab({ homepageContent, updateHomepageContent, savedFields
     savedFields[field] ? <Check className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600 w-4 h-4" /> : null;
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-base font-semibold flex items-center gap-2">
-        <Star className="w-4 h-4 text-primary" />
-        Reviews Section
-      </h3>
+    <SettingsCard icon={Star} title="Reviews Section">
       <div className="space-y-2">
         <Label>Heading</Label>
         <div className="relative">
@@ -79,6 +76,6 @@ export function ReviewsTab({ homepageContent, updateHomepageContent, savedFields
           <SavedIndicator field="homepageContent.reviewsSection.embedUrl" />
         </div>
       </div>
-    </div>
+    </SettingsCard>
   );
 }

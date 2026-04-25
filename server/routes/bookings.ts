@@ -2,7 +2,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { storage } from "../storage";
-import { requireAdmin } from "../lib/auth";
+import { requireAdmin, getAuthenticatedUser } from "../lib/auth";
 import { insertBookingSchema, insertBookingSchemaBase } from "@shared/schema";
 import { checkAvailability } from "../lib/availability";
 import { canCreateBooking, recordBookingCreation } from "../lib/rate-limit";
@@ -91,9 +91,20 @@ router.post('/', async (req, res) => {
             }
         }
 
+        let bookingUserId: string | null = null;
+        try {
+            const authUser = await getAuthenticatedUser(req);
+            if (authUser?.role === 'client') {
+                bookingUserId = authUser.id;
+            }
+        } catch {
+            // Auth failure on a public endpoint is non-fatal — proceed as guest
+        }
+
         const booking = await storage.createBooking({
             ...validatedData,
             bookingItemsData,
+            userId: bookingUserId,
         });
 
         // Auto-link contact: upsert by email/phone, then set contactId on booking
@@ -135,7 +146,8 @@ router.post('/', async (req, res) => {
                         booking,
                         serviceNames,
                         twilioSettings,
-                        companySettings?.companyName || 'the business'
+                        companySettings?.companyName || 'the business',
+                        booking.id
                     );
                 } catch (twilioError) {
                     console.error("Twilio Notification Error:", twilioError);
@@ -148,7 +160,8 @@ router.post('/', async (req, res) => {
                         booking,
                         serviceNames,
                         telegramSettings,
-                        companySettings?.companyName || 'the business'
+                        companySettings?.companyName || 'the business',
+                        booking.id
                     );
                 } catch (telegramError) {
                     console.error("Telegram Notification Error:", telegramError);

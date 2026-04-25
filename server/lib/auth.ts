@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { createClient } from "@supabase/supabase-js";
 import { createRemoteJWKSet, decodeProtectedHeader, jwtVerify } from "jose";
+import { ensureDatabaseReady } from "../db";
 import { storage } from "../storage";
 import {
   createFallbackUser,
@@ -204,29 +205,31 @@ export async function getAuthenticatedUser(req: Request) {
   if (!rawToken) return null;
   const token = rawToken.trim();
 
+  const supabaseUser = await getSupabaseUserFromToken(token);
+  if (!supabaseUser?.email) return null;
+
   try {
-    const supabaseUser = await getSupabaseUserFromToken(token);
-    if (!supabaseUser?.email) return null;
-
-    const email = supabaseUser.email;
-    let dbUser = await findAppUser(supabaseUser);
-
-    if (!dbUser) {
-      dbUser = await provisionAppUser(supabaseUser);
-      console.log(`[Auth] Auto-provisioned user profile for ${email}`);
-    } else if (dbUser.id !== supabaseUser.id) {
-      console.warn(
-        `[Auth] User id mismatch for ${email}. DB=${dbUser.id}, Supabase=${supabaseUser.id}`
-      );
-    }
-
-    (req as any).user = dbUser;
-    (req as any).supabaseUser = supabaseUser;
-    return dbUser;
+    await ensureDatabaseReady();
   } catch (error) {
-    console.error("[Auth] Authentication failed:", error);
-    return null;
+    console.error("[Auth] Database bootstrap failed during authentication:", error);
+    throw error;
   }
+
+  const email = supabaseUser.email;
+  let dbUser = await findAppUser(supabaseUser);
+
+  if (!dbUser) {
+    dbUser = await provisionAppUser(supabaseUser);
+    console.log(`[Auth] Auto-provisioned user profile for ${email}`);
+  } else if (dbUser.id !== supabaseUser.id) {
+    console.warn(
+      `[Auth] User id mismatch for ${email}. DB=${dbUser.id}, Supabase=${supabaseUser.id}`
+    );
+  }
+
+  (req as any).user = dbUser;
+  (req as any).supabaseUser = supabaseUser;
+  return dbUser;
 }
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
@@ -249,6 +252,15 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
   if (!user) return res.status(401).json({ message: "Authentication required" });
   if (user.role !== "admin") {
     return res.status(403).json({ message: "Admin access required" });
+  }
+  next();
+}
+
+export async function requireClient(req: Request, res: Response, next: NextFunction) {
+  const user = await getAuthenticatedUser(req);
+  if (!user) return res.status(401).json({ message: "Authentication required" });
+  if (user.role !== "client") {
+    return res.status(403).json({ message: "Client access required" });
   }
   next();
 }

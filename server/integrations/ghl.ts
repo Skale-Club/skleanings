@@ -573,3 +573,43 @@ export async function getOrCreateGHLContact(
   });
   return result;
 }
+
+export async function deleteGHLAppointment(
+  apiKey: string,
+  appointmentId: string
+): Promise<{ success: boolean; message?: string }> {
+  return withRetry(async () => {
+    const response = await ghlFetch(`/calendars/events/appointments/${appointmentId}`, apiKey, {
+      method: "DELETE",
+    });
+    if (response.ok) return { success: true };
+    const error = await response.json().catch(() => ({}));
+    const err = new Error((error as any).message || `Failed to delete appointment: ${response.status}`);
+    (err as any).status = response.status;
+    throw err;
+  }, { maxRetries: 2 }).catch((error: any) => ({
+    success: false,
+    message: error.message || "Failed to delete appointment",
+  }));
+}
+
+export async function updateGHLAppointment(
+  apiKey: string,
+  appointmentId: string,
+  updates: { startTime: string; endTime: string; title?: string }
+): Promise<{ success: boolean; message?: string }> {
+  return withRetry(async () => {
+    const response = await ghlFetch(`/calendars/events/appointments/${appointmentId}`, apiKey, {
+      method: "PUT",
+      body: JSON.stringify(updates),
+    });
+    if (response.ok) return { success: true };
+    const error = await response.json().catch(() => ({}));
+    const err = new Error((error as any).message || `Failed to update appointment: ${response.status}`);
+    (err as any).status = response.status;
+    throw err;
+  }, { maxRetries: 2 }).catch((error: any) => ({
+    success: false,
+    message: error.message || "Failed to update appointment",
+  }));
+}

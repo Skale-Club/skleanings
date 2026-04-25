@@ -1,8 +1,9 @@
-import { Check, Palette, RotateCcw } from 'lucide-react';
+import { Check, Palette, RotateCcw, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DEFAULT_HOMEPAGE_CONTENT } from '@/lib/homepageDefaults';
+import { SettingsCard } from '@/components/admin/shared/SettingsCard';
 import type { WebsiteTabProps } from './types';
 
 const DEFAULT_PRIMARY = DEFAULT_HOMEPAGE_CONTENT.brandColors!.primary!;
@@ -28,16 +29,13 @@ export function ColorsTab({ homepageContent, updateHomepageContent, savedFields 
   };
 
   return (
-    <div className="space-y-8">
-      <h3 className="text-base font-semibold flex items-center gap-2">
-        <Palette className="w-4 h-4 text-primary" />
-        Brand Colors
-      </h3>
-      <p className="text-sm text-muted-foreground -mt-4">
-        These colors are applied site-wide as CSS variables. Changes take effect immediately on save.
-      </p>
+    <div className="space-y-6">
+      <SettingsCard icon={Palette} title="Brand Colors">
+        <p className="text-sm text-muted-foreground">
+          These colors are applied site-wide as CSS variables. Changes take effect immediately on save.
+        </p>
 
-      <div className="grid gap-8 md:grid-cols-2">
+        <div className="grid gap-8 md:grid-cols-2">
         {/* Primary */}
         <div className="space-y-3">
           <Label className="font-semibold">Primary Color</Label>
@@ -122,12 +120,11 @@ export function ColorsTab({ homepageContent, updateHomepageContent, savedFields 
               <RotateCcw className="w-3 h-3" /> Reset to default
             </Button>
           )}
+          </div>
         </div>
-      </div>
+      </SettingsCard>
 
-      {/* Live preview */}
-      <div className="border border-border rounded-lg p-4 space-y-3">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Preview</p>
+      <SettingsCard icon={Eye} title="Preview">
         <div className="flex flex-wrap gap-3 items-center">
           <button
             className="px-5 py-2.5 rounded-full font-bold text-sm"
@@ -143,7 +140,7 @@ export function ColorsTab({ homepageContent, updateHomepageContent, savedFields 
           </button>
           <span className="text-sm font-semibold" style={{ color: primary }}>Link text</span>
         </div>
-      </div>
+      </SettingsCard>
     </div>
   );
 }

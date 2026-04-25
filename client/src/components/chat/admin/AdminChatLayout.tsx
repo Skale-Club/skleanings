@@ -1,5 +1,5 @@
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
     ResizableHandle,
@@ -115,6 +115,28 @@ export function AdminChatLayout({ getAccessToken }: AdminChatLayoutProps) {
             return res.json();
         }
     });
+
+    const { data: notificationLogs = [] } = useQuery<Array<{ id: number; conversationId: string | null; channel: string }>>({
+        queryKey: ['/api/admin/notification-logs', 'summary'],
+        queryFn: async () => {
+            const token = await getAccessToken();
+            if (!token) return [];
+            const res = await authenticatedRequest('GET', '/api/admin/notification-logs?limit=500', token);
+            return res.ok ? res.json() : [];
+        },
+        staleTime: 60_000,
+    });
+
+    const notificationMap = useMemo(() => {
+        const map = new Map<string, Set<string>>();
+        for (const log of notificationLogs) {
+            if (log.conversationId) {
+                if (!map.has(log.conversationId)) map.set(log.conversationId, new Set());
+                map.get(log.conversationId)!.add(log.channel);
+            }
+        }
+        return map;
+    }, [notificationLogs]);
 
     // Derived state
     const selectedConversation = conversations?.find(c => c.id === selectedConversationId) || null;
@@ -350,6 +372,7 @@ export function AdminChatLayout({ getAccessToken }: AdminChatLayoutProps) {
                                 onArchive={(id) => handleStatusChange(id, 'closed')}
                                 onReopen={(id) => handleStatusChange(id, 'open')}
                                 onDelete={handleDelete}
+                                notificationMap={notificationMap}
                             />
                         </div>
                     </ResizablePanel>
@@ -386,6 +409,7 @@ export function AdminChatLayout({ getAccessToken }: AdminChatLayoutProps) {
                         onArchive={(id) => handleStatusChange(id, 'closed')}
                         onReopen={(id) => handleStatusChange(id, 'open')}
                         onDelete={handleDelete}
+                        notificationMap={notificationMap}
                     />
                 </div>
 

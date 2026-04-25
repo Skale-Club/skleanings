@@ -2,7 +2,7 @@ import { BlogGenerator } from "./blog-generator";
 
 const isServerless = !!process.env.VERCEL;
 
-export function startCronJobs() {
+export async function startCronJobs() {
   if (isServerless) {
     console.log("[CronService] Serverless environment detected. Skipping node-cron scheduling.");
     console.log("[CronService] Blog autopost is handled by GitHub Actions → POST /api/blog/cron/generate");
@@ -11,7 +11,7 @@ export function startCronJobs() {
 
   // Only run cron in persistent Node.js environments (local dev, VPS, etc.)
   try {
-    const cron = require("node-cron");
+    const { default: cron } = await import("node-cron");
 
     // Run every hour to check for blog generation schedule based on postsPerDay setting
     // The actual generation frequency is controlled by BlogSettings.postsPerDay and lastRunAt

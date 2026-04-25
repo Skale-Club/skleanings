@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SettingsCard } from '@/components/admin/shared/SettingsCard';
 import type { WebsiteTabProps } from './types';
 
 const badgeIconOptions = [
@@ -23,12 +24,8 @@ export function TrustBadgesTab({ homepageContent, updateHomepageContent, savedFi
     savedFields[field] ? <Check className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600 w-4 h-4" /> : null;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <h3 className="text-base font-semibold flex items-center gap-2">
-          <BadgeCheck className="w-4 h-4 text-primary" />
-          Trust Badges
-        </h3>
+    <SettingsCard icon={BadgeCheck} title="Trust Badges">
+      <div className="flex justify-end">
         <Button
           variant="outline"
           size="sm"
@@ -137,6 +134,6 @@ export function TrustBadgesTab({ homepageContent, updateHomepageContent, savedFi
           <p className="text-sm text-muted-foreground">No badges added yet.</p>
         )}
       </div>
-    </div>
+    </SettingsCard>
   );
 }

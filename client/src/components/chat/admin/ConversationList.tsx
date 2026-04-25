@@ -1,6 +1,6 @@
 
 import { format } from "date-fns";
-import { Archive, Loader2, RotateCcw, Search, Trash2, User } from "lucide-react";
+import { Archive, Link2, Loader2, MessageCircle, Phone, RotateCcw, Search, Trash2, User } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ interface ConversationListProps {
     onReopen: (id: string) => void;
     onDelete: (id: string) => void;
     isLoading: boolean;
+    notificationMap?: Map<string, Set<string>>;
 }
 
 export function ConversationList({
@@ -39,6 +40,7 @@ export function ConversationList({
     onReopen,
     onDelete,
     isLoading,
+    notificationMap,
 }: ConversationListProps) {
     const [searchQuery, setSearchQuery] = useState("");
     const [activeTab, setActiveTab] = useState("open");
@@ -117,6 +119,20 @@ export function ConversationList({
                                     <div className="line-clamp-2 text-xs text-muted-foreground">
                                         {conv.lastMessage || "No messages yet"}
                                     </div>
+
+                                    {notificationMap?.has(conv.id) && (
+                                        <div className="flex items-center gap-1.5 mt-0.5">
+                                            {notificationMap.get(conv.id)?.has('sms') && (
+                                                <Phone className="h-3 w-3 text-emerald-500" title="SMS sent" />
+                                            )}
+                                            {notificationMap.get(conv.id)?.has('telegram') && (
+                                                <MessageCircle className="h-3 w-3 text-sky-500" title="Telegram sent" />
+                                            )}
+                                            {notificationMap.get(conv.id)?.has('ghl') && (
+                                                <Link2 className="h-3 w-3 text-violet-500" title="GHL synced" />
+                                            )}
+                                        </div>
+                                    )}
 
                                     {selectedId === conv.id && (
                                         <div className="mt-2 flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>

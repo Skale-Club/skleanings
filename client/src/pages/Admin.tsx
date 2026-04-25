@@ -73,7 +73,7 @@ function AdminContent() {
       setLocation('/staff/settings');
     }
   }, [role, loading, setLocation]);
-  const [, params] = useRoute('/admin/:section?');
+  const [, params] = useRoute('/admin/:section?/:tab?');
   const sectionFromUrl = params?.section as AdminSection | undefined;
   const activeSection: AdminSection = sectionFromUrl && menuItems.some((i) => i.id === sectionFromUrl)
     ? sectionFromUrl

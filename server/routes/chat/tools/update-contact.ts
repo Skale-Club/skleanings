@@ -11,6 +11,7 @@ import { ChatError } from '../../../lib/chat-errors';
 import { addInternalConversationMessage, requireConversation, requireConversationId } from './shared';
 import type { ToolHandler } from './registry';
 import { type UpdateContactInput } from './schemas';
+import { logNotification } from '../../../lib/notification-logger';
 
 /**
  * Handler for update_contact tool
@@ -105,6 +106,17 @@ export const updateContactHandler: ToolHandler<UpdateContactInput> = async (
                     address: undefined,
                 }
             );
+
+            await logNotification({
+                channel: "ghl",
+                trigger: "new_chat",
+                recipient: contactEmail || contactPhone,
+                preview: `Contact: ${contactName || 'Unknown'} (${contactPhone || contactEmail})`,
+                status: contactResult.success && contactResult.contactId ? "sent" : "failed",
+                providerMessageId: contactResult.contactId,
+                errorMessage: contactResult.success ? undefined : contactResult.message,
+                conversationId: resolvedConversationId,
+            });
 
             if (!contactResult.success || !contactResult.contactId) {
                 console.error(`[update_contact] GHL contact creation failed:`, contactResult.message);

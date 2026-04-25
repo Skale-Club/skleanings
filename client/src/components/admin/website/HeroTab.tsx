@@ -1,4 +1,5 @@
-import { Check, BadgeCheck, Image, Loader2, Plus, Star, Shield, Clock, Sparkles, Heart, ThumbsUp, Trophy } from 'lucide-react';
+import { Check, BadgeCheck, Image, Loader2, Plus, Star, Shield, Clock, Sparkles, Heart, ThumbsUp, Trophy, Megaphone } from 'lucide-react';
+import { SettingsCard } from '@/components/admin/shared/SettingsCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -58,7 +59,8 @@ export function HeroTab({
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      <SettingsCard icon={Megaphone} title="Hero Content">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="space-y-6">
           <div className="space-y-2">
@@ -151,11 +153,9 @@ export function HeroTab({
         </div>
       </div>
 
-      <div className="border-t border-border pt-6 space-y-4">
-        <h3 className="text-base font-semibold flex items-center gap-2">
-          <BadgeCheck className="w-4 h-4 text-primary" />
-          Hero Badge
-        </h3>
+      </SettingsCard>
+
+      <SettingsCard icon={BadgeCheck} title="Hero Badge">
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label>Badge Image URL</Label>
@@ -239,7 +239,7 @@ export function HeroTab({
             </Select>
           </div>
         </div>
-      </div>
+      </SettingsCard>
     </div>
   );
 }

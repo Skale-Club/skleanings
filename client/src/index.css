@@ -222,4 +222,199 @@
     color: hsl(var(--muted-foreground));
     pointer-events: none;
   }
+
+  .appointments-calendar-shell {
+    @apply relative overflow-hidden rounded-[28px] border border-border/70 bg-card shadow-sm;
+    background:
+      radial-gradient(circle at top left, hsl(var(--primary) / 0.08), transparent 28%),
+      linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--card)) 100%);
+  }
+
+  .appointments-calendar-shell__board {
+    @apply relative z-[1] px-2 pb-2 pt-0 sm:px-3 sm:pb-3 sm:pt-0;
+  }
+
+  .appointments-calendar-toolbar {
+    @apply flex flex-col gap-4 border-b border-border/60 px-2 py-2 sm:px-3 sm:py-3 lg:flex-row lg:items-center lg:justify-between;
+  }
+
+  .appointments-calendar-toolbar__title {
+    @apply space-y-1;
+  }
+
+  .appointments-calendar-toolbar__headline {
+    @apply flex items-center;
+  }
+
+  .appointments-calendar-toolbar__month-nav {
+    @apply inline-flex items-center gap-1 rounded-full border border-border/70 bg-background/80 p-1 shadow-sm;
+  }
+
+  .appointments-calendar-toolbar__eyebrow {
+    @apply block text-[11px] font-semibold uppercase tracking-[0.28em] text-muted-foreground;
+  }
+
+  .appointments-calendar-toolbar__label {
+    @apply min-w-[170px] px-2 text-center text-lg font-semibold text-foreground sm:text-xl;
+  }
+
+  .appointments-calendar-toolbar__controls {
+    @apply flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between lg:justify-end;
+  }
+
+  .appointments-calendar-toolbar__views {
+    @apply inline-flex w-fit items-center rounded-full border border-border/70 bg-muted/70 p-1;
+  }
+
+  .appointments-calendar-toolbar__view-btn {
+    @apply inline-flex h-7 items-center rounded-full px-3 text-sm font-medium text-muted-foreground transition-colors;
+  }
+
+  .appointments-calendar-toolbar__view-btn--active {
+    @apply bg-background text-foreground shadow-sm;
+  }
+
+  .appointments-calendar .rbc-month-view,
+  .appointments-calendar .rbc-time-view {
+    @apply overflow-hidden rounded-[22px] border border-border/70 bg-background/80;
+    border-top: 0;
+  }
+
+  .appointments-calendar .rbc-header {
+    @apply border-b border-border/60 bg-muted/60 px-2 py-3 text-[11px] font-semibold uppercase tracking-[0.28em] text-muted-foreground;
+  }
+
+  .appointments-calendar .rbc-header + .rbc-header,
+  .appointments-calendar .rbc-day-bg + .rbc-day-bg,
+  .appointments-calendar .rbc-month-row + .rbc-month-row,
+  .appointments-calendar .rbc-time-content > * + * > *,
+  .appointments-calendar .rbc-timeslot-group,
+  .appointments-calendar .rbc-time-header-content,
+  .appointments-calendar .rbc-time-content,
+  .appointments-calendar .rbc-time-header {
+    border-color: hsl(var(--border) / 0.65);
+  }
+
+  .appointments-calendar .rbc-row-content {
+    @apply px-1 pb-1;
+  }
+
+  .appointments-calendar .rbc-date-cell {
+    @apply px-3 pt-3 text-sm font-semibold text-muted-foreground;
+  }
+
+  .appointments-calendar .rbc-date-cell > a {
+    color: inherit;
+  }
+
+  .appointments-calendar .rbc-off-range-bg {
+    background: linear-gradient(180deg, hsl(var(--muted) / 0.75), hsl(var(--muted) / 0.45));
+  }
+
+  .appointments-calendar .rbc-off-range .rbc-date-cell,
+  .appointments-calendar .rbc-off-range {
+    color: hsl(var(--muted-foreground) / 0.8);
+  }
+
+  .appointments-calendar .rbc-today {
+    background: linear-gradient(180deg, hsl(var(--primary) / 0.08), hsl(var(--primary) / 0.03));
+  }
+
+  .appointments-calendar .rbc-now.rbc-date-cell,
+  .appointments-calendar .rbc-now .rbc-button-link {
+    color: hsl(var(--primary));
+  }
+
+  .appointments-calendar .rbc-button-link {
+    @apply font-semibold no-underline;
+  }
+
+  .appointments-calendar .rbc-time-view .rbc-time-header-gutter,
+  .appointments-calendar .rbc-time-view .rbc-time-gutter {
+    @apply bg-muted/35;
+  }
+
+  .appointments-calendar .rbc-time-view .rbc-time-header,
+  .appointments-calendar .rbc-time-view .rbc-time-header-content,
+  .appointments-calendar .rbc-time-view .rbc-time-header-gutter {
+    border-top: 0 !important;
+  }
+
+  .appointments-calendar .rbc-time-view .rbc-allday-cell {
+    display: none;
+  }
+
+  .appointments-calendar .rbc-time-view .rbc-time-header-content > .rbc-row:last-child {
+    min-height: 0;
+  }
+
+  .appointments-calendar .rbc-time-view .rbc-time-header-content {
+    min-height: auto;
+  }
+
+  .appointments-calendar .rbc-time-view .rbc-time-header {
+    @apply border-b border-border/60;
+  }
+
+  .appointments-calendar .rbc-time-view .rbc-time-content {
+    border-top: 0;
+  }
+
+  .appointments-calendar .rbc-time-view .rbc-day-slot .rbc-time-slot {
+    min-height: 2.25rem;
+  }
+
+  .appointments-calendar .rbc-event {
+    @apply transition-transform duration-150 ease-out;
+  }
+
+  .appointments-calendar .rbc-event:hover {
+    transform: translateY(-1px);
+  }
+
+  .appointments-calendar .rbc-selected {
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.16);
+  }
+
+  .appointments-calendar .rbc-show-more {
+    @apply mt-1 rounded-full border border-border/60 bg-background/90 px-2 py-1 text-[11px] font-medium text-primary shadow-sm;
+  }
+
+  .appointments-calendar .rbc-time-slot,
+  .appointments-calendar .rbc-label {
+    @apply text-xs text-muted-foreground;
+  }
+
+  .appointments-calendar .rbc-current-time-indicator {
+    background-color: hsl(var(--primary));
+    height: 2px;
+  }
+
+  .appointments-event {
+    @apply flex h-full min-h-[38px] flex-col justify-center gap-1 overflow-hidden px-2 py-1;
+  }
+
+  .appointments-event__title {
+    @apply truncate text-[11px] font-semibold leading-tight text-foreground;
+  }
+
+  .appointments-event__meta {
+    @apply flex items-center justify-between gap-2 text-[10px] uppercase tracking-[0.14em] text-muted-foreground;
+  }
+
+  .appointments-event__status {
+    @apply truncate rounded-full bg-background/80 px-1.5 py-0.5 text-[9px] font-semibold text-foreground;
+  }
+
+  .appointments-event--busy .appointments-event__status {
+    @apply hidden;
+  }
+
+  .appointments-event--busy .appointments-event__title {
+    @apply text-slate-600 dark:text-slate-300;
+  }
+
+  .appointments-calendar .rbc-agenda-view table.rbc-agenda-table {
+    border-color: hsl(var(--border) / 0.65);
+  }
 }

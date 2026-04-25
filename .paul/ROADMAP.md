@@ -6,114 +6,105 @@ Skleanings is a booking platform for a cleaning company. The current milestone (
 
 ## Current Milestone
 
-**v0.6 — Appointments Calendar + Contacts** (v0.6.0)
-Status: ✅ Complete — 2026-04-09
-Phases: 4 of 4 complete
-
-## Completed Milestone (previous)
-
-**v0.5 — Google Calendar Reconnect Notifications** (v0.5.0)
-Status: ✅ Complete — 2026-04-02
-Phases: 1 of 1 complete
-
----
-
-## v0.6 — Appointments Calendar + Contacts
-
-Admin gains a full visual calendar of all appointments (like Google Calendar) with per-staff color coding and GCal overlay, plus a Contacts page that deduplicates customer data from bookings into a manageable CRM-like interface. User roles are extended to support future staff logins.
-
-### Phase 1: DB Foundation `[06-01]` ✅ Complete — 2026-04-09
-
-**Goal:** `contacts` table exists with deduped customer records; bookings linked to contacts; `users.role` field replaces binary `isAdmin`; `staffMembers.userId` links staff to user accounts for future login.
-**Depends on:** Nothing (schema-first)
-
-**Scope:**
-- `contacts` table: `id`, `name`, `email` (unique), `phone`, `address`, `ghlContactId`, `notes`, `createdAt`, `updatedAt`
-- Add `contactId` FK (nullable) to `bookings` table
-- Migration: backfill contacts from distinct email/phone in existing bookings; link `bookings.contactId`
-- Add `role: 'admin' | 'staff' | 'viewer'` to `users` table (replaces `isAdmin`, keep `isAdmin` computed for backward compat)
-- Add `userId` (nullable FK → users) to `staffMembers` table
-- IStorage methods: `upsertContact`, `getContact`, `listContacts`, `getContactBookings`, `linkContactToBooking`
-
-**Plans:**
-- [ ] 06-01-01: contacts table + bookings.contactId + storage methods
-- [ ] 06-01-02: users.role + staffMembers.userId + auth middleware update
-
-### Phase 2: Appointments Calendar Tab `[06-02]` ✅ Complete — 2026-04-09
-
-**Goal:** New "Calendar" tab in admin dashboard shows all bookings as visual calendar events — day/week/month views, per-staff color coding, GCal busy-time overlays, click-to-edit.
-**Depends on:** Phase 1 (for contact linking on event detail)
-
-**Scope:**
-- Install `react-big-calendar` + `date-fns` localizer
-- New `AppointmentsCalendarSection` component in `client/src/components/admin/`
-- Views: Month / Week / Day toggle
-- Each booking → calendar event with: customer name, time, staff color, status chip
-- Per-staff color legend + filter checkboxes (show/hide staff)
-- Status filter: All / Pending / Confirmed / Completed / Cancelled
-- GCal busy-time overlay: gray non-interactive blocks fetched from `GET /api/staff/:id/availability?date=`
-- Click event → opens existing booking edit dialog (reuse `BookingsSection` edit modal)
-- Click empty slot → opens new booking dialog pre-filled with date/time/staff
-- `GET /api/bookings?from=&to=` date range query (add to existing bookings endpoint)
-- Add "Calendar" nav item to Admin sidebar
-
-**Plans:**
-- [ ] 06-02-01: Calendar API endpoint (date range) + react-big-calendar setup
-- [ ] 06-02-02: Calendar UI — views, events, staff colors, filters
-- [ ] 06-02-03: GCal overlay + click interactions (edit + create)
-
-### Phase 3: Contacts Page `[06-03]` ✅ Complete — 2026-04-09
-
-**Goal:** New "Contacts" admin tab lists all deduped contacts with search/filter; contact detail shows profile, booking history, total spend, GHL sync status, and internal notes.
-**Depends on:** Phase 1 (contacts table must exist)
-
-**Scope:**
-- New `ContactsSection` component in `client/src/components/admin/`
-- List view: searchable table — name, email, phone, last booking date, total spend, booking count, GHL badge
-- Contact detail panel (slide-in or page): full profile, editable notes, GHL external link
-- Booking history list per contact (linked via `contactId`)
-- On new booking creation: `upsertContact` runs first, then `contactId` stored on booking
-- `GET /api/contacts` — paginated list with search
-- `GET /api/contacts/:id` — single contact with booking history
-- `PUT /api/contacts/:id` — update notes/profile
-- Add "Contacts" nav item to Admin sidebar
-
-**Plans:**
-- [x] 06-03-01: Contacts API endpoints + storage methods + upsertContact wiring ✅ 2026-04-09
-- [x] 06-03-02: ContactsSection UI — list + search + GHL badge ✅ 2026-04-09
-- [x] 06-03-03: Contact detail sheet + booking history + notes ✅ 2026-04-09
-
-### Phase 4: Staff User Roles `[06-04]` ✅ Complete — 2026-04-09
-
-**Goal:** Staff members can be linked to user accounts; role-scoped views hide irrelevant admin sections from non-admin users; `requireAdmin` / `requireStaff` middleware enforces access.
-**Depends on:** Phase 1 (users.role + staffMembers.userId must exist)
-
-**Scope:**
-- `requireStaff` middleware: allows `role = 'admin' | 'staff'`; rejects `'viewer'` and unauthenticated
-- Staff-scoped admin view: logged-in staff sees only "Calendar" (filtered to their bookings) and their profile — not full admin
-- Admin sidebar conditionally renders sections based on `role`
-- `GET /api/me` returns `role` + linked `staffMemberId` for frontend routing
-- Users section: admin can set `role` and link a user to a staff member
-- Backward compat: `isAdmin` remains derived from `role === 'admin'` — no existing auth breaks
-
-**Plans:**
-- [x] 06-04-01: requireStaff middleware + staff-link endpoint ✅ 2026-04-09
-- [x] 06-04-02: Frontend role-aware sidebar + staff-scoped calendar view ✅ 2026-04-09
-- [x] 06-04-03: Users section — role assignment + user↔staff linking UI ✅ 2026-04-09
-
----
-
-## Previously Completed Milestones
-
-**v0.3 — Stripe Payments** (v0.3.0)
-Status: ✅ Complete — 2026-04-02
+**v1.1 — Notification Log for Leads and Bookings** (v1.1.0)
+Status: ✅ Complete — 2026-04-15
 Phases: 3 of 3 complete
 
-## Previously Completed (archived)
+## Phases
 
-**v0.2 — Staff Members** (v0.2.0)
-Status: ✅ Complete — 2026-04-02
-Phases: 5 of 5 complete
+| Phase | Name | Plans | Status | Completed |
+|-------|------|-------|--------|-----------|
+| 13 | Schema + Storage Layer | 1/1 | ✅ Complete | 2026-04-15 |
+| 14 | Backend — Instrumentation + API | 2/2 | ✅ Complete | 2026-04-15 |
+| 15 | Admin UI — Lead Notification Indicators | 1/1 | ✅ Complete | 2026-04-15 |
+
+## Phase Details
+
+### Phase 13: Schema + Storage Layer
+
+**Goal:** A `notificationLogs` table exists in `shared/schema.ts` with all required columns; `IStorage` has typed methods to insert and query logs; `npm run db:push` migrates the schema cleanly.
+**Depends on:** Nothing (additive-only change)
+**Research:** Unlikely (internal schema patterns established)
+
+**Scope:**
+- New `notificationLogs` table: `id`, `conversationId` (nullable FK → conversations), `bookingId` (nullable FK → bookings), `channel` (enum: sms/telegram/ghl), `trigger` (enum: new_chat/new_booking/calendar_disconnect/client_cancel/client_reschedule), `recipient` (phone number or Telegram chat ID), `preview` (message body, truncated to 5000 chars), `status` (enum: sent/failed/skipped), `errorMessage`, `providerMessageId`, `sentAt`
+- Indexes: `conversationId`, `bookingId`, `sentAt`, `channel`, `status`
+- `IStorage` methods: `createNotificationLog(entry)`, `getNotificationLogsByConversation(conversationId)`, `getNotificationLogsByBooking(bookingId)`, `getNotificationLogs(filters)` (paginated, global)
+- Drizzle insert/select schemas and TypeScript types via `drizzle-zod`
+
+**Plans:**
+- [ ] 13-01: notificationLogs schema + storage methods
+
+### Phase 14: Backend — Instrumentation + API
+
+**Goal:** Every Twilio SMS and Telegram message send (and GHL sync) automatically writes a row to `notification_logs`; two API endpoints expose the log data with filters.
+**Depends on:** Phase 13 (table + storage methods must exist)
+**Research:** Unlikely (wrapping existing functions — no new external APIs)
+
+**Scope:**
+- `server/lib/notification-logger.ts` — `logNotification(entry)` helper: wraps `storage.createNotificationLog`, never throws (try/catch), truncates preview
+- Instrument `server/integrations/twilio.ts`: wrap `sendNewChatNotification`, `sendBookingNotification`, `sendCalendarDisconnectNotification` — log before/after, capture Twilio SID as `providerMessageId`
+- Instrument `server/integrations/telegram.ts`: wrap `sendNewChatNotification`, `sendBookingNotification` — log each chatId as a separate row
+- Instrument `server/integrations/ghl.ts`: log `getOrCreateGHLContact` calls — channel: `ghl`, providerMessageId = GHL contactId
+- `GET /api/conversations/:id/notifications` — returns notification log rows for a specific conversation (admin-gated)
+- `GET /api/admin/notification-logs` — paginated global log with filters: `channel`, `status`, `trigger`, `from`, `to`, `search` (recipient match)
+
+**Plans:**
+- [x] 14-01: Notification logger helper + Twilio + Telegram instrumentation ✅ 2026-04-15
+- [x] 14-02: GHL instrumentation + API endpoints ✅ 2026-04-15
+
+### Phase 15: Admin UI — Lead Notification Indicators ✅ Complete — 2026-04-15
+
+**Goal:** Admins can see at a glance which notification channels fired for each lead in the conversations list.
+**Depends on:** Phase 14 (API endpoints must exist)
+
+**Scope (revised from original):**
+- Inline channel icons (SMS/Telegram/GHL) per lead row in ConversationList — single query, client-side map, zero N+1
+- Original scope (tabs in ChatArea + global section) was corrected by user — inline icons on lead list is the right UX
+
+**Plans:**
+- [x] 15-01: Inline channel indicators on lead list rows ✅ 2026-04-15
+- ~~15-02: Global NotificationLogsSection + sidebar entry~~ — cancelled (scope correction)
+
+---
+
+## Completed Milestones
+
+<details>
+<summary>v1.0 — Client Portal & Self-Service Booking Management — 2026-04-05 (3 phases, 8 plans)</summary>
+
+| Phase | Name | Plans | Completed |
+|-------|------|-------|-----------|
+| 10 | Client Role + Booking Ownership | 2/2 | 2026-04-05 |
+| 11 | Client Self-Service Booking API | 3/3 | 2026-04-05 |
+| 12 | Client Portal UI | 3/3 | 2026-04-05 |
+
+Archive: `.paul/milestones/v1.0-ROADMAP.md`
+
+</details>
+
+<details>
+<summary>v0.9 — Runtime DB SCRAM Stability — 2026-04-05 (1 phase)</summary>
+
+| Phase | Name | Plans | Completed |
+|-------|------|-------|-----------|
+| 9 | Runtime DB Auth + Login Loop Fix | 1/1 | 2026-04-05 |
+
+</details>
+
+<details>
+<summary>v0.3–v0.8 — Stripe, Users, Google Calendar, DB Stability — 2026-04-02–04</summary>
+
+v0.3 Stripe Payments ✅ · v0.4 Unified Users ✅ · v0.5 Calendar Reconnect Notifications ✅ · v0.6 Unified Users & Roles ✅ · v0.7 Google Calendar Polish ✅ · v0.8 Production DB Stability ✅
+
+</details>
+
+<details>
+<summary>v0.2 — Staff Members — 2026-04-02 (5 phases)</summary>
+
+Staff member management, per-staff availability, Google Calendar OAuth per staff, smart availability engine, booking flow staff selection.
+
+</details>
 
 ## Phases
 
@@ -405,11 +396,11 @@ Vercel serverless functions are timing out (30s) on all DB-touching endpoints be
 
 ---
  
-## v0.9 — Runtime DB SCRAM Stability (Blog Autopost + Login) — In Progress
+## v0.9 — Runtime DB SCRAM Stability (Blog Autopost + Login) ✅ Complete — 2026-04-05
 
 GitHub Actions blog autopost and interactive login both still show intermittent HTTP 500 on cold start with `SASL: SCRAM-SERVER-FINAL-MESSAGE: server signature is missing`. A second production symptom is now tracked in the same milestone: login appears to authenticate but immediately redirects back to `/login` in a loop for `skleanings@gmail.com`. This milestone isolates runtime DB authentication and login-session stability in serverless and introduces a safe strategy that works for both cron-triggered and interactive user-triggered requests.
 
-### Phase 1: Runtime DB Auth Investigation + Fix ← **Current**
+### Phase 1: Runtime DB Auth Investigation + Fix ✅ Complete — 2026-04-05
 
 **Goal:** Eliminate SCRAM handshake failures and the login redirect loop in production so `/api/blog/cron/generate` and login-authenticated endpoints remain stable after cold start.
 **Depends on:** v0.8
@@ -422,8 +413,66 @@ GitHub Actions blog autopost and interactive login both still show intermittent 
 - Verify GitHub Action and manual login both succeed across cold and warm invocations without redirect looping
 
 **Plans:**
-- [ ] 09-01: Instrument, reproduce, and harden runtime DB/auth path for SCRAM stability + login loop resolution
+- [x] 09-01: Instrument, reproduce, and harden runtime DB/auth path for SCRAM stability + login loop resolution ✅ 2026-04-05
+
+---
+
+## v1.0 — Client Portal & Self-Service Booking Management ← **Current**
+
+Add a fourth authenticated role, `client`, for end customers. A client can sign in to a dedicated account area, update their personal information, see bookings that belong to them, and cancel or reschedule their own upcoming bookings without admin assistance.
+
+### Phase 1: Client Role + Booking Ownership ✅ Complete — 2026-04-05
+
+**Goal:** The system can authenticate a `client` role, store customer profile data on the user record, and associate bookings to a specific authenticated client without breaking guest booking flow.
+**Depends on:** v0.6 (unified users + role-based auth)
+
+**Scope:**
+- Add `client` to the role model across schema, auth middleware, route guards, and frontend role handling
+- Add nullable `userId` FK on `bookings` to represent booking ownership
+- When an authenticated client creates a booking, attach `userId` automatically and prefill contact fields from the account profile where possible
+- Keep guest booking supported; `userId` remains nullable for non-logged-in bookings
+- Define ownership fallback for legacy bookings by confirmed email match until newer bookings are explicitly linked
+
+**Plans:**
+- [x] 10-01: Add `client` role support across auth, redirects, and account route guards ✅ 2026-04-05
+- [x] 10-02: Add booking ownership (`bookings.userId`) and authenticated-booking autofill/linking ✅ 2026-04-05
+
+### Phase 2: Client Self-Service Booking API ✅ Complete — 2026-04-05
+
+**Goal:** Authenticated clients can fetch only their own account data and bookings, and can cancel or reschedule eligible future bookings through dedicated self-service endpoints.
+**Depends on:** Phase 1 (client identity + booking ownership)
+
+**Scope:**
+- `GET /api/client/me` + `PATCH /api/client/me` for personal info editing
+- `GET /api/client/bookings` + `GET /api/client/bookings/:id` scoped to the authenticated client only
+- `POST /api/client/bookings/:id/cancel` with ownership, status, and date-window checks
+- `POST /api/client/bookings/:id/reschedule` with ownership checks plus existing availability validation
+- Reuse or extend current booking update logic without exposing admin booking endpoints to clients
+- Sync cancellation/reschedule effects to GHL and any notification paths already attached to booking changes
+
+**Plans:**
+- [x] 11-01: Client profile + own-bookings endpoints with ownership guards ✅ 2026-04-05
+- [x] 11-02: Self-service cancellation and reschedule endpoints ✅ 2026-04-05
+- [x] 11-03: External sync and notification handling for client-initiated changes ✅ 2026-04-05
+
+### Phase 3: Client Portal UI ✅ Complete — 2026-04-05
+
+**Goal:** Clients have a simple account area where they can sign in, edit profile details, review booking history/upcoming bookings, and complete cancel/reschedule flows.
+**Depends on:** Phase 2 (client API)
+
+**Scope:**
+- Dedicated client-facing login/account entrypoint and redirect behavior for role=`client`
+- `/account` or `/client` route group with profile and bookings sections
+- Profile form for name, phone, and avatar using existing upload/auth patterns
+- Booking list with status badges, service/date details, and actions gated by booking state
+- Reschedule UX reusing the existing availability experience as much as possible
+- Clear handling for legacy bookings that are visible by email match but not yet explicitly linked
+
+**Plans:**
+- [x] 12-01: Client login/account shell + role-based routing ✅ 2026-04-05
+- [x] 12-02: Profile editor + own bookings list UI ✅ 2026-04-05
+- [x] 12-03: Cancel/reschedule UX and account-state polish ✅ 2026-04-05
 
 ---
 *Roadmap created: 2026-04-02*
-*Last updated: 2026-04-04 — v0.9 scope expanded with login loop investigation*
+*Last updated: 2026-04-15 — v1.1 Notification Log milestone complete*

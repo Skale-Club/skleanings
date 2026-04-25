@@ -4,6 +4,7 @@ import type { ServiceAreaGroup, ServiceAreaCity } from "@shared/schema";
 import { Spinner } from "@/components/ui/spinner";
 import { useCompanySettings } from "@/context/CompanySettingsContext";
 import { DEFAULT_HOMEPAGE_CONTENT } from "@/lib/homepageDefaults";
+import { PageHero } from "@/components/shared";
 
 export default function ServiceAreas() {
   const { settings } = useCompanySettings();
@@ -51,10 +52,7 @@ export default function ServiceAreas() {
   return (
     <div className="pt-24 pb-20">
       <section className="container-custom mx-auto mb-20">
-        <div className="max-w-3xl mb-12">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6">{areasPage.heading}</h1>
-          <p className="text-xl text-slate-600 leading-relaxed">{areasPage.intro}</p>
-        </div>
+        <PageHero heading={areasPage.heading} intro={areasPage.intro} />
 
         {!groupedCities || groupedCities.length === 0 ? (
           <div className="text-center py-12 text-slate-500">

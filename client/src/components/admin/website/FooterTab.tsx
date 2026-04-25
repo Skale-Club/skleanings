@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { DEFAULT_HOMEPAGE_CONTENT } from '@/lib/homepageDefaults';
+import { SettingsCard } from '@/components/admin/shared/SettingsCard';
 import type { WebsiteTabProps } from './types';
 
 export function FooterTab({ homepageContent, updateHomepageContent, savedFields }: WebsiteTabProps) {
@@ -46,12 +47,7 @@ export function FooterTab({ homepageContent, updateHomepageContent, savedFields 
   };
 
   return (
-    <div className="space-y-8">
-      <h3 className="text-base font-semibold flex items-center gap-2">
-        <LayoutTemplate className="w-4 h-4 text-primary" />
-        Footer
-      </h3>
-
+    <SettingsCard icon={LayoutTemplate} title="Footer">
       {/* Tagline */}
       <div className="space-y-2">
         <Label>Tagline</Label>
@@ -160,6 +156,6 @@ export function FooterTab({ homepageContent, updateHomepageContent, savedFields 
       <p className="text-xs text-muted-foreground">
         The "Services" column is auto-populated from your service categories. Social links are managed in Company Settings → Branding.
       </p>
-    </div>
+    </SettingsCard>
   );
 }
