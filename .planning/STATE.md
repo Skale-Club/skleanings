@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: "10-01 checkpoint:human-action — awaiting supabase db push"
-last_updated: "2026-04-25T14:57:12.375Z"
-last_activity: 2026-04-25 -- Phase 10 execution started
+stopped_at: Completed 10-03-PLAN.md — Phase 10 complete in code, smoke test pending migration
+last_updated: "2026-04-25T15:57:00.309Z"
+last_activity: 2026-04-25
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 1
+  completed_plans: 3
   percent: 0
 ---
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-04-25)
 ## Current Position
 
 Phase: 10 (Schema, Capture & Classification) — EXECUTING
-Plan: 1 of 3
-Status: Executing Phase 10
-Last activity: 2026-04-25 -- Phase 10 execution started
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-04-25
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -48,6 +48,7 @@ Progress: [░░░░░░░░░░] 0%
 
 *Updated after each plan completion*
 | Phase 10-schema-capture-classification P01 | 3 | 2 tasks | 2 files |
+| Phase 10-schema-capture-classification P03 | 2 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -64,6 +65,8 @@ Recent decisions affecting current work:
 - [Phase 10-schema-capture-classification]: visitorSessions defined BEFORE bookings in schema.ts (required for FK forward-reference)
 - [Phase 10-schema-capture-classification]: ATTR-03 partial unique index enforced via SQL migration only — Drizzle 0.39.3 cannot express partial unique indexes
 - [Phase 10-schema-capture-classification]: Types/schemas collocated with table definitions (contacts pattern), not moved to bottom TYPES block
+- [Phase 10-schema-capture-classification]: useUTMCapture() mounted at App.tsx line 85 inside AnalyticsProvider — zero new providers per D-07
+- [Phase 10-schema-capture-classification]: localStorage key 'skleanings_visitor_id' — canonical cross-visit visitor identifier for Phase 11 attribution linkage
 
 ### Pending Todos
 
@@ -77,6 +80,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-25T14:57:03.980Z
-Stopped at: 10-01 checkpoint:human-action — awaiting supabase db push
+Last session: 2026-04-25T15:57:00.305Z
+Stopped at: Completed 10-03-PLAN.md — Phase 10 complete in code, smoke test pending migration
 Resume file: None

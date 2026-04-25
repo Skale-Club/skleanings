@@ -9,7 +9,7 @@
 
 ## Phases
 
-- [ ] **Phase 10: Schema, Capture & Classification** — Database tables, Supabase migration, traffic classifier, session endpoint, and UTM capture hook
+- [x] **Phase 10: Schema, Capture & Classification** — Database tables, Supabase migration, traffic classifier, session endpoint, and UTM capture hook (completed 2026-04-25)
 - [ ] **Phase 11: Booking Flow Attribution** — Link bookings to sessions, conversion event recording with dual first/last-touch writes, Stripe attribution preservation
 - [ ] **Phase 12: Marketing Dashboard UI** — Admin marketing section with Overview, Sources, Campaigns, Conversions, filters, and empty states
 - [ ] **Phase 13: Visitor Journey & GHL Sync** — Visitor journey view, Conversions detail list, GoHighLevel UTM field sync
@@ -30,8 +30,8 @@
   5. The Supabase migration runs cleanly and visitor_sessions, conversion_events tables and all indexes exist in the database
 **Plans**: 3 plans
   - [x] 10-01-PLAN.md — Drizzle schema + Supabase SQL migration for visitor_sessions, conversion_events, bookings.utm_session_id
-  - [ ] 10-02-PLAN.md — Traffic classifier, upsertVisitorSession storage function, POST /api/analytics/session route + registration
-  - [ ] 10-03-PLAN.md — useUTMCapture client hook + mount in AnalyticsProvider
+  - [x] 10-02-PLAN.md — Traffic classifier, upsertVisitorSession storage function, POST /api/analytics/session route + registration
+  - [x] 10-03-PLAN.md — useUTMCapture client hook + mount in AnalyticsProvider
 **UI hint**: yes
 
 ### Phase 11: Booking Flow Attribution
@@ -78,7 +78,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 10. Schema, Capture & Classification | 1/3 | In Progress|  |
+| 10. Schema, Capture & Classification | 3/3 | Complete   | 2026-04-25 |
 | 11. Booking Flow Attribution | 0/? | Not started | - |
 | 12. Marketing Dashboard UI | 0/? | Not started | - |
 | 13. Visitor Journey & GHL Sync | 0/? | Not started | - |
