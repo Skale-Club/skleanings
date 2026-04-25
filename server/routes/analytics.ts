@@ -3,6 +3,8 @@ import { z } from "zod";
 import { storage } from "../storage/index";
 import { isRateLimited } from "../lib/rate-limit";
 import { log } from "../lib/logger";
+import { requireAdmin } from "../lib/auth";
+import { getOverviewData, getSourcesData, getCampaignsData } from "../storage/analytics";
 
 const sessionSchema = z.object({
   visitorId:   z.string().uuid("visitorId must be a valid UUID"),
@@ -82,6 +84,60 @@ router.post("/events", async (req, res) => {
     log(`Analytics events error: ${(err as Error).message}`, "analytics");
     // Return 200 — analytics is fire-and-forget; never surface errors to client
     return res.status(200).json({ ok: false });
+  }
+});
+
+// GET /api/analytics/overview?from=&to=
+router.get("/overview", requireAdmin, async (req, res) => {
+  try {
+    const fromStr = req.query.from as string | undefined;
+    const toStr   = req.query.to   as string | undefined;
+    const fromDate = fromStr ? new Date(fromStr) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const toDate   = toStr   ? new Date(toStr)   : new Date();
+    if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+      return res.status(400).json({ message: "Invalid date range" });
+    }
+    const data = await getOverviewData(fromDate, toDate);
+    return res.json(data);
+  } catch (err) {
+    log(`Analytics overview error: ${(err as Error).message}`, "analytics");
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// GET /api/analytics/sources?from=&to=
+router.get("/sources", requireAdmin, async (req, res) => {
+  try {
+    const fromStr = req.query.from as string | undefined;
+    const toStr   = req.query.to   as string | undefined;
+    const fromDate = fromStr ? new Date(fromStr) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const toDate   = toStr   ? new Date(toStr)   : new Date();
+    if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+      return res.status(400).json({ message: "Invalid date range" });
+    }
+    const data = await getSourcesData(fromDate, toDate);
+    return res.json(data);
+  } catch (err) {
+    log(`Analytics sources error: ${(err as Error).message}`, "analytics");
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// GET /api/analytics/campaigns?from=&to=
+router.get("/campaigns", requireAdmin, async (req, res) => {
+  try {
+    const fromStr = req.query.from as string | undefined;
+    const toStr   = req.query.to   as string | undefined;
+    const fromDate = fromStr ? new Date(fromStr) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const toDate   = toStr   ? new Date(toStr)   : new Date();
+    if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+      return res.status(400).json({ message: "Invalid date range" });
+    }
+    const data = await getCampaignsData(fromDate, toDate);
+    return res.json(data);
+  } catch (err) {
+    log(`Analytics campaigns error: ${(err as Error).message}`, "analytics");
+    return res.status(500).json({ message: "Internal server error" });
   }
 });
 
