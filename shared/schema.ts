@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, numeric, timestamp, boolean, date, jsonb, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, numeric, timestamp, boolean, date, jsonb, uuid, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -117,6 +117,51 @@ export type Contact = typeof contacts.$inferSelect;
 export type InsertContact = z.infer<typeof insertContactSchema>;
 export type UserRole = 'admin' | 'staff' | 'viewer';
 
+// === MARKETING ATTRIBUTION TABLES (Phase 10) ===
+
+// visitor_sessions: one row per anonymous visitor (UUID from client localStorage).
+// first_* columns: written ONCE on INSERT, NEVER updated (CAPTURE-05 invariant).
+// last_* columns: updated only when request has UTM params or external referrer (D-02).
+export const visitorSessions = pgTable("visitor_sessions", {
+  id: uuid("id").primaryKey(),
+  // First-touch attribution (immutable after INSERT)
+  firstUtmSource:     text("first_utm_source"),
+  firstUtmMedium:     text("first_utm_medium"),
+  firstUtmCampaign:   text("first_utm_campaign"),
+  firstUtmTerm:       text("first_utm_term"),
+  firstUtmContent:    text("first_utm_content"),
+  firstUtmId:         text("first_utm_id"),
+  firstLandingPage:   text("first_landing_page"),
+  firstReferrer:      text("first_referrer"),
+  firstTrafficSource: text("first_traffic_source").notNull().default("unknown"),
+  firstSeenAt:        timestamp("first_seen_at").defaultNow().notNull(),
+  // Last-touch attribution (updated on meaningful re-engagement)
+  lastUtmSource:      text("last_utm_source"),
+  lastUtmMedium:      text("last_utm_medium"),
+  lastUtmCampaign:    text("last_utm_campaign"),
+  lastUtmTerm:        text("last_utm_term"),
+  lastUtmContent:     text("last_utm_content"),
+  lastUtmId:          text("last_utm_id"),
+  lastLandingPage:    text("last_landing_page"),
+  lastReferrer:       text("last_referrer"),
+  lastTrafficSource:  text("last_traffic_source").notNull().default("unknown"),
+  lastSeenAt:         timestamp("last_seen_at").defaultNow().notNull(),
+  // Aggregate counters
+  visitCount:    integer("visit_count").notNull().default(1),
+  totalBookings: integer("total_bookings").notNull().default(0),
+  convertedAt:   timestamp("converted_at"),
+}, (table) => ({
+  firstUtmSourceIdx:     index("visitor_sessions_first_utm_source_idx").on(table.firstUtmSource),
+  firstTrafficSourceIdx: index("visitor_sessions_first_traffic_source_idx").on(table.firstTrafficSource),
+  firstSeenAtIdx:        index("visitor_sessions_first_seen_at_idx").on(table.firstSeenAt),
+  lastSeenAtIdx:         index("visitor_sessions_last_seen_at_idx").on(table.lastSeenAt),
+  firstCampaignIdx:      index("visitor_sessions_first_campaign_idx").on(table.firstUtmCampaign),
+}));
+
+export type VisitorSession = typeof visitorSessions.$inferSelect;
+export const insertVisitorSessionSchema = createInsertSchema(visitorSessions);
+export type InsertVisitorSession = z.infer<typeof insertVisitorSessionSchema>;
+
 export const bookings = pgTable("bookings", {
   id: serial("id").primaryKey(),
   customerName: text("customer_name").notNull(),
@@ -145,7 +190,49 @@ export const bookings = pgTable("bookings", {
   stripePaymentStatus: text("stripe_payment_status"), // paid, unpaid, no_payment_required
   // Contact link (nullable — backfilled from existing bookings via migration)
   contactId: integer("contact_id").references(() => contacts.id, { onDelete: "set null" }),
+  // UTM attribution FK (Phase 10 — nullable; populated by analytics hook)
+  utmSessionId: uuid("utm_session_id").references(() => visitorSessions.id, { onDelete: "set null" }),
 });
+
+// conversion_events: one row per tracked action (booking_completed, booking_started, chat_initiated).
+// Denormalized attribution snapshot at event time — no JOIN needed for reports.
+export const conversionEvents = pgTable("conversion_events", {
+  id:           serial("id").primaryKey(),
+  visitorId:    uuid("visitor_id").references(() => visitorSessions.id, { onDelete: "set null" }),
+  eventType:    text("event_type").notNull(),
+  // eventType: 'booking_completed' | 'booking_started' | 'chat_initiated'
+  bookingId:    integer("booking_id").references(() => bookings.id, { onDelete: "set null" }),
+  bookingValue: numeric("booking_value", { precision: 10, scale: 2 }),
+  // Denormalized attribution snapshot
+  attributedSource:      text("attributed_source"),
+  attributedMedium:      text("attributed_medium"),
+  attributedCampaign:    text("attributed_campaign"),
+  attributedLandingPage: text("attributed_landing_page"),
+  attributionModel:      text("attribution_model").notNull().default("last_touch"),
+  // attributionModel: 'first_touch' | 'last_touch'
+  occurredAt: timestamp("occurred_at").defaultNow().notNull(),
+  pageUrl:    text("page_url"),
+  metadata:   jsonb("metadata").default({}),
+}, (table) => ({
+  // ATTR-03: prevent duplicate conversion rows (Stripe webhook + confirmation page race).
+  // NOTE: This unique index is enforced as a PARTIAL index (WHERE booking_id IS NOT NULL)
+  //       via the SQL migration only — Drizzle 0.39.3 cannot express a partial unique index
+  //       in the table builder. The table builder uniqueIndex below is a placeholder for
+  //       type-safety; the authoritative constraint lives in
+  //       supabase/migrations/20260425000000_add_utm_tracking.sql.
+  bookingEventModelUnique: uniqueIndex("conversion_events_booking_event_model_unique_idx")
+    .on(table.bookingId, table.eventType, table.attributionModel),
+  occurredAtIdx:         index("conversion_events_occurred_at_idx").on(table.occurredAt),
+  eventTypeIdx:          index("conversion_events_event_type_idx").on(table.eventType),
+  attributedSourceIdx:   index("conversion_events_attributed_source_idx").on(table.attributedSource),
+  attributedCampaignIdx: index("conversion_events_attributed_campaign_idx").on(table.attributedCampaign),
+  visitorIdIdx:          index("conversion_events_visitor_id_idx").on(table.visitorId),
+  bookingIdIdx:          index("conversion_events_booking_id_idx").on(table.bookingId),
+}));
+
+export type ConversionEvent = typeof conversionEvents.$inferSelect;
+export const insertConversionEventSchema = createInsertSchema(conversionEvents).omit({ id: true, occurredAt: true });
+export type InsertConversionEvent = z.infer<typeof insertConversionEventSchema>;
 
 // GoHighLevel Integration Settings
 export const integrationSettings = pgTable("integration_settings", {
