@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 11 context gathered
-last_updated: "2026-04-25T20:51:51.569Z"
-last_activity: 2026-04-25 -- Phase 11 execution started
+stopped_at: Completed 11-01-PLAN.md
+last_updated: "2026-04-25T20:56:50.378Z"
+last_activity: 2026-04-25
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 6
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-25)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 11 — Booking Flow Attribution
+**Current focus:** Phase 10 — Schema, Capture & Classification
 
 ## Current Position
 
-Phase: 11 (Booking Flow Attribution) — EXECUTING
-Plan: 1 of 3
-Status: Executing Phase 11
-Last activity: 2026-04-25 -- Phase 11 execution started
+Phase: 10 (Schema, Capture & Classification) — EXECUTING
+Plan: 3 of 3
+Status: Ready to execute
+Last activity: 2026-04-25
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -49,6 +49,7 @@ Progress: [░░░░░░░░░░] 0%
 *Updated after each plan completion*
 | Phase 10-schema-capture-classification P01 | 3 | 2 tasks | 2 files |
 | Phase 10-schema-capture-classification P03 | 2 | 2 tasks | 2 files |
+| Phase 11-booking-flow-attribution P01 | 8 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -67,6 +68,9 @@ Recent decisions affecting current work:
 - [Phase 10-schema-capture-classification]: Types/schemas collocated with table definitions (contacts pattern), not moved to bottom TYPES block
 - [Phase 10-schema-capture-classification]: useUTMCapture() mounted at App.tsx line 85 inside AnalyticsProvider — zero new providers per D-07
 - [Phase 10-schema-capture-classification]: localStorage key 'skleanings_visitor_id' — canonical cross-visit visitor identifier for Phase 11 attribution linkage
+- [Phase 11-booking-flow-attribution]: linkBookingToAttribution silently no-ops when visitorId not found (D-03) — booking is never blocked by attribution failure
+- [Phase 11-booking-flow-attribution]: recordConversionEvent writes two rows per event (first_touch + last_touch) with onConflictDoNothing for idempotency — dual attribution model without SQL CASE branching
+- [Phase 11-booking-flow-attribution]: POST /api/analytics/events always returns 200 on unexpected errors — analytics never surfaces failures to the client (D-08)
 
 ### Pending Todos
 
@@ -80,6 +84,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-25T19:06:21.471Z
-Stopped at: Phase 11 context gathered
-Resume file: .planning/phases/11-booking-flow-attribution/11-CONTEXT.md
+Last session: 2026-04-25T20:56:50.373Z
+Stopped at: Completed 11-01-PLAN.md
+Resume file: None
