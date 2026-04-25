@@ -10,7 +10,7 @@
 ## Phases
 
 - [x] **Phase 10: Schema, Capture & Classification** — Database tables, Supabase migration, traffic classifier, session endpoint, and UTM capture hook (completed 2026-04-25)
-- [x] **Phase 11: Booking Flow Attribution** — Link bookings to sessions, conversion event recording with dual first/last-touch writes, Stripe attribution preservation (completed 2026-04-25)
+- [x] **Phase 11: Booking Flow Attribution** — Link bookings to sessions, conversion event recording with dual first/last-touch writes, Stripe attribution preservation (completed 2026-04-25)
 - [ ] **Phase 12: Marketing Dashboard UI** — Admin marketing section with Overview, Sources, Campaigns, Conversions, filters, and empty states
 - [ ] **Phase 13: Visitor Journey & GHL Sync** — Visitor journey view, Conversions detail list, GoHighLevel UTM field sync
 
@@ -59,7 +59,10 @@
   3. The Campaigns tab shows campaigns grouped with their source, including a row for campaigns that had visitors but zero bookings
   4. All views respond correctly to date range filter changes — selecting "Last 7 days" re-fetches and updates all numbers; the default on first open is "Last 30 days"
   5. When the database has no conversion data for the selected period, every tab shows a meaningful empty state explaining what the view will show once data is collected — the dashboard does not look broken
-**Plans**: TBD
+**Plans**: 3 plans
+  - [ ] 12-01-PLAN.md — AdminSection type fix + analytics-display.ts utility + aggregate storage functions + GET endpoints
+  - [ ] 12-02-PLAN.md — MarketingSection shell + date filter state + tab navigation + Admin.tsx registration
+  - [ ] 12-03-PLAN.md — MarketingOverviewTab + MarketingSourcesTab + MarketingCampaignsTab full implementations
 **UI hint**: yes
 
 ### Phase 13: Visitor Journey & GHL Sync
@@ -83,7 +86,7 @@
 |-------|----------------|--------|-----------|
 | 10. Schema, Capture & Classification | 3/3 | Complete   | 2026-04-25 |
 | 11. Booking Flow Attribution | 3/3 | Complete    | 2026-04-25 |
-| 12. Marketing Dashboard UI | 0/? | Not started | - |
+| 12. Marketing Dashboard UI | 0/3 | Planned     | - |
 | 13. Visitor Journey & GHL Sync | 0/? | Not started | - |
 
 ---
