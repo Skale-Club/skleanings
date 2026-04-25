@@ -10,7 +10,7 @@
 ## Phases
 
 - [x] **Phase 10: Schema, Capture & Classification** — Database tables, Supabase migration, traffic classifier, session endpoint, and UTM capture hook (completed 2026-04-25)
-- [ ] **Phase 11: Booking Flow Attribution** — Link bookings to sessions, conversion event recording with dual first/last-touch writes, Stripe attribution preservation
+- [x] **Phase 11: Booking Flow Attribution** — Link bookings to sessions, conversion event recording with dual first/last-touch writes, Stripe attribution preservation (completed 2026-04-25)
 - [ ] **Phase 12: Marketing Dashboard UI** — Admin marketing section with Overview, Sources, Campaigns, Conversions, filters, and empty states
 - [ ] **Phase 13: Visitor Journey & GHL Sync** — Visitor journey view, Conversions detail list, GoHighLevel UTM field sync
 
@@ -47,7 +47,7 @@
 **Plans**: 3 plans
   - [x] 11-01-PLAN.md — linkBookingToAttribution + recordConversionEvent storage functions + POST /api/analytics/events endpoint
   - [x] 11-02-PLAN.md — BookingPage visitorId threading + booking_started event + bookings.ts + payments.ts wiring
-  - [ ] 11-03-PLAN.md — ChatWidget chat_initiated event
+  - [x] 11-03-PLAN.md — ChatWidget chat_initiated event
 
 ### Phase 12: Marketing Dashboard UI
 **Goal**: Admin can open the Marketing section and immediately understand where visitors are coming from and which sources produce bookings — all in plain business language
@@ -82,7 +82,7 @@
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 10. Schema, Capture & Classification | 3/3 | Complete   | 2026-04-25 |
-| 11. Booking Flow Attribution | 2/3 | In Progress|  |
+| 11. Booking Flow Attribution | 3/3 | Complete   | 2026-04-25 |
 | 12. Marketing Dashboard UI | 0/? | Not started | - |
 | 13. Visitor Journey & GHL Sync | 0/? | Not started | - |
 
