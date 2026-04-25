@@ -45,7 +45,7 @@
   4. Reaching the first step of the booking flow records a booking_started event in conversion_events without delaying or blocking the booking page load
   5. The booking flow completes successfully for users who have no visitorId in localStorage (attribution is skipped gracefully, booking is not blocked)
 **Plans**: 3 plans
-  - [ ] 11-01-PLAN.md — linkBookingToAttribution + recordConversionEvent storage functions + POST /api/analytics/events endpoint
+  - [x] 11-01-PLAN.md — linkBookingToAttribution + recordConversionEvent storage functions + POST /api/analytics/events endpoint
   - [ ] 11-02-PLAN.md — BookingPage visitorId threading + booking_started event + bookings.ts + payments.ts wiring
   - [ ] 11-03-PLAN.md — ChatWidget chat_initiated event
 
@@ -82,7 +82,7 @@
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 10. Schema, Capture & Classification | 3/3 | Complete   | 2026-04-25 |
-| 11. Booking Flow Attribution | 0/3 | Planned | - |
+| 11. Booking Flow Attribution | 1/3 | In Progress|  |
 | 12. Marketing Dashboard UI | 0/? | Not started | - |
 | 13. Visitor Journey & GHL Sync | 0/? | Not started | - |
 
