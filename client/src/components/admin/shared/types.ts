@@ -15,7 +15,8 @@ export type AdminSection =
   | 'availability'
   | 'chat'
   | 'integrations'
-  | 'blog';
+  | 'blog'
+  | 'marketing'; // Phase 12 — per D-05
 
 export interface DayHours {
   isOpen: boolean;
