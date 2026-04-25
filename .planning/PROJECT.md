@@ -38,15 +38,14 @@ Customers can discover, book, and pay for cleaning services online without calli
 - ✓ DB connection stability via postgres.js (SCRAM/pgBouncer fix) — phase 09
 - ✓ UTM session capture (all 6 params + referrer + landing page), traffic classification, first/last-touch attribution — Phase 10
 - ✓ Booking flow attribution — visitorId wired through direct and Stripe paths, booking_started and chat_initiated events — Phase 11
+- ✓ Marketing Dashboard UI — Overview (KPI cards, trend chart, recent conversions), Sources tab (per-source performance table), Campaigns tab (per-campaign table with zero-booking visibility), date range filter with 7 presets, polished empty states — Phase 12
 
 ### Active
 
-- [ ] Marketing Overview dashboard (visitors, leads, conversions, conversion rate, top source/campaign/landing page, trends)
-- [ ] Campaign Performance view (per-campaign: visitors, conversions, conversion rate, landing pages used)
-- [ ] Source Performance view (grouped by source: visitors, conversions, conversion rate, best campaign)
-- [ ] Conversions view (list of conversion events with full attribution context)
-- [ ] Visitor Journey view (path from first touch through conversion)
-- [ ] Date range and dimension filters (source, medium, campaign, landing page, conversion type)
+- [ ] Conversions view (list of conversion events with full attribution context) — Phase 13
+- [ ] Visitor Journey view (path from first touch through conversion) — Phase 13
+- [ ] Dimension filters (source, medium, campaign, conversion type) — Phase 13 (deferred from Phase 12 per D-16)
+- [ ] GoHighLevel UTM sync — write first/last-touch to GHL contact fields — Phase 13
 
 ### Out of Scope
 
