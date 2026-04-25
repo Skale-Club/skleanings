@@ -139,6 +139,17 @@ export default function BookingPage() {
         items.map(item => ({ id: item.id, name: item.name, price: Number(item.price), quantity: item.quantity })),
         totalPrice
       );
+      // D-01, EVENTS-02: fire-and-forget booking_started event — only when cart is non-empty
+      const visitorId = localStorage.getItem('skleanings_visitor_id');
+      fetch('/api/analytics/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          visitorId: visitorId ?? undefined,
+          eventType: 'booking_started',
+          pageUrl: window.location.pathname,
+        }),
+      }).catch(() => {});
     }
   }, []);
 
@@ -179,12 +190,15 @@ export default function BookingPage() {
       totalDurationMinutes: totalDuration,
       totalPrice: String(finalPrice),
       staffMemberId: selectedStaff?.id ?? null,
+      // D-07, ATTR-02: visitorId is outside insertBookingSchema — server reads from req.body directly
+      // D-03: undefined when localStorage is null (private browsing) — server skips attribution silently
+      visitorId: localStorage.getItem('skleanings_visitor_id') ?? undefined,
     };
 
     if (data.paymentMethod === "online") {
       checkoutMutation.mutate(bookingPayload);
     } else {
-      createBooking.mutate(bookingPayload, {
+      createBooking.mutate(bookingPayload as any, {
         onSuccess: () => {
           setLocation("/confirmation");
         },
