@@ -12,6 +12,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useSEO } from "@/hooks/use-seo";
 import { initAnalytics, trackPageView } from "@/lib/analytics";
+import { useUTMCapture } from "@/hooks/use-utm-capture";
 import { PageLoader } from "@/components/ui/spinner";
 import { useEffect, Suspense, lazy, useRef, useState, createContext, useContext } from "react";
 import type { CompanySettings } from "@shared/schema";
@@ -81,6 +82,7 @@ function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     queryKey: ['/api/company-settings'],
   });
   const [location] = useLocation();
+  useUTMCapture();
 
   useEffect(() => {
     if (settings) {
