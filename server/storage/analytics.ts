@@ -1,6 +1,6 @@
 import { db } from "../db";
 import { visitorSessions, conversionEvents, bookings, type VisitorSession } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { and, eq, gte, lte, sql, desc, isNotNull } from "drizzle-orm";
 import { classifyTraffic } from "../lib/traffic-classifier";
 
 export interface UpsertSessionPayload {
@@ -261,4 +261,390 @@ export async function recordConversionEvent(
       },
     ])
     .onConflictDoNothing();
+}
+
+// ============================================================
+// PHASE 12: Marketing Dashboard Aggregate Query Functions
+// ============================================================
+
+export interface TrendPoint {
+  date: string;
+  visitors: number;
+  bookings: number;
+}
+
+export interface RecentConversion {
+  id: number;
+  eventType: string;
+  source: string | null;
+  campaign: string | null;
+  bookingValue: string | null;
+  occurredAt: string;
+  bookingId: number | null;
+}
+
+export interface OverviewData {
+  visitors: number;
+  bookings: number;
+  conversionRate: string;
+  revenue: string;
+  topSource: string | null;
+  topCampaign: string | null;
+  topLandingPage: string | null;
+  recentConversions: RecentConversion[];
+  trend: TrendPoint[];
+}
+
+export interface SourceRow {
+  source: string;
+  visitors: number;
+  bookings: number;
+  conversionRate: string;
+  revenue: string;
+  bestCampaign: string | null;
+  bestLandingPage: string | null;
+}
+
+export interface CampaignRow {
+  campaign: string;
+  source: string | null;
+  medium: string | null;
+  visitors: number;
+  bookings: number;
+  conversionRate: string;
+  revenue: string;
+  topLandingPage: string | null;
+}
+
+function emptyOverview(): OverviewData {
+  return { visitors: 0, bookings: 0, conversionRate: '—', revenue: '0.00', topSource: null, topCampaign: null, topLandingPage: null, recentConversions: [], trend: [] };
+}
+
+function generateDateRange(fromDate: Date, toDate: Date): string[] {
+  const dates: string[] = [];
+  const cur = new Date(fromDate);
+  cur.setHours(0, 0, 0, 0);
+  const end = new Date(toDate);
+  end.setHours(23, 59, 59, 999);
+  while (cur <= end) {
+    dates.push(cur.toISOString().slice(0, 10));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return dates;
+}
+
+function formatTrendLabel(isoDate: string): string {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  const d = new Date(year, month - 1, day);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function computeRate(bookings: number, visitors: number): string {
+  if (visitors === 0) return '—';
+  return (bookings / visitors * 100).toFixed(1) + '%';
+}
+
+export async function getOverviewData(fromDate: Date, toDate: Date): Promise<OverviewData> {
+  try {
+    const [visitorRow] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(visitorSessions)
+      .where(and(gte(visitorSessions.firstSeenAt, fromDate), lte(visitorSessions.firstSeenAt, toDate)));
+    const visitors = visitorRow?.count ?? 0;
+
+    // CRITICAL: attributionModel='last_touch' prevents double-counting (recordConversionEvent writes 2 rows per booking)
+    const [bookingRow] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(conversionEvents)
+      .where(and(
+        eq(conversionEvents.eventType, 'booking_completed'),
+        eq(conversionEvents.attributionModel, 'last_touch'),
+        gte(conversionEvents.occurredAt, fromDate),
+        lte(conversionEvents.occurredAt, toDate),
+      ));
+    const bookings = bookingRow?.count ?? 0;
+
+    const [revenueRow] = await db
+      .select({ total: sql<string>`COALESCE(SUM(booking_value::numeric), 0)::text` })
+      .from(conversionEvents)
+      .where(and(
+        eq(conversionEvents.eventType, 'booking_completed'),
+        eq(conversionEvents.attributionModel, 'last_touch'),
+        gte(conversionEvents.occurredAt, fromDate),
+        lte(conversionEvents.occurredAt, toDate),
+      ));
+    const revenue = revenueRow?.total ?? '0.00';
+
+    const topSourceRows = await db
+      .select({ source: visitorSessions.lastTrafficSource, cnt: sql<number>`count(*)::int` })
+      .from(conversionEvents)
+      .innerJoin(visitorSessions, eq(conversionEvents.visitorId, visitorSessions.id))
+      .where(and(
+        eq(conversionEvents.eventType, 'booking_completed'),
+        eq(conversionEvents.attributionModel, 'last_touch'),
+        gte(conversionEvents.occurredAt, fromDate),
+        lte(conversionEvents.occurredAt, toDate),
+      ))
+      .groupBy(visitorSessions.lastTrafficSource)
+      .orderBy(desc(sql`count(*)`))
+      .limit(1);
+    const topSource = topSourceRows[0]?.source ?? null;
+
+    const topCampaignRows = await db
+      .select({ campaign: conversionEvents.attributedCampaign, cnt: sql<number>`count(*)::int` })
+      .from(conversionEvents)
+      .where(and(
+        eq(conversionEvents.eventType, 'booking_completed'),
+        eq(conversionEvents.attributionModel, 'last_touch'),
+        isNotNull(conversionEvents.attributedCampaign),
+        gte(conversionEvents.occurredAt, fromDate),
+        lte(conversionEvents.occurredAt, toDate),
+      ))
+      .groupBy(conversionEvents.attributedCampaign)
+      .orderBy(desc(sql`count(*)`))
+      .limit(1);
+    const topCampaign = topCampaignRows[0]?.campaign ?? null;
+
+    const topLPRows = await db
+      .select({ lp: visitorSessions.lastLandingPage, cnt: sql<number>`count(*)::int` })
+      .from(visitorSessions)
+      .where(and(
+        isNotNull(visitorSessions.lastLandingPage),
+        gte(visitorSessions.firstSeenAt, fromDate),
+        lte(visitorSessions.firstSeenAt, toDate),
+      ))
+      .groupBy(visitorSessions.lastLandingPage)
+      .orderBy(desc(sql`count(*)`))
+      .limit(1);
+    const topLandingPage = topLPRows[0]?.lp ?? null;
+
+    const recent = await db
+      .select({
+        id: conversionEvents.id,
+        eventType: conversionEvents.eventType,
+        source: conversionEvents.attributedSource,
+        campaign: conversionEvents.attributedCampaign,
+        bookingValue: conversionEvents.bookingValue,
+        occurredAt: conversionEvents.occurredAt,
+        bookingId: conversionEvents.bookingId,
+      })
+      .from(conversionEvents)
+      .where(eq(conversionEvents.attributionModel, 'last_touch'))
+      .orderBy(desc(conversionEvents.occurredAt))
+      .limit(5);
+    const recentConversions: RecentConversion[] = recent.map(r => ({
+      id: r.id,
+      eventType: r.eventType,
+      source: r.source,
+      campaign: r.campaign,
+      bookingValue: r.bookingValue != null ? String(r.bookingValue) : null,
+      occurredAt: r.occurredAt.toISOString(),
+      bookingId: r.bookingId,
+    }));
+
+    const dailyVisitorRows = await db
+      .select({
+        day: sql<string>`DATE(first_seen_at)::text`,
+        visitors: sql<number>`count(*)::int`,
+      })
+      .from(visitorSessions)
+      .where(and(gte(visitorSessions.firstSeenAt, fromDate), lte(visitorSessions.firstSeenAt, toDate)))
+      .groupBy(sql`DATE(first_seen_at)`)
+      .orderBy(sql`DATE(first_seen_at)`);
+
+    const dailyBookingRows = await db
+      .select({
+        day: sql<string>`DATE(occurred_at)::text`,
+        bookings: sql<number>`count(*)::int`,
+      })
+      .from(conversionEvents)
+      .where(and(
+        eq(conversionEvents.eventType, 'booking_completed'),
+        eq(conversionEvents.attributionModel, 'last_touch'),
+        gte(conversionEvents.occurredAt, fromDate),
+        lte(conversionEvents.occurredAt, toDate),
+      ))
+      .groupBy(sql`DATE(occurred_at)`)
+      .orderBy(sql`DATE(occurred_at)`);
+
+    const visitorByDay: Record<string, number> = {};
+    for (const r of dailyVisitorRows) { visitorByDay[r.day] = r.visitors; }
+    const bookingByDay: Record<string, number> = {};
+    for (const r of dailyBookingRows) { bookingByDay[r.day] = r.bookings; }
+
+    const allDates = generateDateRange(fromDate, toDate);
+    const trend: TrendPoint[] = allDates.map(d => ({
+      date: formatTrendLabel(d),
+      visitors: visitorByDay[d] ?? 0,
+      bookings: bookingByDay[d] ?? 0,
+    }));
+
+    return { visitors, bookings, conversionRate: computeRate(bookings, visitors), revenue: parseFloat(revenue).toFixed(2), topSource, topCampaign, topLandingPage, recentConversions, trend };
+  } catch (err: any) {
+    if (err?.code === '42P01' || err?.message?.includes('does not exist')) return emptyOverview();
+    throw err;
+  }
+}
+
+export async function getSourcesData(fromDate: Date, toDate: Date): Promise<SourceRow[]> {
+  try {
+    const visitorRows = await db
+      .select({ source: visitorSessions.lastTrafficSource, visitors: sql<number>`count(*)::int` })
+      .from(visitorSessions)
+      .where(and(gte(visitorSessions.firstSeenAt, fromDate), lte(visitorSessions.firstSeenAt, toDate)))
+      .groupBy(visitorSessions.lastTrafficSource);
+
+    const bookingRows = await db
+      .select({
+        source: visitorSessions.lastTrafficSource,
+        bookings: sql<number>`count(*)::int`,
+        revenue: sql<string>`COALESCE(SUM(${conversionEvents.bookingValue}::numeric), 0)::text`,
+      })
+      .from(conversionEvents)
+      .innerJoin(visitorSessions, eq(conversionEvents.visitorId, visitorSessions.id))
+      .where(and(
+        eq(conversionEvents.eventType, 'booking_completed'),
+        eq(conversionEvents.attributionModel, 'last_touch'),
+        gte(conversionEvents.occurredAt, fromDate),
+        lte(conversionEvents.occurredAt, toDate),
+      ))
+      .groupBy(visitorSessions.lastTrafficSource);
+
+    const map = new Map<string, SourceRow>();
+    for (const r of visitorRows) {
+      const key = r.source ?? 'unknown';
+      map.set(key, { source: key, visitors: r.visitors, bookings: 0, conversionRate: '—', revenue: '0.00', bestCampaign: null, bestLandingPage: null });
+    }
+    for (const r of bookingRows) {
+      const key = r.source ?? 'unknown';
+      const existing = map.get(key) ?? { source: key, visitors: 0, bookings: 0, conversionRate: '—', revenue: '0.00', bestCampaign: null, bestLandingPage: null };
+      existing.bookings = r.bookings;
+      existing.revenue = parseFloat(r.revenue).toFixed(2);
+      existing.conversionRate = computeRate(r.bookings, existing.visitors);
+      map.set(key, existing);
+    }
+
+    if (!map.has('direct')) map.set('direct', { source: 'direct', visitors: 0, bookings: 0, conversionRate: '—', revenue: '0.00', bestCampaign: null, bestLandingPage: null });
+    if (!map.has('unknown')) map.set('unknown', { source: 'unknown', visitors: 0, bookings: 0, conversionRate: '—', revenue: '0.00', bestCampaign: null, bestLandingPage: null });
+
+    for (const sourceKey of Array.from(map.keys())) {
+      const bestCamp = await db
+        .select({ campaign: conversionEvents.attributedCampaign, cnt: sql<number>`count(*)::int` })
+        .from(conversionEvents)
+        .innerJoin(visitorSessions, eq(conversionEvents.visitorId, visitorSessions.id))
+        .where(and(
+          eq(conversionEvents.eventType, 'booking_completed'),
+          eq(conversionEvents.attributionModel, 'last_touch'),
+          eq(visitorSessions.lastTrafficSource, sourceKey),
+          isNotNull(conversionEvents.attributedCampaign),
+          gte(conversionEvents.occurredAt, fromDate),
+          lte(conversionEvents.occurredAt, toDate),
+        ))
+        .groupBy(conversionEvents.attributedCampaign)
+        .orderBy(desc(sql`count(*)`))
+        .limit(1);
+
+      const bestLP = await db
+        .select({ lp: visitorSessions.lastLandingPage, cnt: sql<number>`count(*)::int` })
+        .from(visitorSessions)
+        .where(and(
+          eq(visitorSessions.lastTrafficSource, sourceKey),
+          isNotNull(visitorSessions.lastLandingPage),
+          gte(visitorSessions.firstSeenAt, fromDate),
+          lte(visitorSessions.firstSeenAt, toDate),
+        ))
+        .groupBy(visitorSessions.lastLandingPage)
+        .orderBy(desc(sql`count(*)`))
+        .limit(1);
+
+      const row = map.get(sourceKey)!;
+      row.bestCampaign = bestCamp[0]?.campaign ?? null;
+      row.bestLandingPage = bestLP[0]?.lp ?? null;
+    }
+
+    return Array.from(map.values()).sort((a, b) => b.visitors - a.visitors);
+  } catch (err: any) {
+    if (err?.code === '42P01' || err?.message?.includes('does not exist')) {
+      return [
+        { source: 'direct',  visitors: 0, bookings: 0, conversionRate: '—', revenue: '0.00', bestCampaign: null, bestLandingPage: null },
+        { source: 'unknown', visitors: 0, bookings: 0, conversionRate: '—', revenue: '0.00', bestCampaign: null, bestLandingPage: null },
+      ];
+    }
+    throw err;
+  }
+}
+
+export async function getCampaignsData(fromDate: Date, toDate: Date): Promise<CampaignRow[]> {
+  try {
+    const bookingRows = await db
+      .select({
+        campaign: conversionEvents.attributedCampaign,
+        source:   conversionEvents.attributedSource,
+        medium:   conversionEvents.attributedMedium,
+        bookings: sql<number>`count(*)::int`,
+        revenue:  sql<string>`COALESCE(SUM(booking_value::numeric), 0)::text`,
+      })
+      .from(conversionEvents)
+      .where(and(
+        eq(conversionEvents.eventType, 'booking_completed'),
+        eq(conversionEvents.attributionModel, 'last_touch'),
+        gte(conversionEvents.occurredAt, fromDate),
+        lte(conversionEvents.occurredAt, toDate),
+      ))
+      .groupBy(conversionEvents.attributedCampaign, conversionEvents.attributedSource, conversionEvents.attributedMedium);
+
+    const visitorRows = await db
+      .select({
+        campaign: visitorSessions.lastUtmCampaign,
+        source:   visitorSessions.lastUtmSource,
+        medium:   visitorSessions.lastUtmMedium,
+        visitors: sql<number>`count(*)::int`,
+      })
+      .from(visitorSessions)
+      .where(and(
+        isNotNull(visitorSessions.lastUtmCampaign),
+        gte(visitorSessions.firstSeenAt, fromDate),
+        lte(visitorSessions.firstSeenAt, toDate),
+      ))
+      .groupBy(visitorSessions.lastUtmCampaign, visitorSessions.lastUtmSource, visitorSessions.lastUtmMedium);
+
+    const compositeKey = (c: string | null, s: string | null, m: string | null) => `${c ?? ''}|${s ?? ''}|${m ?? ''}`;
+    const map = new Map<string, CampaignRow>();
+
+    for (const r of visitorRows) {
+      if (!r.campaign) continue;
+      const key = compositeKey(r.campaign, r.source, r.medium);
+      map.set(key, { campaign: r.campaign, source: r.source, medium: r.medium, visitors: r.visitors, bookings: 0, conversionRate: '—', revenue: '0.00', topLandingPage: null });
+    }
+
+    for (const r of bookingRows) {
+      const key = compositeKey(r.campaign, r.source, r.medium);
+      const existing = map.get(key) ?? { campaign: r.campaign ?? '(unknown)', source: r.source, medium: r.medium, visitors: 0, bookings: 0, conversionRate: '—', revenue: '0.00', topLandingPage: null };
+      existing.bookings = r.bookings;
+      existing.revenue  = parseFloat(r.revenue).toFixed(2);
+      existing.conversionRate = computeRate(r.bookings, existing.visitors);
+      map.set(key, existing);
+    }
+
+    for (const [key, row] of map) {
+      const lpRows = await db
+        .select({ lp: visitorSessions.lastLandingPage, cnt: sql<number>`count(*)::int` })
+        .from(visitorSessions)
+        .where(and(
+          eq(visitorSessions.lastUtmCampaign, row.campaign),
+          isNotNull(visitorSessions.lastLandingPage),
+          gte(visitorSessions.firstSeenAt, fromDate),
+          lte(visitorSessions.firstSeenAt, toDate),
+        ))
+        .groupBy(visitorSessions.lastLandingPage)
+        .orderBy(desc(sql`count(*)`))
+        .limit(1);
+      map.get(key)!.topLandingPage = lpRows[0]?.lp ?? null;
+    }
+
+    return Array.from(map.values()).sort((a, b) => b.visitors - a.visitors);
+  } catch (err: any) {
+    if (err?.code === '42P01' || err?.message?.includes('does not exist')) return [];
+    throw err;
+  }
 }
