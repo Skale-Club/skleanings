@@ -29,7 +29,7 @@
   4. A POST from a brand-new visitor (no prior localStorage) generates and persists a UUID so subsequent visits use the same session ID
   5. The Supabase migration runs cleanly and visitor_sessions, conversion_events tables and all indexes exist in the database
 **Plans**: 3 plans
-  - [ ] 10-01-PLAN.md — Drizzle schema + Supabase SQL migration for visitor_sessions, conversion_events, bookings.utm_session_id
+  - [x] 10-01-PLAN.md — Drizzle schema + Supabase SQL migration for visitor_sessions, conversion_events, bookings.utm_session_id
   - [ ] 10-02-PLAN.md — Traffic classifier, upsertVisitorSession storage function, POST /api/analytics/session route + registration
   - [ ] 10-03-PLAN.md — useUTMCapture client hook + mount in AnalyticsProvider
 **UI hint**: yes
@@ -78,7 +78,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 10. Schema, Capture & Classification | 0/3 | Planned | - |
+| 10. Schema, Capture & Classification | 1/3 | In Progress|  |
 | 11. Booking Flow Attribution | 0/? | Not started | - |
 | 12. Marketing Dashboard UI | 0/? | Not started | - |
 | 13. Visitor Journey & GHL Sync | 0/? | Not started | - |

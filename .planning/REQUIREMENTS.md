@@ -7,18 +7,18 @@
 
 ### Session Capture & Traffic Classification
 
-- [ ] **CAPTURE-01**: Visitor session is captured on the first page load, recording all available UTM parameters (utm_source, utm_medium, utm_campaign, utm_term, utm_content, utm_id), the referrer URL, and the landing page URL
-- [ ] **CAPTURE-02**: An anonymous visitor session ID (UUID) is generated and persisted in localStorage so first-touch attribution survives multi-page visits and multi-day booking journeys
-- [ ] **CAPTURE-03**: All UTM parameter values are normalized to lowercase before storage so "Google" and "google" are treated as the same source
-- [ ] **CAPTURE-04**: Traffic without UTM parameters is automatically classified into a human-readable channel: Organic Search (known search engines without UTMs), Social (Facebook, Instagram, YouTube, TikTok, LinkedIn without UTMs), Referral (other external referrers), Direct (no referrer and no UTMs), or Unknown
-- [ ] **CAPTURE-05**: First-touch attribution (the original source/campaign that brought the visitor) is written once and never overwritten for the life of the visitor session
-- [ ] **CAPTURE-06**: Last-touch attribution is updated each time the visitor returns with a new UTM signal or identifiable referrer, so the most recent marketing source is always current
+- [x] **CAPTURE-01**: Visitor session is captured on the first page load, recording all available UTM parameters (utm_source, utm_medium, utm_campaign, utm_term, utm_content, utm_id), the referrer URL, and the landing page URL
+- [x] **CAPTURE-02**: An anonymous visitor session ID (UUID) is generated and persisted in localStorage so first-touch attribution survives multi-page visits and multi-day booking journeys
+- [x] **CAPTURE-03**: All UTM parameter values are normalized to lowercase before storage so "Google" and "google" are treated as the same source
+- [x] **CAPTURE-04**: Traffic without UTM parameters is automatically classified into a human-readable channel: Organic Search (known search engines without UTMs), Social (Facebook, Instagram, YouTube, TikTok, LinkedIn without UTMs), Referral (other external referrers), Direct (no referrer and no UTMs), or Unknown
+- [x] **CAPTURE-05**: First-touch attribution (the original source/campaign that brought the visitor) is written once and never overwritten for the life of the visitor session
+- [x] **CAPTURE-06**: Last-touch attribution is updated each time the visitor returns with a new UTM signal or identifiable referrer, so the most recent marketing source is always current
 
 ### Attribution Model
 
 - [ ] **ATTR-01**: Each conversion event records both first-touch attribution (what originally brought the visitor) and last-touch attribution (what most recently drove them back) as separate fields
 - [ ] **ATTR-02**: Booking attribution survives the Stripe checkout redirect — the visitor session ID is passed in the booking POST body before any Stripe redirect occurs so paid booking attributions are never lost
-- [ ] **ATTR-03**: Duplicate conversion events for the same booking are prevented so a booking that goes through both the Stripe webhook path and the confirmation page does not create two attribution records
+- [x] **ATTR-03**: Duplicate conversion events for the same booking are prevented so a booking that goes through both the Stripe webhook path and the confirmation page does not create two attribution records
 
 ### Conversion Event Tracking
 
@@ -118,15 +118,15 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CAPTURE-01 | Phase 10 | Pending |
-| CAPTURE-02 | Phase 10 | Pending |
-| CAPTURE-03 | Phase 10 | Pending |
-| CAPTURE-04 | Phase 10 | Pending |
-| CAPTURE-05 | Phase 10 | Pending |
-| CAPTURE-06 | Phase 10 | Pending |
+| CAPTURE-01 | Phase 10 | Complete |
+| CAPTURE-02 | Phase 10 | Complete |
+| CAPTURE-03 | Phase 10 | Complete |
+| CAPTURE-04 | Phase 10 | Complete |
+| CAPTURE-05 | Phase 10 | Complete |
+| CAPTURE-06 | Phase 10 | Complete |
 | ATTR-01 | Phase 11 | Pending |
 | ATTR-02 | Phase 11 | Pending |
-| ATTR-03 | Phase 10 | Pending |
+| ATTR-03 | Phase 10 | Complete |
 | EVENTS-01 | Phase 11 | Pending |
 | EVENTS-02 | Phase 11 | Pending |
 | EVENTS-03 | Phase 11 | Pending |
