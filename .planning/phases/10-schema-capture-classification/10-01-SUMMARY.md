@@ -167,17 +167,31 @@ None.
 
 ## User Setup Required
 
-**Task 3 — DATABASE MIGRATION — requires manual `supabase db push`.**
+**Task 3 — DATABASE MIGRATION PENDING — cannot auto-apply.**
 
-The Drizzle schema definitions and SQL migration file are complete. The actual database schema has NOT yet changed. To apply:
+The Drizzle schema definitions and SQL migration file are complete. The actual database schema has NOT yet changed.
 
-1. From project root: `supabase db push`
-2. Confirm migration `20260425000000_add_utm_tracking.sql` is listed and applied without error
-3. Verify in Supabase Dashboard > Database > Tables:
+### Why it is blocked
+
+The `.env` only has a pgBouncer transaction-mode URL (`DATABASE_URL`, port 6543). Supabase CLI `supabase db push` requires a direct (non-pooled) PostgreSQL connection. Attempting to use the pooled URL fails with a SCRAM authentication error. The direct DB password (`POSTGRES_URL_NON_POOLING`) is not available on this machine.
+
+### How to apply when the password is available
+
+1. Get the direct connection URL from **Supabase Dashboard > Settings > Database > Direct connection** (connection string for port 5432, not the pooler).
+2. Add it to `.env`:
+   ```
+   POSTGRES_URL_NON_POOLING=postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:5432/postgres
+   ```
+3. From project root, run:
+   ```
+   supabase db push
+   ```
+4. Confirm migration `20260425000000_add_utm_tracking.sql` is listed and applied without error.
+5. Verify in Supabase Dashboard > Database > Tables:
    - `visitor_sessions` table exists with all columns listed above
    - `conversion_events` table exists with all columns listed above
    - `bookings` table has a new `utm_session_id` UUID nullable column
-4. Verify in Supabase Dashboard > Database > Indexes:
+6. Verify in Supabase Dashboard > Database > Indexes:
    - `conversion_events_booking_event_model_unique_idx` exists as partial unique index with predicate `booking_id IS NOT NULL`
    - All 5 `visitor_sessions_*_idx` indexes exist
    - All 6 `conversion_events_*_idx` indexes exist

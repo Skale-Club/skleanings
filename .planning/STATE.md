@@ -71,6 +71,7 @@ None yet.
 
 ### Blockers/Concerns
 
+- **MIGRATION PENDING** — `supabase/migrations/20260425000000_add_utm_tracking.sql` is written and ready. Needs `POSTGRES_URL_NON_POOLING` (direct connection URL) in `.env` to apply. Get from Supabase Dashboard > Settings > Database > Direct connection (port 5432). Then run `supabase db push` from the project root. Plan 10-02 TypeScript types are already available (shared/schema.ts compiles), but Plan 10-02 execution requires the DB tables to exist before the storage/endpoint can be tested.
 - Rate limiting strategy for POST /api/analytics/session (public endpoint) — not yet designed; address in Phase 10 planning
 - GoHighLevel custom field names for UTM sync — must be confirmed before Phase 13 plan execution
 
