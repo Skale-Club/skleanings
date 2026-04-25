@@ -1,5 +1,5 @@
 import { db } from "../db";
-import { visitorSessions, type VisitorSession } from "@shared/schema";
+import { visitorSessions, conversionEvents, bookings, type VisitorSession } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { classifyTraffic } from "../lib/traffic-classifier";
 
@@ -135,4 +135,130 @@ function isSameDomain(referrer: string): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * Links a booking row to its visitor session.
+ * Sets bookings.utm_session_id = session.id
+ * Increments visitor_sessions.total_bookings and sets converted_at on first conversion.
+ * D-03: silently returns if visitorId not found in visitor_sessions.
+ */
+export async function linkBookingToAttribution(
+  bookingId: number,
+  visitorId: string,
+): Promise<void> {
+  // 1. Look up visitor session
+  const sessionRows = await db
+    .select()
+    .from(visitorSessions)
+    .where(eq(visitorSessions.id, visitorId))
+    .limit(1);
+
+  if (sessionRows.length === 0) return; // D-03: silent skip — booking is never blocked
+
+  const session = sessionRows[0];
+
+  // 2. Set bookings.utm_session_id
+  await db
+    .update(bookings)
+    .set({ utmSessionId: session.id })
+    .where(eq(bookings.id, bookingId));
+
+  // 3. Increment total_bookings; set converted_at only on first conversion
+  const newTotal = (session.totalBookings ?? 0) + 1;
+  await db
+    .update(visitorSessions)
+    .set({
+      totalBookings: newTotal,
+      convertedAt: session.convertedAt ?? new Date(),
+    })
+    .where(eq(visitorSessions.id, visitorId));
+}
+
+export interface RecordConversionEventOptions {
+  bookingId?: number;
+  visitorId?: string;
+  bookingValue?: string | number | null;
+  pageUrl?: string | null;
+}
+
+/**
+ * Writes two rows to conversion_events — one 'first_touch', one 'last_touch'.
+ * Lookup chain (per D-04, D-05):
+ *   1. If bookingId provided → SELECT utm_session_id FROM bookings → use that session.
+ *   2. If visitorId provided directly → query visitor_sessions.
+ *   3. If no session found → writes two rows with null attribution (event is preserved).
+ * Uses onConflictDoNothing() to respect the partial unique index from Phase 10
+ * (ATTR-03) — prevents duplicates if webhook fires more than once.
+ */
+export async function recordConversionEvent(
+  eventType: string,
+  options: RecordConversionEventOptions = {},
+): Promise<void> {
+  let session: VisitorSession | null = null;
+
+  // Lookup path 1: bookingId → get utm_session_id from booking row → fetch session
+  if (options.bookingId != null) {
+    const bookingRows = await db
+      .select({ utmSessionId: bookings.utmSessionId })
+      .from(bookings)
+      .where(eq(bookings.id, options.bookingId))
+      .limit(1);
+
+    const utmSessionId = bookingRows[0]?.utmSessionId ?? null;
+    if (utmSessionId) {
+      const sessionRows = await db
+        .select()
+        .from(visitorSessions)
+        .where(eq(visitorSessions.id, utmSessionId))
+        .limit(1);
+      session = sessionRows[0] ?? null;
+    }
+  }
+
+  // Lookup path 2: visitorId provided directly (used by /api/analytics/events endpoint)
+  if (!session && options.visitorId) {
+    const sessionRows = await db
+      .select()
+      .from(visitorSessions)
+      .where(eq(visitorSessions.id, options.visitorId))
+      .limit(1);
+    session = sessionRows[0] ?? null;
+  }
+
+  // Normalise bookingValue to string for the numeric column
+  const bookingValueStr =
+    options.bookingValue != null ? String(options.bookingValue) : null;
+
+  // Write two rows: first_touch (first_* fields) + last_touch (last_* fields).
+  // onConflictDoNothing respects the partial unique index on (booking_id, event_type, attribution_model).
+  await db
+    .insert(conversionEvents)
+    .values([
+      {
+        visitorId:             session?.id ?? null,
+        eventType,
+        bookingId:             options.bookingId ?? null,
+        bookingValue:          bookingValueStr,
+        attributedSource:      session?.firstUtmSource ?? null,
+        attributedMedium:      session?.firstUtmMedium ?? null,
+        attributedCampaign:    session?.firstUtmCampaign ?? null,
+        attributedLandingPage: session?.firstLandingPage ?? null,
+        attributionModel:      'first_touch',
+        pageUrl:               options.pageUrl ?? null,
+      },
+      {
+        visitorId:             session?.id ?? null,
+        eventType,
+        bookingId:             options.bookingId ?? null,
+        bookingValue:          bookingValueStr,
+        attributedSource:      session?.lastUtmSource ?? null,
+        attributedMedium:      session?.lastUtmMedium ?? null,
+        attributedCampaign:    session?.lastUtmCampaign ?? null,
+        attributedLandingPage: session?.lastLandingPage ?? null,
+        attributionModel:      'last_touch',
+        pageUrl:               options.pageUrl ?? null,
+      },
+    ])
+    .onConflictDoNothing();
 }
