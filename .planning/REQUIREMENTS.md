@@ -116,56 +116,54 @@
 
 ## Traceability
 
-Populated by roadmapper after roadmap creation.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CAPTURE-01 | — | Pending |
-| CAPTURE-02 | — | Pending |
-| CAPTURE-03 | — | Pending |
-| CAPTURE-04 | — | Pending |
-| CAPTURE-05 | — | Pending |
-| CAPTURE-06 | — | Pending |
-| ATTR-01 | — | Pending |
-| ATTR-02 | — | Pending |
-| ATTR-03 | — | Pending |
-| EVENTS-01 | — | Pending |
-| EVENTS-02 | — | Pending |
-| EVENTS-03 | — | Pending |
-| EVENTS-04 | — | Pending |
-| EVENTS-05 | — | Pending |
-| OVERVIEW-01 | — | Pending |
-| OVERVIEW-02 | — | Pending |
-| OVERVIEW-03 | — | Pending |
-| OVERVIEW-04 | — | Pending |
-| OVERVIEW-05 | — | Pending |
-| SOURCES-01 | — | Pending |
-| SOURCES-02 | — | Pending |
-| SOURCES-03 | — | Pending |
-| SOURCES-04 | — | Pending |
-| CAMP-01 | — | Pending |
-| CAMP-02 | — | Pending |
-| CAMP-03 | — | Pending |
-| CAMP-04 | — | Pending |
-| CONV-01 | — | Pending |
-| CONV-02 | — | Pending |
-| CONV-03 | — | Pending |
-| JOUR-01 | — | Pending |
-| JOUR-02 | — | Pending |
-| FILTER-01 | — | Pending |
-| FILTER-02 | — | Pending |
-| FILTER-03 | — | Pending |
-| UX-01 | — | Pending |
-| UX-02 | — | Pending |
-| UX-03 | — | Pending |
-| GHL-01 | — | Pending |
-| GHL-02 | — | Pending |
+| CAPTURE-01 | Phase 10 | Pending |
+| CAPTURE-02 | Phase 10 | Pending |
+| CAPTURE-03 | Phase 10 | Pending |
+| CAPTURE-04 | Phase 10 | Pending |
+| CAPTURE-05 | Phase 10 | Pending |
+| CAPTURE-06 | Phase 10 | Pending |
+| ATTR-01 | Phase 11 | Pending |
+| ATTR-02 | Phase 11 | Pending |
+| ATTR-03 | Phase 10 | Pending |
+| EVENTS-01 | Phase 11 | Pending |
+| EVENTS-02 | Phase 11 | Pending |
+| EVENTS-03 | Phase 11 | Pending |
+| EVENTS-04 | Phase 11 | Pending |
+| EVENTS-05 | Phase 11 | Pending |
+| OVERVIEW-01 | Phase 12 | Pending |
+| OVERVIEW-02 | Phase 12 | Pending |
+| OVERVIEW-03 | Phase 12 | Pending |
+| OVERVIEW-04 | Phase 12 | Pending |
+| OVERVIEW-05 | Phase 12 | Pending |
+| SOURCES-01 | Phase 12 | Pending |
+| SOURCES-02 | Phase 12 | Pending |
+| SOURCES-03 | Phase 12 | Pending |
+| SOURCES-04 | Phase 12 | Pending |
+| CAMP-01 | Phase 12 | Pending |
+| CAMP-02 | Phase 12 | Pending |
+| CAMP-03 | Phase 12 | Pending |
+| CAMP-04 | Phase 12 | Pending |
+| CONV-01 | Phase 13 | Pending |
+| CONV-02 | Phase 13 | Pending |
+| CONV-03 | Phase 13 | Pending |
+| JOUR-01 | Phase 13 | Pending |
+| JOUR-02 | Phase 13 | Pending |
+| FILTER-01 | Phase 12 | Pending |
+| FILTER-02 | Phase 12 | Pending |
+| FILTER-03 | Phase 12 | Pending |
+| UX-01 | Phase 12 | Pending |
+| UX-02 | Phase 12 | Pending |
+| UX-03 | Phase 12 | Pending |
+| GHL-01 | Phase 13 | Pending |
+| GHL-02 | Phase 13 | Pending |
 
 **Coverage:**
 - v1 requirements: 40 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 40 ⚠️
+- Mapped to phases: 40
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-25*
-*Last updated: 2026-04-25 after initial v1.0 definition*
+*Last updated: 2026-04-25 — traceability populated after roadmap creation*
