@@ -44,7 +44,10 @@
   3. Completing the same booking twice (webhook + confirmation page race) produces exactly two conversion_events rows (one per attribution model), not four — the unique constraint on (booking_id, event_type) prevents duplicates
   4. Reaching the first step of the booking flow records a booking_started event in conversion_events without delaying or blocking the booking page load
   5. The booking flow completes successfully for users who have no visitorId in localStorage (attribution is skipped gracefully, booking is not blocked)
-**Plans**: TBD
+**Plans**: 3 plans
+  - [ ] 11-01-PLAN.md — linkBookingToAttribution + recordConversionEvent storage functions + POST /api/analytics/events endpoint
+  - [ ] 11-02-PLAN.md — BookingPage visitorId threading + booking_started event + bookings.ts + payments.ts wiring
+  - [ ] 11-03-PLAN.md — ChatWidget chat_initiated event
 
 ### Phase 12: Marketing Dashboard UI
 **Goal**: Admin can open the Marketing section and immediately understand where visitors are coming from and which sources produce bookings — all in plain business language
@@ -79,7 +82,7 @@
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 10. Schema, Capture & Classification | 3/3 | Complete   | 2026-04-25 |
-| 11. Booking Flow Attribution | 0/? | Not started | - |
+| 11. Booking Flow Attribution | 0/3 | Planned | - |
 | 12. Marketing Dashboard UI | 0/? | Not started | - |
 | 13. Visitor Journey & GHL Sync | 0/? | Not started | - |
 
