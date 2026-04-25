@@ -64,7 +64,7 @@
 ### Filters & Date Ranges
 
 - [x] **FILTER-01**: Admin can filter all marketing views by date range with standard presets: Today, Yesterday, Last 7 days, Last 30 days, This month, Last month, and a Custom date picker
-- [x] **FILTER-02**: Admin can filter by source, medium, campaign, and conversion type across all views
+- [ ] **FILTER-02**: Admin can filter by source, medium, campaign, and conversion type across all views
 - [x] **FILTER-03**: The default date range is Last 30 days and is pre-applied when the admin first opens the marketing section
 
 ### Admin Navigation & UX
@@ -151,7 +151,7 @@
 | JOUR-01 | Phase 13 | Pending |
 | JOUR-02 | Phase 13 | Pending |
 | FILTER-01 | Phase 12 | Complete |
-| FILTER-02 | Phase 12 | Complete |
+| FILTER-02 | Phase 13 | Deferred — dimension filters (source/medium/campaign dropdowns) explicitly deferred from Phase 12 per D-16 |
 | FILTER-03 | Phase 12 | Complete |
 | UX-01 | Phase 12 | Complete |
 | UX-02 | Phase 12 | Complete |
