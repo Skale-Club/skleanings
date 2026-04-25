@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type CSSProperties } from 'react';
 import { Redirect, useLocation, useRoute } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import {
+  BarChart2,
   BookUser,
   Building2,
   Calendar,
@@ -40,6 +41,7 @@ import { AvailabilitySection } from '@/components/admin/AvailabilitySection';
 import { AdminChatLayout } from '@/components/chat/admin/AdminChatLayout';
 import { IntegrationsSection } from '@/components/admin/IntegrationsSection';
 import { BlogSection } from '@/components/admin/BlogSection';
+import { MarketingSection } from '@/components/admin/MarketingSection';
 import { AppointmentsCalendarSection } from '@/components/admin/AppointmentsCalendarSection';
 import { ContactsSection } from '@/components/admin/ContactsSection';
 import { useMe } from '@/hooks/useMe';
@@ -53,6 +55,7 @@ const menuItems: AdminMenuItem[] = [
   { id: 'categories', title: 'Categories', icon: FolderOpen },
   { id: 'services', title: 'Services', icon: Package },
   { id: 'bookings', title: 'Bookings', icon: Calendar },
+  { id: 'marketing', title: 'Marketing', icon: BarChart2 },
   { id: 'availability', title: 'Availability', icon: Clock },
   { id: 'chat', title: 'Chat', icon: MessageSquare },
   { id: 'faqs', title: 'FAQs', icon: HelpCircle },
@@ -202,6 +205,7 @@ function AdminContent() {
           {activeSection === 'chat' && <AdminChatLayout getAccessToken={getAccessToken} />}
           {activeSection === 'integrations' && <IntegrationsSection getAccessToken={getAccessToken} />}
           {activeSection === 'blog' && <BlogSection resetSignal={blogResetSignal} getAccessToken={getAccessToken} />}
+          {activeSection === 'marketing' && <MarketingSection getAccessToken={getAccessToken} />}
         </div>
       </main>
     </div>
