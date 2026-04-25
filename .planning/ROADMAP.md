@@ -60,8 +60,8 @@
   4. All views respond correctly to date range filter changes — selecting "Last 7 days" re-fetches and updates all numbers; the default on first open is "Last 30 days"
   5. When the database has no conversion data for the selected period, every tab shows a meaningful empty state explaining what the view will show once data is collected — the dashboard does not look broken
 **Plans**: 3 plans
-  - [ ] 12-01-PLAN.md — AdminSection type fix + analytics-display.ts utility + aggregate storage functions + GET endpoints
-  - [ ] 12-02-PLAN.md — MarketingSection shell + date filter state + tab navigation + Admin.tsx registration
+  - [x] 12-01-PLAN.md — AdminSection type fix + analytics-display.ts utility + aggregate storage functions + GET endpoints
+  - [x] 12-02-PLAN.md — MarketingSection shell + date filter state + tab navigation + Admin.tsx registration
   - [ ] 12-03-PLAN.md — MarketingOverviewTab + MarketingSourcesTab + MarketingCampaignsTab full implementations
 **UI hint**: yes
 
@@ -86,7 +86,7 @@
 |-------|----------------|--------|-----------|
 | 10. Schema, Capture & Classification | 3/3 | Complete   | 2026-04-25 |
 | 11. Booking Flow Attribution | 3/3 | Complete    | 2026-04-25 |
-| 12. Marketing Dashboard UI | 0/3 | Planned     | - |
+| 12. Marketing Dashboard UI | 2/3 | In Progress|  |
 | 13. Visitor Journey & GHL Sync | 0/? | Not started | - |
 
 ---

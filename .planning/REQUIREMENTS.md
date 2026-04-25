@@ -63,13 +63,13 @@
 
 ### Filters & Date Ranges
 
-- [ ] **FILTER-01**: Admin can filter all marketing views by date range with standard presets: Today, Yesterday, Last 7 days, Last 30 days, This month, Last month, and a Custom date picker
-- [ ] **FILTER-02**: Admin can filter by source, medium, campaign, and conversion type across all views
-- [ ] **FILTER-03**: The default date range is Last 30 days and is pre-applied when the admin first opens the marketing section
+- [x] **FILTER-01**: Admin can filter all marketing views by date range with standard presets: Today, Yesterday, Last 7 days, Last 30 days, This month, Last month, and a Custom date picker
+- [x] **FILTER-02**: Admin can filter by source, medium, campaign, and conversion type across all views
+- [x] **FILTER-03**: The default date range is Last 30 days and is pre-applied when the admin first opens the marketing section
 
 ### Admin Navigation & UX
 
-- [ ] **UX-01**: The marketing intelligence section is accessible from the existing admin sidebar navigation under a clear label ("Marketing" or "UTM Tracking")
+- [x] **UX-01**: The marketing intelligence section is accessible from the existing admin sidebar navigation under a clear label ("Marketing" or "UTM Tracking")
 - [ ] **UX-02**: All labels throughout the marketing section use business-friendly language — field names like "First Source", "Last Source", "Campaign", "Landing Page", "Visitors", "Bookings", "Conversion Rate" instead of raw parameter names
 - [ ] **UX-03**: Each dashboard view has a meaningful empty state that explains what it shows and when data will appear
 
@@ -150,10 +150,10 @@
 | CONV-03 | Phase 13 | Pending |
 | JOUR-01 | Phase 13 | Pending |
 | JOUR-02 | Phase 13 | Pending |
-| FILTER-01 | Phase 12 | Pending |
-| FILTER-02 | Phase 12 | Pending |
-| FILTER-03 | Phase 12 | Pending |
-| UX-01 | Phase 12 | Pending |
+| FILTER-01 | Phase 12 | Complete |
+| FILTER-02 | Phase 12 | Complete |
+| FILTER-03 | Phase 12 | Complete |
+| UX-01 | Phase 12 | Complete |
 | UX-02 | Phase 12 | Pending |
 | UX-03 | Phase 12 | Pending |
 | GHL-01 | Phase 13 | Pending |
