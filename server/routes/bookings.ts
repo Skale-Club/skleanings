@@ -2,6 +2,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { storage } from "../storage";
+import { linkBookingToAttribution, recordConversionEvent } from "../storage/analytics";
 import { requireAdmin, getAuthenticatedUser } from "../lib/auth";
 import { insertBookingSchema, insertBookingSchemaBase } from "@shared/schema";
 import { checkAvailability } from "../lib/availability";
@@ -119,6 +120,25 @@ router.post('/', async (req, res) => {
         } catch (contactErr) {
             // Non-blocking: contact linking failure never breaks booking creation
             console.error("Contact upsert error:", contactErr);
+        }
+
+        // Attribution wiring — fire-and-forget (EVENTS-04: must never block the booking response)
+        // D-07: visitorId is outside insertBookingSchema — read directly from req.body after Zod parse
+        const visitorId = req.body.visitorId as string | undefined;
+        try {
+            if (visitorId) {
+                await linkBookingToAttribution(booking.id, visitorId);
+            }
+        } catch (attrErr) {
+            console.error("Attribution link error:", attrErr);
+        }
+        try {
+            await recordConversionEvent('booking_completed', {
+                bookingId:    booking.id,
+                bookingValue: validatedData.totalPrice,
+            });
+        } catch (convErr) {
+            console.error("Conversion event error:", convErr);
         }
 
         // Sync to GHL if enabled (non-blocking for booking creation)

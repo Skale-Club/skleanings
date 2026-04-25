@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { storage } from "../storage";
+import { linkBookingToAttribution, recordConversionEvent } from "../storage/analytics";
 import { insertBookingSchema } from "@shared/schema";
 import { checkAvailability } from "../lib/availability";
 import { calculateCartItemPrice } from "../lib/pricing";
@@ -27,6 +28,8 @@ router.post("/checkout", async (req, res) => {
 
     // Validate booking data (same schema as POST /api/bookings)
     const validatedData = insertBookingSchema.parse(req.body);
+    // D-07: visitorId is outside insertBookingSchema — Zod strips unknown fields, read before they're lost
+    const visitorId = req.body.visitorId as string | undefined;
 
     // Availability check
     const isAvailable = await checkAvailability(
@@ -84,6 +87,15 @@ router.post("/checkout", async (req, res) => {
       bookingItemsData,
     });
 
+    // Attribution: link booking to visitor session — fire-and-forget (D-05: conversion event fires in webhook only)
+    try {
+      if (visitorId) {
+        await linkBookingToAttribution(booking.id, visitorId);
+      }
+    } catch (attrErr) {
+      console.error("Checkout attribution error:", attrErr);
+    }
+
     // Create Stripe Checkout session
     const origin = `${req.protocol}://${req.get("host")}`;
     const session = await createCheckoutSession({
@@ -129,6 +141,15 @@ router.post("/webhook", async (req, res) => {
         await storage.updateBookingStripeFields(bookingId, session.id, session.payment_status);
         if (session.payment_status === "paid") {
           await storage.updateBooking(bookingId, { paymentStatus: "paid" });
+          // D-05: Stripe path records booking_completed ONLY from webhook (not checkout handler)
+          // D-04: if utm_session_id is null on booking row, writes null attribution — event is preserved
+          try {
+            await recordConversionEvent('booking_completed', {
+              bookingId,
+            });
+          } catch (convErr) {
+            console.error("Webhook conversion event error:", convErr);
+          }
         }
       } catch (err) {
         console.error("Webhook booking update error:", err);
