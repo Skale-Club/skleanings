@@ -17,7 +17,7 @@
 ### Attribution Model
 
 - [x] **ATTR-01**: Each conversion event records both first-touch attribution (what originally brought the visitor) and last-touch attribution (what most recently drove them back) as separate fields
-- [ ] **ATTR-02**: Booking attribution survives the Stripe checkout redirect — the visitor session ID is passed in the booking POST body before any Stripe redirect occurs so paid booking attributions are never lost
+- [x] **ATTR-02**: Booking attribution survives the Stripe checkout redirect — the visitor session ID is passed in the booking POST body before any Stripe redirect occurs so paid booking attributions are never lost
 - [x] **ATTR-03**: Duplicate conversion events for the same booking are prevented so a booking that goes through both the Stripe webhook path and the confirmation page does not create two attribution records
 
 ### Conversion Event Tracking
@@ -26,7 +26,7 @@
 - [x] **EVENTS-02**: Booking started event is recorded when a visitor reaches the first step of the booking flow, with first-touch and last-touch attribution
 - [x] **EVENTS-03**: Chat initiated event is recorded when a visitor opens the chat widget, with first-touch and last-touch attribution
 - [x] **EVENTS-04**: Conversion event recording never delays or blocks the booking flow — all attribution writes are fire-and-forget
-- [ ] **EVENTS-05**: Admin can see each conversion event linked to the booking or action it represents so a specific lead can be traced to its source
+- [x] **EVENTS-05**: Admin can see each conversion event linked to the booking or action it represents so a specific lead can be traced to its source
 
 ### Marketing Overview Dashboard
 
@@ -125,13 +125,13 @@
 | CAPTURE-05 | Phase 10 | Complete |
 | CAPTURE-06 | Phase 10 | Complete |
 | ATTR-01 | Phase 11 | Complete |
-| ATTR-02 | Phase 11 | Pending |
+| ATTR-02 | Phase 11 | Complete |
 | ATTR-03 | Phase 10 | Complete |
 | EVENTS-01 | Phase 11 | Complete |
 | EVENTS-02 | Phase 11 | Complete |
 | EVENTS-03 | Phase 11 | Complete |
 | EVENTS-04 | Phase 11 | Complete |
-| EVENTS-05 | Phase 11 | Pending |
+| EVENTS-05 | Phase 11 | Complete |
 | OVERVIEW-01 | Phase 12 | Pending |
 | OVERVIEW-02 | Phase 12 | Pending |
 | OVERVIEW-03 | Phase 12 | Pending |
