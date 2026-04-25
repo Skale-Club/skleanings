@@ -12,6 +12,7 @@ import * as blog from "./blog";
 import * as timeSlots from "./time-slots";
 import * as contacts from "./contacts";
 import * as staff from "./staff";
+import * as analytics from "./analytics";
 import { db } from "../db";
 import { DEFAULT_BUSINESS_HOURS, type BusinessHours } from "@shared/schema";
 import { sql } from "drizzle-orm";
@@ -100,6 +101,7 @@ export const storage = {
   ...timeSlots,
   ...contacts,
   ...staff,
+  ...analytics,
   initializeRuntimeState,
 };
 
