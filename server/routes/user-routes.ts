@@ -73,13 +73,13 @@ router.patch("/:id/staff-link", requireAdmin, async (req, res) => {
         const userId = req.params.id;
         const { staffMemberId } = req.body;
         if (staffMemberId !== null && staffMemberId !== undefined) {
-            await storage.linkStaffToUser(Number(staffMemberId), userId);
+            await storage.linkStaffMemberToUser(Number(staffMemberId), userId);
         } else {
             // Clear any existing link by setting userId=null on any linked staff member
             const allStaff = await storage.getStaffMembers(true);
             const linked = allStaff.find(s => s.userId === userId);
             if (linked) {
-                await storage.linkStaffToUser(linked.id, null as any);
+                await storage.linkStaffMemberToUser(linked.id, null as any);
             }
         }
         res.json({ success: true });

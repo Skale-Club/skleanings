@@ -123,13 +123,13 @@ export function ConversationList({
                                     {notificationMap?.has(conv.id) && (
                                         <div className="flex items-center gap-1.5 mt-0.5">
                                             {notificationMap.get(conv.id)?.has('sms') && (
-                                                <Phone className="h-3 w-3 text-emerald-500" title="SMS sent" />
+                                                <Phone className="h-3 w-3 text-emerald-500" aria-label="SMS sent" />
                                             )}
                                             {notificationMap.get(conv.id)?.has('telegram') && (
-                                                <MessageCircle className="h-3 w-3 text-sky-500" title="Telegram sent" />
+                                                <MessageCircle className="h-3 w-3 text-sky-500" aria-label="Telegram sent" />
                                             )}
                                             {notificationMap.get(conv.id)?.has('ghl') && (
-                                                <Link2 className="h-3 w-3 text-violet-500" title="GHL synced" />
+                                                <Link2 className="h-3 w-3 text-violet-500" aria-label="GHL synced" />
                                             )}
                                         </div>
                                     )}

@@ -95,6 +95,9 @@ import {
   notificationLogs,
   type NotificationLog,
   type InsertNotificationLog,
+  contacts,
+  type Contact,
+  type InsertContact,
 } from "@shared/schema";
 import { eq, and, or, gte, lte, inArray, desc, asc, sql, ne, isNull, like } from "drizzle-orm";
 import { z } from "zod";
@@ -318,6 +321,15 @@ export interface IStorage {
     needsReconnect: boolean;
     lastDisconnectedAt: Date | null;
   }>>;
+
+  // Contacts
+  getContact(id: number): Promise<Contact | undefined>;
+  listContactsWithStats(search?: string, limit?: number): Promise<Contact[]>;
+  upsertContact(data: Omit<InsertContact, 'updatedAt'>): Promise<Contact>;
+  updateContact(id: number, data: Partial<InsertContact>): Promise<Contact>;
+  updateBookingContactId(bookingId: number, contactId: number): Promise<void>;
+  getContactBookings(contactId: number): Promise<Booking[]>;
+  getBookingsByDateRange(from: string, to: string): Promise<Booking[]>;
 
   // Notification Logs
   createNotificationLog(entry: InsertNotificationLog): Promise<NotificationLog>;
@@ -630,7 +642,7 @@ export class DatabaseStorage implements IStorage {
     return service;
   }
 
-  async createBooking(booking: InsertBooking & { totalPrice: string, totalDurationMinutes: number, endTime: string, bookingItemsData?: any[] }): Promise<Booking> {
+  async createBooking(booking: InsertBooking & { totalPrice: string, totalDurationMinutes: number, endTime: string, bookingItemsData?: any[], userId?: string | null }): Promise<Booking> {
     // Use transaction to ensure booking and items are created atomically
     return await db.transaction(async (tx) => {
       // 1. Create Booking
@@ -1814,6 +1826,48 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(notificationLogs.sentAt))
       .limit(filters.limit ?? 50)
       .offset(filters.offset ?? 0);
+  }
+
+  async getContact(id: number): Promise<Contact | undefined> {
+    const [contact] = await db.select().from(contacts).where(eq(contacts.id, id));
+    return contact;
+  }
+
+  async listContactsWithStats(search?: string, limit = 100): Promise<Contact[]> {
+    const query = db.select().from(contacts);
+    if (search) {
+      return query.where(or(like(contacts.name, `%${search}%`), like(contacts.email ?? '', `%${search}%`), like(contacts.phone ?? '', `%${search}%`))).limit(limit).orderBy(desc(contacts.updatedAt));
+    }
+    return query.limit(limit).orderBy(desc(contacts.updatedAt));
+  }
+
+  async upsertContact(data: Omit<InsertContact, 'updatedAt'>): Promise<Contact> {
+    if (data.email) {
+      const [existing] = await db.select().from(contacts).where(eq(contacts.email, data.email));
+      if (existing) {
+        const [updated] = await db.update(contacts).set({ ...data, updatedAt: new Date() }).where(eq(contacts.id, existing.id)).returning();
+        return updated;
+      }
+    }
+    const [created] = await db.insert(contacts).values({ ...data, updatedAt: new Date() }).returning();
+    return created;
+  }
+
+  async updateContact(id: number, data: Partial<InsertContact>): Promise<Contact> {
+    const [updated] = await db.update(contacts).set({ ...data, updatedAt: new Date() }).where(eq(contacts.id, id)).returning();
+    return updated;
+  }
+
+  async updateBookingContactId(bookingId: number, contactId: number): Promise<void> {
+    await db.update(bookings).set({ contactId }).where(eq(bookings.id, bookingId));
+  }
+
+  async getContactBookings(contactId: number): Promise<Booking[]> {
+    return db.select().from(bookings).where(eq(bookings.contactId, contactId)).orderBy(desc(bookings.createdAt));
+  }
+
+  async getBookingsByDateRange(from: string, to: string): Promise<Booking[]> {
+    return db.select().from(bookings).where(and(gte(bookings.bookingDate, from), lte(bookings.bookingDate, to))).orderBy(asc(bookings.bookingDate));
   }
 }
 
