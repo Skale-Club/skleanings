@@ -534,6 +534,17 @@ export function ChatWidget() {
       const willOpen = !prev;
       if (willOpen) {
         trackChatOpen(window.location.pathname);
+        // D-02, EVENTS-03: fire-and-forget chat_initiated event — no await, never blocks chat opening
+        const visitorId = localStorage.getItem('skleanings_visitor_id');
+        fetch('/api/analytics/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            visitorId: visitorId ?? undefined,
+            eventType: 'chat_initiated',
+            pageUrl: window.location.pathname,
+          }),
+        }).catch(() => {});
       } else {
         trackChatClose(window.location.pathname, messages.length);
       }
