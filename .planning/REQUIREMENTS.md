@@ -52,19 +52,19 @@
 
 ### Conversions View
 
-- [ ] **CONV-01**: Admin can see a list of all recorded conversion events showing: what happened, when, source, campaign, landing page, whether it was first-touch or last-touch, and the booking value
-- [ ] **CONV-02**: Admin can filter the conversions list by source, campaign, conversion type, and date range
-- [ ] **CONV-03**: Each conversion event in the list is linked to the specific booking or action so the admin can click through to the booking detail
+- [x] **CONV-01**: Admin can see a list of all recorded conversion events showing: what happened, when, source, campaign, landing page, whether it was first-touch or last-touch, and the booking value
+- [x] **CONV-02**: Admin can filter the conversions list by source, campaign, conversion type, and date range
+- [x] **CONV-03**: Each conversion event in the list is linked to the specific booking or action so the admin can click through to the booking detail
 
 ### Visitor Journey
 
-- [ ] **JOUR-01**: Admin can view the attribution journey for a specific visitor session, showing first-touch source/campaign, subsequent marketing touchpoints (if any), and the conversion event
-- [ ] **JOUR-02**: The visitor journey clearly shows whether first-touch and last-touch were the same source or different sources, so the admin understands multi-touch influence
+- [x] **JOUR-01**: Admin can view the attribution journey for a specific visitor session, showing first-touch source/campaign, subsequent marketing touchpoints (if any), and the conversion event
+- [x] **JOUR-02**: The visitor journey clearly shows whether first-touch and last-touch were the same source or different sources, so the admin understands multi-touch influence
 
 ### Filters & Date Ranges
 
 - [x] **FILTER-01**: Admin can filter all marketing views by date range with standard presets: Today, Yesterday, Last 7 days, Last 30 days, This month, Last month, and a Custom date picker
-- [ ] **FILTER-02**: Admin can filter by source, medium, campaign, and conversion type across all views
+- [x] **FILTER-02**: Admin can filter by source, medium, campaign, and conversion type across all views
 - [x] **FILTER-03**: The default date range is Last 30 days and is pre-applied when the admin first opens the marketing section
 
 ### Admin Navigation & UX
@@ -145,11 +145,11 @@
 | CAMP-02 | Phase 12 | Complete |
 | CAMP-03 | Phase 12 | Complete |
 | CAMP-04 | Phase 12 | Complete |
-| CONV-01 | Phase 13 | Pending |
-| CONV-02 | Phase 13 | Pending |
-| CONV-03 | Phase 13 | Pending |
-| JOUR-01 | Phase 13 | Pending |
-| JOUR-02 | Phase 13 | Pending |
+| CONV-01 | Phase 13 | Complete |
+| CONV-02 | Phase 13 | Complete |
+| CONV-03 | Phase 13 | Complete |
+| JOUR-01 | Phase 13 | Complete |
+| JOUR-02 | Phase 13 | Complete |
 | FILTER-01 | Phase 12 | Complete |
 | FILTER-02 | Phase 13 | Deferred — dimension filters (source/medium/campaign dropdowns) explicitly deferred from Phase 12 per D-16 |
 | FILTER-03 | Phase 12 | Complete |
