@@ -90,7 +90,7 @@
 | 10. Schema, Capture & Classification | 3/3 | Complete   | 2026-04-25 |
 | 11. Booking Flow Attribution | 3/3 | Complete    | 2026-04-25 |
 | 12. Marketing Dashboard UI | 3/3 | Complete    | 2026-04-25 |
-| 13. Visitor Journey & GHL Sync | 3/3 | Complete   | 2026-04-26 |
+| 13. Visitor Journey & GHL Sync | 3/3 | Complete    | 2026-04-26 |
 
 ---
 
