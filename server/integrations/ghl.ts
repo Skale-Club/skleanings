@@ -482,6 +482,7 @@ export async function updateGHLContact(
     lastName?: string;
     phone?: string;
     address?: string;
+    customFields?: Array<{ key: string; value: string }>;
   }
 ): Promise<{ success: boolean; message?: string }> {
   return withRetry(async () => {
@@ -497,6 +498,11 @@ export async function updateGHLContact(
       if (parsed.city) body.city = parsed.city;
       if (parsed.state) body.state = parsed.state;
       console.log(`Parsed address: street="${parsed.street}", city="${parsed.city}", state="${parsed.state}"`);
+    }
+
+    // D-12: Optional UTM custom fields (key-based, GHL API v2021-04-15 accepts key as alternate to id)
+    if (updates.customFields && updates.customFields.length > 0) {
+      body.customFields = updates.customFields;
     }
 
     const response = await ghlFetch(`/contacts/${contactId}`, apiKey, {
