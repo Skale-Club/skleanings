@@ -648,3 +648,98 @@ export async function getCampaignsData(fromDate: Date, toDate: Date): Promise<Ca
     throw err;
   }
 }
+
+// ============================================================
+// PHASE 13: Conversions tab + Visitor Journey panel
+// ============================================================
+
+export interface ConversionEventRow {
+  id: number;
+  eventType: string;
+  attributedSource: string | null;
+  attributedCampaign: string | null;
+  attributedLandingPage: string | null;
+  bookingValue: string | null;
+  occurredAt: string;      // ISO string
+  bookingId: number | null;
+  visitorId: string | null;
+  attributionModel: string;
+}
+
+/**
+ * Returns last_touch conversion events filtered by date range and optional source.
+ * D-02: only last_touch rows are returned — first_touch rows are excluded by design.
+ * D-04: campaign/type filter deferred per D-04; source + date filter only.
+ */
+export async function getConversionsData(
+  fromDate: Date,
+  toDate: Date,
+  source?: string | null,
+  limit = 50,
+  offset = 0,
+): Promise<ConversionEventRow[]> {
+  try {
+    const conditions = [
+      eq(conversionEvents.attributionModel, 'last_touch'),  // D-02: last_touch only
+      gte(conversionEvents.occurredAt, fromDate),
+      lte(conversionEvents.occurredAt, toDate),
+    ];
+    if (source) {
+      conditions.push(eq(conversionEvents.attributedSource, source));
+    }
+    const rows = await db
+      .select({
+        id:                    conversionEvents.id,
+        eventType:             conversionEvents.eventType,
+        attributedSource:      conversionEvents.attributedSource,
+        attributedCampaign:    conversionEvents.attributedCampaign,
+        attributedLandingPage: conversionEvents.attributedLandingPage,
+        bookingValue:          conversionEvents.bookingValue,
+        occurredAt:            conversionEvents.occurredAt,
+        bookingId:             conversionEvents.bookingId,
+        visitorId:             conversionEvents.visitorId,
+        attributionModel:      conversionEvents.attributionModel,
+      })
+      .from(conversionEvents)
+      .where(and(...conditions))
+      .orderBy(desc(conversionEvents.occurredAt))
+      .limit(limit)
+      .offset(offset);
+
+    return rows.map(r => ({
+      id:                    r.id,
+      eventType:             r.eventType,
+      attributedSource:      r.attributedSource,
+      attributedCampaign:    r.attributedCampaign,
+      attributedLandingPage: r.attributedLandingPage,
+      bookingValue:          r.bookingValue != null ? String(r.bookingValue) : null,
+      occurredAt:            r.occurredAt.toISOString(),
+      bookingId:             r.bookingId,
+      visitorId:             r.visitorId,
+      attributionModel:      r.attributionModel,
+    }));
+  } catch (err: any) {
+    if (err?.code === '42P01' || err?.message?.includes('does not exist')) return [];
+    throw err;
+  }
+}
+
+/**
+ * Returns the full visitor_sessions row for the Visitor Journey panel.
+ * Returns null if visitorId is not found (route will return 404).
+ */
+export async function getVisitorSession(
+  visitorId: string,
+): Promise<VisitorSession | null> {
+  try {
+    const rows = await db
+      .select()
+      .from(visitorSessions)
+      .where(eq(visitorSessions.id, visitorId))
+      .limit(1);
+    return rows[0] ?? null;
+  } catch (err: any) {
+    if (err?.code === '42P01' || err?.message?.includes('does not exist')) return null;
+    throw err;
+  }
+}
