@@ -75,7 +75,10 @@
   3. Clicking into a visitor session shows the journey: first-touch source/campaign, any subsequent UTM touches, and the final conversion event — clearly labeled so the admin can see whether first-touch and last-touch were the same source
   4. After a booking with attribution data is created, the corresponding GoHighLevel contact record has first-touch source and campaign populated in the configured custom fields
   5. The GoHighLevel contact record also reflects last-touch source and campaign as separate fields — the admin can see both attribution touchpoints in the CRM
-**Plans**: TBD
+**Plans**: 3 plans
+  - [ ] 13-01-PLAN.md — getConversionsData + getVisitorSession storage functions + GET /conversions + GET /session/:visitorId endpoints
+  - [ ] 13-02-PLAN.md — updateGHLContact customFields extension + syncBookingToGhl UTM write (fire-and-forget)
+  - [ ] 13-03-PLAN.md — MarketingConversionsTab + VisitorJourneyPanel + MarketingSection 4th tab
 **UI hint**: yes
 
 ---
@@ -87,7 +90,7 @@
 | 10. Schema, Capture & Classification | 3/3 | Complete   | 2026-04-25 |
 | 11. Booking Flow Attribution | 3/3 | Complete    | 2026-04-25 |
 | 12. Marketing Dashboard UI | 3/3 | Complete    | 2026-04-25 |
-| 13. Visitor Journey & GHL Sync | 0/? | Not started | - |
+| 13. Visitor Journey & GHL Sync | 0/3 | Not started | - |
 
 ---
 
