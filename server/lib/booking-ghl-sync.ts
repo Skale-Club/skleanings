@@ -4,8 +4,10 @@ import {
   createGHLAppointment,
   getOrCreateGHLContact,
   formatDateTimeWithTimezone,
+  updateGHLContact,
 } from "../integrations/ghl";
 import { logNotification } from "./notification-logger";
+import { getVisitorSession } from "../storage/analytics";
 
 export interface BookingGhlSyncResult {
   attempted: boolean;
@@ -59,6 +61,34 @@ export async function syncBookingToGhl(
         synced: false,
         reason: contactResult.message || "Failed to create or find contact in GHL",
       };
+    }
+
+    // GHL-01, GHL-02: Write UTM attribution custom fields to GHL contact (fire-and-forget).
+    // D-13: Fires after contact found/created. Never blocks booking or main sync.
+    // D-15: Skip entirely if utm_session_id is null (anonymous visitor).
+    if (booking.utmSessionId) {
+      void (async () => {
+        try {
+          const session = await getVisitorSession(booking.utmSessionId!);
+          if (session) {
+            const customFields: Array<{ key: string; value: string }> = [];
+            // D-11: Fixed field keys — admin creates these custom fields in GHL once.
+            if (session.firstUtmSource)   customFields.push({ key: 'utm_first_source',   value: session.firstUtmSource });
+            if (session.firstUtmCampaign) customFields.push({ key: 'utm_first_campaign', value: session.firstUtmCampaign });
+            if (session.lastUtmSource)    customFields.push({ key: 'utm_last_source',    value: session.lastUtmSource });
+            if (session.lastUtmCampaign)  customFields.push({ key: 'utm_last_campaign',  value: session.lastUtmCampaign });
+            if (customFields.length > 0) {
+              await updateGHLContact(settings.apiKey!, contactResult.contactId!, { customFields });
+              console.log(`[GHL] UTM custom fields written for contact ${contactResult.contactId}`);
+            }
+          }
+        } catch (utmErr: any) {
+          // Fire-and-forget: log but never propagate — contact/appointment sync is primary.
+          console.log(`[GHL] UTM custom field write failed (non-fatal): ${utmErr?.message}`);
+        }
+      })();
+    } else {
+      console.debug(`[GHL] Skipping UTM custom fields — booking ${booking.id} has no utm_session_id`);
     }
 
     const companySettings = await storage.getCompanySettings();
