@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MarketingOverviewTab } from './marketing/MarketingOverviewTab';
 import { MarketingSourcesTab } from './marketing/MarketingSourcesTab';
 import { MarketingCampaignsTab } from './marketing/MarketingCampaignsTab';
+import { MarketingConversionsTab } from './marketing/MarketingConversionsTab';
 
 // Date range types — exported for use by tab sub-components
 export type DatePreset = 'today' | 'yesterday' | 'last7' | 'last30' | 'thisMonth' | 'lastMonth' | 'custom';
@@ -67,7 +68,7 @@ export function MarketingSection({ getAccessToken }: Props) {
   const [dateRange, setDateRange] = useState<DateRange>(() => getPresetRange('last30'));
 
   // D-07: Local useState for tab switching (NOT useSlugTab — consistent with BlogSection)
-  const [activeTab, setActiveTab] = useState<'overview' | 'sources' | 'campaigns'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'sources' | 'campaigns' | 'conversions'>('overview');
 
   function handlePresetChange(preset: string) {
     if (preset === 'custom') {
@@ -115,6 +116,7 @@ export function MarketingSection({ getAccessToken }: Props) {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="sources">Sources</TabsTrigger>
           <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
+          <TabsTrigger value="conversions">Conversions</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-6">
@@ -125,6 +127,9 @@ export function MarketingSection({ getAccessToken }: Props) {
         </TabsContent>
         <TabsContent value="campaigns" className="mt-6">
           <MarketingCampaignsTab dateRange={dateRange} getAccessToken={getAccessToken} />
+        </TabsContent>
+        <TabsContent value="conversions" className="mt-6">
+          <MarketingConversionsTab dateRange={dateRange} getAccessToken={getAccessToken} />
         </TabsContent>
       </Tabs>
     </div>
