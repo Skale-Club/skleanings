@@ -20,6 +20,7 @@ server/public
 # IDE & Editor
 .vscode/
 .idea/
+.kilo/
 *.swp
 *.swo
 *~
