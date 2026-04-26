@@ -12,7 +12,7 @@
 - [x] **Phase 10: Schema, Capture & Classification** — Database tables, Supabase migration, traffic classifier, session endpoint, and UTM capture hook (completed 2026-04-25)
 - [x] **Phase 11: Booking Flow Attribution** — Link bookings to sessions, conversion event recording with dual first/last-touch writes, Stripe attribution preservation (completed 2026-04-25)
 - [x] **Phase 12: Marketing Dashboard UI** — Admin marketing section with Overview, Sources, Campaigns, Conversions, filters, and empty states (completed 2026-04-25)
-- [ ] **Phase 13: Visitor Journey & GHL Sync** — Visitor journey view, Conversions detail list, GoHighLevel UTM field sync
+- [x] **Phase 13: Visitor Journey & GHL Sync** — Visitor journey view, Conversions detail list, GoHighLevel UTM field sync (completed 2026-04-26)
 
 ---
 
@@ -78,7 +78,7 @@
 **Plans**: 3 plans
   - [x] 13-01-PLAN.md — getConversionsData + getVisitorSession storage functions + GET /conversions + GET /session/:visitorId endpoints
   - [x] 13-02-PLAN.md — updateGHLContact customFields extension + syncBookingToGhl UTM write (fire-and-forget)
-  - [ ] 13-03-PLAN.md — MarketingConversionsTab + VisitorJourneyPanel + MarketingSection 4th tab
+  - [x] 13-03-PLAN.md — MarketingConversionsTab + VisitorJourneyPanel + MarketingSection 4th tab
 **UI hint**: yes
 
 ---
@@ -90,7 +90,7 @@
 | 10. Schema, Capture & Classification | 3/3 | Complete   | 2026-04-25 |
 | 11. Booking Flow Attribution | 3/3 | Complete    | 2026-04-25 |
 | 12. Marketing Dashboard UI | 3/3 | Complete    | 2026-04-25 |
-| 13. Visitor Journey & GHL Sync | 2/3 | In Progress|  |
+| 13. Visitor Journey & GHL Sync | 3/3 | Complete   | 2026-04-26 |
 
 ---
 
