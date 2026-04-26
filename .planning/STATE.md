@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 13-01-PLAN.md
-last_updated: "2026-04-26T15:17:08.142Z"
+stopped_at: Completed 13-02-PLAN.md
+last_updated: "2026-04-26T16:26:44.287Z"
 last_activity: 2026-04-26
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 12
-  completed_plans: 10
+  completed_plans: 11
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-25)
 ## Current Position
 
 Phase: 13 (visitor-journey-ghl-sync) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-04-26
 
@@ -55,6 +55,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 12-marketing-dashboard-ui P02 | 8 | 2 tasks | 6 files |
 | Phase 12-marketing-dashboard-ui P03 | 3 | 2 tasks | 3 files |
 | Phase 13-visitor-journey-ghl-sync P01 | 289 | 2 tasks | 2 files |
+| Phase 13-visitor-journey-ghl-sync P02 | 67 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -85,6 +86,9 @@ Recent decisions affecting current work:
 - [Phase 12-marketing-dashboard-ui]: Empty-state-first principle applied: all three marketing tab components code empty states before data-render path
 - [Phase 13-visitor-journey-ghl-sync]: getConversionsData enforces last_touch filter in SQL — first_touch rows excluded by design (D-02)
 - [Phase 13-visitor-journey-ghl-sync]: Conversions endpoint limit capped at 200 server-side to prevent runaway queries
+- [Phase 13-visitor-journey-ghl-sync]: updateGHLContact extended with optional customFields array — backward compatible, zero callers broken
+- [Phase 13-visitor-journey-ghl-sync]: GHL UTM write is fire-and-forget via void IIFE — errors caught and logged, outer sync never affected (D-13)
+- [Phase 13-visitor-journey-ghl-sync]: Skip UTM write entirely when booking.utmSessionId is null — no unnecessary GHL API calls for anonymous visitors (D-15)
 
 ### Pending Todos
 
@@ -98,6 +102,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-26T15:17:08.129Z
-Stopped at: Completed 13-01-PLAN.md
+Last session: 2026-04-26T16:26:44.280Z
+Stopped at: Completed 13-02-PLAN.md
 Resume file: None

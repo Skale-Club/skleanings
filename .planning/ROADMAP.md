@@ -77,7 +77,7 @@
   5. The GoHighLevel contact record also reflects last-touch source and campaign as separate fields — the admin can see both attribution touchpoints in the CRM
 **Plans**: 3 plans
   - [x] 13-01-PLAN.md — getConversionsData + getVisitorSession storage functions + GET /conversions + GET /session/:visitorId endpoints
-  - [ ] 13-02-PLAN.md — updateGHLContact customFields extension + syncBookingToGhl UTM write (fire-and-forget)
+  - [x] 13-02-PLAN.md — updateGHLContact customFields extension + syncBookingToGhl UTM write (fire-and-forget)
   - [ ] 13-03-PLAN.md — MarketingConversionsTab + VisitorJourneyPanel + MarketingSection 4th tab
 **UI hint**: yes
 
@@ -90,7 +90,7 @@
 | 10. Schema, Capture & Classification | 3/3 | Complete   | 2026-04-25 |
 | 11. Booking Flow Attribution | 3/3 | Complete    | 2026-04-25 |
 | 12. Marketing Dashboard UI | 3/3 | Complete    | 2026-04-25 |
-| 13. Visitor Journey & GHL Sync | 1/3 | In Progress|  |
+| 13. Visitor Journey & GHL Sync | 2/3 | In Progress|  |
 
 ---
 

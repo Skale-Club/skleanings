@@ -75,8 +75,8 @@
 
 ### GoHighLevel UTM Sync
 
-- [ ] **GHL-01**: When a booking with attribution data is created, the visitor's first-touch source and campaign are written to the corresponding GoHighLevel contact's custom fields
-- [ ] **GHL-02**: The last-touch source and campaign are also written to the GoHighLevel contact record so CRM records reflect both attribution touchpoints
+- [x] **GHL-01**: When a booking with attribution data is created, the visitor's first-touch source and campaign are written to the corresponding GoHighLevel contact's custom fields
+- [x] **GHL-02**: The last-touch source and campaign are also written to the GoHighLevel contact record so CRM records reflect both attribution touchpoints
 
 ---
 
@@ -156,8 +156,8 @@
 | UX-01 | Phase 12 | Complete |
 | UX-02 | Phase 12 | Complete |
 | UX-03 | Phase 12 | Complete |
-| GHL-01 | Phase 13 | Pending |
-| GHL-02 | Phase 13 | Pending |
+| GHL-01 | Phase 13 | Complete |
+| GHL-02 | Phase 13 | Complete |
 
 **Coverage:**
 - v1 requirements: 40 total
