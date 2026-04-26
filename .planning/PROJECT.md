@@ -39,13 +39,11 @@ Customers can discover, book, and pay for cleaning services online without calli
 - ✓ UTM session capture (all 6 params + referrer + landing page), traffic classification, first/last-touch attribution — Phase 10
 - ✓ Booking flow attribution — visitorId wired through direct and Stripe paths, booking_started and chat_initiated events — Phase 11
 - ✓ Marketing Dashboard UI — Overview (KPI cards, trend chart, recent conversions), Sources tab (per-source performance table), Campaigns tab (per-campaign table with zero-booking visibility), date range filter with 7 presets, polished empty states — Phase 12
+- ✓ Conversions tab (last-touch event list with source filter + date range), Visitor Journey slide-over (first/last-touch blocks, influence indicator, conversion event), GHL UTM custom field sync (utm_first/last_source/campaign written fire-and-forget on booking) — Phase 13
 
 ### Active
 
-- [ ] Conversions view (list of conversion events with full attribution context) — Phase 13
-- [ ] Visitor Journey view (path from first touch through conversion) — Phase 13
-- [ ] Dimension filters (source, medium, campaign, conversion type) — Phase 13 (deferred from Phase 12 per D-16)
-- [ ] GoHighLevel UTM sync — write first/last-touch to GHL contact fields — Phase 13
+None — v1.0 Marketing Attribution milestone complete.
 
 ### Out of Scope
 
