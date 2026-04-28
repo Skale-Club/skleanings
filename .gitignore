@@ -113,3 +113,6 @@ replit.nix
 
 # Claude Code runtime
 .claude/scheduled_tasks.lock
+
+# Supabase CLI cache
+supabase/.temp/
