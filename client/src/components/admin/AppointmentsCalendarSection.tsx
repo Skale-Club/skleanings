@@ -55,6 +55,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, authenticatedRequest } from '@/lib/queryClient';
 import { cn } from '@/lib/utils';
@@ -158,6 +165,15 @@ function addMinutesToHHMM(hhmm: string, minutes: number): string {
   const eh = Math.floor(total / 60) % 24;
   const em = total % 60;
   return `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
+}
+
+function useDebounced<T>(value: T, ms: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), ms);
+    return () => clearTimeout(t);
+  }, [value, ms]);
+  return debounced;
 }
 
 function CalendarToolbar({
@@ -566,6 +582,32 @@ export function AppointmentsCalendarSection({
   const watchedQuantity = form.watch('quantity');
   const watchedStartTime = form.watch('startTime');
   const watchedEndTimeOverride = form.watch('endTimeOverride');
+
+  // Customer type-ahead search (Plan 14-02)
+  type ContactSuggestion = {
+    id: number;
+    name: string;
+    phone: string | null;
+    email: string | null;
+    address: string | null;
+  };
+
+  const [contactSearchOpen, setContactSearchOpen] = useState(false);
+  const watchedCustomerName = form.watch('customerName');
+  const debouncedContactSearch = useDebounced(watchedCustomerName, 250);
+
+  const { data: contactSuggestions = [], isLoading: contactsLoading } = useQuery<ContactSuggestion[]>({
+    queryKey: ['/api/contacts', debouncedContactSearch],
+    queryFn: async () => {
+      const res = await apiRequest(
+        'GET',
+        `/api/contacts?search=${encodeURIComponent(debouncedContactSearch)}&limit=8`,
+      );
+      return res.json();
+    },
+    enabled: contactSearchOpen && debouncedContactSearch.trim().length >= 2,
+    staleTime: 30_000,
+  });
 
   const selectedService = useMemo(
     () => selectableServices.find((s) => s.id === watchedServiceId),
@@ -979,13 +1021,75 @@ export function AppointmentsCalendarSection({
                   />
                 )}
 
-                <FormField control={form.control} name="customerName" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Customer name</FormLabel>
-                    <FormControl><Input placeholder="Type to search or enter new" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
+                <FormField
+                  control={form.control}
+                  name="customerName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Customer name</FormLabel>
+                      <Popover
+                        open={contactSearchOpen && debouncedContactSearch.trim().length >= 2}
+                        onOpenChange={setContactSearchOpen}
+                      >
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Input
+                              placeholder="Type to search or enter new"
+                              {...field}
+                              onFocus={() => {
+                                if (field.value && field.value.trim().length >= 2) setContactSearchOpen(true);
+                              }}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                setContactSearchOpen(e.target.value.trim().length >= 2);
+                              }}
+                              autoComplete="off"
+                            />
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          align="start"
+                          className="w-[--radix-popover-trigger-width] p-0"
+                          onOpenAutoFocus={(e) => e.preventDefault()}
+                        >
+                          <Command shouldFilter={false}>
+                            <CommandList>
+                              {contactsLoading ? (
+                                <div className="p-3 text-sm text-muted-foreground">Searching…</div>
+                              ) : contactSuggestions.length === 0 ? (
+                                <CommandEmpty>No matches — type a new name to create</CommandEmpty>
+                              ) : (
+                                <CommandGroup heading="Existing customers">
+                                  {contactSuggestions.map((c) => (
+                                    <CommandItem
+                                      key={c.id}
+                                      value={`${c.id}-${c.name}`}
+                                      onSelect={() => {
+                                        form.setValue('customerName', c.name, { shouldValidate: true });
+                                        form.setValue('customerPhone', c.phone ?? '', { shouldValidate: true });
+                                        form.setValue('customerEmail', c.email ?? '', { shouldValidate: true });
+                                        form.setValue('customerAddress', c.address ?? '', { shouldValidate: true });
+                                        setContactSearchOpen(false);
+                                      }}
+                                      className="flex flex-col items-start gap-0.5"
+                                    >
+                                      <span className="font-medium">{c.name}</span>
+                                      <span className="text-xs text-muted-foreground">
+                                        {c.phone ?? 'no phone'}
+                                        {c.email ? ` · ${c.email}` : ''}
+                                      </span>
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              )}
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <FormField control={form.control} name="customerPhone" render={({ field }) => (
                   <FormItem>
