@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Phase 14 context gathered
-last_updated: "2026-04-28T19:50:42.471Z"
-last_activity: 2026-04-26
+status: executing
+stopped_at: Completed 14-01-PLAN.md
+last_updated: "2026-04-28T20:31:40.830Z"
+last_activity: 2026-04-28
 progress:
   total_phases: 5
   completed_phases: 4
-  total_plans: 12
-  completed_plans: 12
+  total_plans: 15
+  completed_plans: 13
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-25)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 13 — visitor-journey-ghl-sync
+**Current focus:** Phase 14 — admin-calendar-create-booking-from-slot
 
 ## Current Position
 
-Phase: 13
-Plan: Not started
-Status: Phase complete — ready for verification
-Last activity: 2026-04-26
+Phase: 14 (admin-calendar-create-booking-from-slot) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-04-28
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -57,6 +57,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 13-visitor-journey-ghl-sync P01 | 289 | 2 tasks | 2 files |
 | Phase 13-visitor-journey-ghl-sync P02 | 67 | 2 tasks | 2 files |
 | Phase 13-visitor-journey-ghl-sync P03 | 67 | 2 tasks | 3 files |
+| Phase 14 P01 | 3 | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -93,6 +94,9 @@ Recent decisions affecting current work:
 - [Phase 13-visitor-journey-ghl-sync]: useEffect used for load-more row accumulation — React Query v5 removed onSuccess from useQuery
 - [Phase 13-visitor-journey-ghl-sync]: Source filter options derived from loaded data (allRows) to avoid extra API round-trip
 - [Phase 13-visitor-journey-ghl-sync]: VisitorJourneyPanel skips API when visitorId is null (enabled: open && !!visitorId) — shows D-08 message immediately
+- [Phase 14]: Local bookingFormSchema chosen over insertBookingSchema for atomic field validation; cartItems mapping deferred to Plan 03 submit
+- [Phase 14]: addMinutesToHHMM placed at module scope alongside hexToRgba — tiny pure helper, no date-fns dependency
+- [Phase 14]: Plan 14-01 onSubmit left as console.log placeholder by design — Plan 03 wires the actual POST /api/bookings mutation
 
 ### Pending Todos
 
@@ -110,6 +114,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-28T19:50:42.458Z
-Stopped at: Phase 14 context gathered
-Resume file: .planning/phases/14-admin-calendar-create-booking-from-slot/14-CONTEXT.md
+Last session: 2026-04-28T20:31:40.825Z
+Stopped at: Completed 14-01-PLAN.md
+Resume file: None
