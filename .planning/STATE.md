@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 14-01-PLAN.md
-last_updated: "2026-04-28T20:31:40.830Z"
+stopped_at: Completed 14-02-PLAN.md
+last_updated: "2026-04-28T20:36:42.297Z"
 last_activity: 2026-04-28
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 15
-  completed_plans: 13
+  completed_plans: 14
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-25)
 ## Current Position
 
 Phase: 14 (admin-calendar-create-booking-from-slot) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-04-28
 
@@ -58,6 +58,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 13-visitor-journey-ghl-sync P02 | 67 | 2 tasks | 2 files |
 | Phase 13-visitor-journey-ghl-sync P03 | 67 | 2 tasks | 3 files |
 | Phase 14 P01 | 3 | 2 tasks | 1 files |
+| Phase 14-admin-calendar-create-booking-from-slot P02 | 2 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -97,6 +98,10 @@ Recent decisions affecting current work:
 - [Phase 14]: Local bookingFormSchema chosen over insertBookingSchema for atomic field validation; cartItems mapping deferred to Plan 03 submit
 - [Phase 14]: addMinutesToHHMM placed at module scope alongside hexToRgba — tiny pure helper, no date-fns dependency
 - [Phase 14]: Plan 14-01 onSubmit left as console.log placeholder by design — Plan 03 wires the actual POST /api/bookings mutation
+- [Phase 14-admin-calendar-create-booking-from-slot]: Customer type-ahead uses plain apiRequest (cookie auth) for /api/contacts — Bearer token authenticatedRequest would silently no-op since admin sessions lack the Supabase customer-portal token
+- [Phase 14-admin-calendar-create-booking-from-slot]: Inline useDebounced<T>(value, ms=250) helper added at module scope — no new dependency, matches must_haves ≥250ms requirement
+- [Phase 14-admin-calendar-create-booking-from-slot]: Popover open guarded by both state flag AND debouncedSearch.trim().length >= 2 — guarantees no popover for short input even if state is stale
+- [Phase 14-admin-calendar-create-booking-from-slot]: Suggestion select uses form.setValue with shouldValidate: true on all four customer fields — instant Zod re-validation; free-text typing remains source of truth (D-06)
 
 ### Pending Todos
 
@@ -114,6 +119,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-28T20:31:40.825Z
-Stopped at: Completed 14-01-PLAN.md
+Last session: 2026-04-28T20:36:30.918Z
+Stopped at: Completed 14-02-PLAN.md
 Resume file: None
