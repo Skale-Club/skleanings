@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 14-02-PLAN.md
-last_updated: "2026-04-28T20:36:42.297Z"
+status: verifying
+stopped_at: Completed 14-03-PLAN.md
+last_updated: "2026-04-28T20:41:10.793Z"
 last_activity: 2026-04-28
 progress:
   total_phases: 5
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 15
-  completed_plans: 14
+  completed_plans: 15
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-25)
 
 Phase: 14 (admin-calendar-create-booking-from-slot) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-28
 
 Progress: [░░░░░░░░░░] 0%
@@ -59,6 +59,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 13-visitor-journey-ghl-sync P03 | 67 | 2 tasks | 3 files |
 | Phase 14 P01 | 3 | 2 tasks | 1 files |
 | Phase 14-admin-calendar-create-booking-from-slot P02 | 2 | 1 tasks | 1 files |
+| Phase 14-admin-calendar-create-booking-from-slot P03 | 1 | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -102,6 +103,9 @@ Recent decisions affecting current work:
 - [Phase 14-admin-calendar-create-booking-from-slot]: Inline useDebounced<T>(value, ms=250) helper added at module scope — no new dependency, matches must_haves ≥250ms requirement
 - [Phase 14-admin-calendar-create-booking-from-slot]: Popover open guarded by both state flag AND debouncedSearch.trim().length >= 2 — guarantees no popover for short input even if state is stale
 - [Phase 14-admin-calendar-create-booking-from-slot]: Suggestion select uses form.setValue with shouldValidate: true on all four customer fields — instant Zod re-validation; free-text typing remains source of truth (D-06)
+- [Phase 14-admin-calendar-create-booking-from-slot]: PUT /api/bookings/:id/status used to set status='confirmed' (D-10) — PATCH /api/bookings/:id would silently no-op because insertBookingSchemaBase strips status field
+- [Phase 14-admin-calendar-create-booking-from-slot]: Status PUT is best-effort with try/catch — booking creation succeeds even if status update fails (booking exists, defaults to 'pending'); avoids confusing the attendant with a hard error after a successful create
+- [Phase 14-admin-calendar-create-booking-from-slot]: createBookingMutation.mutationFn body intentionally minimal — no manual !res.ok branch and no err.status/err.data assignment because apiRequest+throwIfResNotOk already throw decorated errors
 
 ### Pending Todos
 
@@ -119,6 +123,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-28T20:36:30.918Z
-Stopped at: Completed 14-02-PLAN.md
+Last session: 2026-04-28T20:41:01.192Z
+Stopped at: Completed 14-03-PLAN.md
 Resume file: None

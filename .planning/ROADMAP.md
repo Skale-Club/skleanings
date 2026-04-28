@@ -121,12 +121,12 @@
 **Goal:** Attendant can create a complete booking directly from a slot click on the admin calendar, without leaving the calendar — replacing the placeholder modal in `AppointmentsCalendarSection.tsx` with a real form that pre-fills date/start time/staff, supports type-ahead customer lookup, computes end time + estimated price, POSTs to /api/bookings, and refreshes the calendar on success.
 **Requirements**: None (standalone admin-operations phase outside the v1.0 Marketing Attribution requirement set; scope captured in 14-CONTEXT.md decisions D-00 through D-19)
 **Depends on:** Phase 13
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 14-01-PLAN.md — Form scaffold + slot pre-fill (react-hook-form + zodResolver, all fields, computed end time + estimated price, end-time-override toggle, placeholder onSubmit)
 - [x] 14-02-PLAN.md — Customer type-ahead via debounced GET /api/contacts (Popover/Command list, free-text preserved)
-- [ ] 14-03-PLAN.md — Submit mutation + status PATCH (D-10) + 201/409/400 handling + calendar refresh + manual verification checkpoint
+- [x] 14-03-PLAN.md — Submit mutation + status PATCH (D-10) + 201/409/400 handling + calendar refresh + manual verification checkpoint
 
 ---
 *Roadmap defined: 2026-04-25*
