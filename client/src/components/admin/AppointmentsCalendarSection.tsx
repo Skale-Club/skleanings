@@ -152,6 +152,14 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+function addMinutesToHHMM(hhmm: string, minutes: number): string {
+  const [h, m] = hhmm.split(':').map(Number);
+  const total = h * 60 + m + minutes;
+  const eh = Math.floor(total / 60) % 24;
+  const em = total % 60;
+  return `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
+}
+
 function CalendarToolbar({
   label,
   onNavigate,
@@ -504,6 +512,96 @@ export function AppointmentsCalendarSection({
   const hasActiveFilters = hiddenStaff.size > 0 || hiddenStatuses.size > 0;
   const activeFilterCount = hiddenStaff.size + hiddenStatuses.size;
 
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Active services for the service dropdown
+  const { data: services = [] } = useQuery<Service[]>({
+    queryKey: ['/api/services'],
+  });
+  const selectableServices = useMemo(
+    () => services.filter((s) => !s.isArchived && !s.isHidden),
+    [services],
+  );
+
+  const form = useForm<BookingFormValues>({
+    resolver: zodResolver(bookingFormSchema),
+    defaultValues: {
+      customerName: '',
+      customerPhone: '',
+      customerEmail: '',
+      customerAddress: '',
+      bookingDate: '',
+      startTime: '',
+      endTime: '',
+      staffMemberId: null,
+      serviceId: undefined as unknown as number,
+      quantity: 1,
+      customerNotes: '',
+      endTimeOverride: false,
+    },
+  });
+
+  // Reset form whenever a new slot is clicked
+  useEffect(() => {
+    if (newBookingSlot) {
+      form.reset({
+        customerName: '',
+        customerPhone: '',
+        customerEmail: '',
+        customerAddress: '',
+        bookingDate: newBookingSlot.date,
+        startTime: newBookingSlot.startTime,
+        endTime: '',
+        staffMemberId: newBookingSlot.staffMemberId ?? null,
+        serviceId: undefined as unknown as number,
+        quantity: 1,
+        customerNotes: '',
+        endTimeOverride: false,
+      });
+    }
+  }, [newBookingSlot]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const watchedServiceId = form.watch('serviceId');
+  const watchedQuantity = form.watch('quantity');
+  const watchedStartTime = form.watch('startTime');
+  const watchedEndTimeOverride = form.watch('endTimeOverride');
+
+  const selectedService = useMemo(
+    () => selectableServices.find((s) => s.id === watchedServiceId),
+    [selectableServices, watchedServiceId],
+  );
+
+  const computedEndTime = useMemo(() => {
+    if (!selectedService || !watchedStartTime) return '';
+    return addMinutesToHHMM(
+      watchedStartTime,
+      selectedService.durationMinutes * (watchedQuantity || 1),
+    );
+  }, [selectedService, watchedStartTime, watchedQuantity]);
+
+  const computedTotalDurationMinutes = useMemo(() => {
+    if (!selectedService) return 0;
+    return selectedService.durationMinutes * (watchedQuantity || 1);
+  }, [selectedService, watchedQuantity]);
+
+  const estimatedTotal = useMemo(() => {
+    if (!selectedService) return null;
+    return (Number(selectedService.price) * (watchedQuantity || 1)).toFixed(2);
+  }, [selectedService, watchedQuantity]);
+
+  // Sync computed endTime into the form when override is OFF
+  useEffect(() => {
+    if (!watchedEndTimeOverride && computedEndTime) {
+      form.setValue('endTime', computedEndTime, { shouldValidate: false });
+    }
+  }, [computedEndTime, watchedEndTimeOverride]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const onSubmit = (values: BookingFormValues) => {
+    // TODO Plan 03: wire mutation, close modal on 201, surface 409/400 errors
+    console.log('TODO Plan 03: submit', values);
+  };
+
   const handleSelectEvent = (event: CalendarEvent) => {
     if (event.isGcalBusy) return;
     const booking = bookings.find((item) => item.id === event.bookingId);
@@ -826,43 +924,177 @@ export function AppointmentsCalendarSection({
       </Dialog>
 
       <Dialog open={!!newBookingSlot} onOpenChange={() => setNewBookingSlot(null)}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create Booking</DialogTitle>
           </DialogHeader>
           {newBookingSlot && (
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Date</span>
-                <span className="font-medium">{newBookingSlot.date}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Start time</span>
-                <span className="font-medium">{newBookingSlot.startTime}</span>
-              </div>
-              {newBookingSlot.staffMemberId && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Staff</span>
-                  <span className="font-medium">
-                    {scopedStaffList.find((staff) => staff.id === newBookingSlot.staffMemberId)?.firstName}
-                  </span>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                {/* Slot pre-fill display */}
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Date</span>
+                    <div className="font-medium">{newBookingSlot.date}</div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Start</span>
+                    <div className="font-medium">{newBookingSlot.startTime}</div>
+                  </div>
                 </div>
-              )}
-              <p className="pt-1 text-xs text-muted-foreground">
-                Use the Bookings section to create the full booking with services and pricing.
-              </p>
-              <div className="pt-2">
+
+                {/* Staff: read-only when pre-filled, dropdown otherwise (D-13) */}
+                {newBookingSlot.staffMemberId ? (
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">Staff</span>
+                    <div className="font-medium">
+                      {scopedStaffList.find((s) => s.id === newBookingSlot.staffMemberId)?.firstName}
+                    </div>
+                  </div>
+                ) : (
+                  <FormField
+                    control={form.control}
+                    name="staffMemberId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Staff</FormLabel>
+                        <Select
+                          onValueChange={(v) => field.onChange(Number(v))}
+                          value={field.value ? String(field.value) : undefined}
+                        >
+                          <FormControl>
+                            <SelectTrigger><SelectValue placeholder="Select staff" /></SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {scopedStaffList.map((s) => (
+                              <SelectItem key={s.id} value={String(s.id)}>
+                                {s.firstName} {s.lastName ?? ''}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                <FormField control={form.control} name="customerName" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Customer name</FormLabel>
+                    <FormControl><Input placeholder="Type to search or enter new" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+
+                <FormField control={form.control} name="customerPhone" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone</FormLabel>
+                    <FormControl><Input {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+
+                <FormField control={form.control} name="customerEmail" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                    <FormControl><Input type="email" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+
+                <FormField control={form.control} name="customerAddress" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Address</FormLabel>
+                    <FormControl><Input {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+
+                <FormField control={form.control} name="serviceId" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Service</FormLabel>
+                    <Select
+                      onValueChange={(v) => field.onChange(Number(v))}
+                      value={field.value ? String(field.value) : undefined}
+                    >
+                      <FormControl>
+                        <SelectTrigger><SelectValue placeholder="Select a service" /></SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {selectableServices.map((s) => (
+                          <SelectItem key={s.id} value={String(s.id)}>
+                            {s.name} — ${Number(s.price).toFixed(2)} ({s.durationMinutes}m)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+
+                <FormField control={form.control} name="quantity" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Quantity</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min={1}
+                        {...field}
+                        onChange={(e) => field.onChange(Number(e.target.value) || 1)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+
+                {/* End time: computed read-only by default, editable when override is on */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm">End time</Label>
+                    <FormField control={form.control} name="endTimeOverride" render={({ field }) => (
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="text-muted-foreground">Adjust end time</span>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </div>
+                    )} />
+                  </div>
+                  {watchedEndTimeOverride ? (
+                    <FormField control={form.control} name="endTime" render={({ field }) => (
+                      <FormItem>
+                        <FormControl><Input type="time" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  ) : (
+                    <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm font-medium">
+                      {computedEndTime || <span className="text-muted-foreground">Select a service to compute end time</span>}
+                    </div>
+                  )}
+                </div>
+
+                {/* Estimated total */}
+                <div className="flex justify-between rounded-md bg-muted/30 px-3 py-2 text-sm">
+                  <span className="text-muted-foreground">Estimated total</span>
+                  <span className="font-medium">{estimatedTotal !== null ? `$${estimatedTotal}` : '—'}</span>
+                </div>
+
+                <FormField control={form.control} name="customerNotes" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notes <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                    <FormControl><Textarea rows={3} {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+
                 <Button
-                  className="w-full"
-                  onClick={() => {
-                    setNewBookingSlot(null);
-                    setLocation('/admin/bookings');
-                  }}
+                  type="submit"
+                  className="w-full bg-[#FFFF01] text-black font-bold rounded-full hover:bg-[#FFFF01]/90"
                 >
-                  Go to Bookings
+                  Create Booking
                 </Button>
-              </div>
-            </div>
+              </form>
+            </Form>
           )}
         </DialogContent>
       </Dialog>
