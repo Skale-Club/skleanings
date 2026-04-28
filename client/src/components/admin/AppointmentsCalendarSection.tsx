@@ -11,8 +11,11 @@ import {
   startOfWeek,
 } from 'date-fns';
 import { enUS } from 'date-fns/locale';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import {
   CalendarDays,
   ChevronLeft,
@@ -28,12 +31,55 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+  FormDescription,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest, authenticatedRequest } from '@/lib/queryClient';
 import { cn } from '@/lib/utils';
-import type { Booking, StaffMember } from '@shared/schema';
+import type { Booking, Service, StaffMember } from '@shared/schema';
+
+const bookingFormSchema = z.object({
+  customerName: z.string().min(2, 'Name is required'),
+  customerPhone: z.string().min(7, 'Phone is required'),
+  customerEmail: z
+    .string()
+    .email('Invalid email')
+    .optional()
+    .or(z.literal('')),
+  customerAddress: z.string().min(3, 'Address is required'),
+  bookingDate: z.string().min(1),
+  startTime: z.string().min(1),
+  endTime: z.string().min(1),
+  staffMemberId: z.number().nullable().optional(),
+  serviceId: z.number({ invalid_type_error: 'Select a service' }).int().positive(),
+  quantity: z.number().int().min(1).default(1),
+  customerNotes: z.string().optional(),
+  endTimeOverride: z.boolean().default(false),
+});
+
+type BookingFormValues = z.infer<typeof bookingFormSchema>;
 
 const localizer = dateFnsLocalizer({
   format,
