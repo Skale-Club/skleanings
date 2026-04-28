@@ -6,7 +6,17 @@
       "Skill(paul:unify)",
       "Skill(paul:unify:*)",
       "Skill(paul:plan)",
-      "Skill(paul:plan:*)"
+      "Skill(paul:plan:*)",
+      "Skill(gsd:do)",
+      "Skill(gsd:do:*)",
+      "Skill(gsd:next)",
+      "Skill(gsd:next:*)",
+      "Skill(gsd:discuss-phase)",
+      "Skill(gsd:discuss-phase:*)",
+      "Bash(git push *)",
+      "Bash(git fetch *)",
+      "Bash(git rebase *)",
+      "Bash(git stash *)"
     ]
   }
 }
