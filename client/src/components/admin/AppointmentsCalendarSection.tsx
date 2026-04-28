@@ -639,9 +639,115 @@ export function AppointmentsCalendarSection({
     }
   }, [computedEndTime, watchedEndTimeOverride]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Inline server error (409 conflict, non-Zod 400 messages) — D-16
+  const [serverError, setServerError] = useState<string | null>(null);
+
+  const createBookingMutation = useMutation({
+    mutationFn: async (payload: any) => {
+      const res = await apiRequest('POST', '/api/bookings', payload);
+      return res.json();
+    },
+    onSuccess: async (created: { id: number }) => {
+      // Honour D-10: status defaults to 'confirmed' for admin-created bookings.
+      // storage.createBooking hardcodes 'pending' AND insertBookingSchemaBase strips
+      // `status` from the PATCH body — so we use the dedicated PUT /:id/status route,
+      // which calls storage.updateBookingStatus(id, status) directly.
+      // Best-effort: a failure here does not roll back the create — booking exists either way.
+      try {
+        await apiRequest(
+          'PUT',
+          `/api/bookings/${created.id}/status`,
+          { status: 'confirmed' },
+        );
+      } catch (statusErr) {
+        console.warn('Failed to set booking status to confirmed:', statusErr);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['/api/bookings'] });
+      toast({ title: 'Booking created' });
+      setNewBookingSlot(null);
+      form.reset();
+      setServerError(null);
+    },
+    onError: (err: any) => {
+      // err is the Error thrown by throwIfResNotOk — it already carries .status and .data
+      const status = err?.status as number | undefined;
+      const data = err?.data;
+
+      if (status === 400 && Array.isArray(data?.errors)) {
+        // Zod field errors → setError on each field (D-17)
+        for (const zerr of data.errors) {
+          const fieldName = Array.isArray(zerr.path) && zerr.path.length > 0
+            ? String(zerr.path[0])
+            : null;
+          if (fieldName && fieldName in form.getValues()) {
+            form.setError(fieldName as any, {
+              type: 'server',
+              message: zerr.message,
+            });
+          }
+        }
+        setServerError(null);
+        return;
+      }
+
+      // 409 (slot conflict, D-16) or other non-field errors
+      setServerError(err?.message ?? 'Failed to create booking');
+    },
+  });
+
+  // Clear serverError when the user starts editing again
+  useEffect(() => {
+    if (!serverError) return;
+    const sub = form.watch(() => setServerError(null));
+    return () => sub.unsubscribe();
+  }, [serverError, form]);
+
   const onSubmit = (values: BookingFormValues) => {
-    // TODO Plan 03: wire mutation, close modal on 201, surface 409/400 errors
-    console.log('TODO Plan 03: submit', values);
+    setServerError(null);
+
+    if (!selectedService) {
+      form.setError('serviceId', { type: 'manual', message: 'Select a service' });
+      return;
+    }
+
+    // Compute totalDurationMinutes:
+    //   - When override is OFF: service.durationMinutes × quantity (already in computedTotalDurationMinutes)
+    //   - When override is ON: derive from startTime/endTime difference
+    let totalDurationMinutes = computedTotalDurationMinutes;
+    if (values.endTimeOverride && values.startTime && values.endTime) {
+      const [sh, sm] = values.startTime.split(':').map(Number);
+      const [eh, em] = values.endTime.split(':').map(Number);
+      const diff = (eh * 60 + em) - (sh * 60 + sm);
+      if (diff > 0) totalDurationMinutes = diff;
+    }
+
+    const totalPrice = (Number(selectedService.price) * (values.quantity || 1)).toFixed(2);
+
+    const payload = {
+      customerName: values.customerName,
+      customerPhone: values.customerPhone,
+      customerAddress: values.customerAddress,
+      customerEmail: values.customerEmail || null,
+      bookingDate: values.bookingDate,
+      startTime: values.startTime,
+      endTime: values.endTime,
+      totalDurationMinutes,
+      totalPrice,
+      paymentMethod: 'site' as const, // D-11
+      staffMemberId: values.staffMemberId ?? null,
+      cartItems: [
+        {
+          serviceId: values.serviceId,
+          quantity: values.quantity || 1,
+          // D-02: notes attach to the cart item (server stores in bookingItems.customerNotes)
+          ...(values.customerNotes ? { customerNotes: values.customerNotes } : {}),
+        },
+      ],
+      // D-18: visitorId intentionally omitted
+    };
+
+    createBookingMutation.mutate(payload);
   };
 
   const handleSelectEvent = (event: CalendarEvent) => {
@@ -1191,11 +1297,20 @@ export function AppointmentsCalendarSection({
                   </FormItem>
                 )} />
 
+                {serverError && (
+                  <div
+                    role="alert"
+                    className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+                  >
+                    {serverError}
+                  </div>
+                )}
                 <Button
                   type="submit"
-                  className="w-full bg-[#FFFF01] text-black font-bold rounded-full hover:bg-[#FFFF01]/90"
+                  disabled={createBookingMutation.isPending}
+                  className="w-full bg-[#FFFF01] text-black font-bold rounded-full hover:bg-[#FFFF01]/90 disabled:opacity-60"
                 >
-                  Create Booking
+                  {createBookingMutation.isPending ? 'Creating…' : 'Create Booking'}
                 </Button>
               </form>
             </Form>
