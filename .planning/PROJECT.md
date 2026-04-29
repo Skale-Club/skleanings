@@ -99,4 +99,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-25 after Phase 11 complete*
+*Last updated: 2026-04-29 after Phase 15 complete (Schema Foundation & Detokenization — v2.0 White Label milestone)*
