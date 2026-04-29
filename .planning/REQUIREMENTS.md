@@ -201,11 +201,11 @@
 - [ ] **SERV-01**: `server/lib/openrouter.ts` reads app title from `companySettings.companyName` instead of hardcoded string
 
 ### White-Label Company Type
-- [ ] **WLTYPE-01**: `companySettings` has a `serviceDeliveryModel` field (values: `at-customer`, `customer-comes-in`, `both`)
+- [x] **WLTYPE-01**: `companySettings` has a `serviceDeliveryModel` field (values: `at-customer`, `customer-comes-in`, `both`)
 - [ ] **WLTYPE-02**: Admin can set the service delivery model in Company Settings
 
 ### Legal Pages
-- [ ] **LEGAL-01**: `companySettings` has `privacyPolicyContent` and `termsOfServiceContent` text fields
+- [x] **LEGAL-01**: `companySettings` has `privacyPolicyContent` and `termsOfServiceContent` text fields
 - [ ] **LEGAL-02**: Admin can edit Privacy Policy and Terms content in the Company Settings admin section
 - [ ] **LEGAL-03**: `/privacy` and `/terms` pages render content from DB
 - [ ] **LEGAL-04**: Empty legal fields show a placeholder message rather than breaking
@@ -238,8 +238,8 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| WLTYPE-01 | Phase 15 | Pending |
-| LEGAL-01 | Phase 15 | Pending |
+| WLTYPE-01 | Phase 15 | Complete |
+| LEGAL-01 | Phase 15 | Complete |
 | DETOK-01 | Phase 15 | Pending |
 | DETOK-02 | Phase 15 | Pending |
 | DETOK-03 | Phase 15 | Pending |

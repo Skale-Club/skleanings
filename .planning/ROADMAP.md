@@ -163,7 +163,7 @@ Plans:
   4. A full-text search of `client/src/` for the string `"Skleanings"` returns zero results in React component files (hardcoded display literals removed; only comments or non-display strings are permitted)
   5. `server/lib/openrouter.ts` reads the app title from `companySettings.companyName` — the blog generation prompt no longer contains the hardcoded word "Skleanings"
 **Plans**: 3 plans
-  - [ ] 15-01-PLAN.md — Supabase migration + Drizzle schema extension (3 white-label columns) + getCompanySettings whitelist verification
+  - [x] 15-01-PLAN.md — Supabase migration + Drizzle schema extension (3 white-label columns) + getCompanySettings whitelist verification
   - [ ] 15-02-PLAN.md — Client detokenization: visitor-key helper + useUTMCapture rewrite + ChatWidget/BookingPage read sites + App.tsx document.title effect + 8+ display-literal replacements
   - [ ] 15-03-PLAN.md — Server detokenization: openrouter.ts companyName parameter injection + ai.ts and chat/message-handler.ts caller threading
 **UI hint**: yes
@@ -213,7 +213,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 15. Schema Foundation & Detokenization | 0/3 | Not started | - |
+| 15. Schema Foundation & Detokenization | 1/3 | In Progress|  |
 | 16. SEO Meta Injection | 0/? | Not started | - |
 | 17. Favicon, Legal & Company Type Admin UI | 0/? | Not started | - |
 | 18. Admin Calendar Improvements | 0/? | Not started | - |

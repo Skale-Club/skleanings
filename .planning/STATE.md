@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Not started
-stopped_at: Phase 15 context gathered
-last_updated: "2026-04-29T01:35:21.770Z"
-last_activity: 2026-04-28 — v2.0 White Label roadmap defined (Phases 15-18)
+status: executing
+stopped_at: Completed 15-schema-foundation-detokenization-01-PLAN.md
+last_updated: "2026-04-29T04:21:30.132Z"
+last_activity: 2026-04-29
 progress:
-  total_phases: 9
+  total_phases: 5
   completed_phases: 5
   total_plans: 15
   completed_plans: 15
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-25)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 15 — Schema Foundation & Detokenization (not started)
+**Current focus:** Phase 15 — schema-foundation-detokenization
 
 ## Current Position
 
-Phase: 15 — Schema Foundation & Detokenization
-Plan: —
-Status: Not started
-Last activity: 2026-04-28 — v2.0 White Label roadmap defined (Phases 15-18)
+Phase: 15 (schema-foundation-detokenization) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-04-29
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -60,6 +60,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 14 P01 | 3 | 2 tasks | 1 files |
 | Phase 14-admin-calendar-create-booking-from-slot P02 | 2 | 1 tasks | 1 files |
 | Phase 14-admin-calendar-create-booking-from-slot P03 | 1 | 2 tasks | 1 files |
+| Phase 15-schema-foundation-detokenization P01 | 2m 5s | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -106,6 +107,9 @@ Recent decisions affecting current work:
 - [Phase 14-admin-calendar-create-booking-from-slot]: PUT /api/bookings/:id/status used to set status='confirmed' (D-10) — PATCH /api/bookings/:id would silently no-op because insertBookingSchemaBase strips status field
 - [Phase 14-admin-calendar-create-booking-from-slot]: Status PUT is best-effort with try/catch — booking creation succeeds even if status update fails (booking exists, defaults to 'pending'); avoids confusing the attendant with a hard error after a successful create
 - [Phase 14-admin-calendar-create-booking-from-slot]: createBookingMutation.mutationFn body intentionally minimal — no manual !res.ok branch and no err.status/err.data assignment because apiRequest+throwIfResNotOk already throw decorated errors
+- [Phase 15-schema-foundation-detokenization]: Plain TEXT (no pgEnum, no CHECK constraint) chosen for serviceDeliveryModel — matches existing precedent (timeFormat, ogType, twitterCard) for enum-like values
+- [Phase 15-schema-foundation-detokenization]: Risk 1 mitigated by inspection: getCompanySettings uses db.select().from(companySettings) full-row select — no whitelist, new columns flow through automatically without storage code changes
+- [Phase 15-schema-foundation-detokenization]: Migration FILE created in this plan but DB push deferred to operator (Build Constraint #1 + matching the existing Phase 10 migration-pending pattern in STATE.md blockers); Plan 15-02/15-03 unblocked, Phase 17/18 require push first
 
 ### Pending Todos
 
@@ -116,6 +120,7 @@ Recent decisions affecting current work:
 - **MIGRATION PENDING** — `supabase/migrations/20260425000000_add_utm_tracking.sql` is written and ready. Needs `POSTGRES_URL_NON_POOLING` (direct connection URL) in `.env` to apply. Get from Supabase Dashboard > Settings > Database > Direct connection (port 5432). Then run `supabase db push` from the project root. Plan 10-02 TypeScript types are already available (shared/schema.ts compiles), but Plan 10-02 execution requires the DB tables to exist before the storage/endpoint can be tested.
 - Rate limiting strategy for POST /api/analytics/session (public endpoint) — not yet designed; address in Phase 10 planning
 - GoHighLevel custom field names for UTM sync — must be confirmed before Phase 13 plan execution
+- Phase 15 migration file (20260428000000_add_white_label_columns.sql) ready but NOT applied. Required before Phase 17 (admin UI) and Phase 18 (calendar address-gating). Run supabase db push from project root with POSTGRES_URL_NON_POOLING set in .env. Plans 15-02 and 15-03 are unblocked even without DB push.
 
 ### Roadmap Evolution
 
@@ -124,6 +129,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-29T01:35:21.767Z
-Stopped at: Phase 15 context gathered
-Resume file: .planning/phases/15-schema-foundation-detokenization/15-CONTEXT.md
+Last session: 2026-04-29T04:21:14.787Z
+Stopped at: Completed 15-schema-foundation-detokenization-01-PLAN.md
+Resume file: None
