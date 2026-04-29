@@ -113,7 +113,10 @@ export function injectSeoMeta(
 
   let out = html;
   for (const [k, v] of Object.entries(tokens)) {
-    out = out.replaceAll(k, v);
+    // Use a replacer function so that $ in JSON-LD values (e.g. "$$$" priceRange) are never
+    // interpreted as replacement-pattern specials ($$, $&, $`, $'). This is the correct form
+    // for replacing tokens whose values may contain arbitrary user/admin content.
+    out = out.replaceAll(k, () => v);
   }
   return out;
 }
