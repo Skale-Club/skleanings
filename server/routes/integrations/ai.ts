@@ -200,7 +200,8 @@ router.post("/openrouter/test", requireAdmin, async (req, res) => {
         const keyToUse = (apiKey && apiKey !== "********" ? apiKey : undefined) || getRuntimeOpenRouterKey() || process.env.OPENROUTER_API_KEY || existing?.apiKey;
         if (!keyToUse) return res.status(400).json({ success: false, message: "API key is required" });
 
-        const client = getOpenRouterClient(keyToUse);
+        const cs = await storage.getCompanySettings();
+        const client = getOpenRouterClient(keyToUse, cs?.companyName ?? undefined);
         if (!client) return res.status(400).json({ success: false, message: "Invalid API key" });
 
         try {
@@ -224,7 +225,8 @@ router.get("/openrouter/models", requireAdmin, async (_req, res) => {
         const existing = await storage.getChatIntegration("openrouter");
         const keyToUse = getRuntimeOpenRouterKey() || process.env.OPENROUTER_API_KEY || existing?.apiKey;
         if (!keyToUse) return res.status(400).json({ message: "API key is required. Save and test OpenRouter first." });
-        const models = await listOpenRouterModels(keyToUse);
+        const cs = await storage.getCompanySettings();
+        const models = await listOpenRouterModels(keyToUse, cs?.companyName ?? undefined);
         res.json({ count: models.length, models });
     } catch (err: any) {
         res.status(500).json({ message: err?.message || "Failed to fetch OpenRouter models" });
