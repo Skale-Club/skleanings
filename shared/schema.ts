@@ -678,6 +678,10 @@ export const companySettings = pgTable("company_settings", {
   ga4Enabled: boolean("ga4_enabled").default(false),
   facebookPixelEnabled: boolean("facebook_pixel_enabled").default(false),
   homepageContent: jsonb("homepage_content").$type<HomepageContent>().default({}),
+  // === Phase 15: White-label columns ===
+  serviceDeliveryModel: text("service_delivery_model").default('at-customer'),
+  privacyPolicyContent: text("privacy_policy_content").default(''),
+  termsOfServiceContent: text("terms_of_service_content").default(''),
 });
 
 export const insertCompanySettingsSchema = createInsertSchema(companySettings, {
