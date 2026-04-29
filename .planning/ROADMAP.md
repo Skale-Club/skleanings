@@ -213,7 +213,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 15. Schema Foundation & Detokenization | 3/3 | Complete   | 2026-04-29 |
+| 15. Schema Foundation & Detokenization | 3/3 | Complete    | 2026-04-29 |
 | 16. SEO Meta Injection | 0/? | Not started | - |
 | 17. Favicon, Legal & Company Type Admin UI | 0/? | Not started | - |
 | 18. Admin Calendar Improvements | 0/? | Not started | - |
