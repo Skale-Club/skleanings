@@ -147,6 +147,7 @@ Plans:
 - [ ] **Phase 16: SEO Meta Injection** — Express middleware reads companySettings at request time and injects title, canonical, Open Graph, Twitter Card, and schema.org JSON-LD into index.html
 - [ ] **Phase 17: Favicon, Legal & Company Type Admin UI** — Admin UI for favicon upload, legal page content editing, and service delivery model selector; public /privacy and /terms pages served from DB
 - [ ] **Phase 18: Admin Calendar Improvements** — Fix time-line alignment, widen Create Booking modal, support multiple services per booking, editable end time, conditional address field, and brand button style
+- [ ] **Phase 19: Receptionist Booking Flow & Multi-Staff View** — Reshape booking management for service businesses (barbershop, salon, spa) where a receptionist books on behalf of customers and needs to see all staff in parallel: multi-staff calendar view, fast walk-in booking, staff-side schedule visibility
 
 ---
 
@@ -210,6 +211,20 @@ Plans:
 **Plans**: TBD
 **UI hint**: yes
 
+### Phase 19: Receptionist Booking Flow & Multi-Staff View
+**Goal**: A receptionist at a barbershop, salon, or spa can run the daily booking floor from a single screen — see every staff member's schedule in parallel, book walk-ins in seconds without leaving the calendar, reassign appointments between staff with a drag, and hand the chair off to whoever is free next. Customer-side booking flow gets equivalent improvements (clear staff selection, real-time availability across the team, calendar that mirrors what reception sees).
+**Depends on**: Phase 18 (admin calendar must be production-ready first)
+**Requirements**: TBD (gather during /gsd:discuss-phase 19 — domain-specific UX requirements for service businesses with simultaneous-staff workflows)
+**Success Criteria** (what must be TRUE — initial draft, refine in discuss-phase):
+  1. The admin calendar has a "by staff" view showing every active staff member as a vertical column with their day's schedule — no need to filter or switch staff to see overlap
+  2. A receptionist can create a booking from the multi-staff view in under 30 seconds for a known service + walk-in customer (search/create customer + pick service + pick staff column = booked)
+  3. An appointment can be moved between staff via drag-and-drop in the multi-staff view; the booking record reflects the new staff assignment immediately
+  4. The customer-facing booking flow lets customers see staff availability across the whole team for a given service + time window — not just one staff at a time
+  5. Real-time updates: when a receptionist books a slot, any other admin/customer viewing the same calendar sees the slot become unavailable within seconds (no stale availability)
+  6. Service businesses where any staff can perform any service (e.g., a barbershop) require zero per-staff configuration — the system shows all staff as bookable for every service by default
+**Plans**: TBD
+**UI hint**: yes
+
 ---
 
 ## Progress Table
@@ -220,6 +235,7 @@ Plans:
 | 16. SEO Meta Injection | 0/? | Not started | - |
 | 17. Favicon, Legal & Company Type Admin UI | 0/? | Not started | - |
 | 18. Admin Calendar Improvements | 0/? | Not started | - |
+| 19. Receptionist Booking Flow & Multi-Staff View | 0/? | Not started | - |
 
 ---
 

@@ -135,6 +135,7 @@ Recent decisions affecting current work:
 
 - Phase 14 added: Admin calendar create booking from slot
 - v2.0 White Label roadmap added: Phases 15-18 (2026-04-28)
+- Phase 19 added (2026-04-29): Receptionist booking flow & multi-staff view — barbershop/salon/spa receptionist UX with parallel staff calendar columns, drag-to-reassign, walk-in booking. Depends on Phase 18.
 
 ## Session Continuity
 
