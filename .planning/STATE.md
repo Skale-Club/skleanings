@@ -109,7 +109,7 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-None yet.
+- [Unify booking creation modal across Calendar and Bookings pages](todos/pending/2026-04-29-unify-booking-creation-modal-across-calendar-and-bookings-pages.md) — area: ui — schedule against Phase 18 (extend) or as new Phase 19 (refactor after feature work)
 
 ### Blockers/Concerns
 
