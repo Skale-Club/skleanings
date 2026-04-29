@@ -14,12 +14,12 @@ export function setRuntimeOpenRouterKey(key: string) {
   runtimeOpenRouterKey = key;
 }
 
-export function getOpenRouterClient(apiKey?: string) {
+export function getOpenRouterClient(apiKey?: string, companyName?: string) {
   const key = apiKey || runtimeOpenRouterKey || process.env.OPENROUTER_API_KEY;
   if (!key) return null;
 
   const referer = process.env.OPENROUTER_HTTP_REFERER || process.env.VITE_SITE_URL;
-  const title = process.env.OPENROUTER_APP_TITLE || "Skleanings";
+  const title = process.env.OPENROUTER_APP_TITLE || companyName || "";
 
   return new OpenAI({
     apiKey: key,
@@ -37,14 +37,14 @@ export interface OpenRouterModelInfo {
   contextLength?: number | null;
 }
 
-export async function listOpenRouterModels(apiKey?: string): Promise<OpenRouterModelInfo[]> {
+export async function listOpenRouterModels(apiKey?: string, companyName?: string): Promise<OpenRouterModelInfo[]> {
   const key = apiKey || runtimeOpenRouterKey || process.env.OPENROUTER_API_KEY;
   if (!key) {
     throw new Error("API key is required");
   }
 
   const referer = process.env.OPENROUTER_HTTP_REFERER || process.env.VITE_SITE_URL;
-  const title = process.env.OPENROUTER_APP_TITLE || "Skleanings";
+  const title = process.env.OPENROUTER_APP_TITLE || companyName || "";
 
   const response = await fetch(`${OPENROUTER_BASE_URL}/models`, {
     headers: {
