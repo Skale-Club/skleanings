@@ -178,7 +178,10 @@ Plans:
   3. The `curl` response includes `<meta name="twitter:card">`, `<meta name="twitter:title">`, and `<meta name="twitter:description">` populated from companySettings
   4. The `curl` response body contains a `<script type="application/ld+json">` block with a valid LocalBusiness schema object whose `name` matches `companySettings.companyName`
   5. A text search of `client/index.html` finds no occurrence of the string `"Skleanings"` — all brand-specific meta has been removed from the static file
-**Plans**: TBD
+**Plans**: 3 plans
+  - [ ] 16-01-PLAN.md — shared buildLocalBusinessSchema util + server/lib/seo-injector.ts (escape + cache + 14-token replacement) + Wave 0 test harnesses + admin-save cache invalidation
+  - [ ] 16-02-PLAN.md — client/index.html retemplating with token markers + dev/prod injector mounting (server/vite.ts + server/static.ts) + vercel.json catch-all rewrite to /api/index.js
+  - [ ] 16-03-PLAN.md — client useSEO hook delegates JSON-LD to shared buildLocalBusinessSchema (closes server/client divergence pitfall) + parity test
 
 ### Phase 17: Favicon, Legal & Company Type Admin UI
 **Goal**: Admin can configure the favicon, privacy policy, terms of service, and service delivery model through the settings panel — and customers visiting /privacy or /terms see the content stored in the database rather than a 404 or placeholder
