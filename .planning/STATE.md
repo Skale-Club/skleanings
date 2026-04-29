@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Phase 16 context gathered
-last_updated: "2026-04-29T22:09:07.463Z"
-last_activity: 2026-04-29
+status: executing
+stopped_at: Completed 16-seo-meta-injection-01-PLAN.md
+last_updated: "2026-04-29T23:35:00.000Z"
+last_activity: 2026-04-29 -- Phase 16 Plan 01 completed
 progress:
   total_phases: 5
   completed_phases: 5
-  total_plans: 15
-  completed_plans: 15
+  total_plans: 16
+  completed_plans: 16
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-25)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 15 — schema-foundation-detokenization
+**Current focus:** Phase 16 — seo-meta-injection
 
 ## Current Position
 
-Phase: 15
-Plan: Not started
-Status: Phase complete — ready for verification
-Last activity: 2026-04-29
+Phase: 16 (seo-meta-injection) — EXECUTING
+Plan: 2 of 3
+Status: Executing Phase 16
+Last activity: 2026-04-29 -- Phase 16 Plan 01 completed
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -63,6 +63,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 15-schema-foundation-detokenization P01 | 2m 5s | 2 tasks | 2 files |
 | Phase 15-schema-foundation-detokenization P03 | 3m 23s | 3 tasks | 3 files |
 | Phase 15-schema-foundation-detokenization P02 | 6m 0s | 5 tasks | 13 files |
+| Phase 16-seo-meta-injection P01 | ~25m | 4 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -119,6 +120,10 @@ Recent decisions affecting current work:
 - [Phase 15-schema-foundation-detokenization]: BookingPage booking_started effect protected by useRef fire-once guard — prevents re-fire when settingsReady gates flip and dep array expands beyond original [] semantics
 - [Phase 15-schema-foundation-detokenization]: BlogSection authorName seeded from useCompanySettings.companyName (not '' fallback) per RESEARCH Open Question 1 — preserves white-label semantic 'use the actual tenant name'
 - [Phase 15-schema-foundation-detokenization]: use-utm-capture.ts re-exports getVisitorIdKey/deriveCompanySlug from @/lib/visitor-key — canonical impl in lib, hook re-export honors D-07 literal text
+- [Phase 16-seo-meta-injection]: replaceAll uses function replacer () => v to prevent $ special patterns ($$, $&, etc.) from corrupting JSON-LD replacement values — critical for priceRange and any admin content with dollar signs
+- [Phase 16-seo-meta-injection]: escapeJsonLd uses String.fromCharCode(0x2028/0x2029) to avoid literal Unicode line-separator code points in source file
+- [Phase 16-seo-meta-injection]: OG_IMAGE_BLOCK and TWITTER_IMAGE_BLOCK are whole-tag tokens (not per-attribute) — entire meta cluster absent when ogImage empty (D-07 compliance)
+- [Phase 16-seo-meta-injection]: ogImageAbsolute computed once at top of injectSeoMeta, shared with og/twitter block AND buildLocalBusinessSchema argument — Pitfall 3 fix
 
 ### Pending Todos
 
@@ -139,6 +144,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-29T22:09:07.441Z
-Stopped at: Phase 16 context gathered
-Resume file: .planning/phases/16-seo-meta-injection/16-CONTEXT.md
+Last session: 2026-04-29T23:35:00.000Z
+Stopped at: Completed 16-seo-meta-injection-01-PLAN.md
+Resume file: .planning/phases/16-seo-meta-injection/16-01-SUMMARY.md
