@@ -193,9 +193,9 @@
 - [ ] **SEO-05**: All hardcoded meta tags removed from `client/index.html` — no "Skleanings" string remains in the static HTML
 
 ### Frontend Detokenization
-- [ ] **DETOK-01**: `ThemeContext.tsx` initializes `companyName` and `companyEmail` from API, not hardcoded defaults
-- [ ] **DETOK-02**: localStorage visitor key `"skleanings_visitor_id"` replaced with a dynamic key derived from company slug
-- [ ] **DETOK-03**: All remaining hardcoded `"Skleanings"` literals in React components replaced with `companySettings` values
+- [x] **DETOK-01**: `ThemeContext.tsx` initializes `companyName` and `companyEmail` from API, not hardcoded defaults
+- [x] **DETOK-02**: localStorage visitor key `"skleanings_visitor_id"` replaced with a dynamic key derived from company slug
+- [x] **DETOK-03**: All remaining hardcoded `"Skleanings"` literals in React components replaced with `companySettings` values
 
 ### Server Brand Tokens
 - [x] **SERV-01**: `server/lib/openrouter.ts` reads app title from `companySettings.companyName` instead of hardcoded string
@@ -240,9 +240,9 @@
 |-------------|-------|--------|
 | WLTYPE-01 | Phase 15 | Complete |
 | LEGAL-01 | Phase 15 | Complete |
-| DETOK-01 | Phase 15 | Pending |
-| DETOK-02 | Phase 15 | Pending |
-| DETOK-03 | Phase 15 | Pending |
+| DETOK-01 | Phase 15 | Complete |
+| DETOK-02 | Phase 15 | Complete |
+| DETOK-03 | Phase 15 | Complete |
 | SERV-01 | Phase 15 | Complete |
 | SEO-01 | Phase 16 | Pending |
 | SEO-02 | Phase 16 | Pending |

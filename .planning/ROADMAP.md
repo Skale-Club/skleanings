@@ -143,7 +143,7 @@ Plans:
 
 ## Phases
 
-- [ ] **Phase 15: Schema Foundation & Detokenization** — Add new companySettings fields to DB, run migration, replace all hardcoded brand strings in frontend and server code
+- [x] **Phase 15: Schema Foundation & Detokenization** — Add new companySettings fields to DB, run migration, replace all hardcoded brand strings in frontend and server code (completed 2026-04-29)
 - [ ] **Phase 16: SEO Meta Injection** — Express middleware reads companySettings at request time and injects title, canonical, Open Graph, Twitter Card, and schema.org JSON-LD into index.html
 - [ ] **Phase 17: Favicon, Legal & Company Type Admin UI** — Admin UI for favicon upload, legal page content editing, and service delivery model selector; public /privacy and /terms pages served from DB
 - [ ] **Phase 18: Admin Calendar Improvements** — Fix time-line alignment, widen Create Booking modal, support multiple services per booking, editable end time, conditional address field, and brand button style
@@ -164,7 +164,7 @@ Plans:
   5. `server/lib/openrouter.ts` reads the app title from `companySettings.companyName` — the blog generation prompt no longer contains the hardcoded word "Skleanings"
 **Plans**: 3 plans
   - [x] 15-01-PLAN.md — Supabase migration + Drizzle schema extension (3 white-label columns) + getCompanySettings whitelist verification
-  - [ ] 15-02-PLAN.md — Client detokenization: visitor-key helper + useUTMCapture rewrite + ChatWidget/BookingPage read sites + App.tsx document.title effect + 8+ display-literal replacements
+  - [x] 15-02-PLAN.md — Client detokenization: visitor-key helper + useUTMCapture rewrite + ChatWidget/BookingPage read sites + App.tsx document.title effect + 8+ display-literal replacements
   - [x] 15-03-PLAN.md — Server detokenization: openrouter.ts companyName parameter injection + ai.ts and chat/message-handler.ts caller threading
 **UI hint**: yes
 
@@ -213,7 +213,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 15. Schema Foundation & Detokenization | 2/3 | In Progress|  |
+| 15. Schema Foundation & Detokenization | 3/3 | Complete   | 2026-04-29 |
 | 16. SEO Meta Injection | 0/? | Not started | - |
 | 17. Favicon, Legal & Company Type Admin UI | 0/? | Not started | - |
 | 18. Admin Calendar Improvements | 0/? | Not started | - |

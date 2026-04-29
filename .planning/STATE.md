@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 15-03-PLAN.md
-last_updated: "2026-04-29T04:28:26.239Z"
+status: verifying
+stopped_at: Completed 15-schema-foundation-detokenization-02-PLAN.md
+last_updated: "2026-04-29T04:31:18.328Z"
 last_activity: 2026-04-29
 progress:
   total_phases: 5
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-25)
 
 Phase: 15 (schema-foundation-detokenization) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-29
 
 Progress: [░░░░░░░░░░] 0%
@@ -62,6 +62,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 14-admin-calendar-create-booking-from-slot P03 | 1 | 2 tasks | 1 files |
 | Phase 15-schema-foundation-detokenization P01 | 2m 5s | 2 tasks | 2 files |
 | Phase 15-schema-foundation-detokenization P03 | 3m 23s | 3 tasks | 3 files |
+| Phase 15-schema-foundation-detokenization P02 | 6m 0s | 5 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -114,6 +115,10 @@ Recent decisions affecting current work:
 - [Phase 15-schema-foundation-detokenization]: openrouter.ts companyName param is OPTIONAL (Risk 6) — back-compat preserved through DI typeof alias in dependencies.ts requiring zero code change there
 - [Phase 15-schema-foundation-detokenization]: message-handler.ts uses Option A (reuse 'company' loaded at line 936) for openrouter call at line 1095 — avoids redundant DB fetch within a single chat request
 - [Phase 15-schema-foundation-detokenization]: Title precedence: process.env.OPENROUTER_APP_TITLE > companyName arg > empty (X-Title header omitted by existing guard) — operator override preserved while removing brand literal
+- [Phase 15-schema-foundation-detokenization]: BookingPage uses aliased { settings: csForKey } from useCompanySettings — the parallel useQuery 'companySettings' name collision required an alias rather than the plan's suggested 'companySettings' alias
+- [Phase 15-schema-foundation-detokenization]: BookingPage booking_started effect protected by useRef fire-once guard — prevents re-fire when settingsReady gates flip and dep array expands beyond original [] semantics
+- [Phase 15-schema-foundation-detokenization]: BlogSection authorName seeded from useCompanySettings.companyName (not '' fallback) per RESEARCH Open Question 1 — preserves white-label semantic 'use the actual tenant name'
+- [Phase 15-schema-foundation-detokenization]: use-utm-capture.ts re-exports getVisitorIdKey/deriveCompanySlug from @/lib/visitor-key — canonical impl in lib, hook re-export honors D-07 literal text
 
 ### Pending Todos
 
@@ -133,6 +138,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-29T04:28:26.235Z
-Stopped at: Completed 15-03-PLAN.md
+Last session: 2026-04-29T04:31:18.325Z
+Stopped at: Completed 15-schema-foundation-detokenization-02-PLAN.md
 Resume file: None
