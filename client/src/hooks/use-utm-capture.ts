@@ -45,7 +45,7 @@ export function useUTMCapture(): void {
     // D-06: gate on company settings readiness so the visitor key is tenant-correct
     if (!isReady) return;
 
-    // Derive the tenant-stable visitor key (Phase 15 — replaces legacy literal "skleanings_visitor_id")
+    // Derive the tenant-stable visitor key (Phase 15 — replaces the legacy hardcoded localStorage key)
     const slug = deriveCompanySlug(settings);
     const VISITOR_ID_KEY = getVisitorIdKey(slug);
 

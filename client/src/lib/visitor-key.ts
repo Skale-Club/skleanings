@@ -18,7 +18,7 @@ export function deriveCompanySlug(settings: CompanySettings | null): string {
 }
 
 /**
- * Build the localStorage visitor key from a slug. Replaces the legacy literal "skleanings_visitor_id".
+ * Build the localStorage visitor key from a slug. Replaces the legacy hardcoded tenant key.
  * Empty slug fallback: `visitor_visitor_id` — keeps the key well-formed even before settings load.
  */
 export function getVisitorIdKey(slug: string): string {

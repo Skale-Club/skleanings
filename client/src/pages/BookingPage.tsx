@@ -13,6 +13,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { trackBeginCheckout, trackEvent } from "@/lib/analytics";
 import type { StaffMember } from "@shared/schema";
+import { useCompanySettings } from "@/context/CompanySettingsContext";
+import { deriveCompanySlug, getVisitorIdKey } from "@/lib/visitor-key";
 
 // Helper to format time based on format setting
 function formatTime(time24: string, timeFormat: string): string {
@@ -42,6 +44,9 @@ export default function BookingPage() {
   const { items, totalPrice, totalDuration, removeItem, updateQuantity, getCartItemsForBooking } = useCart();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  // Phase 15 D-07: company-aware visitor key; aliased to avoid name collision with the
+  // parallel useQuery `companySettings` declared further down in this component.
+  const { settings: csForKey, isReady: settingsReady } = useCompanySettings();
 
   // Booking State - start with tomorrow
   const [selectedDate, setSelectedDate] = useState<string>(format(addDays(new Date(), 1), "yyyy-MM-dd"));
@@ -132,15 +137,20 @@ export default function BookingPage() {
     }, 100);
   };
 
+  // Phase 15 D-07: gate on settingsReady so visitor key is tenant-correct.
+  // useRef "has fired" guard prevents re-firing booking_started when settings reload mid-session.
+  const bookingStartedFiredRef = useRef(false);
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (!settingsReady || bookingStartedFiredRef.current) return;
     if (items.length > 0) {
+      bookingStartedFiredRef.current = true;
       trackBeginCheckout(
         items.map(item => ({ id: item.id, name: item.name, price: Number(item.price), quantity: item.quantity })),
         totalPrice
       );
       // D-01, EVENTS-02: fire-and-forget booking_started event — only when cart is non-empty
-      const visitorId = localStorage.getItem('skleanings_visitor_id');
+      const visitorId = localStorage.getItem(getVisitorIdKey(deriveCompanySlug(csForKey)));
       fetch('/api/analytics/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -151,7 +161,7 @@ export default function BookingPage() {
         }),
       }).catch(() => {});
     }
-  }, []);
+  }, [settingsReady, csForKey, items, totalPrice]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -192,7 +202,10 @@ export default function BookingPage() {
       staffMemberId: selectedStaff?.id ?? null,
       // D-07, ATTR-02: visitorId is outside insertBookingSchema — server reads from req.body directly
       // D-03: undefined when localStorage is null (private browsing) — server skips attribution silently
-      visitorId: localStorage.getItem('skleanings_visitor_id') ?? undefined,
+      // Phase 15 D-07: visitor key derived from companyName slug; null when settings not ready
+      visitorId: (settingsReady
+        ? localStorage.getItem(getVisitorIdKey(deriveCompanySlug(csForKey)))
+        : null) ?? undefined,
     };
 
     if (data.paymentMethod === "online") {

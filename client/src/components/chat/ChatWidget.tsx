@@ -16,6 +16,8 @@ import {
   trackChatBookingCompleted,
 } from "@/lib/analytics";
 import { renderMarkdown } from "@/lib/markdown";
+import { useCompanySettings } from "@/context/CompanySettingsContext";
+import { deriveCompanySlug, getVisitorIdKey } from "@/lib/visitor-key";
 
 type UrlRule = {
   pattern: string;
@@ -142,6 +144,7 @@ const ChatBubble = memo(function ChatBubble({
 });
 
 export function ChatWidget() {
+  const { settings, isReady } = useCompanySettings();
   const [isOpen, setIsOpen] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -535,7 +538,10 @@ export function ChatWidget() {
       if (willOpen) {
         trackChatOpen(window.location.pathname);
         // D-02, EVENTS-03: fire-and-forget chat_initiated event — no await, never blocks chat opening
-        const visitorId = localStorage.getItem('skleanings_visitor_id');
+        // Phase 15 D-07: visitor key derived from companyName slug; gate on isReady to avoid pre-load empty key
+        const visitorId = isReady
+          ? localStorage.getItem(getVisitorIdKey(deriveCompanySlug(settings)))
+          : null;
         fetch('/api/analytics/events', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
