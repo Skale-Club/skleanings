@@ -623,7 +623,7 @@ export function BlogPostEditor(props: BlogEditorProps) {
             id="authorName"
             value={formData.authorName}
             onChange={(e) => setFormData(prev => ({ ...prev, authorName: e.target.value }))}
-            placeholder="Skleanings"
+            placeholder=""
             className="border-0 bg-background"
             data-testid="input-blog-author"
           />

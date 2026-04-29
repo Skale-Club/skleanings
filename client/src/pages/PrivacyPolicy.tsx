@@ -7,8 +7,8 @@ export default function PrivacyPolicy() {
     queryKey: ['/api/company-settings'],
   });
 
-  const companyName = settings?.companyName || "Skleanings";
-  const companyEmail = settings?.companyEmail || "contact@skleanings.com";
+  const companyName = settings?.companyName || "";
+  const companyEmail = settings?.companyEmail || "";
   const companyPhone = settings?.companyPhone || "";
   const companyAddress = settings?.companyAddress || "";
 

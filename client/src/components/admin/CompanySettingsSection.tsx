@@ -29,9 +29,9 @@ const resolveIndustrySelection = (value?: string | null) => {
 export function CompanySettingsSection({ getAccessToken }: { getAccessToken: () => Promise<string | null> }) {
   const { toast } = useToast();
   const [settings, setSettings] = useState<CompanySettingsData>({
-    companyName: 'Skleanings',
+    companyName: '',
     industry: 'Cleaning',
-    companyEmail: 'contact@skleanings.com',
+    companyEmail: '',
     companyPhone: '',
     companyAddress: '',
     workingHoursStart: '08:00',

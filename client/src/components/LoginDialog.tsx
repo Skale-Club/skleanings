@@ -66,7 +66,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
   };
 
   const handleGoogleAuth = async () => {
-    const siteUrl = window.location.origin || import.meta.env.VITE_SITE_URL || 'https://skleanings.com';
+    const siteUrl = window.location.origin || import.meta.env.VITE_SITE_URL || '';
     setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithOAuth({

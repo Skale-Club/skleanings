@@ -371,7 +371,7 @@ export default function BlogPostPage() {
           },
           "publisher": {
             "@type": "Organization",
-            "name": settings?.companyName || "Skleanings",
+            "name": settings?.companyName || "",
             "logo": {
               "@type": "ImageObject",
               "url": settings?.logoMain || ""

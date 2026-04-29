@@ -48,9 +48,13 @@ import {
   Trash2,
 } from 'lucide-react';
 import { BlogPostEditor } from './blog/BlogPostEditor';
+import { useCompanySettings } from '@/context/CompanySettingsContext';
 
 export function BlogSection({ resetSignal, getAccessToken }: { resetSignal: number; getAccessToken: () => Promise<string | null> }) {
   const { toast } = useToast();
+  // Phase 15 D-11: derive default blog author from companyName; never use a hardcoded tenant name
+  const { settings: cs } = useCompanySettings();
+  const defaultAuthor = cs?.companyName ?? '';
   const [activeTab, setActiveTab] = useState<'posts' | 'settings'>('posts');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
@@ -80,7 +84,7 @@ export function BlogSection({ resetSignal, getAccessToken }: { resetSignal: numb
     tags: '' as string,
     featureImageUrl: '',
     status: 'published',
-    authorName: 'Skleanings',
+    authorName: defaultAuthor,
     publishedAt: new Date().toISOString().split('T')[0] as string | null,
     serviceIds: [] as number[],
   });
@@ -177,10 +181,10 @@ export function BlogSection({ resetSignal, getAccessToken }: { resetSignal: numb
     setFormData({
       title: '', slug: '', content: '', excerpt: '', metaDescription: '',
       focusKeyword: '', tags: '', featureImageUrl: '', status: 'published',
-      authorName: 'Skleanings', publishedAt: new Date().toISOString().split('T')[0], serviceIds: [],
+      authorName: defaultAuthor, publishedAt: new Date().toISOString().split('T')[0], serviceIds: [],
     });
     setTagInput('');
-  }, []);
+  }, [defaultAuthor]);
 
   const handleBackToPosts = useCallback(() => {
     setIsCreateOpen(false);
