@@ -166,4 +166,74 @@
 
 ---
 *Requirements defined: 2026-04-25*
-*Last updated: 2026-04-25 — traceability populated after roadmap creation*
+*Last updated: 2026-04-28 — v2.0 White Label requirements appended*
+
+---
+
+# Requirements: v2.0 White Label
+
+**Milestone:** v2.0 White Label
+**Defined:** 2026-04-28
+**Total:** 22 requirements
+
+---
+
+## v1 Requirements
+
+### Favicon & Brand Assets
+- [ ] **FAV-01**: Admin can set a favicon URL in company settings (upload or external link)
+- [ ] **FAV-02**: Platform serves `/favicon.ico` dynamically from `companySettings.faviconUrl`
+- [ ] **FAV-03**: When `faviconUrl` is empty, platform falls back gracefully without breaking
+
+### SEO Meta Injection
+- [ ] **SEO-01**: Express middleware injects `<title>` from `companySettings.seoTitle` into `index.html` at request time
+- [ ] **SEO-02**: Express middleware injects canonical, hreflang, og:title/description/image/site_name/url from `companySettings` fields
+- [ ] **SEO-03**: Express middleware injects twitter:title/description/image from `companySettings` fields
+- [ ] **SEO-04**: Express middleware injects schema.org LocalBusiness JSON-LD from `companySettings.schemaLocalBusiness`
+- [ ] **SEO-05**: All hardcoded meta tags removed from `client/index.html` — no "Skleanings" string remains in the static HTML
+
+### Frontend Detokenization
+- [ ] **DETOK-01**: `ThemeContext.tsx` initializes `companyName` and `companyEmail` from API, not hardcoded defaults
+- [ ] **DETOK-02**: localStorage visitor key `"skleanings_visitor_id"` replaced with a dynamic key derived from company slug
+- [ ] **DETOK-03**: All remaining hardcoded `"Skleanings"` literals in React components replaced with `companySettings` values
+
+### Server Brand Tokens
+- [ ] **SERV-01**: `server/lib/openrouter.ts` reads app title from `companySettings.companyName` instead of hardcoded string
+
+### White-Label Company Type
+- [ ] **WLTYPE-01**: `companySettings` has a `serviceDeliveryModel` field (values: `at-customer`, `customer-comes-in`, `both`)
+- [ ] **WLTYPE-02**: Admin can set the service delivery model in Company Settings
+
+### Legal Pages
+- [ ] **LEGAL-01**: `companySettings` has `privacyPolicyContent` and `termsOfServiceContent` text fields
+- [ ] **LEGAL-02**: Admin can edit Privacy Policy and Terms content in the Company Settings admin section
+- [ ] **LEGAL-03**: `/privacy` and `/terms` pages render content from DB
+- [ ] **LEGAL-04**: Empty legal fields show a placeholder message rather than breaking
+
+### Admin Calendar Improvements
+- [ ] **CAL-01**: Calendar grid time lines align correctly with their time slot labels
+- [ ] **CAL-02**: Create Booking modal minimum width increased (≥600px)
+- [ ] **CAL-03**: Create Booking supports adding multiple services via an "+ Add service" row — each row has service selector + quantity
+- [ ] **CAL-04**: End time field is directly editable by the attendant (not only auto-computed from service duration)
+- [ ] **CAL-05**: Address field in Create Booking only appears when `serviceDeliveryModel` is `at-customer` or `both`
+- [ ] **CAL-06**: Create Booking submit button uses the primary brand style (brand yellow, full-width, bold)
+
+---
+
+## Future Requirements
+
+- Dynamic per-tenant subdomain routing (multi-tenant deployment)
+- Tenant onboarding wizard (first-run setup flow)
+- Per-tenant custom domain support
+
+## Out of Scope
+
+- Multi-tenant database isolation (single DB per deployment — white-label via config, not multi-tenancy)
+- Reseller/marketplace for multiple tenants on one instance
+- Custom CSS theming beyond existing brand color system
+
+---
+
+## Traceability
+
+*(Filled by roadmapper)*
