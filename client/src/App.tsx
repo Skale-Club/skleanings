@@ -20,6 +20,17 @@ import { ChatWidget } from "@/components/chat/ChatWidget";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 
+// Phase 15 D-04: Drive document.title from companySettings.companyName at runtime.
+// Mounted inside CompanySettingsProvider so useCompanySettings() is safe.
+// Format: empty string when companyName is null/undefined/empty — white-label safe (D-11).
+function DocumentTitleSync() {
+  const { settings } = useCompanySettings();
+  useEffect(() => {
+    document.title = settings?.companyName || "";
+  }, [settings?.companyName]);
+  return null;
+}
+
 // Context to track initial app load state
 const InitialLoadContext = createContext<{ isInitialLoad: boolean; markLoaded: () => void }>({
   isInitialLoad: true,
@@ -227,6 +238,7 @@ function App() {
       <ThemeProvider>
         <QueryClientProvider client={queryClient}>
           <CompanySettingsProvider>
+            <DocumentTitleSync />
             <BrandColorInjector />
             <TooltipProvider>
               <AuthProvider>
