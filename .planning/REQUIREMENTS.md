@@ -189,7 +189,7 @@
 - [ ] **SEO-01**: Express middleware injects `<title>` from `companySettings.seoTitle` into `index.html` at request time
 - [ ] **SEO-02**: Express middleware injects canonical, hreflang, og:title/description/image/site_name/url from `companySettings` fields
 - [ ] **SEO-03**: Express middleware injects twitter:title/description/image from `companySettings` fields
-- [ ] **SEO-04**: Express middleware injects schema.org LocalBusiness JSON-LD from `companySettings.schemaLocalBusiness`
+- [x] **SEO-04**: Express middleware injects schema.org LocalBusiness JSON-LD from `companySettings.schemaLocalBusiness`
 - [ ] **SEO-05**: All hardcoded meta tags removed from `client/index.html` — no "Skleanings" string remains in the static HTML
 
 ### Frontend Detokenization
@@ -247,7 +247,7 @@
 | SEO-01 | Phase 16 | Pending |
 | SEO-02 | Phase 16 | Pending |
 | SEO-03 | Phase 16 | Pending |
-| SEO-04 | Phase 16 | Pending |
+| SEO-04 | Phase 16 | Complete |
 | SEO-05 | Phase 16 | Pending |
 | FAV-01 | Phase 17 | Pending |
 | FAV-02 | Phase 17 | Pending |
