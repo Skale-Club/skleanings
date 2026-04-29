@@ -129,4 +129,115 @@ Plans:
 - [x] 14-03-PLAN.md — Submit mutation + status PATCH (D-10) + 201/409/400 handling + calendar refresh + manual verification checkpoint
 
 ---
+
+---
+
+# Roadmap: Skleanings v2.0 White Label
+
+**Milestone:** v2.0 White Label
+**Defined:** 2026-04-28
+**Phases:** 4 (Phase 15 through Phase 18)
+**Requirements:** 24 v1 requirements — 24/24 mapped
+
+---
+
+## Phases
+
+- [ ] **Phase 15: Schema Foundation & Detokenization** — Add new companySettings fields to DB, run migration, replace all hardcoded brand strings in frontend and server code
+- [ ] **Phase 16: SEO Meta Injection** — Express middleware reads companySettings at request time and injects title, canonical, Open Graph, Twitter Card, and schema.org JSON-LD into index.html
+- [ ] **Phase 17: Favicon, Legal & Company Type Admin UI** — Admin UI for favicon upload, legal page content editing, and service delivery model selector; public /privacy and /terms pages served from DB
+- [ ] **Phase 18: Admin Calendar Improvements** — Fix time-line alignment, widen Create Booking modal, support multiple services per booking, editable end time, conditional address field, and brand button style
+
+---
+
+## Phase Details
+
+### Phase 15: Schema Foundation & Detokenization
+**Goal**: The database schema supports all white-label configurable fields and no hardcoded "Skleanings" strings remain in the frontend or server codebase — new tenant configuration is consumed from DB at runtime
+**Depends on**: Phase 14
+**Requirements**: WLTYPE-01, LEGAL-01, DETOK-01, DETOK-02, DETOK-03, SERV-01
+**Success Criteria** (what must be TRUE):
+  1. The Supabase migration runs cleanly and `companySettings` has `serviceDeliveryModel`, `privacyPolicyContent`, and `termsOfServiceContent` columns — a SELECT on the table returns these fields without error
+  2. `ThemeContext.tsx` initializes `companyName` and `companyEmail` from the API response — loading the customer-facing site with a different `companyName` in the DB shows that name in the browser tab title and any components that display it
+  3. The localStorage visitor key is derived from the company slug, not the literal string `"skleanings_visitor_id"` — changing the slug in companySettings causes a new key prefix to be used on next page load
+  4. A full-text search of `client/src/` for the string `"Skleanings"` returns zero results in React component files (hardcoded display literals removed; only comments or non-display strings are permitted)
+  5. `server/lib/openrouter.ts` reads the app title from `companySettings.companyName` — the blog generation prompt no longer contains the hardcoded word "Skleanings"
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 16: SEO Meta Injection
+**Goal**: Every page served by Express has accurate, tenant-specific meta tags injected server-side — search engines and social platforms receive correct title, canonical URL, Open Graph, Twitter Card, and structured data without any static "Skleanings" meta remaining in index.html
+**Depends on**: Phase 15
+**Requirements**: SEO-01, SEO-02, SEO-03, SEO-04, SEO-05
+**Success Criteria** (what must be TRUE):
+  1. Fetching any page URL with `curl` (bypassing the browser) returns HTML that includes a `<title>` tag matching `companySettings.seoTitle` — the static index.html title is gone
+  2. The `curl` response includes `<meta property="og:title">`, `<meta property="og:description">`, `<meta property="og:image">`, and `<link rel="canonical">` all populated from companySettings values
+  3. The `curl` response includes `<meta name="twitter:card">`, `<meta name="twitter:title">`, and `<meta name="twitter:description">` populated from companySettings
+  4. The `curl` response body contains a `<script type="application/ld+json">` block with a valid LocalBusiness schema object whose `name` matches `companySettings.companyName`
+  5. A text search of `client/index.html` finds no occurrence of the string `"Skleanings"` — all brand-specific meta has been removed from the static file
+**Plans**: TBD
+
+### Phase 17: Favicon, Legal & Company Type Admin UI
+**Goal**: Admin can configure the favicon, privacy policy, terms of service, and service delivery model through the settings panel — and customers visiting /privacy or /terms see the content stored in the database rather than a 404 or placeholder
+**Depends on**: Phase 15
+**Requirements**: FAV-01, FAV-02, FAV-03, WLTYPE-02, LEGAL-02, LEGAL-03, LEGAL-04
+**Success Criteria** (what must be TRUE):
+  1. Admin can enter or upload a favicon URL in Company Settings and save it — a subsequent page load shows the new favicon in the browser tab
+  2. When `faviconUrl` is empty, loading the site does not produce a broken image request or console error — the browser shows no favicon or the default gracefully
+  3. Admin can select a service delivery model (`At Customer Location`, `Customer Comes In`, or `Both`) in Company Settings and save it — the saved value persists on page refresh
+  4. Navigating to `/privacy` renders the Privacy Policy content stored in companySettings — editing the content in admin and refreshing the public page shows the updated text
+  5. Navigating to `/terms` renders the Terms of Service content stored in companySettings — an empty field shows a clear placeholder message rather than a blank or broken page
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 18: Admin Calendar Improvements
+**Goal**: The admin calendar Create Booking modal is production-ready — time labels align with grid slots, the form is wide enough to use comfortably, multiple services can be added per booking, end time is directly editable, and the address field only appears when the job is at the customer's location
+**Depends on**: Phase 15
+**Requirements**: CAL-01, CAL-02, CAL-03, CAL-04, CAL-05, CAL-06
+**Success Criteria** (what must be TRUE):
+  1. Opening the admin calendar and viewing a day with appointments shows time slot labels (e.g., "9:00 AM") horizontally aligned with the correct grid row — no offset between label and slot
+  2. Opening the Create Booking modal on any screen wider than 768px shows a modal at least 600px wide — form fields are not cramped or wrapping awkwardly
+  3. The Create Booking form has an "+ Add service" button — clicking it adds a new row with a service selector and quantity input; at least two services can be added and both appear in the submitted booking
+  4. The end time field is directly editable — manually typing a later end time overrides the auto-computed value and the override persists when the form is submitted
+  5. With `serviceDeliveryModel` set to `at-customer`, the address field is visible in the Create Booking form; with it set to `customer-comes-in`, the address field is hidden
+  6. The Create Booking submit button uses the brand yellow background with black bold text and spans the full modal width
+**Plans**: TBD
+**UI hint**: yes
+
+---
+
+## Progress Table
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 15. Schema Foundation & Detokenization | 0/? | Not started | - |
+| 16. SEO Meta Injection | 0/? | Not started | - |
+| 17. Favicon, Legal & Company Type Admin UI | 0/? | Not started | - |
+| 18. Admin Calendar Improvements | 0/? | Not started | - |
+
+---
+
+## Requirement Coverage
+
+**24/24 v1 requirements mapped — no orphans**
+
+| Phase | Requirements |
+|-------|-------------|
+| Phase 15 | WLTYPE-01, LEGAL-01, DETOK-01, DETOK-02, DETOK-03, SERV-01 |
+| Phase 16 | SEO-01, SEO-02, SEO-03, SEO-04, SEO-05 |
+| Phase 17 | FAV-01, FAV-02, FAV-03, WLTYPE-02, LEGAL-02, LEGAL-03, LEGAL-04 |
+| Phase 18 | CAL-01, CAL-02, CAL-03, CAL-04, CAL-05, CAL-06 |
+
+---
+
+## Key Build Constraints
+
+1. **Supabase CLI only for migrations** — Phase 15 schema changes must go through a Supabase migration file, not drizzle-kit push
+2. **companySettings is a singleton row** — all reads must handle the case where the row does not yet exist (fallback to safe defaults, never crash)
+3. **SEO middleware fires before static file handler** — Phase 16 Express middleware must intercept the index.html request before `express.static` returns the cached file
+4. **CAL-05 address field depends on Phase 15 schema** — Phase 18 plan must read `serviceDeliveryModel` from the API; Phase 15 must be complete before Phase 18 executes
+
+---
+
 *Roadmap defined: 2026-04-25*
+*v2.0 section appended: 2026-04-28*

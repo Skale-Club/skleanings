@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: White Label
-status: defining-requirements
-stopped_at: Milestone v2.0 started
+status: roadmap-defined
+stopped_at: Roadmap defined — Phase 15 not started
 last_updated: "2026-04-28T00:00:00.000Z"
 last_activity: 2026-04-28
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-25)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 14 — admin-calendar-create-booking-from-slot
+**Current focus:** Phase 15 — Schema Foundation & Detokenization (not started)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 15 — Schema Foundation & Detokenization
 Plan: —
-Status: Defining requirements
-Last activity: 2026-04-28 — Milestone v2.0 White Label started
+Status: Not started
+Last activity: 2026-04-28 — v2.0 White Label roadmap defined (Phases 15-18)
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -120,9 +120,10 @@ None yet.
 ### Roadmap Evolution
 
 - Phase 14 added: Admin calendar create booking from slot
+- v2.0 White Label roadmap added: Phases 15-18 (2026-04-28)
 
 ## Session Continuity
 
 Last session: 2026-04-28T20:41:01.192Z
-Stopped at: Completed 14-03-PLAN.md
+Stopped at: v2.0 roadmap defined — Phase 15 not started
 Resume file: None

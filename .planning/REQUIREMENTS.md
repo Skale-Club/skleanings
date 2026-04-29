@@ -174,7 +174,7 @@
 
 **Milestone:** v2.0 White Label
 **Defined:** 2026-04-28
-**Total:** 22 requirements
+**Total:** 24 requirements
 
 ---
 
@@ -236,4 +236,34 @@
 
 ## Traceability
 
-*(Filled by roadmapper)*
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| WLTYPE-01 | Phase 15 | Pending |
+| LEGAL-01 | Phase 15 | Pending |
+| DETOK-01 | Phase 15 | Pending |
+| DETOK-02 | Phase 15 | Pending |
+| DETOK-03 | Phase 15 | Pending |
+| SERV-01 | Phase 15 | Pending |
+| SEO-01 | Phase 16 | Pending |
+| SEO-02 | Phase 16 | Pending |
+| SEO-03 | Phase 16 | Pending |
+| SEO-04 | Phase 16 | Pending |
+| SEO-05 | Phase 16 | Pending |
+| FAV-01 | Phase 17 | Pending |
+| FAV-02 | Phase 17 | Pending |
+| FAV-03 | Phase 17 | Pending |
+| WLTYPE-02 | Phase 17 | Pending |
+| LEGAL-02 | Phase 17 | Pending |
+| LEGAL-03 | Phase 17 | Pending |
+| LEGAL-04 | Phase 17 | Pending |
+| CAL-01 | Phase 18 | Pending |
+| CAL-02 | Phase 18 | Pending |
+| CAL-03 | Phase 18 | Pending |
+| CAL-04 | Phase 18 | Pending |
+| CAL-05 | Phase 18 | Pending |
+| CAL-06 | Phase 18 | Pending |
+
+**Coverage:**
+- v1 requirements: 24 total
+- Mapped to phases: 24
+- Unmapped: 0
