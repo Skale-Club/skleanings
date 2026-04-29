@@ -15,12 +15,12 @@ if [ -z "$HTML" ]; then
   exit 2
 fi
 
-# SEO-01: <title> non-empty, no "Skleanings" literal
+# SEO-01: <title> non-empty, no unreplaced {{TOKEN}} markers (injection active)
 title="$(printf %s "$HTML" | grep -oE '<title>[^<]+</title>' | head -1)"
 if [ -z "$title" ]; then
   fail "SEO-01: <title> not found or empty"
-elif printf %s "$title" | grep -qi 'skleanings'; then
-  fail "SEO-01: <title> still contains literal 'Skleanings' — server-side injection not active"
+elif printf %s "$title" | grep -qF '{{'; then
+  fail "SEO-01: <title> contains unreplaced {{TOKEN}} — server-side injection not active"
 else
   pass "SEO-01: <title> populated ($title)"
 fi
