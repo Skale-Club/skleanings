@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiRequest, authenticatedRequest } from "@/lib/queryClient";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { authenticatedRequest } from "@/lib/queryClient";
 import { useAdminAuth } from "@/context/AuthContext";
 import { User, insertUserSchema } from "@shared/schema";
 import { Button } from "@/components/ui/button";
@@ -36,7 +36,6 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-import type { StaffMember } from "@shared/schema";
 
 type UserDialogProps = {
     user?: User;
@@ -56,33 +55,11 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
     const queryClient = useQueryClient();
     const { getAccessToken } = useAdminAuth();
     const [uploadedUrls, setUploadedUrls] = useState<Record<string, string>>({});
-    const [role, setRole] = useState<'admin' | 'staff' | 'viewer'>(user?.role as any ?? 'viewer');
-    const [staffLinkId, setStaffLinkId] = useState<number | null>(null);
-
-    const { data: staffMembers } = useQuery<StaffMember[]>({
-        queryKey: ['/api/staff-all'],
-        queryFn: async () => {
-            const token = await getAccessToken();
-            if (!token) throw new Error('No access token');
-            const res = await fetch('/api/staff?includeInactive=true', {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            return res.json();
-        },
-    });
+    const [role, setRole] = useState<'staff' | 'viewer'>(user?.role === 'staff' ? 'staff' : 'viewer');
 
     useEffect(() => {
-        setRole((user?.role as any) ?? 'viewer');
-    }, [user]);
-
-    useEffect(() => {
-        if (user && staffMembers) {
-            const linked = staffMembers.find(s => s.userId === user.id);
-            setStaffLinkId(linked?.id ?? null);
-        } else {
-            setStaffLinkId(null);
-        }
-    }, [user, staffMembers]);
+        if (open) setRole(user?.role === 'staff' ? 'staff' : 'viewer');
+    }, [user, open]);
 
     const getUploadParameters = async (file: UppyFile<Record<string, unknown>, Record<string, unknown>>) => {
         const token = await getAccessToken();
@@ -140,23 +117,14 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
         }
     }, [user, open, form]);
 
-    const saveRoleAndLink = async (userId: string) => {
+    const saveRole = async (userId: string) => {
         const token = await getAccessToken();
         if (!token) return;
-        // Save role via existing PATCH /api/users/:id
         await fetch(`/api/users/${userId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({ role }),
         });
-        // Save staff link if role is staff
-        if (role === 'staff') {
-            await fetch(`/api/users/${userId}/staff-link`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                body: JSON.stringify({ staffMemberId: staffLinkId }),
-            });
-        }
     };
 
     const mutation = useMutation({
@@ -171,7 +139,7 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
         onSuccess: async (savedUser) => {
             const userId = savedUser?.id ?? user?.id;
             if (userId) {
-                await saveRoleAndLink(userId);
+                await saveRole(userId);
             }
             queryClient.invalidateQueries({ queryKey: ["/api/users"] });
             queryClient.invalidateQueries({ queryKey: ["/api/staff"] });
@@ -303,40 +271,16 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
                         {/* Role selector */}
                         <div className="space-y-1.5">
                             <Label>Role</Label>
-                            <Select value={role} onValueChange={(v) => setRole(v as 'admin' | 'staff' | 'viewer')}>
+                            <Select value={role} onValueChange={(v) => setRole(v as 'staff' | 'viewer')}>
                                 <SelectTrigger>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="admin">Admin</SelectItem>
                                     <SelectItem value="staff">Staff</SelectItem>
                                     <SelectItem value="viewer">Viewer</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
-
-                        {/* Staff member link — only shown when role is staff */}
-                        {role === 'staff' && (
-                            <div className="space-y-1.5">
-                                <Label>Link to Staff Member</Label>
-                                <Select
-                                    value={staffLinkId?.toString() ?? 'none'}
-                                    onValueChange={(v) => setStaffLinkId(v === 'none' ? null : Number(v))}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select staff member..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="none">— None —</SelectItem>
-                                        {staffMembers?.map(s => (
-                                            <SelectItem key={s.id} value={s.id.toString()}>
-                                                {s.firstName} {s.lastName}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        )}
 
                         <div className="flex justify-end">
                             <Button type="submit" disabled={mutation.isPending}>
