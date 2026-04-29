@@ -165,7 +165,7 @@ Plans:
 **Plans**: 3 plans
   - [x] 15-01-PLAN.md — Supabase migration + Drizzle schema extension (3 white-label columns) + getCompanySettings whitelist verification
   - [ ] 15-02-PLAN.md — Client detokenization: visitor-key helper + useUTMCapture rewrite + ChatWidget/BookingPage read sites + App.tsx document.title effect + 8+ display-literal replacements
-  - [ ] 15-03-PLAN.md — Server detokenization: openrouter.ts companyName parameter injection + ai.ts and chat/message-handler.ts caller threading
+  - [x] 15-03-PLAN.md — Server detokenization: openrouter.ts companyName parameter injection + ai.ts and chat/message-handler.ts caller threading
 **UI hint**: yes
 
 ### Phase 16: SEO Meta Injection
@@ -213,7 +213,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 15. Schema Foundation & Detokenization | 1/3 | In Progress|  |
+| 15. Schema Foundation & Detokenization | 2/3 | In Progress|  |
 | 16. SEO Meta Injection | 0/? | Not started | - |
 | 17. Favicon, Legal & Company Type Admin UI | 0/? | Not started | - |
 | 18. Admin Calendar Improvements | 0/? | Not started | - |

@@ -198,7 +198,7 @@
 - [ ] **DETOK-03**: All remaining hardcoded `"Skleanings"` literals in React components replaced with `companySettings` values
 
 ### Server Brand Tokens
-- [ ] **SERV-01**: `server/lib/openrouter.ts` reads app title from `companySettings.companyName` instead of hardcoded string
+- [x] **SERV-01**: `server/lib/openrouter.ts` reads app title from `companySettings.companyName` instead of hardcoded string
 
 ### White-Label Company Type
 - [x] **WLTYPE-01**: `companySettings` has a `serviceDeliveryModel` field (values: `at-customer`, `customer-comes-in`, `both`)
@@ -243,7 +243,7 @@
 | DETOK-01 | Phase 15 | Pending |
 | DETOK-02 | Phase 15 | Pending |
 | DETOK-03 | Phase 15 | Pending |
-| SERV-01 | Phase 15 | Pending |
+| SERV-01 | Phase 15 | Complete |
 | SEO-01 | Phase 16 | Pending |
 | SEO-02 | Phase 16 | Pending |
 | SEO-03 | Phase 16 | Pending |

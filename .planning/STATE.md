@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 15-schema-foundation-detokenization-01-PLAN.md
-last_updated: "2026-04-29T04:21:30.132Z"
+stopped_at: Completed 15-03-PLAN.md
+last_updated: "2026-04-29T04:28:26.239Z"
 last_activity: 2026-04-29
 progress:
   total_phases: 5
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-25)
 ## Current Position
 
 Phase: 15 (schema-foundation-detokenization) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-04-29
 
@@ -61,6 +61,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 14-admin-calendar-create-booking-from-slot P02 | 2 | 1 tasks | 1 files |
 | Phase 14-admin-calendar-create-booking-from-slot P03 | 1 | 2 tasks | 1 files |
 | Phase 15-schema-foundation-detokenization P01 | 2m 5s | 2 tasks | 2 files |
+| Phase 15-schema-foundation-detokenization P03 | 3m 23s | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -110,6 +111,9 @@ Recent decisions affecting current work:
 - [Phase 15-schema-foundation-detokenization]: Plain TEXT (no pgEnum, no CHECK constraint) chosen for serviceDeliveryModel — matches existing precedent (timeFormat, ogType, twitterCard) for enum-like values
 - [Phase 15-schema-foundation-detokenization]: Risk 1 mitigated by inspection: getCompanySettings uses db.select().from(companySettings) full-row select — no whitelist, new columns flow through automatically without storage code changes
 - [Phase 15-schema-foundation-detokenization]: Migration FILE created in this plan but DB push deferred to operator (Build Constraint #1 + matching the existing Phase 10 migration-pending pattern in STATE.md blockers); Plan 15-02/15-03 unblocked, Phase 17/18 require push first
+- [Phase 15-schema-foundation-detokenization]: openrouter.ts companyName param is OPTIONAL (Risk 6) — back-compat preserved through DI typeof alias in dependencies.ts requiring zero code change there
+- [Phase 15-schema-foundation-detokenization]: message-handler.ts uses Option A (reuse 'company' loaded at line 936) for openrouter call at line 1095 — avoids redundant DB fetch within a single chat request
+- [Phase 15-schema-foundation-detokenization]: Title precedence: process.env.OPENROUTER_APP_TITLE > companyName arg > empty (X-Title header omitted by existing guard) — operator override preserved while removing brand literal
 
 ### Pending Todos
 
@@ -129,6 +133,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-29T04:21:14.787Z
-Stopped at: Completed 15-schema-foundation-detokenization-01-PLAN.md
+Last session: 2026-04-29T04:28:26.235Z
+Stopped at: Completed 15-03-PLAN.md
 Resume file: None
