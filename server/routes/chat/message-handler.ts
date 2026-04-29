@@ -1092,7 +1092,7 @@ ${completedSteps.length > 0 ? `• Completed steps: ${completedSteps.join(', ')}
         const aiClient = activeProvider === "gemini"
             ? chatDeps.getGeminiClient(apiKey)
             : activeProvider === "openrouter"
-                ? chatDeps.getOpenRouterClient(apiKey)
+                ? chatDeps.getOpenRouterClient(apiKey, company?.companyName ?? undefined)
                 : chatDeps.getOpenAIClient(apiKey);
         if (!aiClient) {
             return respondWithChatError(
