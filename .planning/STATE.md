@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 16-seo-meta-injection-01-PLAN.md
-last_updated: "2026-04-29T23:35:00.000Z"
-last_activity: 2026-04-29 -- Phase 16 Plan 01 completed
+stopped_at: Completed 16-seo-meta-injection-02-PLAN.md
+last_updated: "2026-04-29T23:32:33.808Z"
+last_activity: 2026-04-29
 progress:
   total_phases: 5
   completed_phases: 5
-  total_plans: 16
-  completed_plans: 16
+  total_plans: 15
+  completed_plans: 15
   percent: 0
 ---
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-04-25)
 ## Current Position
 
 Phase: 16 (seo-meta-injection) — EXECUTING
-Plan: 2 of 3
-Status: Executing Phase 16
-Last activity: 2026-04-29 -- Phase 16 Plan 01 completed
+Plan: 3 of 3
+Status: Ready to execute
+Last activity: 2026-04-29
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -64,6 +64,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 15-schema-foundation-detokenization P03 | 3m 23s | 3 tasks | 3 files |
 | Phase 15-schema-foundation-detokenization P02 | 6m 0s | 5 tasks | 13 files |
 | Phase 16-seo-meta-injection P01 | ~25m | 4 tasks | 6 files |
+| Phase 16-seo-meta-injection P02 | ~6m | 4 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -124,6 +125,9 @@ Recent decisions affecting current work:
 - [Phase 16-seo-meta-injection]: escapeJsonLd uses String.fromCharCode(0x2028/0x2029) to avoid literal Unicode line-separator code points in source file
 - [Phase 16-seo-meta-injection]: OG_IMAGE_BLOCK and TWITTER_IMAGE_BLOCK are whole-tag tokens (not per-attribute) — entire meta cluster absent when ogImage empty (D-07 compliance)
 - [Phase 16-seo-meta-injection]: ogImageAbsolute computed once at top of injectSeoMeta, shared with og/twitter block AND buildLocalBusinessSchema argument — Pitfall 3 fix
+- [Phase 16-seo-meta-injection]: Injector call order in vite.ts: AFTER vite.transformIndexHtml (Pitfall 1 — HMR scripts already injected)
+- [Phase 16-seo-meta-injection]: vercel.json /(.*) catch-all destination changed from /index.html to /api/index.js (D-01 — HTML traffic routed through Express SEO injector)
+- [Phase 16-seo-meta-injection]: SEO-01 curl check updated to detect unreplaced {{TOKEN}} markers (not brand name) — Skleanings is a valid DB value
 
 ### Pending Todos
 
@@ -144,6 +148,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-29T23:35:00.000Z
-Stopped at: Completed 16-seo-meta-injection-01-PLAN.md
-Resume file: .planning/phases/16-seo-meta-injection/16-01-SUMMARY.md
+Last session: 2026-04-29T23:32:33.803Z
+Stopped at: Completed 16-seo-meta-injection-02-PLAN.md
+Resume file: None

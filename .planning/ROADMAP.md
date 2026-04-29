@@ -181,7 +181,7 @@ Plans:
   5. A text search of `client/index.html` finds no occurrence of the string `"Skleanings"` — all brand-specific meta has been removed from the static file
 **Plans**: 3 plans
   - [x] 16-01-PLAN.md — shared buildLocalBusinessSchema util + server/lib/seo-injector.ts (escape + cache + 14-token replacement) + Wave 0 test harnesses + admin-save cache invalidation
-  - [ ] 16-02-PLAN.md — client/index.html retemplating with token markers + dev/prod injector mounting (server/vite.ts + server/static.ts) + vercel.json catch-all rewrite to /api/index.js
+  - [x] 16-02-PLAN.md — client/index.html retemplating with token markers + dev/prod injector mounting (server/vite.ts + server/static.ts) + vercel.json catch-all rewrite to /api/index.js
   - [ ] 16-03-PLAN.md — client useSEO hook delegates JSON-LD to shared buildLocalBusinessSchema (closes server/client divergence pitfall) + parity test
 
 ### Phase 17: Favicon, Legal & Company Type Admin UI
@@ -232,7 +232,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 15. Schema Foundation & Detokenization | 3/3 | Complete    | 2026-04-29 |
-| 16. SEO Meta Injection | 1/3 | In progress | - |
+| 16. SEO Meta Injection | 2/3 | In Progress|  |
 | 17. Favicon, Legal & Company Type Admin UI | 0/? | Not started | - |
 | 18. Admin Calendar Improvements | 0/? | Not started | - |
 | 19. Receptionist Booking Flow & Multi-Staff View | 0/? | Not started | - |

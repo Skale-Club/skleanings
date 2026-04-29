@@ -186,11 +186,11 @@
 - [ ] **FAV-03**: When `faviconUrl` is empty, platform falls back gracefully without breaking
 
 ### SEO Meta Injection
-- [ ] **SEO-01**: Express middleware injects `<title>` from `companySettings.seoTitle` into `index.html` at request time
-- [ ] **SEO-02**: Express middleware injects canonical, hreflang, og:title/description/image/site_name/url from `companySettings` fields
-- [ ] **SEO-03**: Express middleware injects twitter:title/description/image from `companySettings` fields
+- [x] **SEO-01**: Express middleware injects `<title>` from `companySettings.seoTitle` into `index.html` at request time
+- [x] **SEO-02**: Express middleware injects canonical, hreflang, og:title/description/image/site_name/url from `companySettings` fields
+- [x] **SEO-03**: Express middleware injects twitter:title/description/image from `companySettings` fields
 - [ ] **SEO-04**: Express middleware injects schema.org LocalBusiness JSON-LD from `companySettings.schemaLocalBusiness`
-- [ ] **SEO-05**: All hardcoded meta tags removed from `client/index.html` — no "Skleanings" string remains in the static HTML
+- [x] **SEO-05**: All hardcoded meta tags removed from `client/index.html` — no "Skleanings" string remains in the static HTML
 
 ### Frontend Detokenization
 - [x] **DETOK-01**: `ThemeContext.tsx` initializes `companyName` and `companyEmail` from API, not hardcoded defaults
@@ -244,11 +244,11 @@
 | DETOK-02 | Phase 15 | Complete |
 | DETOK-03 | Phase 15 | Complete |
 | SERV-01 | Phase 15 | Complete |
-| SEO-01 | Phase 16 | Pending |
-| SEO-02 | Phase 16 | Pending |
-| SEO-03 | Phase 16 | Pending |
+| SEO-01 | Phase 16 | Complete |
+| SEO-02 | Phase 16 | Complete |
+| SEO-03 | Phase 16 | Complete |
 | SEO-04 | Phase 16 | Pending |
-| SEO-05 | Phase 16 | Pending |
+| SEO-05 | Phase 16 | Complete |
 | FAV-01 | Phase 17 | Pending |
 | FAV-02 | Phase 17 | Pending |
 | FAV-03 | Phase 17 | Pending |
