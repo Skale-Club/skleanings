@@ -1,7 +1,12 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
+import { useCompanySettings } from "@/context/CompanySettingsContext";
+import { deriveCompanySlug, getVisitorIdKey } from "@/lib/visitor-key";
 
-const VISITOR_ID_KEY = "skleanings_visitor_id";
+// Re-export for D-07: consumers may import getVisitorIdKey from use-utm-capture per the locked decision contract.
+// The canonical implementation lives in @/lib/visitor-key — this re-export honors D-07's literal text.
+export { getVisitorIdKey } from "@/lib/visitor-key";
+export { deriveCompanySlug } from "@/lib/visitor-key";
 
 /**
  * Normalize a UTM value: lowercase + trim. Returns null if empty.
@@ -21,7 +26,8 @@ function norm(v: string | null): string | null {
  *
  * Decisions implemented:
  *   D-05: Returns early in development (matches analytics.ts pattern)
- *   D-07: Uses the existing AnalyticsProvider — no new provider added
+ *   D-06: Gates on isReady from useCompanySettings — re-runs effect when settings load
+ *   D-07: Visitor key derived via getVisitorIdKey(deriveCompanySlug(settings)) — same helper used by all read sites
  *   D-08: localStorage UUID via crypto.randomUUID(); no cookie fallback
  *   D-04: Lowercases UTM values client-side before send
  *
@@ -30,11 +36,18 @@ function norm(v: string | null): string | null {
  * skipped to avoid noise on the server.
  */
 export function useUTMCapture(): void {
+  const { settings, isReady } = useCompanySettings();
   const [location] = useLocation();
 
   useEffect(() => {
     // D-05: DEV guard — must be first statement
     if (import.meta.env.DEV) return;
+    // D-06: gate on company settings readiness so the visitor key is tenant-correct
+    if (!isReady) return;
+
+    // Derive the tenant-stable visitor key (Phase 15 — replaces legacy literal "skleanings_visitor_id")
+    const slug = deriveCompanySlug(settings);
+    const VISITOR_ID_KEY = getVisitorIdKey(slug);
 
     // 1. Get-or-generate the visitor UUID (D-08, CAPTURE-02)
     let visitorId = localStorage.getItem(VISITOR_ID_KEY);
@@ -83,5 +96,5 @@ export function useUTMCapture(): void {
     }).catch(() => {
       // Silent — never surface to the user
     });
-  }, [location]);
+  }, [location, isReady, settings]);
 }
