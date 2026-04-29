@@ -8,18 +8,16 @@ Skleanings is a full-stack service booking platform for a residential and commer
 
 Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
 
-## Current Milestone: v1.0 Marketing Attribution
+## Current Milestone: v2.0 White Label
 
-**Goal:** Build a first-party marketing intelligence area inside the admin panel that captures UTM parameters, auto-classifies non-UTM traffic, supports first-touch and last-touch attribution, and lets the business owner clearly answer which sources and campaigns are generating real bookings.
+**Goal:** Transform the platform into a white-label product — remove all hardcoded "Skleanings" references and make brand identity, SEO, favicon, and legal pages fully configurable via the admin panel, with no code changes required per tenant.
 
 **Target features:**
-- UTM session capture (all 6 UTM params + referrer + landing page per visitor/session)
-- Automatic traffic classification for non-UTM visitors (Google organic, social referrals, direct)
-- First-touch + last-touch attribution with preservation of first-touch
-- Conversion tracking (primary: booking completed; secondary: form submit, phone click, quote request)
-- Admin marketing dashboard: Overview, Campaign Performance, Source Performance, Conversions, Visitor Journey
-- Filters: date range, source, medium, campaign, landing page, conversion type
-- Business-friendly language throughout (non-technical business owner audience)
+- Dynamic favicon — `faviconUrl` field in `companySettings` + admin upload + Express dynamic serve
+- Server-side SEO/meta injection — Express middleware reads `companySettings` and injects title, canonical, og:*, twitter:*, schema.org JSON-LD into `index.html` at request time
+- Hardcoded-free frontend — ThemeContext defaults, localStorage key prefix, and all components reading values from DB
+- Server-side brand tokens — `openrouter.ts` and other server files using `companySettings.companyName` from DB
+- Configurable legal pages — Privacy Policy and Terms of Service content stored and served from DB
 
 ## Requirements
 

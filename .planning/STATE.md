@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: verifying
-stopped_at: Completed 14-03-PLAN.md
-last_updated: "2026-04-28T20:41:10.793Z"
+milestone: v2.0
+milestone_name: White Label
+status: defining-requirements
+stopped_at: Milestone v2.0 started
+last_updated: "2026-04-28T00:00:00.000Z"
 last_activity: 2026-04-28
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 15
-  completed_plans: 15
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
   percent: 0
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-04-25)
 
 ## Current Position
 
-Phase: 14 (admin-calendar-create-booking-from-slot) — EXECUTING
-Plan: 3 of 3
-Status: Phase complete — ready for verification
-Last activity: 2026-04-28
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-04-28 — Milestone v2.0 White Label started
 
 Progress: [░░░░░░░░░░] 0%
 
