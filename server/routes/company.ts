@@ -6,6 +6,7 @@ import { storageService } from "../services/storage";
 import { DEFAULT_BUSINESS_HOURS, insertCompanySettingsSchema, type CompanySettings } from "@shared/schema";
 import { sanitizeHomepageContent } from "../lib/sanitize";
 import { getFallbackCategories, getFallbackCompanySettings, getFallbackPublishedBlogPosts } from "../lib/public-data-fallback";
+import { invalidateSeoCache } from "../lib/seo-injector";
 
 const router = Router();
 
@@ -118,6 +119,7 @@ router.put('/api/company-settings', requireAdmin, async (req, res) => {
     try {
         const validatedData = insertCompanySettingsSchema.partial().parse(req.body);
         const settings = await storage.updateCompanySettings(validatedData);
+        invalidateSeoCache(); // Phase 16: bust SEO meta cache so next HTML request reflects new tenant values
         res.json(sanitizeCompanySettingsResponse(settings));
     } catch (err) {
         if (err instanceof z.ZodError) {
