@@ -146,7 +146,7 @@ Plans:
 - [x] **Phase 15: Schema Foundation & Detokenization** — Add new companySettings fields to DB, run migration, replace all hardcoded brand strings in frontend and server code (completed 2026-04-29)
 - [x] **Phase 16: SEO Meta Injection** — Express middleware reads companySettings at request time and injects title, canonical, Open Graph, Twitter Card, and schema.org JSON-LD into index.html (completed 2026-04-30)
 - [x] **Phase 17: Favicon, Legal & Company Type Admin UI** — Admin UI for favicon upload, legal page content editing, and service delivery model selector; public /privacy and /terms pages served from DB (completed 2026-04-30)
-- [ ] **Phase 18: Admin Calendar Improvements** — Fix time-line alignment, widen Create Booking modal, support multiple services per booking, editable end time, conditional address field, and brand button style
+- [x] **Phase 18: Admin Calendar Improvements** — Fix time-line alignment, widen Create Booking modal, support multiple services per booking, editable end time, conditional address field, and brand button style (completed 2026-04-30)
 - [ ] **Phase 19: Receptionist Booking Flow & Multi-Staff View** — Reshape booking management for service businesses (barbershop, salon, spa) where a receptionist books on behalf of customers and needs to see all staff in parallel: multi-staff calendar view, fast walk-in booking, staff-side schedule visibility
 
 ---
@@ -210,9 +210,9 @@ Plans:
   6. The Create Booking submit button uses the brand yellow background with black bold text and spans the full modal width
 **Plans**: 3 plans
 Plans:
-- [ ] 18-01-PLAN.md — CSS .rbc-label alignment fix (CAL-01)
-- [ ] 18-02-PLAN.md — Modal width + multi-service useFieldArray + always-editable end time (CAL-02, CAL-03, CAL-04, CAL-06)
-- [ ] 18-03-PLAN.md — Conditional address field + human verification checkpoint (CAL-05)
+- [x] 18-01-PLAN.md — CSS .rbc-label alignment fix (CAL-01)
+- [x] 18-02-PLAN.md — Modal width + multi-service useFieldArray + always-editable end time (CAL-02, CAL-03, CAL-04, CAL-06)
+- [x] 18-03-PLAN.md — Conditional address field + human verification checkpoint (CAL-05)
 **UI hint**: yes
 
 ### Phase 19: Receptionist Booking Flow & Multi-Staff View
@@ -238,7 +238,7 @@ Plans:
 | 15. Schema Foundation & Detokenization | 3/3 | Complete    | 2026-04-29 |
 | 16. SEO Meta Injection | 2/3 | Complete    | 2026-04-30 |
 | 17. Favicon, Legal & Company Type Admin UI | 3/3 | Complete    | 2026-04-30 |
-| 18. Admin Calendar Improvements | 0/? | Not started | - |
+| 18. Admin Calendar Improvements | 3/3 | Complete   | 2026-04-30 |
 | 19. Receptionist Booking Flow & Multi-Staff View | 0/? | Not started | - |
 
 ---
