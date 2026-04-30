@@ -229,7 +229,7 @@ Plans:
 
 Plans:
 - [x] 19-01-PLAN.md — DnDCalendar HOC + isByStaff state + By Staff toolbar + resources prop + handleSelectSlot resourceId + 30s polling
-- [ ] 19-02-PLAN.md — storage.updateBooking staffMemberId extension + handleEventDrop + reassignMutation + undo toast
+- [x] 19-02-PLAN.md — storage.updateBooking staffMemberId extension + handleEventDrop + reassignMutation + undo toast
 - [ ] 19-03-PLAN.md — QuickBookModal component + wire into AppointmentsCalendarSection by isQuickBook flag
 - [ ] 19-04-PLAN.md — BookingPage useQueries per-staff availability + staff badge display + human verification checkpoint
 **UI hint**: yes
@@ -244,7 +244,7 @@ Plans:
 | 16. SEO Meta Injection | 2/3 | Complete    | 2026-04-30 |
 | 17. Favicon, Legal & Company Type Admin UI | 3/3 | Complete    | 2026-04-30 |
 | 18. Admin Calendar Improvements | 3/3 | Complete    | 2026-04-30 |
-| 19. Receptionist Booking Flow & Multi-Staff View | 1/4 | In Progress|  |
+| 19. Receptionist Booking Flow & Multi-Staff View | 2/4 | In Progress|  |
 
 ---
 

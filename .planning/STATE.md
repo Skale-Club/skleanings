@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 19-01-PLAN.md
-last_updated: "2026-04-30T18:28:29.394Z"
+stopped_at: Completed 19-02-PLAN.md
+last_updated: "2026-04-30T18:33:18.874Z"
 last_activity: 2026-04-30
 progress:
   total_phases: 5
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-25)
 ## Current Position
 
 Phase: 19 (receptionist-booking-flow-multi-staff-view) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-04-30
 
@@ -69,6 +69,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 17-favicon-legal-company-type-admin-ui P02 | 2m 53s | 2 tasks | 3 files |
 | Phase 17-favicon-legal-company-type-admin-ui P03 | 3min | 2 tasks | 4 files |
 | Phase 19-receptionist-booking-flow-multi-staff-view P01 | 15min | 2 tasks | 1 files |
+| Phase 19-receptionist-booking-flow-multi-staff-view P02 | 3min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -139,6 +140,7 @@ Recent decisions affecting current work:
 - [Phase 17-favicon-legal-company-type-admin-ui]: Legal pages (PrivacyPolicy, TermsOfService) are DB-driven rewrites: hasContent guard before dangerouslySetInnerHTML, LegalEmptyState shows contact info from settings when empty; no DOMPurify per D-14/D-15
 - [Phase 19-receptionist-booking-flow-multi-staff-view]: resourceAccessor/resourceIdAccessor/resourceTitleAccessor implemented as arrow functions — DnDCalendar type contract requires functions, not string literals
 - [Phase 19-receptionist-booking-flow-multi-staff-view]: resourceProps uses empty spread ({}) for non-By-Staff views — avoids static resource props contaminating Month/Week/Day views (Pitfall 2)
+- [Phase 19-receptionist-booking-flow-multi-staff-view]: reassignMutation uses onSuccess callback on mutate() call to access drop target locals for toast message; isGcalBusy early-return guards before any network call
 
 ### Pending Todos
 
@@ -159,6 +161,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-30T18:28:29.386Z
-Stopped at: Completed 19-01-PLAN.md
+Last session: 2026-04-30T18:33:18.863Z
+Stopped at: Completed 19-02-PLAN.md
 Resume file: None
