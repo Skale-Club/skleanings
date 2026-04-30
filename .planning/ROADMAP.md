@@ -147,7 +147,7 @@ Plans:
 - [x] **Phase 16: SEO Meta Injection** — Express middleware reads companySettings at request time and injects title, canonical, Open Graph, Twitter Card, and schema.org JSON-LD into index.html (completed 2026-04-30)
 - [x] **Phase 17: Favicon, Legal & Company Type Admin UI** — Admin UI for favicon upload, legal page content editing, and service delivery model selector; public /privacy and /terms pages served from DB (completed 2026-04-30)
 - [x] **Phase 18: Admin Calendar Improvements** — Fix time-line alignment, widen Create Booking modal, support multiple services per booking, editable end time, conditional address field, and brand button style (completed 2026-04-30)
-- [ ] **Phase 19: Receptionist Booking Flow & Multi-Staff View** — Reshape booking management for service businesses (barbershop, salon, spa) where a receptionist books on behalf of customers and needs to see all staff in parallel: multi-staff calendar view, fast walk-in booking, staff-side schedule visibility
+- [x] **Phase 19: Receptionist Booking Flow & Multi-Staff View** — Reshape booking management for service businesses (barbershop, salon, spa) where a receptionist books on behalf of customers and needs to see all staff in parallel: multi-staff calendar view, fast walk-in booking, staff-side schedule visibility (completed 2026-04-30)
 
 ---
 
@@ -231,7 +231,7 @@ Plans:
 - [x] 19-01-PLAN.md — DnDCalendar HOC + isByStaff state + By Staff toolbar + resources prop + handleSelectSlot resourceId + 30s polling
 - [x] 19-02-PLAN.md — storage.updateBooking staffMemberId extension + handleEventDrop + reassignMutation + undo toast
 - [x] 19-03-PLAN.md — QuickBookModal component + wire into AppointmentsCalendarSection by isQuickBook flag
-- [ ] 19-04-PLAN.md — BookingPage useQueries per-staff availability + staff badge display + human verification checkpoint
+- [x] 19-04-PLAN.md — BookingPage useQueries per-staff availability + staff badge display + human verification checkpoint
 **UI hint**: yes
 
 ---
@@ -244,7 +244,7 @@ Plans:
 | 16. SEO Meta Injection | 2/3 | Complete    | 2026-04-30 |
 | 17. Favicon, Legal & Company Type Admin UI | 3/3 | Complete    | 2026-04-30 |
 | 18. Admin Calendar Improvements | 3/3 | Complete    | 2026-04-30 |
-| 19. Receptionist Booking Flow & Multi-Staff View | 3/4 | In Progress|  |
+| 19. Receptionist Booking Flow & Multi-Staff View | 4/4 | Complete   | 2026-04-30 |
 
 ---
 
