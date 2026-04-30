@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select';
 import { Trash2, Building2, Check, Image, Loader2, MapPin, Plus } from 'lucide-react';
 import { UnifiedServiceAreasManager } from './company/ServiceAreasManager';
+import { LegalBrandingTab } from './LegalBrandingTab';
 
 const normalizeIndustryValue = (value: string) => value.trim().toLowerCase();
 
@@ -436,6 +437,13 @@ export function CompanySettingsSection({ getAccessToken }: { getAccessToken: () 
           </div>
         </div>
       </div>
+
+      <LegalBrandingTab
+        settings={settings}
+        updateField={updateField}
+        getAccessToken={getAccessToken}
+        isSaving={isSaving}
+      />
     </div>
   );
 }
