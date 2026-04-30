@@ -233,7 +233,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 15. Schema Foundation & Detokenization | 3/3 | Complete    | 2026-04-29 |
 | 16. SEO Meta Injection | 2/3 | Complete    | 2026-04-30 |
-| 17. Favicon, Legal & Company Type Admin UI | 3/3 | Complete   | 2026-04-30 |
+| 17. Favicon, Legal & Company Type Admin UI | 3/3 | Complete    | 2026-04-30 |
 | 18. Admin Calendar Improvements | 0/? | Not started | - |
 | 19. Receptionist Booking Flow & Multi-Staff View | 0/? | Not started | - |
 
