@@ -244,7 +244,7 @@ Plans:
 | 16. SEO Meta Injection | 2/3 | Complete    | 2026-04-30 |
 | 17. Favicon, Legal & Company Type Admin UI | 3/3 | Complete    | 2026-04-30 |
 | 18. Admin Calendar Improvements | 3/3 | Complete    | 2026-04-30 |
-| 19. Receptionist Booking Flow & Multi-Staff View | 4/4 | Complete   | 2026-04-30 |
+| 19. Receptionist Booking Flow & Multi-Staff View | 4/4 | Complete    | 2026-04-30 |
 
 ---
 
