@@ -13,7 +13,7 @@ import {
 import { enUS } from 'date-fns/locale';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
@@ -21,8 +21,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock3,
+  Plus,
   RotateCcw,
   SlidersHorizontal,
+  Trash2,
   Users2,
 } from 'lucide-react';
 import {
@@ -38,7 +40,6 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
-  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -49,8 +50,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -80,10 +79,13 @@ const bookingFormSchema = z.object({
   startTime: z.string().min(1),
   endTime: z.string().min(1),
   staffMemberId: z.number().nullable().optional(),
-  serviceId: z.number({ invalid_type_error: 'Select a service' }).int().positive(),
-  quantity: z.number().int().min(1).default(1),
+  services: z.array(
+    z.object({
+      serviceId: z.number({ invalid_type_error: 'Select a service' }).int().positive(),
+      quantity: z.number().int().min(1).default(1),
+    })
+  ).min(1),
   customerNotes: z.string().optional(),
-  endTimeOverride: z.boolean().default(false),
 });
 
 type BookingFormValues = z.infer<typeof bookingFormSchema>;
@@ -551,16 +553,22 @@ export function AppointmentsCalendarSection({
       startTime: '',
       endTime: '',
       staffMemberId: null,
-      serviceId: undefined as unknown as number,
-      quantity: 1,
+      services: [{ serviceId: undefined as unknown as number, quantity: 1 }],
       customerNotes: '',
-      endTimeOverride: false,
     },
   });
+
+  const { fields: serviceFields, append: appendService, remove: removeService } = useFieldArray({
+    control: form.control,
+    name: 'services',
+  });
+
+  const [userEditedEndTime, setUserEditedEndTime] = useState(false);
 
   // Reset form whenever a new slot is clicked
   useEffect(() => {
     if (newBookingSlot) {
+      setUserEditedEndTime(false);
       form.reset({
         customerName: '',
         customerPhone: '',
@@ -570,18 +578,14 @@ export function AppointmentsCalendarSection({
         startTime: newBookingSlot.startTime,
         endTime: '',
         staffMemberId: newBookingSlot.staffMemberId ?? null,
-        serviceId: undefined as unknown as number,
-        quantity: 1,
+        services: [{ serviceId: undefined as unknown as number, quantity: 1 }],
         customerNotes: '',
-        endTimeOverride: false,
       });
     }
   }, [newBookingSlot]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const watchedServiceId = form.watch('serviceId');
-  const watchedQuantity = form.watch('quantity');
+  const watchedServices = form.watch('services');
   const watchedStartTime = form.watch('startTime');
-  const watchedEndTimeOverride = form.watch('endTimeOverride');
 
   // Customer type-ahead search (Plan 14-02)
   type ContactSuggestion = {
@@ -609,35 +613,30 @@ export function AppointmentsCalendarSection({
     staleTime: 30_000,
   });
 
-  const selectedService = useMemo(
-    () => selectableServices.find((s) => s.id === watchedServiceId),
-    [selectableServices, watchedServiceId],
-  );
-
   const computedEndTime = useMemo(() => {
-    if (!selectedService || !watchedStartTime) return '';
-    return addMinutesToHHMM(
-      watchedStartTime,
-      selectedService.durationMinutes * (watchedQuantity || 1),
-    );
-  }, [selectedService, watchedStartTime, watchedQuantity]);
-
-  const computedTotalDurationMinutes = useMemo(() => {
-    if (!selectedService) return 0;
-    return selectedService.durationMinutes * (watchedQuantity || 1);
-  }, [selectedService, watchedQuantity]);
+    if (!watchedStartTime || !watchedServices?.length) return '';
+    const totalMinutes = watchedServices.reduce((sum, row) => {
+      const svc = selectableServices.find((s) => s.id === row.serviceId);
+      return sum + (svc ? svc.durationMinutes * (row.quantity || 1) : 0);
+    }, 0);
+    if (totalMinutes === 0) return '';
+    return addMinutesToHHMM(watchedStartTime, totalMinutes);
+  }, [watchedServices, watchedStartTime, selectableServices]);
 
   const estimatedTotal = useMemo(() => {
-    if (!selectedService) return null;
-    return (Number(selectedService.price) * (watchedQuantity || 1)).toFixed(2);
-  }, [selectedService, watchedQuantity]);
+    const total = watchedServices?.reduce((sum, row) => {
+      const svc = selectableServices.find((s) => s.id === row.serviceId);
+      return sum + (svc ? Number(svc.price) * (row.quantity || 1) : 0);
+    }, 0) ?? 0;
+    return total > 0 ? total.toFixed(2) : null;
+  }, [watchedServices, selectableServices]);
 
-  // Sync computed endTime into the form when override is OFF
+  // Sync computed endTime into the form when admin hasn't manually changed it (D-06)
   useEffect(() => {
-    if (!watchedEndTimeOverride && computedEndTime) {
+    if (!userEditedEndTime && computedEndTime) {
       form.setValue('endTime', computedEndTime, { shouldValidate: false });
     }
-  }, [computedEndTime, watchedEndTimeOverride]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [computedEndTime, userEditedEndTime]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Inline server error (409 conflict, non-Zod 400 messages) — D-16
   const [serverError, setServerError] = useState<string | null>(null);
@@ -706,23 +705,18 @@ export function AppointmentsCalendarSection({
   const onSubmit = (values: BookingFormValues) => {
     setServerError(null);
 
-    if (!selectedService) {
-      form.setError('serviceId', { type: 'manual', message: 'Select a service' });
-      return;
-    }
+    // Derive totalDurationMinutes from startTime/endTime difference (D-07: no endTimeOverride)
+    const [sh, sm] = values.startTime.split(':').map(Number);
+    const [eh, em] = values.endTime.split(':').map(Number);
+    const totalDurationMinutes = Math.max(0, (eh * 60 + em) - (sh * 60 + sm));
 
-    // Compute totalDurationMinutes:
-    //   - When override is OFF: service.durationMinutes × quantity (already in computedTotalDurationMinutes)
-    //   - When override is ON: derive from startTime/endTime difference
-    let totalDurationMinutes = computedTotalDurationMinutes;
-    if (values.endTimeOverride && values.startTime && values.endTime) {
-      const [sh, sm] = values.startTime.split(':').map(Number);
-      const [eh, em] = values.endTime.split(':').map(Number);
-      const diff = (eh * 60 + em) - (sh * 60 + sm);
-      if (diff > 0) totalDurationMinutes = diff;
-    }
-
-    const totalPrice = (Number(selectedService.price) * (values.quantity || 1)).toFixed(2);
+    // Compute totalPrice as sum across all service rows (D-04)
+    const totalPrice = values.services
+      .reduce((sum, row) => {
+        const svc = selectableServices.find((s) => s.id === row.serviceId);
+        return sum + (svc ? Number(svc.price) * (row.quantity || 1) : 0);
+      }, 0)
+      .toFixed(2);
 
     const payload = {
       customerName: values.customerName,
@@ -734,17 +728,14 @@ export function AppointmentsCalendarSection({
       endTime: values.endTime,
       totalDurationMinutes,
       totalPrice,
-      paymentMethod: 'site' as const, // D-11
+      paymentMethod: 'site' as const,
       staffMemberId: values.staffMemberId ?? null,
-      cartItems: [
-        {
-          serviceId: values.serviceId,
-          quantity: values.quantity || 1,
-          // D-02: notes attach to the cart item (server stores in bookingItems.customerNotes)
-          ...(values.customerNotes ? { customerNotes: values.customerNotes } : {}),
-        },
-      ],
-      // D-18: visitorId intentionally omitted
+      // customerNotes attaches to first cart item only (consistent with prior D-02 pattern)
+      cartItems: values.services.map((row, idx) => ({
+        serviceId: row.serviceId,
+        quantity: row.quantity || 1,
+        ...(idx === 0 && values.customerNotes ? { customerNotes: values.customerNotes } : {}),
+      })),
     };
 
     createBookingMutation.mutate(payload);
@@ -1224,67 +1215,94 @@ export function AppointmentsCalendarSection({
                   </FormItem>
                 )} />
 
-                <FormField control={form.control} name="serviceId" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Service</FormLabel>
-                    <Select
-                      onValueChange={(v) => field.onChange(Number(v))}
-                      value={field.value ? String(field.value) : undefined}
-                    >
-                      <FormControl>
-                        <SelectTrigger><SelectValue placeholder="Select a service" /></SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {selectableServices.map((s) => (
-                          <SelectItem key={s.id} value={String(s.id)}>
-                            {s.name} — ${Number(s.price).toFixed(2)} ({s.durationMinutes}m)
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )} />
+                {/* Service rows (CAL-03) */}
+                <div className="space-y-2">
+                  <FormLabel>Services</FormLabel>
+                  {serviceFields.map((field, index) => (
+                    <div key={field.id} className="flex items-end gap-2">
+                      <FormField
+                        control={form.control}
+                        name={`services.${index}.serviceId`}
+                        render={({ field: f }) => (
+                          <FormItem className="flex-1">
+                            <Select
+                              onValueChange={(v) => f.onChange(Number(v))}
+                              value={f.value ? String(f.value) : undefined}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select a service" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {selectableServices.map((s) => (
+                                  <SelectItem key={s.id} value={String(s.id)}>
+                                    {s.name} — ${Number(s.price).toFixed(2)} ({s.durationMinutes}m)
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={`services.${index}.quantity`}
+                        render={({ field: f }) => (
+                          <FormItem className="w-20">
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min={1}
+                                {...f}
+                                onChange={(e) => f.onChange(Number(e.target.value) || 1)}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        disabled={serviceFields.length === 1}
+                        onClick={() => removeService(index)}
+                        className="mb-0.5 shrink-0"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full border-dashed"
+                    onClick={() => appendService({ serviceId: undefined as unknown as number, quantity: 1 })}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add service
+                  </Button>
+                </div>
 
-                <FormField control={form.control} name="quantity" render={({ field }) => (
+                {/* End time: always-editable, auto-fills from computed duration sum (CAL-04) */}
+                <FormField control={form.control} name="endTime" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Quantity</FormLabel>
+                    <FormLabel>End time</FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        min={1}
+                        type="time"
                         {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value) || 1)}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          setUserEditedEndTime(e.target.value !== computedEndTime);
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
-
-                {/* End time: computed read-only by default, editable when override is on */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm">End time</Label>
-                    <FormField control={form.control} name="endTimeOverride" render={({ field }) => (
-                      <div className="flex items-center gap-2 text-xs">
-                        <span className="text-muted-foreground">Adjust end time</span>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} />
-                      </div>
-                    )} />
-                  </div>
-                  {watchedEndTimeOverride ? (
-                    <FormField control={form.control} name="endTime" render={({ field }) => (
-                      <FormItem>
-                        <FormControl><Input type="time" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                  ) : (
-                    <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm font-medium">
-                      {computedEndTime || <span className="text-muted-foreground">Select a service to compute end time</span>}
-                    </div>
-                  )}
-                </div>
 
                 {/* Estimated total */}
                 <div className="flex justify-between rounded-md bg-muted/30 px-3 py-2 text-sm">
