@@ -111,14 +111,14 @@ export function useSEO() {
     setMetaTag('twitter:site', settings.twitterSite);
     setMetaTag('twitter:creator', settings.twitterCreator);
 
-    if (settings.faviconUrl) {
+    if (settings.logoIcon) {
       let favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement | null;
       if (!favicon) {
         favicon = document.createElement('link');
         favicon.rel = 'icon';
         document.head.appendChild(favicon);
       }
-      favicon.href = settings.faviconUrl;
+      favicon.href = settings.logoIcon;
     }
 
     setJsonLdSchema(settings);

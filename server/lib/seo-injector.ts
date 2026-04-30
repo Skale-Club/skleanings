@@ -106,7 +106,7 @@ export function injectSeoMeta(
     "{{TWITTER_SITE}}":         escapeAttr(settings?.twitterSite || ""),
     "{{TWITTER_CREATOR}}":      escapeAttr(settings?.twitterCreator || ""),
     "{{ROBOTS}}":               escapeAttr(settings?.seoRobotsTag || "index, follow"),
-    "{{FAVICON_URL}}":          escapeAttr(settings?.faviconUrl || "/favicon.png"),
+    "{{FAVICON_URL}}":          escapeAttr(settings?.logoIcon || "/favicon.png"),
     // {{COMPANY_NAME_ALT}}: reserved for Phase 17 favicon alt-text — no emit site in client/index.html yet.
     "{{COMPANY_NAME_ALT}}":     escapeAttr(companyName),
     "{{JSON_LD}}":              escapeJsonLd(jsonLd),

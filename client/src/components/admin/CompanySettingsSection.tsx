@@ -441,8 +441,6 @@ export function CompanySettingsSection({ getAccessToken }: { getAccessToken: () 
       <LegalBrandingTab
         settings={settings}
         updateField={updateField}
-        getAccessToken={getAccessToken}
-        isSaving={isSaving}
       />
     </div>
   );

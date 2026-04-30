@@ -188,46 +188,46 @@ function rawJsonLdBody(html) {
   console.log("PASS case7 — D-07 conditional emit (absent on empty)");
 }
 
-// CASE FAV-02 — faviconUrl set: token expands to custom URL
+// CASE FAV-02 — logoIcon set: token expands to custom URL
 {
   const settings = {
     companyName: "Acme",
-    faviconUrl: "https://cdn.example.com/favicon.ico",
+    logoIcon: "https://cdn.example.com/favicon.ico",
   };
   const out = injectSeoMeta(TEMPLATE, settings, REQ);
   assert.ok(
     out.includes('href="https://cdn.example.com/favicon.ico"'),
-    `FAV-02: expected custom faviconUrl in href, got: ${out.match(/link rel="icon"[^>]*/)?.[0]}`
+    `FAV-02: expected custom logoIcon in favicon href, got: ${out.match(/link rel="icon"[^>]*/)?.[0]}`
   );
-  console.log("PASS: FAV-02 — faviconUrl set → custom URL in favicon href");
+  console.log("PASS: FAV-02 — logoIcon set → custom URL in favicon href");
 }
 
-// CASE FAV-03 — faviconUrl empty: token falls back to /favicon.png
+// CASE FAV-03 — logoIcon empty: token falls back to /favicon.png
 {
   const settings = {
     companyName: "Acme",
-    faviconUrl: "",
+    logoIcon: "",
   };
   const out = injectSeoMeta(TEMPLATE, settings, REQ);
   assert.ok(
     out.includes('href="/favicon.png"'),
     `FAV-03: expected /favicon.png fallback in href, got: ${out.match(/link rel="icon"[^>]*/)?.[0]}`
   );
-  console.log("PASS: FAV-03 — faviconUrl empty → /favicon.png fallback");
+  console.log("PASS: FAV-03 — logoIcon empty → /favicon.png fallback");
 }
 
-// CASE FAV-03b — faviconUrl null: token falls back to /favicon.png
+// CASE FAV-03b — logoIcon null: token falls back to /favicon.png
 {
   const settings = {
     companyName: "Acme",
-    faviconUrl: null,
+    logoIcon: null,
   };
   const out = injectSeoMeta(TEMPLATE, settings, REQ);
   assert.ok(
     out.includes('href="/favicon.png"'),
-    `FAV-03b: expected /favicon.png fallback for null faviconUrl, got: ${out.match(/link rel="icon"[^>]*/)?.[0]}`
+    `FAV-03b: expected /favicon.png fallback for null logoIcon, got: ${out.match(/link rel="icon"[^>]*/)?.[0]}`
   );
-  console.log("PASS: FAV-03b — faviconUrl null → /favicon.png fallback");
+  console.log("PASS: FAV-03b — logoIcon null → /favicon.png fallback");
 }
 
 console.log("\nAll inject.test.mjs cases PASSED.");
