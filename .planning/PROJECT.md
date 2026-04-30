@@ -41,10 +41,11 @@ Customers can discover, book, and pay for cleaning services online without calli
 - ✓ Schema Foundation & Detokenization — 3 new white-label columns in companySettings, all hardcoded "Skleanings" strings removed from frontend and server, ThemeContext reads companyName/email from DB, visitor localStorage key derived from company slug, OpenRouter blog titles read from DB — Phase 15
 - ✓ SEO Meta Injection — Express middleware injects tenant-specific title, canonical, OG, Twitter Card, and LocalBusiness JSON-LD from companySettings into every HTML response; client/index.html fully retemplated with {{TOKEN}} markers (SEO-05); vercel.json routes HTML through Express (D-01); shared buildLocalBusinessSchema() used by both server injector and client useSEO hook — Phase 16
 - ✓ Favicon, Legal & Company Type Admin UI — faviconUrl DB column + admin upload, {{FAVICON_URL}} SEO injector token with /favicon.png fallback, service delivery model radio, privacy/terms content textareas in admin "Legal & Branding" card, /privacy-policy and /terms-of-service pages rewritten as DB-driven with graceful empty states — Phase 17
+- ✓ Admin Calendar Improvements — Create Booking modal widened to sm:max-w-2xl, customer name+phone in 2-col grid, useFieldArray multi-service rows with searchable combobox selector (Popover+Command), always-editable end time with auto-fill guard, conditional address field driven by serviceDeliveryModel, brand yellow submit button verified — Phase 18
 
 ### Active
 
-- White-label milestone (v2.0) — Phases 15, 16, 17 complete; human browser verification of favicon upload + legal round-trip pending (requires supabase db push + npm run dev)
+- White-label milestone (v2.0) — Phases 15–18 complete; Phase 19 (Receptionist Booking Flow & Multi-Staff View) is next
 
 ### Out of Scope
 
