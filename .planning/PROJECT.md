@@ -42,10 +42,11 @@ Customers can discover, book, and pay for cleaning services online without calli
 - ✓ SEO Meta Injection — Express middleware injects tenant-specific title, canonical, OG, Twitter Card, and LocalBusiness JSON-LD from companySettings into every HTML response; client/index.html fully retemplated with {{TOKEN}} markers (SEO-05); vercel.json routes HTML through Express (D-01); shared buildLocalBusinessSchema() used by both server injector and client useSEO hook — Phase 16
 - ✓ Favicon, Legal & Company Type Admin UI — faviconUrl DB column + admin upload, {{FAVICON_URL}} SEO injector token with /favicon.png fallback, service delivery model radio, privacy/terms content textareas in admin "Legal & Branding" card, /privacy-policy and /terms-of-service pages rewritten as DB-driven with graceful empty states — Phase 17
 - ✓ Admin Calendar Improvements — Create Booking modal widened to sm:max-w-2xl, customer name+phone in 2-col grid, useFieldArray multi-service rows with searchable combobox selector (Popover+Command), always-editable end time with auto-fill guard, conditional address field driven by serviceDeliveryModel, brand yellow submit button verified — Phase 18
+- ✓ Receptionist Booking Flow & Multi-Staff View — "By Staff" parallel-column calendar view via RBC resources prop, DnDCalendar withDragAndDrop HOC for time+staff drag-to-reassign with undo toast, QuickBookModal for walk-in booking (name+service required, More options collapsible), 30s polling refetchInterval, per-staff availability badges on customer BookingPage step 3 — Phase 19
 
 ### Active
 
-- White-label milestone (v2.0) — Phases 15–18 complete; Phase 19 (Receptionist Booking Flow & Multi-Staff View) is next
+- v2.0 White Label milestone complete (Phases 15–19); human browser verification pending for Phase 19 UAT items (By Staff view, Quick Book flow, drag-to-reassign, customer staff badges)
 
 ### Out of Scope
 
