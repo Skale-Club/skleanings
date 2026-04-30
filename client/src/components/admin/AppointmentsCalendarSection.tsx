@@ -68,10 +68,12 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import { useToast } from '@/hooks/use-toast';
+import { ToastAction } from '@/components/ui/toast';
 import { useCompanySettings } from '@/context/CompanySettingsContext';
 import { apiRequest, authenticatedRequest } from '@/lib/queryClient';
 import { cn } from '@/lib/utils';
 import type { Booking, Service, StaffMember } from '@shared/schema';
+import { QuickBookModal } from './QuickBookModal';
 
 const bookingFormSchema = z.object({
   customerName: z.string().min(2, 'Name is required'),
@@ -742,6 +744,22 @@ export function AppointmentsCalendarSection({
     },
   });
 
+  const reassignMutation = useMutation({
+    mutationFn: async (payload: {
+      id: number;
+      startTime: string;
+      endTime: string;
+      staffMemberId?: number | null;
+    }) => {
+      const { id, ...updates } = payload;
+      const res = await apiRequest('PUT', `/api/bookings/${id}`, updates);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/bookings'] });
+    },
+  });
+
   // Clear serverError when the user starts editing again
   useEffect(() => {
     if (!serverError) return;
@@ -807,6 +825,65 @@ export function AppointmentsCalendarSection({
       staffMemberId: prefilledStaffId,
       isQuickBook: resourceId !== undefined,  // true = Quick Book modal (D-05); false = full form
     });
+  };
+
+  const handleEventDrop = ({
+    event,
+    start,
+    end,
+    resourceId,
+  }: {
+    event: CalendarEvent;
+    start: Date;
+    end: Date;
+    resourceId?: number;
+  }) => {
+    if (event.isGcalBusy) return;  // D-13: gcal blocks are not draggable
+
+    const originalStart = event.start;
+    const originalEnd = event.end;
+    const originalStaffId = event.staffMemberId;
+
+    const newStartTime = format(start, 'HH:mm');
+    const newEndTime = format(end, 'HH:mm');
+    // D-11: resourceId is the target staff column's id; fall back to original if not in By Staff view
+    const newStaffId = resourceId !== undefined ? resourceId : event.staffMemberId;
+
+    const staffName =
+      scopedStaffList.find((s) => s.id === newStaffId)?.firstName ?? 'Staff';
+
+    reassignMutation.mutate(
+      {
+        id: event.bookingId,
+        startTime: newStartTime,
+        endTime: newEndTime,
+        staffMemberId: newStaffId,
+      },
+      {
+        onSuccess: () => {
+          // D-12: undo toast with 5-second window
+          toast({
+            description: `${staffName} — ${format(start, 'h:mm a')} ✓`,
+            action: (
+              <ToastAction
+                altText="Undo"
+                onClick={() => {
+                  reassignMutation.mutate({
+                    id: event.bookingId,
+                    startTime: format(originalStart, 'HH:mm'),
+                    endTime: format(originalEnd, 'HH:mm'),
+                    staffMemberId: originalStaffId,
+                  });
+                }}
+              >
+                Undo
+              </ToastAction>
+            ),
+            duration: 5000,
+          });
+        },
+      },
+    );
   };
 
   const eventStyleGetter = (event: CalendarEvent) => {
@@ -1021,7 +1098,7 @@ export function AppointmentsCalendarSection({
           <DnDCalendar
             {...resourceProps}
             draggableAccessor={((event: CalendarEvent) => !event.isGcalBusy) as any}
-            onEventDrop={() => {}}
+            onEventDrop={handleEventDrop as any}
             className="appointments-calendar"
             localizer={localizer}
             events={allEvents}
@@ -1143,7 +1220,27 @@ export function AppointmentsCalendarSection({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!newBookingSlot} onOpenChange={() => setNewBookingSlot(null)}>
+      {/* Quick Book modal — By Staff column slot click (D-05) */}
+      {newBookingSlot?.isQuickBook && (
+        <QuickBookModal
+          open={newBookingSlot.isQuickBook}
+          slot={newBookingSlot}
+          staffList={scopedStaffList}
+          onClose={() => setNewBookingSlot(null)}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['/api/bookings'] });
+            toast({ title: 'Booking created' });
+          }}
+          getAccessToken={getAccessToken}
+          onOpenFullForm={() => {
+            // Switch to full form: keep slot data, set isQuickBook=false
+            setNewBookingSlot((prev) => prev ? { ...prev, isQuickBook: false } : null);
+          }}
+        />
+      )}
+
+      {/* Full Create Booking modal — regular slot click or "Full form →" from Quick Book */}
+      <Dialog open={!!newBookingSlot && !newBookingSlot.isQuickBook} onOpenChange={() => setNewBookingSlot(null)}>
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create Booking</DialogTitle>
