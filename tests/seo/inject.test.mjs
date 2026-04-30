@@ -8,6 +8,7 @@ const TEMPLATE = `<!DOCTYPE html><html><head>
   <title>{{SEO_TITLE}}</title>
   <meta name="description" content="{{SEO_DESCRIPTION}}" />
   <link rel="canonical" href="{{CANONICAL_URL}}" />
+  <link rel="icon" href="{{FAVICON_URL}}" />
   <meta property="og:title" content="{{SEO_TITLE}}" />
   {{OG_IMAGE_BLOCK}}
   <meta property="og:url" content="{{CANONICAL_URL}}" />
@@ -185,6 +186,48 @@ function rawJsonLdBody(html) {
   // Sanity: tokens still all replaced (no leftover {{...}} markers).
   assert.ok(!out.includes("{{"), "case7: no unreplaced markers (block-tokens correctly emit empty string)");
   console.log("PASS case7 — D-07 conditional emit (absent on empty)");
+}
+
+// CASE FAV-02 — faviconUrl set: token expands to custom URL
+{
+  const settings = {
+    companyName: "Acme",
+    faviconUrl: "https://cdn.example.com/favicon.ico",
+  };
+  const out = injectSeoMeta(TEMPLATE, settings, REQ);
+  assert.ok(
+    out.includes('href="https://cdn.example.com/favicon.ico"'),
+    `FAV-02: expected custom faviconUrl in href, got: ${out.match(/link rel="icon"[^>]*/)?.[0]}`
+  );
+  console.log("PASS: FAV-02 — faviconUrl set → custom URL in favicon href");
+}
+
+// CASE FAV-03 — faviconUrl empty: token falls back to /favicon.png
+{
+  const settings = {
+    companyName: "Acme",
+    faviconUrl: "",
+  };
+  const out = injectSeoMeta(TEMPLATE, settings, REQ);
+  assert.ok(
+    out.includes('href="/favicon.png"'),
+    `FAV-03: expected /favicon.png fallback in href, got: ${out.match(/link rel="icon"[^>]*/)?.[0]}`
+  );
+  console.log("PASS: FAV-03 — faviconUrl empty → /favicon.png fallback");
+}
+
+// CASE FAV-03b — faviconUrl null: token falls back to /favicon.png
+{
+  const settings = {
+    companyName: "Acme",
+    faviconUrl: null,
+  };
+  const out = injectSeoMeta(TEMPLATE, settings, REQ);
+  assert.ok(
+    out.includes('href="/favicon.png"'),
+    `FAV-03b: expected /favicon.png fallback for null faviconUrl, got: ${out.match(/link rel="icon"[^>]*/)?.[0]}`
+  );
+  console.log("PASS: FAV-03b — faviconUrl null → /favicon.png fallback");
 }
 
 console.log("\nAll inject.test.mjs cases PASSED.");
