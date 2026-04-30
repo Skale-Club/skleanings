@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 19-02-PLAN.md
-last_updated: "2026-04-30T18:33:18.874Z"
+stopped_at: Completed 19-03-PLAN.md
+last_updated: "2026-04-30T18:36:23.876Z"
 last_activity: 2026-04-30
 progress:
   total_phases: 5
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-25)
 ## Current Position
 
 Phase: 19 (receptionist-booking-flow-multi-staff-view) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-04-30
 
@@ -70,6 +70,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 17-favicon-legal-company-type-admin-ui P03 | 3min | 2 tasks | 4 files |
 | Phase 19-receptionist-booking-flow-multi-staff-view P01 | 15min | 2 tasks | 1 files |
 | Phase 19-receptionist-booking-flow-multi-staff-view P02 | 3min | 2 tasks | 2 files |
+| Phase 19-receptionist-booking-flow-multi-staff-view P03 | 6min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -141,6 +142,8 @@ Recent decisions affecting current work:
 - [Phase 19-receptionist-booking-flow-multi-staff-view]: resourceAccessor/resourceIdAccessor/resourceTitleAccessor implemented as arrow functions — DnDCalendar type contract requires functions, not string literals
 - [Phase 19-receptionist-booking-flow-multi-staff-view]: resourceProps uses empty spread ({}) for non-By-Staff views — avoids static resource props contaminating Month/Week/Day views (Pitfall 2)
 - [Phase 19-receptionist-booking-flow-multi-staff-view]: reassignMutation uses onSuccess callback on mutate() call to access drop target locals for toast message; isGcalBusy early-return guards before any network call
+- [Phase 19-receptionist-booking-flow-multi-staff-view]: Walk-in phone defaults to '' not null — DB notNull constraint, Quick Book schema makes it optional (D-09)
+- [Phase 19-receptionist-booking-flow-multi-staff-view]: quickBookSchema uses z.string().optional().or(z.literal('')) for phone/email — allows both undefined and empty string from controlled inputs
 
 ### Pending Todos
 
@@ -161,6 +164,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-30T18:33:18.863Z
-Stopped at: Completed 19-02-PLAN.md
+Last session: 2026-04-30T18:36:23.866Z
+Stopped at: Completed 19-03-PLAN.md
 Resume file: None
