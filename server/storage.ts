@@ -781,6 +781,7 @@ export class DatabaseStorage implements IStorage {
       status: string;
       paymentStatus: string;
       totalPrice: string;
+      staffMemberId: number | null;
     }> & {
       bookingItems?: Array<{
         serviceId: number;
