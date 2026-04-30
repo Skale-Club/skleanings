@@ -143,10 +143,10 @@ Plans:
 
 ## Phases
 
-- [x] **Phase 15: Schema Foundation & Detokenization** — Add new companySettings fields to DB, run migration, replace all hardcoded brand strings in frontend and server code (completed 2026-04-29)
-- [x] **Phase 16: SEO Meta Injection** — Express middleware reads companySettings at request time and injects title, canonical, Open Graph, Twitter Card, and schema.org JSON-LD into index.html (completed 2026-04-30)
-- [x] **Phase 17: Favicon, Legal & Company Type Admin UI** — Admin UI for favicon upload, legal page content editing, and service delivery model selector; public /privacy and /terms pages served from DB (completed 2026-04-30)
-- [x] **Phase 18: Admin Calendar Improvements** — Fix time-line alignment, widen Create Booking modal, support multiple services per booking, editable end time, conditional address field, and brand button style (completed 2026-04-30)
+- [x] **Phase 15: Schema Foundation & Detokenization** — Add new companySettings fields to DB, run migration, replace all hardcoded brand strings in frontend and server code (completed 2026-04-29)
+- [x] **Phase 16: SEO Meta Injection** — Express middleware reads companySettings at request time and injects title, canonical, Open Graph, Twitter Card, and schema.org JSON-LD into index.html (completed 2026-04-30)
+- [x] **Phase 17: Favicon, Legal & Company Type Admin UI** — Admin UI for favicon upload, legal page content editing, and service delivery model selector; public /privacy and /terms pages served from DB (completed 2026-04-30)
+- [x] **Phase 18: Admin Calendar Improvements** — Fix time-line alignment, widen Create Booking modal, support multiple services per booking, editable end time, conditional address field, and brand button style (completed 2026-04-30)
 - [ ] **Phase 19: Receptionist Booking Flow & Multi-Staff View** — Reshape booking management for service businesses (barbershop, salon, spa) where a receptionist books on behalf of customers and needs to see all staff in parallel: multi-staff calendar view, fast walk-in booking, staff-side schedule visibility
 
 ---
@@ -216,17 +216,22 @@ Plans:
 **UI hint**: yes
 
 ### Phase 19: Receptionist Booking Flow & Multi-Staff View
-**Goal**: A receptionist at a barbershop, salon, or spa can run the daily booking floor from a single screen — see every staff member's schedule in parallel, book walk-ins in seconds without leaving the calendar, reassign appointments between staff with a drag, and hand the chair off to whoever is free next. Customer-side booking flow gets equivalent improvements (clear staff selection, real-time availability across the team, calendar that mirrors what reception sees).
+**Goal**: A receptionist at a barbershop, salon, or spa can run the daily booking floor from a single screen — see every staff member's schedule in parallel, book walk-ins in seconds without leaving the calendar, reassign appointments between staff with a drag, and hand the chair off to whoever is free next. Customer-side booking flow gets equivalent improvements (clear staff selection, real-time availability across the team).
 **Depends on**: Phase 18 (admin calendar must be production-ready first)
-**Requirements**: TBD (gather during /gsd:discuss-phase 19 — domain-specific UX requirements for service businesses with simultaneous-staff workflows)
-**Success Criteria** (what must be TRUE — initial draft, refine in discuss-phase):
-  1. The admin calendar has a "by staff" view showing every active staff member as a vertical column with their day's schedule — no need to filter or switch staff to see overlap
-  2. A receptionist can create a booking from the multi-staff view in under 30 seconds for a known service + walk-in customer (search/create customer + pick service + pick staff column = booked)
-  3. An appointment can be moved between staff via drag-and-drop in the multi-staff view; the booking record reflects the new staff assignment immediately
-  4. The customer-facing booking flow lets customers see staff availability across the whole team for a given service + time window — not just one staff at a time
-  5. Real-time updates: when a receptionist books a slot, any other admin/customer viewing the same calendar sees the slot become unavailable within seconds (no stale availability)
-  6. Service businesses where any staff can perform any service (e.g., a barbershop) require zero per-staff configuration — the system shows all staff as bookable for every service by default
-**Plans**: TBD
+**Requirements**: D-01 through D-17 (scope captured in 19-CONTEXT.md)
+**Success Criteria** (what must be TRUE):
+  1. The admin calendar has a "By Staff" view showing every active staff member as a vertical column with their day's schedule — no need to filter or switch staff to see overlap
+  2. A receptionist can create a booking from the multi-staff view in under 30 seconds for a known service + walk-in customer (Quick Book: name + service = booked)
+  3. An appointment can be moved between staff via drag-and-drop; the booking record reflects the new staff assignment immediately with a 5-second undo window
+  4. The customer-facing booking flow shows which specific staff members are available for each time slot — customers can see availability across the whole team
+  5. The bookings query polls every 30 seconds so a newly created booking appears on all clients within half a minute
+**Plans**: 4 plans
+
+Plans:
+- [ ] 19-01-PLAN.md — DnDCalendar HOC + isByStaff state + By Staff toolbar + resources prop + handleSelectSlot resourceId + 30s polling
+- [ ] 19-02-PLAN.md — storage.updateBooking staffMemberId extension + handleEventDrop + reassignMutation + undo toast
+- [ ] 19-03-PLAN.md — QuickBookModal component + wire into AppointmentsCalendarSection by isQuickBook flag
+- [ ] 19-04-PLAN.md — BookingPage useQueries per-staff availability + staff badge display + human verification checkpoint
 **UI hint**: yes
 
 ---
@@ -239,7 +244,7 @@ Plans:
 | 16. SEO Meta Injection | 2/3 | Complete    | 2026-04-30 |
 | 17. Favicon, Legal & Company Type Admin UI | 3/3 | Complete    | 2026-04-30 |
 | 18. Admin Calendar Improvements | 3/3 | Complete    | 2026-04-30 |
-| 19. Receptionist Booking Flow & Multi-Staff View | 0/? | Not started | - |
+| 19. Receptionist Booking Flow & Multi-Staff View | 0/4 | Not started | - |
 
 ---
 
