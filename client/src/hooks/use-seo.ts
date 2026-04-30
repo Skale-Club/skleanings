@@ -8,6 +8,7 @@ interface SeoSettings {
   seoDescription: string | null;
   ogImage: string | null;
   logoIcon: string | null;
+  faviconUrl: string | null;
   seoKeywords: string | null;
   seoAuthor: string | null;
   seoCanonicalUrl: string | null;
@@ -110,15 +111,14 @@ export function useSEO() {
     setMetaTag('twitter:site', settings.twitterSite);
     setMetaTag('twitter:creator', settings.twitterCreator);
 
-    if (settings.logoIcon) {
+    if (settings.faviconUrl) {
       let favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement | null;
       if (!favicon) {
         favicon = document.createElement('link');
         favicon.rel = 'icon';
         document.head.appendChild(favicon);
       }
-      favicon.type = 'image/png';
-      favicon.href = settings.logoIcon;
+      favicon.href = settings.faviconUrl;
     }
 
     setJsonLdSchema(settings);
