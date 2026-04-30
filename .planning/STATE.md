@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 17-02-PLAN.md
-last_updated: "2026-04-30T12:25:56.580Z"
+status: verifying
+stopped_at: Completed 17-03-PLAN.md
+last_updated: "2026-04-30T12:27:16.348Z"
 last_activity: 2026-04-30
 progress:
   total_phases: 5
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-25)
 
 Phase: 17 (favicon-legal-company-type-admin-ui) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-30
 
 Progress: [░░░░░░░░░░] 0%
@@ -67,6 +67,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 16-seo-meta-injection P03 | 2m | 2 tasks | 2 files |
 | Phase 17-favicon-legal-company-type-admin-ui P01 | 6min | 2 tasks | 6 files |
 | Phase 17-favicon-legal-company-type-admin-ui P02 | 2m 53s | 2 tasks | 3 files |
+| Phase 17-favicon-legal-company-type-admin-ui P03 | 3min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -133,6 +134,8 @@ Recent decisions affecting current work:
 - [Phase 17-favicon-legal-company-type-admin-ui]: favicon.type=image/png removed from use-seo.ts — browser detects MIME from Supabase Content-Type header; hardcoding blocked SVG/ico formats
 - [Phase 17-favicon-legal-company-type-admin-ui]: logoIcon retained in SeoSettings interface — only favicon href assignment redirected to faviconUrl; logo display unchanged
 - [Phase 17-favicon-legal-company-type-admin-ui]: escapeAttr() wraps faviconUrl in token map — handles special chars in CDN URLs; fallback uses || (falsy) not ?? (nullish) to treat empty string as no favicon set
+- [Phase 17-favicon-legal-company-type-admin-ui]: LegalBrandingTab uploads favicon via authenticatedRequest + updateField('faviconUrl') — no prop-drilling of saveSettings; null guard required before upload (TypeScript)
+- [Phase 17-favicon-legal-company-type-admin-ui]: Legal pages (PrivacyPolicy, TermsOfService) are DB-driven rewrites: hasContent guard before dangerouslySetInnerHTML, LegalEmptyState shows contact info from settings when empty; no DOMPurify per D-14/D-15
 
 ### Pending Todos
 
@@ -153,6 +156,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-30T12:25:56.561Z
-Stopped at: Completed 17-02-PLAN.md
+Last session: 2026-04-30T12:27:16.332Z
+Stopped at: Completed 17-03-PLAN.md
 Resume file: None
