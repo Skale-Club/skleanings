@@ -171,22 +171,29 @@ function SidebarSortableItem({
 
   return (
     <SidebarMenuItem ref={setNodeRef} style={style}>
-      <SidebarMenuButton
-        isActive={isActive}
-        onClick={() => {
-          onSelect();
-          if (isMobile) {
-            setOpenMobile(false);
-          }
-        }}
-        className="w-full justify-start group/item"
-      >
-        <button type="button" {...attributes} {...listeners} className="mr-2 cursor-grab active:cursor-grabbing opacity-0 group-hover/item:opacity-100 focus:opacity-100 transition-opacity">
+      <div className="flex items-center w-full group/item">
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          className="ml-1 mr-1 p-1 cursor-grab active:cursor-grabbing opacity-0 group-hover/item:opacity-100 focus:opacity-100 transition-opacity rounded"
+        >
           <GripVertical className="w-3.5 h-3.5 text-muted-foreground" />
         </button>
-        <item.icon className="w-4 h-4" />
-        <span>{item.title}</span>
-      </SidebarMenuButton>
+        <SidebarMenuButton
+          isActive={isActive}
+          onClick={() => {
+            onSelect();
+            if (isMobile) {
+              setOpenMobile(false);
+            }
+          }}
+          className="flex-1 justify-start"
+        >
+          <item.icon className="w-4 h-4" />
+          <span>{item.title}</span>
+        </SidebarMenuButton>
+      </div>
     </SidebarMenuItem>
   );
 }
