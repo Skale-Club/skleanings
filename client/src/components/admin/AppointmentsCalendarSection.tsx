@@ -62,6 +62,7 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import { useToast } from '@/hooks/use-toast';
+import { useCompanySettings } from '@/context/CompanySettingsContext';
 import { apiRequest, authenticatedRequest } from '@/lib/queryClient';
 import { cn } from '@/lib/utils';
 import type { Booking, Service, StaffMember } from '@shared/schema';
@@ -74,7 +75,7 @@ const bookingFormSchema = z.object({
     .email('Invalid email')
     .optional()
     .or(z.literal('')),
-  customerAddress: z.string().min(3, 'Address is required'),
+  customerAddress: z.string().optional().or(z.literal('')),
   bookingDate: z.string().min(1),
   startTime: z.string().min(1),
   endTime: z.string().min(1),
@@ -532,6 +533,11 @@ export function AppointmentsCalendarSection({
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { settings: companySettings } = useCompanySettings();
+  const showAddressField =
+    companySettings?.serviceDeliveryModel == null ||
+    companySettings.serviceDeliveryModel === 'at-customer' ||
+    companySettings.serviceDeliveryModel === 'both';
 
   // Active services for the service dropdown
   const { data: services = [] } = useQuery<Service[]>({
@@ -586,6 +592,13 @@ export function AppointmentsCalendarSection({
 
   const watchedServices = form.watch('services');
   const watchedStartTime = form.watch('startTime');
+
+  // Clear customerAddress when field is hidden (D-09)
+  useEffect(() => {
+    if (!showAddressField) {
+      form.setValue('customerAddress', '', { shouldValidate: false });
+    }
+  }, [showAddressField]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Customer type-ahead search (Plan 14-02)
   type ContactSuggestion = {
@@ -1207,13 +1220,15 @@ export function AppointmentsCalendarSection({
                   </FormItem>
                 )} />
 
-                <FormField control={form.control} name="customerAddress" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Address</FormLabel>
-                    <FormControl><Input {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
+                {showAddressField && (
+                  <FormField control={form.control} name="customerAddress" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Address</FormLabel>
+                      <FormControl><Input {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                )}
 
                 {/* Service rows (CAL-03) */}
                 <div className="space-y-2">
