@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
 import {
   addDays,
@@ -18,8 +18,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
   CalendarDays,
+  Check,
   ChevronLeft,
   ChevronRight,
+  ChevronsUpDown,
   Clock3,
   Plus,
   RotateCcw,
@@ -58,6 +60,7 @@ import {
   Command,
   CommandEmpty,
   CommandGroup,
+  CommandInput,
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
@@ -570,6 +573,7 @@ export function AppointmentsCalendarSection({
   });
 
   const [userEditedEndTime, setUserEditedEndTime] = useState(false);
+  const [openServiceIdx, setOpenServiceIdx] = useState<number | null>(null);
 
   // Reset form whenever a new slot is clicked
   useEffect(() => {
@@ -645,11 +649,13 @@ export function AppointmentsCalendarSection({
   }, [watchedServices, selectableServices]);
 
   // Sync computed endTime into the form when admin hasn't manually changed it (D-06)
+  // Deps intentionally exclude userEditedEndTime — we only want this to fire when
+  // the computed value changes, not when the user's edited flag changes (avoids race overwrite)
   useEffect(() => {
     if (!userEditedEndTime && computedEndTime) {
       form.setValue('endTime', computedEndTime, { shouldValidate: false });
     }
-  }, [computedEndTime, userEditedEndTime]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [computedEndTime]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Inline server error (409 conflict, non-Zod 400 messages) — D-16
   const [serverError, setServerError] = useState<string | null>(null);
@@ -1240,23 +1246,56 @@ export function AppointmentsCalendarSection({
                         name={`services.${index}.serviceId`}
                         render={({ field: f }) => (
                           <FormItem className="flex-1">
-                            <Select
-                              onValueChange={(v) => f.onChange(Number(v))}
-                              value={f.value ? String(f.value) : undefined}
+                            <Popover
+                              open={openServiceIdx === index}
+                              onOpenChange={(o) => setOpenServiceIdx(o ? index : null)}
                             >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select a service" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {selectableServices.map((s) => (
-                                  <SelectItem key={s.id} value={String(s.id)}>
-                                    {s.name} — ${Number(s.price).toFixed(2)} ({s.durationMinutes}m)
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    className={cn(
+                                      'w-full justify-between font-normal',
+                                      !f.value && 'text-muted-foreground'
+                                    )}
+                                  >
+                                    {f.value
+                                      ? selectableServices.find((s) => s.id === f.value)?.name ?? 'Select a service'
+                                      : 'Select a service'}
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-[300px] p-0" align="start">
+                                <Command>
+                                  <CommandInput placeholder="Search service..." />
+                                  <CommandList>
+                                    <CommandEmpty>No service found.</CommandEmpty>
+                                    <CommandGroup>
+                                      {selectableServices.map((s) => (
+                                        <CommandItem
+                                          key={s.id}
+                                          value={s.name}
+                                          onSelect={() => {
+                                            f.onChange(s.id);
+                                            setOpenServiceIdx(null);
+                                          }}
+                                        >
+                                          <Check
+                                            className={cn(
+                                              'mr-2 h-4 w-4',
+                                              f.value === s.id ? 'opacity-100' : 'opacity-0'
+                                            )}
+                                          />
+                                          {s.name} — ${Number(s.price).toFixed(2)} ({s.durationMinutes}m)
+                                        </CommandItem>
+                                      ))}
+                                    </CommandGroup>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -1311,7 +1350,7 @@ export function AppointmentsCalendarSection({
                         {...field}
                         onChange={(e) => {
                           field.onChange(e);
-                          setUserEditedEndTime(e.target.value !== computedEndTime);
+                          setUserEditedEndTime(true);
                         }}
                       />
                     </FormControl>
