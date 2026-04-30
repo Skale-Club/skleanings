@@ -144,7 +144,7 @@ Plans:
 ## Phases
 
 - [x] **Phase 15: Schema Foundation & Detokenization** — Add new companySettings fields to DB, run migration, replace all hardcoded brand strings in frontend and server code (completed 2026-04-29)
-- [ ] **Phase 16: SEO Meta Injection** — Express middleware reads companySettings at request time and injects title, canonical, Open Graph, Twitter Card, and schema.org JSON-LD into index.html
+- [x] **Phase 16: SEO Meta Injection** — Express middleware reads companySettings at request time and injects title, canonical, Open Graph, Twitter Card, and schema.org JSON-LD into index.html (completed 2026-04-30)
 - [ ] **Phase 17: Favicon, Legal & Company Type Admin UI** — Admin UI for favicon upload, legal page content editing, and service delivery model selector; public /privacy and /terms pages served from DB
 - [ ] **Phase 18: Admin Calendar Improvements** — Fix time-line alignment, widen Create Booking modal, support multiple services per booking, editable end time, conditional address field, and brand button style
 - [ ] **Phase 19: Receptionist Booking Flow & Multi-Staff View** — Reshape booking management for service businesses (barbershop, salon, spa) where a receptionist books on behalf of customers and needs to see all staff in parallel: multi-staff calendar view, fast walk-in booking, staff-side schedule visibility
@@ -232,7 +232,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 15. Schema Foundation & Detokenization | 3/3 | Complete    | 2026-04-29 |
-| 16. SEO Meta Injection | 2/3 | In Progress|  |
+| 16. SEO Meta Injection | 2/3 | Complete    | 2026-04-30 |
 | 17. Favicon, Legal & Company Type Admin UI | 0/? | Not started | - |
 | 18. Admin Calendar Improvements | 0/? | Not started | - |
 | 19. Receptionist Booking Flow & Multi-Staff View | 0/? | Not started | - |
