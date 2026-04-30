@@ -1072,7 +1072,7 @@ export function AppointmentsCalendarSection({
       </Dialog>
 
       <Dialog open={!!newBookingSlot} onOpenChange={() => setNewBookingSlot(null)}>
-        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create Booking</DialogTitle>
           </DialogHeader>
@@ -1127,83 +1127,86 @@ export function AppointmentsCalendarSection({
                   />
                 )}
 
-                <FormField
-                  control={form.control}
-                  name="customerName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Customer name</FormLabel>
-                      <Popover
-                        open={contactSearchOpen && debouncedContactSearch.trim().length >= 2}
-                        onOpenChange={setContactSearchOpen}
-                      >
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Input
-                              placeholder="Type to search or enter new"
-                              {...field}
-                              onFocus={() => {
-                                if (field.value && field.value.trim().length >= 2) setContactSearchOpen(true);
-                              }}
-                              onChange={(e) => {
-                                field.onChange(e);
-                                setContactSearchOpen(e.target.value.trim().length >= 2);
-                              }}
-                              autoComplete="off"
-                            />
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent
-                          align="start"
-                          className="w-[--radix-popover-trigger-width] p-0"
-                          onOpenAutoFocus={(e) => e.preventDefault()}
+                {/* Customer name + phone on one row (D-11) */}
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="customerName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Customer name</FormLabel>
+                        <Popover
+                          open={contactSearchOpen && debouncedContactSearch.trim().length >= 2}
+                          onOpenChange={setContactSearchOpen}
                         >
-                          <Command shouldFilter={false}>
-                            <CommandList>
-                              {contactsLoading ? (
-                                <div className="p-3 text-sm text-muted-foreground">Searching…</div>
-                              ) : contactSuggestions.length === 0 ? (
-                                <CommandEmpty>No matches — type a new name to create</CommandEmpty>
-                              ) : (
-                                <CommandGroup heading="Existing customers">
-                                  {contactSuggestions.map((c) => (
-                                    <CommandItem
-                                      key={c.id}
-                                      value={`${c.id}-${c.name}`}
-                                      onSelect={() => {
-                                        form.setValue('customerName', c.name, { shouldValidate: true });
-                                        form.setValue('customerPhone', c.phone ?? '', { shouldValidate: true });
-                                        form.setValue('customerEmail', c.email ?? '', { shouldValidate: true });
-                                        form.setValue('customerAddress', c.address ?? '', { shouldValidate: true });
-                                        setContactSearchOpen(false);
-                                      }}
-                                      className="flex flex-col items-start gap-0.5"
-                                    >
-                                      <span className="font-medium">{c.name}</span>
-                                      <span className="text-xs text-muted-foreground">
-                                        {c.phone ?? 'no phone'}
-                                        {c.email ? ` · ${c.email}` : ''}
-                                      </span>
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              )}
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Input
+                                placeholder="Type to search or enter new"
+                                {...field}
+                                onFocus={() => {
+                                  if (field.value && field.value.trim().length >= 2) setContactSearchOpen(true);
+                                }}
+                                onChange={(e) => {
+                                  field.onChange(e);
+                                  setContactSearchOpen(e.target.value.trim().length >= 2);
+                                }}
+                                autoComplete="off"
+                              />
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            align="start"
+                            className="w-[--radix-popover-trigger-width] p-0"
+                            onOpenAutoFocus={(e) => e.preventDefault()}
+                          >
+                            <Command shouldFilter={false}>
+                              <CommandList>
+                                {contactsLoading ? (
+                                  <div className="p-3 text-sm text-muted-foreground">Searching…</div>
+                                ) : contactSuggestions.length === 0 ? (
+                                  <CommandEmpty>No matches — type a new name to create</CommandEmpty>
+                                ) : (
+                                  <CommandGroup heading="Existing customers">
+                                    {contactSuggestions.map((c) => (
+                                      <CommandItem
+                                        key={c.id}
+                                        value={`${c.id}-${c.name}`}
+                                        onSelect={() => {
+                                          form.setValue('customerName', c.name, { shouldValidate: true });
+                                          form.setValue('customerPhone', c.phone ?? '', { shouldValidate: true });
+                                          form.setValue('customerEmail', c.email ?? '', { shouldValidate: true });
+                                          form.setValue('customerAddress', c.address ?? '', { shouldValidate: true });
+                                          setContactSearchOpen(false);
+                                        }}
+                                        className="flex flex-col items-start gap-0.5"
+                                      >
+                                        <span className="font-medium">{c.name}</span>
+                                        <span className="text-xs text-muted-foreground">
+                                          {c.phone ?? 'no phone'}
+                                          {c.email ? ` · ${c.email}` : ''}
+                                        </span>
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                )}
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField control={form.control} name="customerPhone" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone</FormLabel>
+                      <FormControl><Input {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
-                  )}
-                />
-
-                <FormField control={form.control} name="customerPhone" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone</FormLabel>
-                    <FormControl><Input {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
+                  )} />
+                </div>
 
                 <FormField control={form.control} name="customerEmail" render={({ field }) => (
                   <FormItem>
