@@ -51,6 +51,10 @@ export function CompanySettingsSection({ getAccessToken }: { getAccessToken: () 
     timeZone: 'America/New_York',
     businessHours: DEFAULT_BUSINESS_HOURS,
     minimumBookingValue: '0',
+    faviconUrl: '',
+    serviceDeliveryModel: 'at-customer',
+    privacyPolicyContent: '',
+    termsOfServiceContent: '',
   });
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);

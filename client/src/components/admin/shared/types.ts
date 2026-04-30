@@ -58,6 +58,10 @@ export interface CompanySettingsData {
   timeZone: string | null;
   businessHours: BusinessHours | null;
   minimumBookingValue: string | null;
+  faviconUrl: string | null;
+  serviceDeliveryModel: string | null;
+  privacyPolicyContent: string | null;
+  termsOfServiceContent: string | null;
 }
 
 export interface SEOSettingsData {

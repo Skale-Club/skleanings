@@ -59,6 +59,10 @@ const publicCompanySettingsFallback = {
     ga4Enabled: false,
     facebookPixelEnabled: false,
     homepageContent: {},
+    faviconUrl: "",
+    serviceDeliveryModel: "at-customer",
+    privacyPolicyContent: "",
+    termsOfServiceContent: "",
 };
 
 // Upload endpoint using Supabase Storage
