@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
+import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 import {
   addDays,
   endOfMonth,
@@ -136,6 +139,8 @@ const VIEW_LABELS: Record<string, string> = {
 const STATUSES = ['pending', 'confirmed', 'completed', 'cancelled'];
 const DEFAULT_CALENDAR_VIEW = Views.WEEK;
 const DEFAULT_SCROLL_TIME = new Date(1970, 0, 1, 8, 0, 0);
+
+const DnDCalendar = withDragAndDrop(Calendar);
 
 interface CalendarEvent {
   bookingId: number;
@@ -409,6 +414,7 @@ export function AppointmentsCalendarSection({
       if (!res.ok) return [];
       return res.json();
     },
+    refetchInterval: 30_000,  // D-14: 30-second polling for receptionist workflow
   });
 
   const { data: staffList = [] } = useQuery<StaffMember[]>({
