@@ -40,10 +40,11 @@ Customers can discover, book, and pay for cleaning services online without calli
 - ✓ Conversions tab (last-touch event list with source filter + date range), Visitor Journey slide-over (first/last-touch blocks, influence indicator, conversion event), GHL UTM custom field sync (utm_first/last_source/campaign written fire-and-forget on booking) — Phase 13
 - ✓ Schema Foundation & Detokenization — 3 new white-label columns in companySettings, all hardcoded "Skleanings" strings removed from frontend and server, ThemeContext reads companyName/email from DB, visitor localStorage key derived from company slug, OpenRouter blog titles read from DB — Phase 15
 - ✓ SEO Meta Injection — Express middleware injects tenant-specific title, canonical, OG, Twitter Card, and LocalBusiness JSON-LD from companySettings into every HTML response; client/index.html fully retemplated with {{TOKEN}} markers (SEO-05); vercel.json routes HTML through Express (D-01); shared buildLocalBusinessSchema() used by both server injector and client useSEO hook — Phase 16
+- ✓ Favicon, Legal & Company Type Admin UI — faviconUrl DB column + admin upload, {{FAVICON_URL}} SEO injector token with /favicon.png fallback, service delivery model radio, privacy/terms content textareas in admin "Legal & Branding" card, /privacy-policy and /terms-of-service pages rewritten as DB-driven with graceful empty states — Phase 17
 
 ### Active
 
-- Server-side SEO/meta injection — Phase 16 complete (human curl verification pending against live site)
+- White-label milestone (v2.0) — Phases 15, 16, 17 complete; human browser verification of favicon upload + legal round-trip pending (requires supabase db push + npm run dev)
 
 ### Out of Scope
 
@@ -101,4 +102,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-29 after Phase 15 complete (Schema Foundation & Detokenization — v2.0 White Label milestone)*
+*Last updated: 2026-04-30 after Phase 17 complete (Favicon, Legal & Company Type Admin UI — v2.0 White Label milestone)*
