@@ -134,6 +134,7 @@ const VIEW_LABELS: Record<string, string> = {
   month: 'Month',
   week: 'Week',
   day: 'Day',
+  'by-staff': 'By Staff',
 };
 
 const STATUSES = ['pending', 'confirmed', 'completed', 'cancelled'];
@@ -194,6 +195,8 @@ function CalendarToolbar({
   view,
   views,
   filterControl,
+  isByStaff,
+  onByStaff,
 }: {
   label: string;
   onNavigate: (action: 'PREV' | 'NEXT' | 'TODAY') => void;
@@ -201,6 +204,8 @@ function CalendarToolbar({
   view: string;
   views: string[];
   filterControl?: ReactNode;
+  isByStaff?: boolean;
+  onByStaff?: (active: boolean) => void;
 }) {
   return (
     <div className="appointments-calendar-toolbar">
@@ -249,6 +254,21 @@ function CalendarToolbar({
               {VIEW_LABELS[calendarView] ?? calendarView}
             </button>
           ))}
+          {onByStaff && (
+            <button
+              type="button"
+              onClick={() => onByStaff(!isByStaff)}
+              className={cn(
+                'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
+                isByStaff
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+              )}
+            >
+              <Users2 className="h-3.5 w-3.5" />
+              By Staff
+            </button>
+          )}
         </div>
         <Button
           type="button"
@@ -373,6 +393,7 @@ export function AppointmentsCalendarSection({
   const [, setLocation] = useLocation();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState<string>(DEFAULT_CALENDAR_VIEW);
+  const [isByStaff, setIsByStaff] = useState(false);
   const [hiddenStaff, setHiddenStaff] = useState<Set<number>>(new Set());
   const [hiddenStatuses, setHiddenStatuses] = useState<Set<string>>(new Set());
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
@@ -380,6 +401,7 @@ export function AppointmentsCalendarSection({
     date: string;
     startTime: string;
     staffMemberId?: number;
+    isQuickBook?: boolean;
   } | null>(null);
   const [gcalBusy, setGcalBusy] = useState<CalendarEvent[]>([]);
 
@@ -772,12 +794,18 @@ export function AppointmentsCalendarSection({
     if (booking) setSelectedBooking(booking);
   };
 
-  const handleSelectSlot = ({ start }: { start: Date }) => {
+  const handleSelectSlot = ({ start, resourceId }: { start: Date; resourceId?: string | number }) => {
     const visibleStaff = scopedStaffList.filter((staff) => !hiddenStaff.has(staff.id));
+    const resourceIdNum = typeof resourceId === 'string' ? Number(resourceId) : resourceId;
+    const prefilledStaffId =
+      resourceIdNum ??  // D-04: By Staff column click always pre-fills from column
+      (visibleStaff.length === 1 ? visibleStaff[0].id : undefined);  // D-13 fallback (Phase 14)
+
     setNewBookingSlot({
       date: format(start, 'yyyy-MM-dd'),
       startTime: format(start, 'HH:mm'),
-      staffMemberId: visibleStaff.length === 1 ? visibleStaff[0].id : undefined,
+      staffMemberId: prefilledStaffId,
+      isQuickBook: resourceId !== undefined,  // true = Quick Book modal (D-05); false = full form
     });
   };
 
@@ -827,6 +855,17 @@ export function AppointmentsCalendarSection({
   useEffect(() => {
     setCurrentView(DEFAULT_CALENDAR_VIEW);
   }, []);
+
+  const visibleStaffForResources = scopedStaffList.filter((s) => !hiddenStaff.has(s.id));
+
+  const resourceProps = isByStaff
+    ? {
+        resources: visibleStaffForResources,
+        resourceIdAccessor: (resource: any) => resource.id,
+        resourceTitleAccessor: (resource: any) => resource.firstName,
+        resourceAccessor: (event: any) => event.staffMemberId,
+      }
+    : {};
 
   const filterPopover = (
     <Popover>
@@ -975,8 +1014,14 @@ export function AppointmentsCalendarSection({
       </div>
 
       <div className="appointments-calendar-shell">
-        <div className="appointments-calendar-shell__board" style={{ height: 720 }}>
-          <Calendar
+        <div
+          className="appointments-calendar-shell__board"
+          style={{ height: 720, overflowX: isByStaff ? 'auto' : undefined }}
+        >
+          <DnDCalendar
+            {...resourceProps}
+            draggableAccessor={((event: CalendarEvent) => !event.isGcalBusy) as any}
+            onEventDrop={() => {}}
             className="appointments-calendar"
             localizer={localizer}
             events={allEvents}
@@ -985,18 +1030,29 @@ export function AppointmentsCalendarSection({
             date={currentDate}
             view={currentView as any}
             onNavigate={setCurrentDate}
-            onView={setCurrentView}
+            onView={(v: string) => {
+              setCurrentView(v);
+              if (v !== 'day') setIsByStaff(false);
+            }}
             views={[Views.MONTH, Views.WEEK, Views.DAY]}
             scrollToTime={DEFAULT_SCROLL_TIME}
-            eventPropGetter={eventStyleGetter}
+            eventPropGetter={eventStyleGetter as any}
             components={{
               event: EventComponent as any,
               toolbar: ((toolbarProps: any) => (
-                <CalendarToolbar {...toolbarProps} filterControl={filterPopover} />
+                <CalendarToolbar
+                  {...toolbarProps}
+                  isByStaff={isByStaff}
+                  onByStaff={(active: boolean) => {
+                    setIsByStaff(active);
+                    if (active) setCurrentView(Views.DAY);
+                  }}
+                  filterControl={filterPopover}
+                />
               )) as any,
             }}
-            onSelectEvent={handleSelectEvent}
-            onSelectSlot={handleSelectSlot}
+            onSelectEvent={handleSelectEvent as any}
+            onSelectSlot={handleSelectSlot as any}
             selectable
             style={{ height: '100%' }}
             popup
