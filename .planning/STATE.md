@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 17-01-PLAN.md
-last_updated: "2026-04-30T12:20:04.541Z"
+stopped_at: Completed 17-02-PLAN.md
+last_updated: "2026-04-30T12:25:56.580Z"
 last_activity: 2026-04-30
 progress:
   total_phases: 5
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-25)
 ## Current Position
 
 Phase: 17 (favicon-legal-company-type-admin-ui) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-04-30
 
@@ -66,6 +66,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 16-seo-meta-injection P01 | ~25m | 4 tasks | 6 files |
 | Phase 16-seo-meta-injection P03 | 2m | 2 tasks | 2 files |
 | Phase 17-favicon-legal-company-type-admin-ui P01 | 6min | 2 tasks | 6 files |
+| Phase 17-favicon-legal-company-type-admin-ui P02 | 2m 53s | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -131,6 +132,7 @@ Recent decisions affecting current work:
 - [Phase 17-favicon-legal-company-type-admin-ui]: faviconUrl appended after termsOfServiceContent in Drizzle schema (consistent with Phase 15 append pattern)
 - [Phase 17-favicon-legal-company-type-admin-ui]: favicon.type=image/png removed from use-seo.ts — browser detects MIME from Supabase Content-Type header; hardcoding blocked SVG/ico formats
 - [Phase 17-favicon-legal-company-type-admin-ui]: logoIcon retained in SeoSettings interface — only favicon href assignment redirected to faviconUrl; logo display unchanged
+- [Phase 17-favicon-legal-company-type-admin-ui]: escapeAttr() wraps faviconUrl in token map — handles special chars in CDN URLs; fallback uses || (falsy) not ?? (nullish) to treat empty string as no favicon set
 
 ### Pending Todos
 
@@ -151,6 +153,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-30T12:20:04.533Z
-Stopped at: Completed 17-01-PLAN.md
+Last session: 2026-04-30T12:25:56.561Z
+Stopped at: Completed 17-02-PLAN.md
 Resume file: None
