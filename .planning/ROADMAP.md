@@ -208,7 +208,11 @@ Plans:
   4. The end time field is directly editable — manually typing a later end time overrides the auto-computed value and the override persists when the form is submitted
   5. With `serviceDeliveryModel` set to `at-customer`, the address field is visible in the Create Booking form; with it set to `customer-comes-in`, the address field is hidden
   6. The Create Booking submit button uses the brand yellow background with black bold text and spans the full modal width
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 18-01-PLAN.md — CSS .rbc-label alignment fix (CAL-01)
+- [ ] 18-02-PLAN.md — Modal width + multi-service useFieldArray + always-editable end time (CAL-02, CAL-03, CAL-04, CAL-06)
+- [ ] 18-03-PLAN.md — Conditional address field + human verification checkpoint (CAL-05)
 **UI hint**: yes
 
 ### Phase 19: Receptionist Booking Flow & Multi-Staff View
