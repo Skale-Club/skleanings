@@ -181,9 +181,9 @@
 ## v1 Requirements
 
 ### Favicon & Brand Assets
-- [ ] **FAV-01**: Admin can set a favicon URL in company settings (upload or external link)
-- [ ] **FAV-02**: Platform serves `/favicon.ico` dynamically from `companySettings.faviconUrl`
-- [ ] **FAV-03**: When `faviconUrl` is empty, platform falls back gracefully without breaking
+- [x] **FAV-01**: Admin can set a favicon URL in company settings (upload or external link)
+- [x] **FAV-02**: Platform serves `/favicon.ico` dynamically from `companySettings.faviconUrl`
+- [x] **FAV-03**: When `faviconUrl` is empty, platform falls back gracefully without breaking
 
 ### SEO Meta Injection
 - [ ] **SEO-01**: Express middleware injects `<title>` from `companySettings.seoTitle` into `index.html` at request time
@@ -202,13 +202,13 @@
 
 ### White-Label Company Type
 - [x] **WLTYPE-01**: `companySettings` has a `serviceDeliveryModel` field (values: `at-customer`, `customer-comes-in`, `both`)
-- [ ] **WLTYPE-02**: Admin can set the service delivery model in Company Settings
+- [x] **WLTYPE-02**: Admin can set the service delivery model in Company Settings
 
 ### Legal Pages
 - [x] **LEGAL-01**: `companySettings` has `privacyPolicyContent` and `termsOfServiceContent` text fields
-- [ ] **LEGAL-02**: Admin can edit Privacy Policy and Terms content in the Company Settings admin section
-- [ ] **LEGAL-03**: `/privacy` and `/terms` pages render content from DB
-- [ ] **LEGAL-04**: Empty legal fields show a placeholder message rather than breaking
+- [x] **LEGAL-02**: Admin can edit Privacy Policy and Terms content in the Company Settings admin section
+- [x] **LEGAL-03**: `/privacy` and `/terms` pages render content from DB
+- [x] **LEGAL-04**: Empty legal fields show a placeholder message rather than breaking
 
 ### Admin Calendar Improvements
 - [ ] **CAL-01**: Calendar grid time lines align correctly with their time slot labels
@@ -249,13 +249,13 @@
 | SEO-03 | Phase 16 | Pending |
 | SEO-04 | Phase 16 | Complete |
 | SEO-05 | Phase 16 | Pending |
-| FAV-01 | Phase 17 | Pending |
-| FAV-02 | Phase 17 | Pending |
-| FAV-03 | Phase 17 | Pending |
-| WLTYPE-02 | Phase 17 | Pending |
-| LEGAL-02 | Phase 17 | Pending |
-| LEGAL-03 | Phase 17 | Pending |
-| LEGAL-04 | Phase 17 | Pending |
+| FAV-01 | Phase 17 | Complete |
+| FAV-02 | Phase 17 | Complete |
+| FAV-03 | Phase 17 | Complete |
+| WLTYPE-02 | Phase 17 | Complete |
+| LEGAL-02 | Phase 17 | Complete |
+| LEGAL-03 | Phase 17 | Complete |
+| LEGAL-04 | Phase 17 | Complete |
 | CAL-01 | Phase 18 | Pending |
 | CAL-02 | Phase 18 | Pending |
 | CAL-03 | Phase 18 | Pending |

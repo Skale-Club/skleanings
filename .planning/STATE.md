@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 17 context gathered
-last_updated: "2026-04-30T06:36:13.461Z"
+stopped_at: Completed 17-01-PLAN.md
+last_updated: "2026-04-30T12:20:04.541Z"
 last_activity: 2026-04-30
 progress:
   total_phases: 5
@@ -21,12 +21,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-25)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 16 — seo-meta-injection
+**Current focus:** Phase 17 — favicon-legal-company-type-admin-ui
 
 ## Current Position
 
-Phase: 16
-Plan: Not started
+Phase: 17 (favicon-legal-company-type-admin-ui) — EXECUTING
+Plan: 2 of 3
 Status: Ready to execute
 Last activity: 2026-04-30
 
@@ -65,6 +65,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 15-schema-foundation-detokenization P02 | 6m 0s | 5 tasks | 13 files |
 | Phase 16-seo-meta-injection P01 | ~25m | 4 tasks | 6 files |
 | Phase 16-seo-meta-injection P03 | 2m | 2 tasks | 2 files |
+| Phase 17-favicon-legal-company-type-admin-ui P01 | 6min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -127,6 +128,9 @@ Recent decisions affecting current work:
 - [Phase 16-seo-meta-injection]: ogImageAbsolute computed once at top of injectSeoMeta, shared with og/twitter block AND buildLocalBusinessSchema argument — Pitfall 3 fix
 - [Phase 16-seo-meta-injection]: @shared/seo alias used in client hook (not relative path) — confirmed in tsconfig.json paths AND vite.config.ts before editing
 - [Phase 16-seo-meta-injection]: client useSEO hook delegates JSON-LD to buildLocalBusinessSchema via SeoSettings as unknown as CompanySettings cast — safe because builder reads optional fields only (D-12 fulfilled, Pitfall 8 closed)
+- [Phase 17-favicon-legal-company-type-admin-ui]: faviconUrl appended after termsOfServiceContent in Drizzle schema (consistent with Phase 15 append pattern)
+- [Phase 17-favicon-legal-company-type-admin-ui]: favicon.type=image/png removed from use-seo.ts — browser detects MIME from Supabase Content-Type header; hardcoding blocked SVG/ico formats
+- [Phase 17-favicon-legal-company-type-admin-ui]: logoIcon retained in SeoSettings interface — only favicon href assignment redirected to faviconUrl; logo display unchanged
 
 ### Pending Todos
 
@@ -147,6 +151,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-30T06:36:13.420Z
-Stopped at: Phase 17 context gathered
-Resume file: .planning/phases/17-favicon-legal-company-type-admin-ui/17-CONTEXT.md
+Last session: 2026-04-30T12:20:04.533Z
+Stopped at: Completed 17-01-PLAN.md
+Resume file: None
