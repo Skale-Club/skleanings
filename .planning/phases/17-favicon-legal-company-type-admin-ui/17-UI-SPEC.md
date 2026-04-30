@@ -55,14 +55,15 @@ Source: existing `CompanySettingsSection.tsx` patterns (`p-6`, `space-y-6`, `gap
 | Role | Size | Weight | Line Height | Font | Usage |
 |------|------|--------|-------------|------|-------|
 | Body | 16px | 400 (regular) | 1.5 | Inter (--font-sans) | Field helper text, prose legal content |
-| Label | 14px | 500 (medium) | 1.4 | Inter (--font-sans) | Form field labels (`<Label>`), radio option subtitles |
+| Label | 14px | 600 (semibold) | 1.4 | Inter (--font-sans) | Form field labels (`<Label>`), radio option subtitles |
 | Heading (section) | 18px | 600 (semibold) | 1.2 | Inter (--font-sans) | Card section headings (`text-lg font-semibold`) |
-| Display (page h1) | 36px | 700 (bold) | 1.2 | Outfit (--font-display) | Public page `<h1>` ("Privacy Policy", "Terms of Service") |
+| Display (page h1) | 36px | 600 (semibold) | 1.2 | Outfit (--font-display) | Public page `<h1>` ("Privacy Policy", "Terms of Service") |
 
 Notes:
 - Legal content textarea uses `font-mono text-sm` (14px monospace) — makes pasted HTML readable without affecting the typography scale. Source: CONTEXT.md D-11 `className="min-h-[400px] font-mono text-sm"`
-- Radio option title text: 14px weight 500 (`font-medium`) / subtitle: 14px weight 400 (`text-sm text-muted-foreground`)
+- Radio option title text: 14px weight 600 (`font-semibold`) / subtitle: 14px weight 400 (`text-sm text-muted-foreground`)
 - `prose prose-gray max-w-none` class applied to the public legal content `<div>` — defers typography to Tailwind Typography plugin (already installed as `@tailwindcss/typography`)
+- Font size 18px for section headings is locked by existing `CompanySettingsSection.tsx` pattern (`text-lg font-semibold` on lines 181, 285, 297) — not changed to 20px
 
 Source: `tailwind.config.ts` fontFamily tokens; existing `CompanySettingsSection.tsx` heading pattern `text-lg font-semibold`; CONTEXT.md; RESEARCH.md Pattern 4
 
