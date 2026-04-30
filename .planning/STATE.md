@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 19 context gathered
-last_updated: "2026-04-30T17:50:19.840Z"
+stopped_at: Completed 19-01-PLAN.md
+last_updated: "2026-04-30T18:28:29.394Z"
 last_activity: 2026-04-30
 progress:
   total_phases: 5
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-25)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 18 — admin-calendar-improvements
+**Current focus:** Phase 19 — receptionist-booking-flow-multi-staff-view
 
 ## Current Position
 
-Phase: 18
-Plan: Not started
-Status: Executing Phase 18
+Phase: 19 (receptionist-booking-flow-multi-staff-view) — EXECUTING
+Plan: 2 of 4
+Status: Ready to execute
 Last activity: 2026-04-30
 
 Progress: [░░░░░░░░░░] 0%
@@ -68,6 +68,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 17-favicon-legal-company-type-admin-ui P01 | 6min | 2 tasks | 6 files |
 | Phase 17-favicon-legal-company-type-admin-ui P02 | 2m 53s | 2 tasks | 3 files |
 | Phase 17-favicon-legal-company-type-admin-ui P03 | 3min | 2 tasks | 4 files |
+| Phase 19-receptionist-booking-flow-multi-staff-view P01 | 15min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -136,6 +137,8 @@ Recent decisions affecting current work:
 - [Phase 17-favicon-legal-company-type-admin-ui]: escapeAttr() wraps faviconUrl in token map — handles special chars in CDN URLs; fallback uses || (falsy) not ?? (nullish) to treat empty string as no favicon set
 - [Phase 17-favicon-legal-company-type-admin-ui]: LegalBrandingTab uploads favicon via authenticatedRequest + updateField('faviconUrl') — no prop-drilling of saveSettings; null guard required before upload (TypeScript)
 - [Phase 17-favicon-legal-company-type-admin-ui]: Legal pages (PrivacyPolicy, TermsOfService) are DB-driven rewrites: hasContent guard before dangerouslySetInnerHTML, LegalEmptyState shows contact info from settings when empty; no DOMPurify per D-14/D-15
+- [Phase 19-receptionist-booking-flow-multi-staff-view]: resourceAccessor/resourceIdAccessor/resourceTitleAccessor implemented as arrow functions — DnDCalendar type contract requires functions, not string literals
+- [Phase 19-receptionist-booking-flow-multi-staff-view]: resourceProps uses empty spread ({}) for non-By-Staff views — avoids static resource props contaminating Month/Week/Day views (Pitfall 2)
 
 ### Pending Todos
 
@@ -156,6 +159,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-30T17:50:19.792Z
-Stopped at: Phase 19 context gathered
-Resume file: .planning/phases/19-receptionist-booking-flow-multi-staff-view/19-CONTEXT.md
+Last session: 2026-04-30T18:28:29.386Z
+Stopped at: Completed 19-01-PLAN.md
+Resume file: None
