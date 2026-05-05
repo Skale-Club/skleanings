@@ -2,22 +2,20 @@
 
 ## What This Is
 
-Skleanings is a full-stack service booking platform for a residential and commercial cleaning company. Customers browse cleaning services by category, add to cart, select available time slots, and complete bookings. The platform includes an admin dashboard for managing bookings, services, staff, and business settings, plus integrations with GoHighLevel CRM, Stripe payments, and Google Calendar.
+Skleanings is a full-stack service booking platform for a residential and commercial cleaning company. Customers browse cleaning services by category, add to cart, select available time slots, and complete bookings. The platform includes an admin dashboard for managing bookings, services, staff, and business settings, plus integrations with GoHighLevel CRM, Stripe payments, and Google Calendar. The platform is white-label ready — all brand identity, SEO metadata, favicon, and legal pages are configurable from the admin panel with no code changes required.
 
 ## Core Value
 
 Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
 
-## Current Milestone: v2.0 White Label
+## Current State
 
-**Goal:** Transform the platform into a white-label product — remove all hardcoded "Skleanings" references and make brand identity, SEO, favicon, and legal pages fully configurable via the admin panel, with no code changes required per tenant.
+**Two milestones shipped (2026-04-25 through 2026-04-30):**
 
-**Target features:**
-- Dynamic favicon — `faviconUrl` field in `companySettings` + admin upload + Express dynamic serve
-- Server-side SEO/meta injection — Express middleware reads `companySettings` and injects title, canonical, og:*, twitter:*, schema.org JSON-LD into `index.html` at request time
-- Hardcoded-free frontend — ThemeContext defaults, localStorage key prefix, and all components reading values from DB
-- Server-side brand tokens — `openrouter.ts` and other server files using `companySettings.companyName` from DB
-- Configurable legal pages — Privacy Policy and Terms of Service content stored and served from DB
+- **v1.0 Marketing Attribution** — First-party UTM tracking, booking flow attribution, marketing dashboard, GoHighLevel CRM UTM sync, admin calendar create-booking-from-slot
+- **v2.0 White Label** — Hardcoded brand removed, DB-driven SEO/favicon/legal pages, receptionist multi-staff calendar view with drag-to-reassign and QuickBook walk-in flow
+
+**Pending human verification (Phase 19 UAT):** By Staff calendar column layout, Quick Book 30-second walk-in flow, drag-to-reassign with undo toast, and customer per-staff availability badges — all require a live browser session to verify.
 
 ## Requirements
 
@@ -33,58 +31,61 @@ Customers can discover, book, and pay for cleaning services online without calli
 - ✓ Session-based admin authentication with bcrypt — v0 core
 - ✓ Contacts, appointments calendar, staff roles, and user management in admin — v0 core
 - ✓ Website/integrations admin tab with dynamic brand colors — v0 core
-- ✓ DB connection stability via postgres.js (SCRAM/pgBouncer fix) — phase 09
+- ✓ DB connection stability via postgres.js (SCRAM/pgBouncer fix) — Phase 09
 - ✓ UTM session capture (all 6 params + referrer + landing page), traffic classification, first/last-touch attribution — Phase 10
 - ✓ Booking flow attribution — visitorId wired through direct and Stripe paths, booking_started and chat_initiated events — Phase 11
-- ✓ Marketing Dashboard UI — Overview (KPI cards, trend chart, recent conversions), Sources tab (per-source performance table), Campaigns tab (per-campaign table with zero-booking visibility), date range filter with 7 presets, polished empty states — Phase 12
-- ✓ Conversions tab (last-touch event list with source filter + date range), Visitor Journey slide-over (first/last-touch blocks, influence indicator, conversion event), GHL UTM custom field sync (utm_first/last_source/campaign written fire-and-forget on booking) — Phase 13
-- ✓ Schema Foundation & Detokenization — 3 new white-label columns in companySettings, all hardcoded "Skleanings" strings removed from frontend and server, ThemeContext reads companyName/email from DB, visitor localStorage key derived from company slug, OpenRouter blog titles read from DB — Phase 15
-- ✓ SEO Meta Injection — Express middleware injects tenant-specific title, canonical, OG, Twitter Card, and LocalBusiness JSON-LD from companySettings into every HTML response; client/index.html fully retemplated with {{TOKEN}} markers (SEO-05); vercel.json routes HTML through Express (D-01); shared buildLocalBusinessSchema() used by both server injector and client useSEO hook — Phase 16
-- ✓ Favicon, Legal & Company Type Admin UI — faviconUrl DB column + admin upload, {{FAVICON_URL}} SEO injector token with /favicon.png fallback, service delivery model radio, privacy/terms content textareas in admin "Legal & Branding" card, /privacy-policy and /terms-of-service pages rewritten as DB-driven with graceful empty states — Phase 17
-- ✓ Admin Calendar Improvements — Create Booking modal widened to sm:max-w-2xl, customer name+phone in 2-col grid, useFieldArray multi-service rows with searchable combobox selector (Popover+Command), always-editable end time with auto-fill guard, conditional address field driven by serviceDeliveryModel, brand yellow submit button verified — Phase 18
-- ✓ Receptionist Booking Flow & Multi-Staff View — "By Staff" parallel-column calendar view via RBC resources prop, DnDCalendar withDragAndDrop HOC for time+staff drag-to-reassign with undo toast, QuickBookModal for walk-in booking (name+service required, More options collapsible), 30s polling refetchInterval, per-staff availability badges on customer BookingPage step 3 — Phase 19
+- ✓ Marketing Dashboard UI — Overview (KPI cards, trend chart, recent conversions), Sources tab, Campaigns tab, date range filter with 7 presets, polished empty states — Phase 12
+- ✓ Conversions tab, Visitor Journey slide-over (first/last-touch blocks, influence indicator), GHL UTM custom field sync (fire-and-forget on booking) — Phase 13
+- ✓ Admin calendar create-booking-from-slot — pre-filled form, customer type-ahead, computed end time + estimated price, full submit mutation with status confirmation and calendar refresh — Phase 14
+- ✓ Schema Foundation & Detokenization — 3 new white-label columns in companySettings, all hardcoded "Skleanings" strings removed, ThemeContext + OpenRouter read brand from DB — Phase 15
+- ✓ SEO Meta Injection — Express middleware injects title, canonical, OG, Twitter Card, LocalBusiness JSON-LD per request; vercel.json routes HTML through Express; index.html retemplated with {{TOKEN}} markers — Phase 16
+- ✓ Favicon, Legal & Company Type Admin UI — faviconUrl upload, service delivery model selector, Privacy Policy and Terms of Service DB-driven at /privacy-policy and /terms-of-service — Phase 17
+- ✓ Admin Calendar Improvements — widened modal, multi-service useFieldArray, always-editable end time, conditional address field, brand yellow submit — Phase 18
+- ✓ Receptionist Booking Flow & Multi-Staff View — "By Staff" parallel-column calendar, DnDCalendar drag-to-reassign with undo toast, QuickBookModal for walk-in booking, 30s polling, per-staff availability badges on customer BookingPage step 3 — Phase 19
 
 ### Active
 
-- v2.0 White Label milestone complete (Phases 15–19); human browser verification pending for Phase 19 UAT items (By Staff view, Quick Book flow, drag-to-reassign, customer staff badges)
+(Planning next milestone)
 
 ### Out of Scope
 
 - Replacing GA4 / Google Tag Manager — GA4/GTM is already in use; this is a first-party layer that complements it
 - Building a standalone analytics product separate from the admin panel — marketing data lives inside the existing admin, not a separate app
 - Real-time event streaming / websocket dashboards — standard query-based reporting is sufficient
-- Multi-property / multi-account tracking — this is for a single cleaning business
+- Multi-property / multi-account tracking — single-tenant platform
 
 ## Context
 
-**Existing admin panel:** React 18 + shadcn/ui + Tailwind. All new admin views must match existing patterns (sidebar navigation, card-based layout, React Query for data fetching, same color palette and typography).
+**Tech stack:** React 18 + TypeScript + shadcn/ui + Tailwind (frontend) · Express.js + Drizzle ORM + PostgreSQL/Supabase (backend) · Wouter routing · React Query for server state · GoHighLevel, Stripe, Google Calendar integrations.
 
-**External analytics:** The business uses GA4 and GTM. This first-party system captures data independently — useful for cross-referencing and for attribution data the business fully controls.
+**Admin panel:** All admin views use the same sidebar navigation, card-based layout, and React Query patterns. New admin features must match existing UI conventions.
 
-**Database:** PostgreSQL via Drizzle ORM (Supabase). New tables for UTM sessions and conversion events will follow existing schema patterns in `shared/schema.ts`.
+**Codebase state:** Two milestones (10 phases, 30 plans) shipped. Server routes split into domain modules (`server/routes/`). Drizzle schema in `shared/schema.ts` with collocated types. Supabase CLI only for migrations — never drizzle-kit push.
 
-**Audience:** Non-technical business owner. Every label, chart title, and empty state should be written in plain business language. Avoid surfacing raw UTM parameter names in the primary views.
+**White-label status:** All "Skleanings" literals removed from frontend and server. Brand identity, SEO, favicon, and legal pages are fully configurable via admin. The platform can be redeployed for any tenant by updating `companySettings` in the DB.
 
-**Booking flow:** Bookings are the primary conversion event. The booking flow lives on the customer-facing site and currently has no attribution capture — this milestone adds it.
-
-**Codebase state:** Large server files were recently split into domain modules. Follow the domain-module pattern established in `server/routes/` and `server/storage.ts` domains.
+**Pending UAT (Phase 19):** Five browser-only checks in `.planning/phases/19-receptionist-booking-flow-multi-staff-view/19-HUMAN-UAT.md` — By Staff column layout, Quick Book flow, drag-to-reassign, GCal busy block guard, and customer per-staff badges.
 
 ## Constraints
 
 - **Tech Stack**: React 18 + TypeScript + shadcn/ui + Tailwind — no new UI frameworks
-- **Database**: PostgreSQL via Drizzle ORM + Supabase migrations — no raw SQL migrations, always use Supabase CLI
+- **Database**: PostgreSQL via Drizzle ORM + Supabase migrations — Supabase CLI only, never drizzle-kit push (TTY prompt issues)
 - **Admin Patterns**: New admin sections must use the same sidebar navigation, route guard, and layout components as existing admin pages
-- **First-Party Only**: Data captured by this system must live in the project's own database — no third-party tracking SDKs added to the customer-facing frontend
-- **Privacy**: UTM and session data should not store PII beyond what's already captured in bookings (no email tracking, no fingerprinting)
+- **White-label**: All brand identity, copy, and configuration must come from `companySettings` — no new hardcoded brand strings
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| First-party UTM storage over relying solely on GA4 | Business owns its marketing data; can correlate with booking records directly | — Pending |
-| First-touch preservation + last-touch update model | Covers both "what brought them in" and "what tipped them over" questions | — Pending |
-| Session-level attribution (not user-level) | No login required for customers; cookie/localStorage session ID is most reliable | — Pending |
-| Booking completed as primary conversion event | Highest-value action; directly tied to revenue | — Pending |
+| First-party UTM storage over relying solely on GA4 | Business owns its marketing data; can correlate with booking records directly | ✓ Shipped v1.0 — working in production |
+| First-touch preservation + last-touch update model | Covers both "what brought them in" and "what tipped them over" questions | ✓ Shipped — dual-row write pattern, first_* columns immutable |
+| Session-level attribution (not user-level) | No login required for customers; localStorage session ID is most reliable | ✓ Shipped — localStorage UUID survives multi-day journeys |
+| Booking completed as primary conversion event | Highest-value action; directly tied to revenue | ✓ Shipped — dual first/last-touch rows on booking_completed |
+| Analytics writes always fire-and-forget | Booking flow must never be blocked or delayed by attribution | ✓ Enforced — all attribution calls use void IIFE or Promise.catch |
+| Plain TEXT for serviceDeliveryModel (no pgEnum) | Matches existing precedent (timeFormat, ogType) for enum-like values | ✓ Shipped — migration applied, admin UI reads/writes correctly |
+| SEO injector token replacement uses function replacer | Prevents $ special patterns ($$, $&) from corrupting JSON-LD values | ✓ Shipped — replaceAll uses () => v replacer throughout |
+| DnDCalendar withDragAndDrop at module scope | DnD HOC must be outside any render function to avoid re-creation | ✓ Shipped — line 146 in AppointmentsCalendarSection.tsx |
+| QuickBookModal two-field minimal UI (name + service) | Walk-in flow goal is < 30 seconds — extra fields hidden under collapsible | ✓ Shipped — Collapsible "More options" with phone/email/address |
 
 ## Evolution
 
@@ -104,4 +105,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-30 after Phase 17 complete (Favicon, Legal & Company Type Admin UI — v2.0 White Label milestone)*
+*Last updated: 2026-05-05 after v1.0 + v2.0 milestone archival*
