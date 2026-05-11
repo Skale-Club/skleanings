@@ -5,7 +5,7 @@
 ### Availability — Multiple Slots Per Day (SEED-021)
 
 - [x] **SLOTS-01**: Staff availability supports multiple time ranges per day (e.g., 8am-12pm AND 2pm-7pm on Monday)
-- [ ] **SLOTS-02**: Admin can add, remove, and reorder time ranges per day in the availability editor
+- [x] **SLOTS-02**: Admin can add, remove, and reorder time ranges per day in the availability editor
 - [x] **SLOTS-03**: Booking slot generation respects all configured ranges — no slots offered during gaps between ranges
 - [x] **SLOTS-04**: Migration preserves existing single-range availability data without data loss or behavioral change
 

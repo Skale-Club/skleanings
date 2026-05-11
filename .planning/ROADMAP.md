@@ -59,7 +59,7 @@ Full details: [milestones/v3.0-ROADMAP.md](milestones/v3.0-ROADMAP.md)
 
 ### v4.0 Booking Intelligence (Phases 25–29)
 
-- [ ] **Phase 25: Multiple Time Slots Per Day** — Multi-range daily availability with migration
+- [x] **Phase 25: Multiple Time Slots Per Day** — Multi-range daily availability with migration (completed 2026-05-11)
 - [ ] **Phase 26: Custom Booking Questions** — Service-specific intake questions for admin and customers
 - [ ] **Phase 27: Recurring Bookings — Schema & Cron Foundation** — Database schema and auto-generation job
 - [ ] **Phase 28: Recurring Bookings — Customer Flow & Notifications** — Frequency selector and 48h reminders
@@ -82,7 +82,7 @@ Full details: [milestones/v3.0-ROADMAP.md](milestones/v3.0-ROADMAP.md)
 Plans:
 - [x] 25-01-PLAN.md — Schema + Migration (range_order column + shared/schema.ts update)
 - [x] 25-02-PLAN.md — Backend: storage orderBy, route validation, slot algorithm multi-range loop
-- [ ] 25-03-PLAN.md — Frontend: AvailabilityTab multi-range editor UI
+- [x] 25-03-PLAN.md — Frontend: AvailabilityTab multi-range editor UI
 **UI hint**: yes
 
 ### Phase 26: Custom Booking Questions
@@ -155,7 +155,7 @@ Plans:
 | 22. Date overrides for staff availability | standalone | 3/3 | Complete | 2026-05-11 |
 | 23. Multiple durations per service | standalone | 3/3 | Complete | 2026-05-11 |
 | 24. Manual confirmation flow per service | standalone | 3/3 | Complete | 2026-05-11 |
-| 25. Multiple Time Slots Per Day | v4.0 | 2/3 | In Progress|  |
+| 25. Multiple Time Slots Per Day | v4.0 | 3/3 | Complete   | 2026-05-11 |
 | 26. Custom Booking Questions | v4.0 | 0/3 | Not started | — |
 | 27. Recurring Bookings — Schema & Cron Foundation | v4.0 | 0/3 | Not started | — |
 | 28. Recurring Bookings — Customer Flow & Notifications | v4.0 | 0/3 | Not started | — |
