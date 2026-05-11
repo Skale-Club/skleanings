@@ -47,6 +47,15 @@ export interface ServiceFrequencyInput {
   order?: number;
 }
 
+export interface ServiceDurationInput {
+  id?: number;
+  label: string;
+  durationHours: number;
+  durationMinutesRemainder: number; // minutes portion (0-59)
+  price: string;
+  order?: number;
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function ServiceForm({
@@ -90,6 +99,8 @@ export function ServiceForm({
 
   const [serviceOptions, setServiceOptions] = useState<ServiceOptionInput[]>([]);
   const [serviceFrequencies, setServiceFrequencies] = useState<ServiceFrequencyInput[]>([]);
+  const [serviceDurations, setServiceDurations] = useState<ServiceDurationInput[]>([]);
+  const [durationsLoading, setDurationsLoading] = useState(false);
 
   // Booking Rules
   const [bufferTimeBefore, setBufferTimeBefore] = useState<number>(service?.bufferTimeBefore ?? 0);
@@ -120,6 +131,27 @@ export function ServiceForm({
     }
   }, [service?.id, pricingType]);
 
+  useEffect(() => {
+    if (!service?.id) return;
+    setDurationsLoading(true);
+    fetch(`/api/services/${service.id}/durations`)
+      .then(res => res.json())
+      .then((data: any[]) => {
+        if (Array.isArray(data)) {
+          setServiceDurations(data.map(d => ({
+            id: d.id,
+            label: d.label,
+            durationHours: Math.floor(d.durationMinutes / 60),
+            durationMinutesRemainder: d.durationMinutes % 60,
+            price: d.price,
+            order: d.order,
+          })));
+        }
+      })
+      .catch(console.error)
+      .finally(() => setDurationsLoading(false));
+  }, [service?.id]);
+
   const filteredSubcategories = subcategories.filter(sub => sub.categoryId === Number(categoryId));
   const availableAddons = allServices.filter(s => s.id !== service?.id && s.name.toLowerCase().includes(addonSearch.toLowerCase()));
 
@@ -141,6 +173,61 @@ export function ServiceForm({
     } catch (err) {
       console.error('Upload failed', err);
     }
+  };
+
+  const handleAddDuration = () => {
+    if (!service?.id) return;
+    const newRow: ServiceDurationInput = { label: '', durationHours: 2, durationMinutesRemainder: 0, price: '0.00' };
+    setServiceDurations(prev => [...prev, newRow]);
+  };
+
+  const handleSaveDuration = async (index: number) => {
+    if (!service?.id) return;
+    const d = serviceDurations[index];
+    const durationMinutes = d.durationHours * 60 + d.durationMinutesRemainder;
+    const body = { label: d.label, durationMinutes, price: d.price, order: index };
+    try {
+      const token = await getAccessToken();
+      if (!token) return;
+      if (d.id) {
+        // PATCH existing
+        const res = await fetch(`/api/services/${service.id}/durations/${d.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(body),
+        });
+        const updated = await res.json();
+        setServiceDurations(prev => prev.map((row, i) => i === index ? { ...row, id: updated.id } : row));
+      } else {
+        // POST new
+        const res = await fetch(`/api/services/${service.id}/durations`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(body),
+        });
+        const created = await res.json();
+        setServiceDurations(prev => prev.map((row, i) => i === index ? { ...row, id: created.id } : row));
+      }
+    } catch (err) {
+      console.error('Failed to save duration', err);
+    }
+  };
+
+  const handleDeleteDuration = async (index: number) => {
+    const d = serviceDurations[index];
+    if (d.id && service?.id) {
+      try {
+        const token = await getAccessToken();
+        if (!token) return;
+        await fetch(`/api/services/${service.id}/durations/${d.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } catch (err) {
+        console.error('Failed to delete duration', err);
+      }
+    }
+    setServiceDurations(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -410,6 +497,67 @@ export function ServiceForm({
             </div>
           )}
         </div>
+
+        {service?.id && (
+          <div className="space-y-2 pt-4 border-t border-gray-100">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-semibold">Available Durations</Label>
+              <Button type="button" size="sm" variant="outline" onClick={handleAddDuration}>
+                + Add Duration
+              </Button>
+            </div>
+            {durationsLoading && <p className="text-xs text-slate-400">Loading...</p>}
+            {serviceDurations.length === 0 && !durationsLoading && (
+              <p className="text-xs text-slate-400">
+                No durations configured. The booking flow will use the default duration above.
+              </p>
+            )}
+            {serviceDurations.map((d, i) => (
+              <div key={i} className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-2 items-end p-3 bg-slate-50 rounded-lg border border-slate-100">
+                <div className="space-y-1">
+                  <Label className="text-xs">Label</Label>
+                  <Input
+                    value={d.label}
+                    onChange={e => setServiceDurations(prev => prev.map((r, idx) => idx === i ? { ...r, label: e.target.value } : r))}
+                    placeholder="e.g. 2 hours — Small apartment"
+                    className="text-xs h-8"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Hours</Label>
+                  <Input
+                    type="number" min={0} max={24}
+                    value={d.durationHours}
+                    onChange={e => setServiceDurations(prev => prev.map((r, idx) => idx === i ? { ...r, durationHours: Number(e.target.value) } : r))}
+                    className="text-xs h-8 w-16"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Min</Label>
+                  <Input
+                    type="number" min={0} max={59}
+                    value={d.durationMinutesRemainder}
+                    onChange={e => setServiceDurations(prev => prev.map((r, idx) => idx === i ? { ...r, durationMinutesRemainder: Number(e.target.value) } : r))}
+                    className="text-xs h-8 w-16"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Price $</Label>
+                  <Input
+                    type="number" min={0} step={0.01}
+                    value={d.price}
+                    onChange={e => setServiceDurations(prev => prev.map((r, idx) => idx === i ? { ...r, price: e.target.value } : r))}
+                    className="text-xs h-8 w-20"
+                  />
+                </div>
+                <div className="flex gap-1 self-end">
+                  <Button type="button" size="sm" variant="outline" onClick={() => handleSaveDuration(i)} className="text-xs h-8 px-2">Save</Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => handleDeleteDuration(i)} className="text-xs h-8 px-2 text-red-500 hover:text-red-700">Del</Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label>Service Image</Label>
