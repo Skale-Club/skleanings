@@ -12,10 +12,10 @@
 
 - [ ] **DUR-01**: Admin pode configurar múltiplas durações para um serviço (label, duração em minutos, preço, ordem)
 - [ ] **DUR-02**: Admin pode adicionar, remover e reordenar durações na tela de editar serviço
-- [ ] **DUR-03**: Cliente vê cards de seleção de duração (label + tempo + preço) antes do calendário quando o serviço tem durações configuradas
-- [ ] **DUR-04**: Slot de disponibilidade calculado usa a duração selecionada pelo cliente, não a duração padrão do serviço
-- [ ] **DUR-05**: Duração e label selecionados ficam em snapshot no bookingItem no momento da criação do booking
-- [ ] **DUR-06**: Subscriptions recorrentes preservam a duração escolhida — gerador cria futuras instâncias com a mesma duração
+- [x] **DUR-03**: Cliente vê cards de seleção de duração (label + tempo + preço) antes do calendário quando o serviço tem durações configuradas
+- [x] **DUR-04**: Slot de disponibilidade calculado usa a duração selecionada pelo cliente, não a duração padrão do serviço
+- [x] **DUR-05**: Duração e label selecionados ficam em snapshot no bookingItem no momento da criação do booking
+- [x] **DUR-06**: Subscriptions recorrentes preservam a duração escolhida — gerador cria futuras instâncias com a mesma duração
 
 ### Emails Transacionais com Marca (SEED-019)
 
