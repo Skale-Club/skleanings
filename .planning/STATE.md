@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Calendar Polish
 status: verifying
-stopped_at: Completed 22-03-PLAN.md
-last_updated: "2026-05-11T03:29:17.248Z"
+stopped_at: Completed 23-02-PLAN.md
+last_updated: "2026-05-11T03:33:23.206Z"
 last_activity: 2026-05-11
 progress:
   total_phases: 1
@@ -67,6 +67,9 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 22-date-overrides-staff-availability]: _generateSlots extracted as private helper in staff-availability.ts; called from both override and weekly-schedule paths
 - [Phase 22-03]: Added missing Trash2 import from lucide-react alongside Loader2 (plan incorrectly stated it was pre-imported)
 - [Phase 22-03]: DateOverridesTab uses StaffAvailabilityOverride type from @shared/schema — no schema changes needed (type defined in plan 22-01)
+- [Phase 24-manual-confirmation-flow-per-service]: requiresConfirmation boolean added as NOT NULL default false — safe for existing rows with no backfill
+- [Phase 24-manual-confirmation-flow-per-service]: status passed to createBooking via as-any type assertion — Zod omits status by design but DB default is overridable
+- [Phase 24-manual-confirmation-flow-per-service]: rejection reason logged server-side only — no notes column in bookings table; Plan 03 may add persistence
 
 ### Roadmap Evolution
 
@@ -80,6 +83,6 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-11T03:29:17.245Z
-Stopped at: Completed 22-03-PLAN.md
+Last session: 2026-05-11T03:33:23.203Z
+Stopped at: Completed 23-02-PLAN.md
 Resume file: None
