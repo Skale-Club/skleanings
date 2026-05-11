@@ -110,6 +110,13 @@ export function ServiceForm({
   const [showBookingRules, setShowBookingRules] = useState(false);
   const [requiresConfirmation, setRequiresConfirmation] = useState<boolean>(service?.requiresConfirmation ?? false);
 
+  // Booking Questions
+  const [showBookingQuestions, setShowBookingQuestions] = useState(false);
+  const [bookingQuestions, setBookingQuestions] = useState<any[]>([]);
+  const [newQuestion, setNewQuestion] = useState<{
+    label: string; type: string; options: string; required: boolean; order: number;
+  } | null>(null);
+
   useEffect(() => {
     if (service?.id && pricingType === 'base_plus_addons') {
       fetch(`/api/services/${service.id}/options`)
@@ -131,6 +138,14 @@ export function ServiceForm({
         .catch(console.error);
     }
   }, [service?.id, pricingType]);
+
+  useEffect(() => {
+    if (!service?.id) return;
+    fetch(`/api/services/${service.id}/questions`)
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setBookingQuestions(data); })
+      .catch(() => {});
+  }, [service?.id]);
 
   useEffect(() => {
     if (!service?.id) return;
@@ -513,6 +528,208 @@ export function ServiceForm({
             </div>
           )}
         </div>
+
+        {service?.id && (
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => setShowBookingQuestions(v => !v)}
+              className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-colors"
+            >
+              <span className="text-xs text-muted-foreground">{showBookingQuestions ? '▲' : '▼'}</span>
+              Booking Questions
+              {bookingQuestions.length > 0 && (
+                <span className="ml-1 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-xs">
+                  {bookingQuestions.length}
+                </span>
+              )}
+            </button>
+
+            {showBookingQuestions && (
+              <div className="mt-3 space-y-4 rounded-lg border border-gray-200 bg-muted/30 p-4">
+
+                {/* Existing questions list */}
+                {bookingQuestions.map((q) => (
+                  <div key={q.id} className="flex flex-col gap-2 rounded-md border border-gray-100 bg-white p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 space-y-2">
+                        <input
+                          className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                          placeholder="Question label"
+                          value={q.label}
+                          onChange={e => setBookingQuestions(prev =>
+                            prev.map(x => x.id === q.id ? { ...x, label: e.target.value } : x)
+                          )}
+                        />
+                        <div className="flex flex-wrap items-center gap-2">
+                          <select
+                            className="rounded border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                            value={q.type}
+                            onChange={e => setBookingQuestions(prev =>
+                              prev.map(x => x.id === q.id ? { ...x, type: e.target.value } : x)
+                            )}
+                          >
+                            <option value="text">Short Answer</option>
+                            <option value="textarea">Long Answer</option>
+                            <option value="select">Multiple Choice</option>
+                          </select>
+                          <label className="flex items-center gap-1 text-sm text-slate-600 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={q.required}
+                              onChange={e => setBookingQuestions(prev =>
+                                prev.map(x => x.id === q.id ? { ...x, required: e.target.checked } : x)
+                              )}
+                            />
+                            Required
+                          </label>
+                          <input
+                            type="number"
+                            className="w-16 rounded border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                            placeholder="Order"
+                            value={q.order}
+                            onChange={e => setBookingQuestions(prev =>
+                              prev.map(x => x.id === q.id ? { ...x, order: Number(e.target.value) } : x)
+                            )}
+                          />
+                        </div>
+                        {q.type === 'select' && (
+                          <input
+                            className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                            placeholder="Options (comma-separated): Cat, Dog, None"
+                            value={Array.isArray(q.options) ? q.options.join(', ') : (q.options ?? '')}
+                            onChange={e => setBookingQuestions(prev =>
+                              prev.map(x => x.id === q.id ? { ...x, options: e.target.value } : x)
+                            )}
+                          />
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        className="text-destructive hover:text-destructive/80 text-sm shrink-0"
+                        onClick={async () => {
+                          await fetch(`/api/services/${service.id}/questions/${q.id}`, { method: 'DELETE' });
+                          setBookingQuestions(prev => prev.filter(x => x.id !== q.id));
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      className="self-end rounded bg-primary px-3 py-1 text-xs text-white hover:bg-primary/90"
+                      onClick={async () => {
+                        const body = {
+                          label: q.label,
+                          type: q.type,
+                          required: q.required,
+                          order: q.order,
+                          options: q.type === 'select'
+                            ? (typeof q.options === 'string'
+                                ? q.options.split(',').map((s: string) => s.trim()).filter(Boolean)
+                                : q.options)
+                            : null,
+                        };
+                        await fetch(`/api/services/${service.id}/questions/${q.id}`, {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify(body),
+                        });
+                      }}
+                    >
+                      Save
+                    </button>
+                  </div>
+                ))}
+
+                {/* New question form */}
+                {newQuestion !== null && (
+                  <div className="rounded-md border border-dashed border-gray-300 bg-white p-3 space-y-2">
+                    <input
+                      className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                      placeholder="Question label *"
+                      value={newQuestion.label}
+                      onChange={e => setNewQuestion(q => q && { ...q, label: e.target.value })}
+                    />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <select
+                        className="rounded border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                        value={newQuestion.type}
+                        onChange={e => setNewQuestion(q => q && { ...q, type: e.target.value })}
+                      >
+                        <option value="text">Short Answer</option>
+                        <option value="textarea">Long Answer</option>
+                        <option value="select">Multiple Choice</option>
+                      </select>
+                      <label className="flex items-center gap-1 text-sm text-slate-600 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={newQuestion.required}
+                          onChange={e => setNewQuestion(q => q && { ...q, required: e.target.checked })}
+                        />
+                        Required
+                      </label>
+                    </div>
+                    {newQuestion.type === 'select' && (
+                      <input
+                        className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                        placeholder="Options (comma-separated): Cat, Dog, None"
+                        value={newQuestion.options}
+                        onChange={e => setNewQuestion(q => q && { ...q, options: e.target.value })}
+                      />
+                    )}
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        className="rounded bg-primary px-3 py-1 text-xs text-white hover:bg-primary/90"
+                        onClick={async () => {
+                          if (!newQuestion.label.trim()) return;
+                          const body = {
+                            label: newQuestion.label.trim(),
+                            type: newQuestion.type,
+                            required: newQuestion.required,
+                            order: newQuestion.order,
+                            options: newQuestion.type === 'select'
+                              ? newQuestion.options.split(',').map(s => s.trim()).filter(Boolean)
+                              : null,
+                          };
+                          const res = await fetch(`/api/services/${service.id}/questions`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(body),
+                          });
+                          const created = await res.json();
+                          setBookingQuestions(prev => [...prev, created]);
+                          setNewQuestion(null);
+                        }}
+                      >
+                        Save Question
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded border border-gray-200 px-3 py-1 text-xs text-slate-600 hover:bg-gray-50"
+                        onClick={() => setNewQuestion(null)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Add Question button */}
+                {newQuestion === null && (
+                  <button
+                    type="button"
+                    className="text-sm text-primary hover:text-primary/80 underline"
+                    onClick={() => setNewQuestion({ label: '', type: 'text', options: '', required: false, order: bookingQuestions.length })}
+                  >
+                    + Add Question
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {service?.id && (
           <div className="space-y-2 pt-4 border-t border-gray-100">
