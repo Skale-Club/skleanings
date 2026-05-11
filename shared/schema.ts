@@ -550,6 +550,7 @@ export type InsertService = z.infer<typeof insertServiceSchema>;
 export type InsertServiceAddon = z.infer<typeof insertServiceAddonSchema>;
 export type InsertServiceOption = z.infer<typeof insertServiceOptionSchema>;
 export type InsertServiceFrequency = z.infer<typeof insertServiceFrequencySchema>;
+// InsertServiceDuration is co-located with ServiceDuration type above (Phase 23)
 export type InsertBooking = z.infer<typeof insertBookingSchema>;
 export type InsertIntegrationSettings = z.infer<typeof insertIntegrationSettingsSchema>;
 export type InsertChatSettings = z.infer<typeof insertChatSettingsSchema>;
