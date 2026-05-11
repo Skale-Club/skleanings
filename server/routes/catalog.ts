@@ -8,7 +8,8 @@ import {
     insertCategorySchema,
     insertSubcategorySchema,
     insertServiceSchema,
-    insertServiceDurationSchema
+    insertServiceDurationSchema,
+    insertServiceBookingQuestionSchema
 } from "@shared/schema";
 import { invalidateChatCache } from "./chat/tools";
 import {
@@ -250,8 +251,11 @@ router.get('/api/services/:id', async (req, res) => {
     try {
         const service = await storage.getService(Number(req.params.id));
         if (!service) return res.status(404).json({ message: "Service not found" });
-        const durations = await storage.getServiceDurations(Number(req.params.id));
-        res.json({ ...service, durations });
+        const [durations, questions] = await Promise.all([
+            storage.getServiceDurations(Number(req.params.id)),
+            storage.getServiceBookingQuestions(Number(req.params.id)),
+        ]);
+        res.json({ ...service, durations, questions });
     } catch (err) {
         res.status(500).json({ message: (err as Error).message });
     }
@@ -416,6 +420,56 @@ router.patch('/api/services/:id/durations/:durationId', requireAdmin, async (req
 router.delete('/api/services/:id/durations/:durationId', requireAdmin, async (req, res) => {
     try {
         await storage.deleteServiceDuration(Number(req.params.durationId));
+        res.json({ success: true });
+    } catch (err) {
+        res.status(400).json({ message: (err as Error).message });
+    }
+});
+
+// --- Booking Questions sub-routes (Phase 26 QUEST-01, QUEST-02) ---
+
+router.get('/api/services/:id/questions', async (req, res) => {
+    try {
+        const questions = await storage.getServiceBookingQuestions(Number(req.params.id));
+        res.json(questions);
+    } catch (err) {
+        console.error("[catalog] Failed to load booking questions. Check DB schema/migrations.", err);
+        res.json([]);
+    }
+});
+
+router.post('/api/services/:id/questions', requireAdmin, async (req, res) => {
+    try {
+        const data = insertServiceBookingQuestionSchema.parse({
+            ...req.body,
+            serviceId: Number(req.params.id),
+        });
+        const question = await storage.createServiceBookingQuestion(data);
+        res.status(201).json(question);
+    } catch (err) {
+        if (err instanceof z.ZodError) {
+            return res.status(400).json({ message: 'Validation error', errors: err.errors });
+        }
+        res.status(400).json({ message: (err as Error).message });
+    }
+});
+
+router.patch('/api/services/:id/questions/:questionId', requireAdmin, async (req, res) => {
+    try {
+        const data = insertServiceBookingQuestionSchema.partial().parse(req.body);
+        const question = await storage.updateServiceBookingQuestion(Number(req.params.questionId), data);
+        res.json(question);
+    } catch (err) {
+        if (err instanceof z.ZodError) {
+            return res.status(400).json({ message: 'Validation error', errors: err.errors });
+        }
+        res.status(400).json({ message: (err as Error).message });
+    }
+});
+
+router.delete('/api/services/:id/questions/:questionId', requireAdmin, async (req, res) => {
+    try {
+        await storage.deleteServiceBookingQuestion(Number(req.params.questionId));
         res.json({ success: true });
     } catch (err) {
         res.status(400).json({ message: (err as Error).message });

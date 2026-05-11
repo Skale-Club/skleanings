@@ -10,6 +10,7 @@ import {
   serviceOptions,
   serviceFrequencies,
   serviceDurations,
+  serviceBookingQuestions,
   bookings,
   bookingItems,
   chatSettings,
@@ -37,6 +38,9 @@ import {
   type ServiceDuration,
   type InsertServiceDuration,
   insertServiceDurationSchema,
+  type ServiceBookingQuestion,
+  type InsertServiceBookingQuestion,
+  insertServiceBookingQuestionSchema,
   type Booking,
   type BookingItem,
   type CompanySettings,
@@ -161,6 +165,12 @@ export interface IStorage {
   createServiceDuration(duration: InsertServiceDuration): Promise<ServiceDuration>;
   updateServiceDuration(id: number, data: Partial<InsertServiceDuration>): Promise<ServiceDuration>;
   deleteServiceDuration(id: number): Promise<void>;
+
+  // Service Booking Questions (Phase 26 QUEST-01, QUEST-02)
+  getServiceBookingQuestions(serviceId: number): Promise<ServiceBookingQuestion[]>;
+  createServiceBookingQuestion(q: InsertServiceBookingQuestion): Promise<ServiceBookingQuestion>;
+  updateServiceBookingQuestion(id: number, data: Partial<InsertServiceBookingQuestion>): Promise<ServiceBookingQuestion>;
+  deleteServiceBookingQuestion(id: number): Promise<void>;
 
   // Bookings
   createBooking(booking: InsertBooking & { totalPrice: string, totalDurationMinutes: number, endTime: string, bookingItemsData?: any[], userId?: string | null }): Promise<Booking>;
@@ -681,6 +691,33 @@ export class DatabaseStorage implements IStorage {
     await db.delete(serviceDurations).where(eq(serviceDurations.id, id));
   }
 
+  async getServiceBookingQuestions(serviceId: number): Promise<ServiceBookingQuestion[]> {
+    return db
+      .select()
+      .from(serviceBookingQuestions)
+      .where(eq(serviceBookingQuestions.serviceId, serviceId))
+      .orderBy(asc(serviceBookingQuestions.order), asc(serviceBookingQuestions.id));
+  }
+
+  async createServiceBookingQuestion(q: InsertServiceBookingQuestion): Promise<ServiceBookingQuestion> {
+    const [newQ] = await db.insert(serviceBookingQuestions).values(q).returning();
+    return newQ;
+  }
+
+  async updateServiceBookingQuestion(id: number, data: Partial<InsertServiceBookingQuestion>): Promise<ServiceBookingQuestion> {
+    const [updated] = await db
+      .update(serviceBookingQuestions)
+      .set(data)
+      .where(eq(serviceBookingQuestions.id, id))
+      .returning();
+    if (!updated) throw new Error(`ServiceBookingQuestion ${id} not found`);
+    return updated;
+  }
+
+  async deleteServiceBookingQuestion(id: number): Promise<void> {
+    await db.delete(serviceBookingQuestions).where(eq(serviceBookingQuestions.id, id));
+  }
+
   async getService(id: number): Promise<Service | undefined> {
     const [service] = await db
       .select()
@@ -726,6 +763,7 @@ export class DatabaseStorage implements IStorage {
             selectedFrequency: item.selectedFrequency,
             customerNotes: item.customerNotes,
             priceBreakdown: item.priceBreakdown,
+            questionAnswers: item.questionAnswers,
           });
         }
       } else if (booking.serviceIds && booking.serviceIds.length > 0) {

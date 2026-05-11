@@ -88,6 +88,7 @@ router.post('/', async (req, res) => {
                     selectedFrequency: calculated.selectedFrequency,
                     customerNotes: cartItem.customerNotes,
                     priceBreakdown: calculated.breakdown,
+                    questionAnswers: cartItem.questionAnswers,
                 });
             }
         }
