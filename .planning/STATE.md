@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Booking Intelligence
 status: verifying
-stopped_at: Completed 28-03-PLAN.md
-last_updated: "2026-05-11T15:47:46.951Z"
+stopped_at: Completed 29-02-PLAN.md
+last_updated: "2026-05-11T16:30:48.294Z"
 last_activity: 2026-05-11
 progress:
   total_phases: 5
-  completed_phases: 3
-  total_plans: 12
-  completed_plans: 11
+  completed_phases: 4
+  total_plans: 15
+  completed_plans: 12
   percent: 0
 ---
 
@@ -79,6 +79,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 28-03]: No sent-flag needed — bookingDate as natural lookup key ensures once-daily idempotency
 - [Phase 28-03]: Dynamic import of recurring-booking-reminder inside node-cron callback to avoid circular initialization at startup
 - [Phase 28-03]: GitHub Actions send-reminders step runs after generate step in same job — generated bookings exist before reminder query
+- [Phase 29]: Named Router exports from single recurring-bookings.ts file for admin+public routes — avoids 3-file split
+- [Phase 29]: APP_URL falls back to SITE_URL for manage-link emails — existing deployments without APP_URL continue to work
 
 ### Roadmap Evolution
 
@@ -92,6 +94,6 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-11T18:59:00.000Z
-Stopped at: Completed 28-03-PLAN.md
+Last session: 2026-05-11T16:30:23.204Z
+Stopped at: Completed 29-02-PLAN.md
 Resume file: None
