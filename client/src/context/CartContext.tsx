@@ -28,6 +28,7 @@ export interface CartItem extends Service {
   selectedOptions?: SelectedOption[]; // For base_plus_addons
   selectedFrequency?: SelectedFrequency | null; // For base_plus_addons
   customerNotes?: string; // For custom_quote
+  selectedDurationId?: number; // Set when user selects a duration option (Phase 23)
   priceBreakdown?: {
     basePrice?: number;
     areaPrice?: number;
@@ -49,6 +50,7 @@ export interface AddToCartData {
   selectedOptions?: SelectedOption[];
   selectedFrequency?: SelectedFrequency | null;
   customerNotes?: string;
+  selectedDurationId?: number; // Set when user selects a duration option (Phase 23)
   priceBreakdown?: CartItem['priceBreakdown'];
 }
 
@@ -89,6 +91,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 selectedOptions: data.selectedOptions,
                 selectedFrequency: data.selectedFrequency,
                 customerNotes: data.customerNotes,
+                selectedDurationId: data.selectedDurationId,
                 priceBreakdown: data.priceBreakdown,
               }
             : item
@@ -112,6 +115,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           selectedOptions: data.selectedOptions,
           selectedFrequency: data.selectedFrequency,
           customerNotes: data.customerNotes,
+          selectedDurationId: data.selectedDurationId,
           priceBreakdown: data.priceBreakdown,
         },
       ];
@@ -191,6 +195,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         if (item.id !== serviceId) return item;
         return {
           ...item,
+          // Spread service object to allow overriding durationMinutes and other Service fields
+          ...(data.service ? data.service : {}),
           quantity: data.quantity ?? item.quantity,
           calculatedPrice: data.calculatedPrice ?? item.calculatedPrice,
           areaSize: data.areaSize ?? item.areaSize,
@@ -198,6 +204,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           selectedOptions: data.selectedOptions ?? item.selectedOptions,
           selectedFrequency: data.selectedFrequency ?? item.selectedFrequency,
           customerNotes: data.customerNotes ?? item.customerNotes,
+          selectedDurationId: data.selectedDurationId ?? item.selectedDurationId,
           priceBreakdown: data.priceBreakdown ?? item.priceBreakdown,
         };
       })
