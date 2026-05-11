@@ -44,8 +44,21 @@ export async function startCronJobs() {
       }
     });
 
+    // Daily at 06:30 UTC: send 48h reminder emails for upcoming recurring bookings
+    // Production trigger is GitHub Actions (recurring-bookings-cron.yml — send-reminders step)
+    cron.schedule("30 6 * * *", async () => {
+      try {
+        console.log("[CronService] Daily recurring booking reminders...", new Date().toISOString());
+        const { runRecurringBookingReminders } = await import("./recurring-booking-reminder");
+        const result = await runRecurringBookingReminders();
+        console.log(`[CronService] Reminder run complete:`, result);
+      } catch (error) {
+        console.error("[CronService] Error in recurring booking reminders:", error);
+      }
+    });
+
     console.log(
-      "[CronService] Cron jobs scheduled: Blog generation (hourly), Recurring bookings (daily 06:00 UTC)",
+      "[CronService] Cron jobs scheduled: Blog generation (hourly), Recurring bookings (daily 06:00 UTC), Recurring reminders (daily 06:30 UTC)",
       "CronService"
     );
   } catch (error) {

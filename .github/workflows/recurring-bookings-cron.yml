@@ -62,3 +62,41 @@ jobs:
             exit 1
           fi
           echo "Recurring booking generation completed successfully"
+
+      - name: Send Recurring Booking Reminders
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          APP_URL="${APP_URL%/}"
+
+          call_reminders() {
+            curl -L -s -w "\n%{http_code}" -X POST \
+              "${APP_URL}/api/recurring-bookings/cron/send-reminders" \
+              -H "Authorization: Bearer ${CRON_SECRET}" \
+              -H "Content-Type: application/json" \
+              --max-time 60
+          }
+
+          echo "Triggering recurring booking reminders at $(date -u)"
+          RESPONSE=$(call_reminders)
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          if [ "$HTTP_CODE" -ge 500 ]; then
+            echo "Received HTTP $HTTP_CODE. Retrying once after 10s..."
+            sleep 10
+            RESPONSE=$(call_reminders)
+            HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+            BODY=$(echo "$RESPONSE" | sed '$d')
+          fi
+
+          echo "Response: $BODY"
+          echo "HTTP Status: $HTTP_CODE"
+
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "Reminder cron endpoint failed with HTTP $HTTP_CODE"
+            exit 1
+          fi
+          echo "Recurring booking reminders completed successfully"
