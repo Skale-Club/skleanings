@@ -1096,6 +1096,7 @@ export function AppointmentsCalendarSection({
           style={{ height: 720, overflowX: isByStaff ? 'auto' : undefined }}
         >
           <DnDCalendar
+            key={`${currentView}-${isByStaff}`}
             {...resourceProps}
             draggableAccessor={((event: CalendarEvent) => !event.isGcalBusy) as any}
             onEventDrop={handleEventDrop as any}
