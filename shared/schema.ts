@@ -927,6 +927,7 @@ export const staffAvailability = pgTable("staff_availability", {
   startTime: text("start_time").notNull(), // HH:MM
   endTime: text("end_time").notNull(),     // HH:MM
   isAvailable: boolean("is_available").default(true).notNull(),
+  rangeOrder: integer("range_order").notNull().default(0), // position within day's ranges; 0 = first/only
 });
 
 // Optional Google Calendar OAuth tokens per staff member
