@@ -1,6 +1,22 @@
 import { storage } from "../storage";
 import { getStaffBusyTimes } from "./google-calendar";
 
+export interface BookingLimits {
+  bufferTimeBefore: number;  // minutes
+  bufferTimeAfter: number;   // minutes
+  minimumNoticeHours: number;
+  timeSlotInterval: number | null; // null = use durationMinutes
+}
+
+/** Add minutes to an HH:MM string. Negative values subtract. */
+export function shiftHHMM(hhmm: string, minutes: number): string {
+  const [h, m] = hhmm.split(':').map(Number);
+  const total = h * 60 + m + minutes;
+  const newH = Math.floor(Math.max(0, total) / 60) % 24;
+  const newM = Math.max(0, total) % 60;
+  return `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
+}
+
 /**
  * Compute available time slots for a specific staff member on a date.
  * Uses the staff member's staffAvailability weekly schedule and their existing bookings.
@@ -10,7 +26,8 @@ export async function getStaffAvailableSlots(
   staffMemberId: number,
   date: string,
   durationMinutes: number,
-  options?: { timeZone?: string }
+  options?: { timeZone?: string },
+  limits?: BookingLimits
 ): Promise<string[]> {
   const dayOfWeek = new Date(date + "T12:00:00").getDay(); // 0=Sun … 6=Sat
 
@@ -30,50 +47,66 @@ export async function getStaffAvailableSlots(
   const timeZone = options?.timeZone || "America/New_York";
   const now = new Date();
   const tzNow = new Date(now.toLocaleString("en-US", { timeZone }));
-  const todayStr = tzNow.toISOString().split("T")[0];
+  const todayStr = getTodayStrForStaff(tzNow);
   const isToday = date === todayStr;
-  const currentHour = tzNow.getHours();
-  const currentMinute = tzNow.getMinutes();
+
+  // Minimum-notice cutoff — use tzNow for timezone correctness
+  const noticeMs = (limits?.minimumNoticeHours ?? 0) * 60 * 60 * 1000;
+  const cutoffTs = tzNow.getTime() + noticeMs;
+
+  const dayStartMins = startHr * 60 + startMn;
+  const dayEndMins = endHr * 60 + endMn;
+  const step = limits?.timeSlotInterval ?? durationMinutes;
 
   const slots: string[] = [];
 
-  for (let h = startHr; h < endHr || (h === endHr && 0 < endMn); h++) {
-    for (let m = 0; m < 60; m += 30) {
-      if (h === startHr && m < startMn) continue;
-      if (h > endHr || (h === endHr && m >= endMn)) continue;
+  for (let slotMins = dayStartMins; slotMins < dayEndMins; slotMins += step) {
+    const slotH = Math.floor(slotMins / 60);
+    const slotM = slotMins % 60;
+    const startTime = `${String(slotH).padStart(2, '0')}:${String(slotM).padStart(2, '0')}`;
 
-      const slotHour = h.toString().padStart(2, "0");
-      const slotMinute = m.toString().padStart(2, "0");
-      const startTime = `${slotHour}:${slotMinute}`;
+    // Minimum notice check — compare slot datetime against tzNow-based cutoff
+    const slotTs = new Date(`${date}T${startTime}:00`).getTime();
+    if (slotTs < cutoffTs) continue;
 
-      if (isToday) {
-        if (h < currentHour || (h === currentHour && m <= currentMinute)) continue;
-      }
-
-      // Check slot end time fits within staff's window
-      const slotEnd = new Date(`2000-01-01T${startTime}:00`);
-      slotEnd.setMinutes(slotEnd.getMinutes() + durationMinutes);
-      if (
-        slotEnd.getHours() > endHr ||
-        (slotEnd.getHours() === endHr && slotEnd.getMinutes() > endMn)
-      )
-        continue;
-
-      const endHour = slotEnd.getHours().toString().padStart(2, "0");
-      const endMinute = slotEnd.getMinutes().toString().padStart(2, "0");
-      const endTime = `${endHour}:${endMinute}`;
-
-      const hasBookingConflict = existingBookings.some(
-        (b) => startTime < b.endTime && endTime > b.startTime
-      );
-      const hasGoogleConflict = busyTimes.some(
-        (b) => startTime < b.end && endTime > b.start
-      );
-      if (!hasBookingConflict && !hasGoogleConflict) slots.push(startTime);
+    // For today without limits: also filter out past slots (legacy behaviour)
+    if (isToday && limits === undefined) {
+      const currentHour = tzNow.getHours();
+      const currentMinute = tzNow.getMinutes();
+      if (slotH < currentHour || (slotH === currentHour && slotM <= currentMinute)) continue;
     }
+
+    const slotEndMins = slotMins + durationMinutes;
+    if (slotEndMins > dayEndMins) continue;
+    const endH = Math.floor(slotEndMins / 60);
+    const endM = slotEndMins % 60;
+    const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+
+    // Buffer-aware conflict check
+    const bufBefore = limits?.bufferTimeBefore ?? 0;
+    const bufAfter = limits?.bufferTimeAfter ?? 0;
+    const hasBookingConflict = existingBookings.some((b) => {
+      const occupiedStart = shiftHHMM(b.startTime, -bufBefore);
+      const occupiedEnd = shiftHHMM(b.endTime, bufAfter);
+      return startTime < occupiedEnd && endTime > occupiedStart;
+    });
+    const hasGoogleConflict = busyTimes.some(
+      (b) => startTime < b.end && endTime > b.start
+    );
+    if (!hasBookingConflict && !hasGoogleConflict) slots.push(startTime);
   }
 
   return slots;
+}
+
+/** Helper to get today's date string from a timezone-adjusted Date object. */
+function getTodayStrForStaff(tzNow: Date): string {
+  // tzNow is already adjusted to business timezone via toLocaleString trick
+  // Extract YYYY-MM-DD from the local date representation
+  const y = tzNow.getFullYear();
+  const mo = String(tzNow.getMonth() + 1).padStart(2, '0');
+  const d = String(tzNow.getDate()).padStart(2, '0');
+  return `${y}-${mo}-${d}`;
 }
 
 /**
@@ -116,11 +149,26 @@ export async function getSlotsForServices(
     return getStaffUnionSlots(date, durationMinutes, options);
   }
 
-  if (staffId) {
-    // Specific staff selected: availability is their own schedule only
-    return getStaffAvailableSlots(staffId, date, durationMinutes, options);
+  // STEP 1: Load booking limits from primary service — MUST be before if (staffId) fast-path
+  let limits: BookingLimits | undefined;
+  if (serviceIds.length > 0) {
+    const primaryService = await storage.getService(serviceIds[0]);
+    if (primaryService) {
+      limits = {
+        bufferTimeBefore: primaryService.bufferTimeBefore ?? 0,
+        bufferTimeAfter: primaryService.bufferTimeAfter ?? 0,
+        minimumNoticeHours: primaryService.minimumNoticeHours ?? 0,
+        timeSlotInterval: primaryService.timeSlotInterval ?? null,
+      };
+    }
   }
 
+  // STEP 2: Fast-path when a specific staffId is already known — now limits is defined
+  if (staffId) {
+    return getStaffAvailableSlots(staffId, date, durationMinutes, options, limits);
+  }
+
+  // STEP 3: Union path — iterate all staff
   const activeStaff = await storage.getStaffMembers(false);
   if (activeStaff.length === 0) return [];
 
@@ -131,10 +179,10 @@ export async function getSlotsForServices(
     staffAbilities.set(staff.id, new Set(services.map((s) => s.id)));
   }
 
-  // Compute available slots per staff member
+  // Compute available slots per staff member (with limits)
   const staffSlots = new Map<number, Set<string>>();
   for (const staff of activeStaff) {
-    const slots = await getStaffAvailableSlots(staff.id, date, durationMinutes, options);
+    const slots = await getStaffAvailableSlots(staff.id, date, durationMinutes, options, limits);
     staffSlots.set(staff.id, new Set(slots));
   }
 
