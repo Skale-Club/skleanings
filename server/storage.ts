@@ -84,14 +84,17 @@ import {
   staffServiceAbilities,
   staffAvailability,
   staffGoogleCalendar,
+  staffAvailabilityOverrides,
   type StaffMember,
   type StaffServiceAbility,
   type StaffAvailability,
   type StaffGoogleCalendar,
+  type StaffAvailabilityOverride,
   type InsertStaffMember,
   type InsertStaffServiceAbility,
   type InsertStaffAvailability,
   type InsertStaffGoogleCalendar,
+  type InsertStaffAvailabilityOverride,
   notificationLogs,
   type NotificationLog,
   type InsertNotificationLog,
@@ -306,6 +309,12 @@ export interface IStorage {
   // Staff Availability
   getStaffAvailability(staffMemberId: number): Promise<StaffAvailability[]>;
   setStaffAvailability(staffMemberId: number, availability: Omit<InsertStaffAvailability, 'staffMemberId'>[]): Promise<StaffAvailability[]>;
+
+  // Staff Availability Overrides
+  getStaffAvailabilityOverrides(staffMemberId: number): Promise<StaffAvailabilityOverride[]>;
+  getStaffAvailabilityOverridesByDate(staffMemberId: number, date: string): Promise<StaffAvailabilityOverride | undefined>;
+  createStaffAvailabilityOverride(data: InsertStaffAvailabilityOverride): Promise<StaffAvailabilityOverride>;
+  deleteStaffAvailabilityOverride(id: number): Promise<void>;
 
   // Staff Google Calendar (optional integration)
   getStaffGoogleCalendar(staffMemberId: number): Promise<StaffGoogleCalendar | undefined>;
@@ -1701,6 +1710,33 @@ export class DatabaseStorage implements IStorage {
     return await db.insert(staffAvailability)
       .values(availability.map(a => ({ ...a, staffMemberId })))
       .returning();
+  }
+
+  // ─── Staff Availability Overrides ──────────────────────────────────────────
+
+  async getStaffAvailabilityOverrides(staffMemberId: number): Promise<StaffAvailabilityOverride[]> {
+    return await db.select().from(staffAvailabilityOverrides)
+      .where(eq(staffAvailabilityOverrides.staffMemberId, staffMemberId))
+      .orderBy(asc(staffAvailabilityOverrides.date));
+  }
+
+  async getStaffAvailabilityOverridesByDate(staffMemberId: number, date: string): Promise<StaffAvailabilityOverride | undefined> {
+    const rows = await db.select().from(staffAvailabilityOverrides)
+      .where(and(
+        eq(staffAvailabilityOverrides.staffMemberId, staffMemberId),
+        eq(staffAvailabilityOverrides.date, date)
+      ))
+      .limit(1);
+    return rows[0];
+  }
+
+  async createStaffAvailabilityOverride(data: InsertStaffAvailabilityOverride): Promise<StaffAvailabilityOverride> {
+    const rows = await db.insert(staffAvailabilityOverrides).values(data).returning();
+    return rows[0];
+  }
+
+  async deleteStaffAvailabilityOverride(id: number): Promise<void> {
+    await db.delete(staffAvailabilityOverrides).where(eq(staffAvailabilityOverrides.id, id));
   }
 
   // ─── Staff Google Calendar ─────────────────────────────────────────────────
