@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Calendar Polish
 status: verifying
-stopped_at: Completed 20-02-PLAN.md (Task 1 only; Task 2 awaits human browser session)
-last_updated: "2026-05-11T09:08:48.562Z"
+stopped_at: Completed 20-03-PLAN.md
+last_updated: "2026-05-11T09:14:07.107Z"
 last_activity: 2026-05-11
 progress:
   total_phases: 1
@@ -73,8 +73,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 24]: Approve/Reject buttons placed in interactive variant only, visible solely when status === awaiting_approval
 - [Phase 24]: awaiting=true query param used for Confirmation routing — works across page reloads
 - [Phase 24]: requiresConfirmation toggle placed inside Booking Rules collapsible to keep ServiceForm uncluttered
-- [Phase 20]: filterPopover accepted as useMemo dep without memoizing — acceptable for now, conditional scope for follow-up
-- [Phase 20]: Task 2 Post-Wave-1 browser measurement skipped pending human DevTools session
+- [Phase 20]: Strategy D selected as conservative default for CSS alignment: adds gutter slot min-height 2.25rem to match day-slot override, without touching Phase 18 transform rule (Pitfall 5 fix)
 
 ### Roadmap Evolution
 
@@ -88,6 +87,6 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-11T09:08:48.556Z
-Stopped at: Completed 20-02-PLAN.md (Task 1 only; Task 2 awaits human browser session)
+Last session: 2026-05-11T09:14:02.876Z
+Stopped at: Completed 20-03-PLAN.md
 Resume file: None
