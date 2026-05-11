@@ -116,6 +116,21 @@ export const serviceDurations = pgTable("service_durations", {
   order: integer("order").notNull().default(0),
 });
 
+// Service-specific intake questions shown during customer checkout (Phase 26 QUEST-01)
+export const serviceBookingQuestions = pgTable("service_booking_questions", {
+  id:        serial("id").primaryKey(),
+  serviceId: integer("service_id").references(() => services.id, { onDelete: "cascade" }).notNull(),
+  label:     text("label").notNull(),
+  type:      text("type").notNull().default("text"),  // 'text' | 'textarea' | 'select'
+  options:   jsonb("options").$type<string[]>(),
+  required:  boolean("required").notNull().default(false),
+  order:     integer("order").notNull().default(0),
+});
+
+export const insertServiceBookingQuestionSchema = createInsertSchema(serviceBookingQuestions).omit({ id: true });
+export type ServiceBookingQuestion = typeof serviceBookingQuestions.$inferSelect;
+export type InsertServiceBookingQuestion = z.infer<typeof insertServiceBookingQuestionSchema>;
+
 // Customer contacts — deduplicated across bookings by email (primary) or phone (fallback)
 export const contacts = pgTable("contacts", {
   id: serial("id").primaryKey(),
@@ -412,6 +427,14 @@ export interface PriceBreakdown {
   finalPrice: number;
 }
 
+// Snapshot of one customer answer at booking time (Phase 26 QUEST-04)
+export interface QuestionAnswer {
+  questionId: number;
+  label: string;    // snapshot of question label — survives question deletion
+  type: string;     // snapshot of type
+  answer: string;   // always a string; select stores chosen option text
+}
+
 export const bookingItems = pgTable("booking_items", {
   id: serial("id").primaryKey(),
   bookingId: integer("booking_id").references(() => bookings.id).notNull(),
@@ -427,6 +450,7 @@ export const bookingItems = pgTable("booking_items", {
   selectedFrequency: jsonb("selected_frequency").$type<BookingItemFrequency>(), // Frequency selected
   customerNotes: text("customer_notes"), // Notes for custom_quote
   priceBreakdown: jsonb("price_breakdown").$type<PriceBreakdown>(), // Detailed price calculation
+  questionAnswers: jsonb("question_answers").$type<QuestionAnswer[]>(), // Customer answers to service-specific questions (Phase 26)
 });
 
 // === SCHEMAS ===
@@ -463,6 +487,14 @@ export const cartItemSchema = z.object({
   selectedFrequencyId: z.number().optional(),
   // For custom_quote
   customerNotes: z.string().optional(),
+  // Phase 26: customer answers to service-specific intake questions
+  // CRITICAL: must be in schema or Zod strips it silently before answers reach server
+  questionAnswers: z.array(z.object({
+    questionId: z.number(),
+    label: z.string(),
+    type: z.string(),
+    answer: z.string(),
+  })).optional(),
 });
 
 export type CartItemData = z.infer<typeof cartItemSchema>;
