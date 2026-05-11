@@ -364,6 +364,10 @@
     min-height: 2.25rem;
   }
 
+  .appointments-calendar .rbc-time-view .rbc-time-gutter .rbc-time-slot {
+    min-height: 2.25rem;
+  }
+
   .appointments-calendar .rbc-event {
     @apply transition-transform duration-150 ease-out;
   }
