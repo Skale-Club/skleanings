@@ -160,6 +160,8 @@ router.post('/', async (req, res) => {
                     console.warn(`[RecurringBooking] Frequency ${rawFrequencyId} missing or has no intervalDays — skipping subscription`);
                 } else {
                     const { advanceDate } = await import("../lib/date-utils");
+                    // Phase 30 DUR-06: capture chosen duration for recurring instance generation
+                    const chosenDurationMinutes = bookingItemsData?.[0]?.durationMinutes ?? null;
                     const sub = await storage.createRecurringBooking({
                         contactId: booking.contactId ?? null,
                         serviceId: frequency.serviceId,
@@ -173,6 +175,7 @@ router.post('/', async (req, res) => {
                         preferredStaffMemberId: validatedData.staffMemberId ?? null,
                         originBookingId: booking.id,
                         status: "active",
+                        durationMinutes: chosenDurationMinutes,
                     });
                     // Link booking back to subscription
                     await storage.updateBooking(booking.id, { recurringBookingId: sub.id } as any);
