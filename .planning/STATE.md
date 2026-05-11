@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Calendar Polish
 status: executing
-stopped_at: Completed 21-01-PLAN.md
-last_updated: "2026-05-11T02:55:55.970Z"
+stopped_at: Completed 21-03-PLAN.md
+last_updated: "2026-05-11T03:00:05.057Z"
 last_activity: 2026-05-11
 progress:
   total_phases: 1
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-05-05)
 ## Current Position
 
 Phase: 21 (per-service-booking-limits-buffer-time-minimum-notice-time-slot-interval) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-05-11
 
@@ -57,6 +57,7 @@ See: .planning/MILESTONES.md
 All milestone decisions logged in PROJECT.md Key Decisions table.
 
 - [Phase 21]: timeSlotInterval is nullable (null = use durationMinutes) to avoid requiring a value on every existing service row
+- [Phase 21]: Booking Rules section uses plain useState toggle (no new shadcn dependency) and timeSlotInterval submits null when blank
 
 ### Roadmap Evolution
 
@@ -70,6 +71,6 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-11T02:55:55.967Z
-Stopped at: Completed 21-01-PLAN.md
+Last session: 2026-05-11T03:00:05.055Z
+Stopped at: Completed 21-03-PLAN.md
 Resume file: None
