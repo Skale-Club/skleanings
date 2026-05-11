@@ -72,7 +72,7 @@ Full details: [milestones/v4.0-ROADMAP.md](milestones/v4.0-ROADMAP.md)
 
 ## Phases
 
-- [ ] **Phase 30: Multiple Durations per Service** - Customers choose their preferred duration (e.g. 2h / 4h / 8h) when booking; admins configure duration options per service
+- [x] **Phase 30: Multiple Durations per Service** - Customers choose their preferred duration (e.g. 2h / 4h / 8h) when booking; admins configure duration options per service (completed 2026-05-11)
 - [ ] **Phase 31: Branded Transactional Email via Resend** - Customers receive on-brand confirmation, reminder, and cancellation emails; admins configure email credentials in the admin panel
 - [ ] **Phase 32: Calendar Harmony Retry Queue** - Booking sync to Google Calendar and GoHighLevel uses a durable queue with exponential backoff; admins can monitor and retry failed jobs
 
@@ -92,7 +92,7 @@ Full details: [milestones/v4.0-ROADMAP.md](milestones/v4.0-ROADMAP.md)
 Plans:
 - [x] 30-01-PLAN.md — Migration + schema: add snapshot columns and selectedDurationId to Zod
 - [x] 30-02-PLAN.md — Server wiring: getServiceDuration storage method, CartContext fix, booking route resolution
-- [ ] 30-03-PLAN.md — Recurring pipeline: capture durationMinutes at subscription creation, fix generator
+- [x] 30-03-PLAN.md — Recurring pipeline: capture durationMinutes at subscription creation, fix generator
 **UI hint**: yes
 
 ### Phase 31: Branded Transactional Email via Resend
@@ -132,7 +132,7 @@ Plans:
 | 15–19 | v2.0 | 15/15 | Complete | 2026-05-05 |
 | 20 | v3.0 | 4/4 | Complete | 2026-05-11 |
 | 21–29 | v4.0 | 27/27 | Complete | 2026-05-11 |
-| 30. Multiple Durations per Service | v5.0 | 2/3 | In Progress|  |
+| 30. Multiple Durations per Service | v5.0 | 3/3 | Complete   | 2026-05-11 |
 | 31. Branded Transactional Email via Resend | v5.0 | 0/TBD | Not started | - |
 | 32. Calendar Harmony Retry Queue | v5.0 | 0/TBD | Not started | - |
 

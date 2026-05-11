@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Booking Experience
-status: executing
-stopped_at: Completed 30-02-PLAN.md
-last_updated: "2026-05-11T22:20:51.830Z"
+status: verifying
+stopped_at: Completed 30-03-PLAN.md
+last_updated: "2026-05-11T22:28:52.993Z"
 last_activity: 2026-05-11
 progress:
   total_phases: 3
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-05-11)
 
 Phase: 30 (Multiple Durations per Service) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-05-11
 
 Progress: [░░░░░░░░░░] 0%
@@ -59,6 +59,7 @@ Recent decisions affecting current work:
 - [Research]: serviceDurations migration status uncertain — Phase 30 plan must begin with supabase db status check before implementation
 - [Phase 30-multiple-durations-per-service]: recurringBookings.durationMinutes is nullable (null = use catalog default) — safe fallback for pre-Phase-30 subscription rows
 - [Phase 30]: questionAnswers omitted from CartContext getCartItemsForBooking — CartItem type does not carry the field; server route already forwards it directly from cartItem
+- [Phase 30]: chosenDurationMinutes resolved from bookingItemsData[0].durationMinutes; sub.durationMinutes ?? service.durationMinutes in generator for backward-compat fallback
 
 ### Pending Todos
 
@@ -73,6 +74,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-11T22:20:51.818Z
-Stopped at: Completed 30-02-PLAN.md
+Last session: 2026-05-11T22:28:52.973Z
+Stopped at: Completed 30-03-PLAN.md
 Resume file: None
