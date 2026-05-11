@@ -926,6 +926,19 @@ export const staffGoogleCalendar = pgTable("staff_google_calendar", {
   lastDisconnectedAt: timestamp("last_disconnected_at"),
 });
 
+// Date-specific overrides: block a date or set custom hours overriding weekly schedule
+export const staffAvailabilityOverrides = pgTable("staff_availability_overrides", {
+  id: serial("id").primaryKey(),
+  staffMemberId: integer("staff_member_id").references(() => staffMembers.id, { onDelete: "cascade" }).notNull(),
+  date: date("date").notNull(),          // YYYY-MM-DD
+  isUnavailable: boolean("is_unavailable").notNull().default(false),
+  startTime: text("start_time"),         // HH:MM, nullable
+  endTime: text("end_time"),             // HH:MM, nullable
+  reason: text("reason"),                // optional note
+}, (table) => ({
+  staffDateUnique: uniqueIndex("staff_availability_overrides_staff_date_unique").on(table.staffMemberId, table.date),
+}));
+
 // Staff insert schemas
 export const insertStaffMemberSchema = createInsertSchema(staffMembers).omit({
   id: true,
@@ -951,6 +964,10 @@ export const insertStaffGoogleCalendarSchema = createInsertSchema(staffGoogleCal
   lastDisconnectedAt: true,
 });
 
+export const insertStaffAvailabilityOverrideSchema = createInsertSchema(staffAvailabilityOverrides).omit({
+  id: true,
+});
+
 // Staff TypeScript types
 export type StaffMember = typeof staffMembers.$inferSelect;
 export type StaffServiceAbility = typeof staffServiceAbilities.$inferSelect;
@@ -961,6 +978,9 @@ export type InsertStaffMember = z.infer<typeof insertStaffMemberSchema>;
 export type InsertStaffServiceAbility = z.infer<typeof insertStaffServiceAbilitySchema>;
 export type InsertStaffAvailability = z.infer<typeof insertStaffAvailabilitySchema>;
 export type InsertStaffGoogleCalendar = z.infer<typeof insertStaffGoogleCalendarSchema>;
+export type InsertStaffAvailabilityOverride = z.infer<typeof insertStaffAvailabilityOverrideSchema>;
+
+export type StaffAvailabilityOverride = typeof staffAvailabilityOverrides.$inferSelect;
 
 // === NOTIFICATION LOGS ===
 
