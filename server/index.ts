@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
+import rateLimit from "express-rate-limit";
 import { registerRoutes } from "./routes";
 import { initializeSeedData } from "./lib/seeds";
 import { serveStatic } from "./static";
@@ -38,6 +39,27 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: false }));
+
+// Rate limiting for public endpoints — in-memory store, no Redis needed at current scale
+const analyticsLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 20,
+  standardHeaders: false,
+  legacyHeaders: false,
+  handler: (_req, res) => res.status(429).json({ message: "Too many requests, please try again later." }),
+});
+
+const chatLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 30,
+  standardHeaders: false,
+  legacyHeaders: false,
+  handler: (_req, res) => res.status(429).json({ message: "Too many requests, please try again later." }),
+});
+
+app.post("/api/analytics/session", analyticsLimiter);
+app.post("/api/analytics/events", analyticsLimiter);
+app.post("/api/chat/message", chatLimiter);
 
 const SessionStore = MemoryStore(session);
 app.use(
