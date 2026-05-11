@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Calendar Polish
 status: executing
-stopped_at: Completed 22-01-PLAN.md
-last_updated: "2026-05-11T03:21:31.631Z"
+stopped_at: Completed 22-02-PLAN.md
+last_updated: "2026-05-11T03:25:42.710Z"
 last_activity: 2026-05-11
 progress:
   total_phases: 1
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-05-05)
 ## Current Position
 
 Phase: 22 (date-overrides-staff-availability) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-05-11
 
@@ -63,6 +63,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 21]: getAvailabilityRange (month-view) left unchanged — month-view limits out of scope for phase 21
 - [Phase 22-date-overrides-staff-availability]: uniqueIndex used for named compound unique index on staffAvailabilityOverrides(staffMemberId, date)
 - [Phase 22-date-overrides-staff-availability]: date column uses Drizzle date() type (YYYY-MM-DD string) for consistency with slot booking flow
+- [Phase 22-date-overrides-staff-availability]: POST override uses delete-then-insert upsert; override with isUnavailable=false and no times falls through to weekly schedule
+- [Phase 22-date-overrides-staff-availability]: _generateSlots extracted as private helper in staff-availability.ts; called from both override and weekly-schedule paths
 
 ### Roadmap Evolution
 
@@ -76,6 +78,6 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-11T03:21:31.628Z
-Stopped at: Completed 22-01-PLAN.md
+Last session: 2026-05-11T03:25:42.707Z
+Stopped at: Completed 22-02-PLAN.md
 Resume file: None
