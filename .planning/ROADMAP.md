@@ -78,7 +78,11 @@ Full details: [milestones/v3.0-ROADMAP.md](milestones/v3.0-ROADMAP.md)
   2. Booking slots shown to customers contain no times that fall within a configured gap between ranges
   3. An admin removing a time range sees the editor update immediately and future bookings reflect the change
   4. Existing staff availability records load and behave identically after the migration runs — no data loss and no behavioral change
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 25-01-PLAN.md — Schema + Migration (range_order column + shared/schema.ts update)
+- [ ] 25-02-PLAN.md — Backend: storage orderBy, route validation, slot algorithm multi-range loop
+- [ ] 25-03-PLAN.md — Frontend: AvailabilityTab multi-range editor UI
 **UI hint**: yes
 
 ### Phase 26: Custom Booking Questions
