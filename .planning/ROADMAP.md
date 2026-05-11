@@ -62,7 +62,7 @@ Full details: [milestones/v2.0-ROADMAP.md](milestones/v2.0-ROADMAP.md)
 
 ### 🚧 v3.0 Calendar Polish (In Progress)
 
-- [ ] Phase 20: Calendar Timeline & Structure Audit (4 plans)
+- [x] Phase 20: Calendar Timeline & Structure Audit (4 plans) (completed 2026-05-11)
 
 ---
 
@@ -80,7 +80,7 @@ Full details: [milestones/v2.0-ROADMAP.md](milestones/v2.0-ROADMAP.md)
 | 17. Favicon, Legal & Company Type Admin UI | v2.0 | 3/3 | Complete | 2026-04-30 |
 | 18. Admin Calendar Improvements | v2.0 | 3/3 | Complete | 2026-04-30 |
 | 19. Receptionist Booking Flow & Multi-Staff View | v2.0 | 4/4 | Complete | 2026-04-30 |
-| 20. Calendar Timeline & Structure Audit | v3.0 | 1/4 | In Progress|  |
+| 20. Calendar Timeline & Structure Audit | v3.0 | 1/4 | Complete    | 2026-05-11 |
 | 21. Per-service booking limits | standalone | 3/3 | Complete    | 2026-05-11 |
 | 22. Date overrides for staff availability | standalone | 3/3 | Complete    | 2026-05-11 |
 | 23. Multiple durations per service | standalone | 0/3 | Complete    | 2026-05-11 |
