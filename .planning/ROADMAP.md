@@ -126,7 +126,11 @@ Plans:
   2. Selecting a recurring frequency and completing checkout creates a recurring subscription record linked to the booking
   3. Customer receives an email reminder 48 hours before each upcoming recurring cleaning — including the date, time, and service summary
   4. One-time bookings are unaffected — no reminder emails sent, no subscription created
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 28-01-PLAN.md — Migration (intervalDays column), schema update, date-utils, IStorage.getServiceFrequency, generator fix, frequency selector UI, POST /api/bookings subscription creation
+- [ ] 28-02-PLAN.md — Email infrastructure: server/lib/email.ts (nodemailer transporter), server/lib/email-templates.ts (buildReminderEmail), .env.example additions
+- [ ] 28-03-PLAN.md — Reminder service (runRecurringBookingReminders), POST /cron/send-reminders route, local-dev cron schedule, GitHub Actions workflow extension
 **UI hint**: yes
 
 ### Phase 29: Recurring Bookings — Admin & Self-Serve Management
