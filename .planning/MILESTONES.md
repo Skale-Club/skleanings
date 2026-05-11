@@ -1,5 +1,19 @@
 # Milestones
 
+## v4.0 Booking Intelligence (Shipped: 2026-05-11)
+
+**Phases completed:** 5 phases, 15 plans, 23 tasks
+
+**Key accomplishments:**
+
+- range_order INTEGER column added to staff_availability via idempotent migration + Drizzle schema updated so StaffAvailability type includes rangeOrder: number
+- Storage, route schema, and slot-generation algorithm updated to support multiple ordered time-range rows per (staffMemberId, dayOfWeek) with N+1-free DB access
+- AvailabilityTab replaced with a per-day card editor where admins can add multiple time windows, remove individual ranges, and save rangeOrder-indexed payloads to the backend
+- Admin ServiceForm "Booking Questions" collapsible with full CRUD; BookingPage step 4 dynamic question fields with required validation; SharedBookingCard question answer display
+- Nodemailer SMTP transporter with graceful no-op + typed reminder email template (subject/text/HTML) using brand colors and 12h time formatting
+
+---
+
 ## v3.0 Calendar Polish (Shipped: 2026-05-11)
 
 **Phases completed:** 1 phases, 4 plans, 6 tasks
