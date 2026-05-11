@@ -61,7 +61,7 @@ Full details: [milestones/v3.0-ROADMAP.md](milestones/v3.0-ROADMAP.md)
 
 - [x] **Phase 25: Multiple Time Slots Per Day** — Multi-range daily availability with migration (completed 2026-05-11)
 - [x] **Phase 26: Custom Booking Questions** — Service-specific intake questions for admin and customers (completed 2026-05-11)
-- [ ] **Phase 27: Recurring Bookings — Schema & Cron Foundation** — Database schema and auto-generation job
+- [x] **Phase 27: Recurring Bookings — Schema & Cron Foundation** — Database schema and auto-generation job (completed 2026-05-11)
 - [ ] **Phase 28: Recurring Bookings — Customer Flow & Notifications** — Frequency selector and 48h reminders
 - [ ] **Phase 29: Recurring Bookings — Admin & Self-Serve Management** — Subscription panel and pause/cancel
 
@@ -113,9 +113,9 @@ Plans:
   4. The cron job logs its run result (subscriptions processed, bookings created, errors) without crashing on partial failures
 **Plans**: 3 plans
 Plans:
-- [ ] 27-01-PLAN.md — Schema + Migration (recurring_bookings table, bookings FK column, Drizzle types)
-- [ ] 27-02-PLAN.md — Storage methods (IStorage interface + DatabaseStorage implementations)
-- [ ] 27-03-PLAN.md — Generator service, cron HTTP endpoint, route registration, node-cron schedule, GitHub Actions workflow
+- [x] 27-01-PLAN.md — Schema + Migration (recurring_bookings table, bookings FK column, Drizzle types)
+- [x] 27-02-PLAN.md — Storage methods (IStorage interface + DatabaseStorage implementations)
+- [x] 27-03-PLAN.md — Generator service, cron HTTP endpoint, route registration, node-cron schedule, GitHub Actions workflow
 
 ### Phase 28: Recurring Bookings — Customer Flow & Notifications
 **Goal**: Customers can opt into a recurring schedule at booking time and receive automatic 48-hour email reminders before each recurring cleaning.
@@ -165,7 +165,7 @@ Plans:
 | 24. Manual confirmation flow per service | standalone | 3/3 | Complete | 2026-05-11 |
 | 25. Multiple Time Slots Per Day | v4.0 | 3/3 | Complete    | 2026-05-11 |
 | 26. Custom Booking Questions | v4.0 | 0/3 | Complete    | 2026-05-11 |
-| 27. Recurring Bookings — Schema & Cron Foundation | v4.0 | 0/3 | Not started | — |
+| 27. Recurring Bookings — Schema & Cron Foundation | v4.0 | 3/3 | Complete   | 2026-05-11 |
 | 28. Recurring Bookings — Customer Flow & Notifications | v4.0 | 0/3 | Not started | — |
 | 29. Recurring Bookings — Admin & Self-Serve Management | v4.0 | 0/3 | Not started | — |
 

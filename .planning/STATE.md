@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v3.0
-milestone_name: Calendar Polish
+milestone: v4.0
+milestone_name: Booking Intelligence
 status: verifying
-stopped_at: Completed 27-02-PLAN.md
-last_updated: "2026-05-11T13:29:11.927Z"
+stopped_at: Completed 27-03-PLAN.md
+last_updated: "2026-05-11T13:38:12.303Z"
 last_activity: 2026-05-11
 progress:
-  total_phases: 1
-  completed_phases: 0
-  total_plans: 4
-  completed_plans: 0
+  total_phases: 5
+  completed_phases: 3
+  total_plans: 9
+  completed_plans: 9
   percent: 0
 ---
 
@@ -76,6 +76,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 27]: 5 recurring-booking storage methods added to IStorage + DatabaseStorage: create, get, list(filter), getActiveDue(cron), update
 - [Phase 27]: getActiveRecurringBookingsDueForGeneration uses lte(nextBookingDate, asOfDate) AND (endDate IS NULL OR endDate > nextBookingDate)
 - [Phase 27]: updateRecurringBooking always stamps updatedAt: new Date() on every call
+- [Phase 27]: Raw db.transaction used (not storage.createBooking) to bypass GHL/Twilio notifications — Phase 28 decides notification strategy
+- [Phase 27]: advanceDate handles intervalDays=30 as calendar-month with end-of-month clamp to prevent drift
 
 ### Roadmap Evolution
 
@@ -89,6 +91,6 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-11T13:29:06.087Z
-Stopped at: Completed 27-02-PLAN.md
+Last session: 2026-05-11T13:38:06.417Z
+Stopped at: Completed 27-03-PLAN.md
 Resume file: None

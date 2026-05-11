@@ -19,7 +19,7 @@
 ### Recurring Bookings — Cleaning Subscriptions (SEED-031)
 
 - [ ] **RECUR-01**: Customer can select a recurring frequency (weekly, biweekly, monthly) with discount preview when booking
-- [ ] **RECUR-02**: System automatically generates the next booking 7 days before the scheduled date (one-ahead generation)
+- [x] **RECUR-02**: System automatically generates the next booking 7 days before the scheduled date (one-ahead generation)
 - [ ] **RECUR-03**: Customer receives an automatic 48h reminder notification before each recurring cleaning
 - [ ] **RECUR-04**: Admin can view all recurring subscriptions, see next booking date, pause, and cancel
 - [ ] **RECUR-05**: Customer can pause (temporary) and cancel (permanent) their recurring subscription from a self-serve page
