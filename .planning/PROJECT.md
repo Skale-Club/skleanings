@@ -46,9 +46,21 @@ Customers can discover, book, and pay for cleaning services online without calli
 - ✓ Calendar Timeline & Structure Audit — RBC component memoization (calendarComponents, resourceProps, visibleStaffForResources), useCallback handlers, deleted redundant mount useEffect, CSS gutter slot min-height alignment (Strategy D), forced DnDCalendar remount on view+resource change — Phase 20
 - ✓ Manual Confirmation Flow Per Service — requiresConfirmation boolean on services, awaiting_approval booking status, admin approve/reject endpoints, amber "Request Received" confirmation screen — Phase 24
 
-### Active
+### Active (v4.0 Booking Intelligence)
 
-(Planning next milestone)
+- [ ] SLOTS-01: Staff availability supports multiple time ranges per day (e.g., 8am-12pm AND 2pm-7pm)
+- [ ] SLOTS-02: Admin can add, remove, and reorder time ranges per day in the availability editor
+- [ ] SLOTS-03: Booking slot generation respects all configured ranges — no slots offered during gaps
+- [ ] SLOTS-04: Migration preserves existing single-range availability data without changes
+- [ ] QUEST-01: Admin can add custom intake questions to a service (text, textarea, select types)
+- [ ] QUEST-02: Admin can mark questions as required or optional and set display order
+- [ ] QUEST-03: Customer sees service-specific questions in the booking flow (Customer Details step)
+- [ ] QUEST-04: Customer answers are stored with the booking and visible to admin
+- [ ] RECUR-01: Customer can select a recurring frequency (weekly, biweekly, monthly) when booking
+- [ ] RECUR-02: System automatically generates the next booking N days before the scheduled date
+- [ ] RECUR-03: Customer receives a 48h reminder before each recurring cleaning
+- [ ] RECUR-04: Admin can view, pause, and cancel recurring subscriptions from the dashboard
+- [ ] RECUR-05: Customer can pause and cancel their recurring subscription
 
 ### Out of Scope
 
@@ -108,4 +120,14 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-11 after v3.0 Calendar Polish milestone*
+## Current Milestone: v4.0 Booking Intelligence
+
+**Goal:** Complete the availability system with multi-slot days, add service-specific intake questions, and implement recurring cleaning subscriptions.
+
+**Target features:**
+- Multiple time slots per day (split shifts, lunch breaks) — SEED-021
+- Custom booking questions per service — SEED-027
+- Recurring bookings with pause/cancel and 48h reminders — SEED-031
+
+---
+*Last updated: 2026-05-11 — v4.0 Booking Intelligence started*
