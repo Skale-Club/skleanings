@@ -16,16 +16,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Trash2 } from 'lucide-react';
+import { Loader2, Trash2, Plus } from 'lucide-react';
 import { CalendarTab } from '@/components/admin/CalendarTab';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-interface AvailabilityRow {
-  dayOfWeek: number;
-  isAvailable: boolean;
+interface RangeEntry {
   startTime: string;
   endTime: string;
+}
+
+interface DayState {
+  isAvailable: boolean;
+  ranges: RangeEntry[]; // ordered; index = rangeOrder
 }
 
 interface StaffManageDialogProps {
@@ -323,36 +326,53 @@ function DateOverridesTab({ staffId }: { staffId: number }) {
 
 function AvailabilityTab({ staffId }: { staffId: number }) {
   const { toast } = useToast();
-  const [rows, setRows] = useState<AvailabilityRow[]>(() =>
-    Array.from({ length: 7 }, (_, i) => ({
-      dayOfWeek: i,
-      isAvailable: i >= 1 && i <= 5,
-      startTime: '09:00',
-      endTime: '17:00',
-    }))
-  );
+  const [days, setDays] = useState<DayState[]>([]);
 
-  const { data: availability, isLoading } = useQuery<AvailabilityRow[]>({
+  const { data: availability, isLoading } = useQuery<any[]>({
     queryKey: ['/api/staff', staffId, 'availability'],
     queryFn: () => fetch(`/api/staff/${staffId}/availability`).then((r) => r.json()),
   });
 
   useEffect(() => {
-    if (availability) {
-      setRows(
-        Array.from({ length: 7 }, (_, i) => {
-          const found = availability.find((a) => a.dayOfWeek === i);
-          return found
-            ? { dayOfWeek: i, isAvailable: found.isAvailable, startTime: found.startTime, endTime: found.endTime }
-            : { dayOfWeek: i, isAvailable: i >= 1 && i <= 5, startTime: '09:00', endTime: '17:00' };
-        })
-      );
-    }
+    if (!availability) return;
+    const next: DayState[] = Array.from({ length: 7 }, (_, dayOfWeek) => {
+      const dayRows = (availability as any[])
+        .filter((a) => a.dayOfWeek === dayOfWeek)
+        .sort((a: any, b: any) => (a.rangeOrder ?? 0) - (b.rangeOrder ?? 0));
+      if (dayRows.length === 0) {
+        const defaultAvailable = dayOfWeek >= 1 && dayOfWeek <= 5;
+        return { isAvailable: defaultAvailable, ranges: [{ startTime: '09:00', endTime: '17:00' }] };
+      }
+      const isAvailable = dayRows[0].isAvailable;
+      const ranges: RangeEntry[] = isAvailable
+        ? dayRows.map((r: any) => ({ startTime: r.startTime, endTime: r.endTime }))
+        : [{ startTime: dayRows[0].startTime, endTime: dayRows[0].endTime }];
+      return { isAvailable, ranges };
+    });
+    setDays(next);
   }, [availability]);
 
   const saveAvailability = useMutation({
     mutationFn: async () => {
-      return apiRequest('PUT', `/api/staff/${staffId}/availability`, rows);
+      const payload = days.flatMap((day, dayOfWeek) => {
+        if (!day.isAvailable) {
+          return [{
+            dayOfWeek,
+            isAvailable: false,
+            startTime: day.ranges[0]?.startTime ?? '09:00',
+            endTime: day.ranges[0]?.endTime ?? '17:00',
+            rangeOrder: 0,
+          }];
+        }
+        return day.ranges.map((r, rangeOrder) => ({
+          dayOfWeek,
+          isAvailable: true,
+          startTime: r.startTime,
+          endTime: r.endTime,
+          rangeOrder,
+        }));
+      });
+      return apiRequest('PUT', `/api/staff/${staffId}/availability`, payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/staff', staffId, 'availability'] });
@@ -362,12 +382,6 @@ function AvailabilityTab({ staffId }: { staffId: number }) {
       toast({ title: 'Failed to update availability', description: error.message, variant: 'destructive' });
     },
   });
-
-  const updateRow = (dayOfWeek: number, patch: Partial<AvailabilityRow>) => {
-    setRows((prev) =>
-      prev.map((r) => (r.dayOfWeek === dayOfWeek ? { ...r, ...patch } : r))
-    );
-  };
 
   if (isLoading) {
     return (
@@ -382,30 +396,103 @@ function AvailabilityTab({ staffId }: { staffId: number }) {
       <p className="text-sm text-muted-foreground">
         Set weekly working hours for this staff member.
       </p>
-      <div className="space-y-2">
-        {rows.map((row) => (
-          <div key={row.dayOfWeek} className="grid grid-cols-[3rem_1fr_auto_auto] gap-3 items-center">
-            <span className="text-sm font-medium text-muted-foreground w-10">
-              {DAY_NAMES[row.dayOfWeek]}
-            </span>
-            <Switch
-              checked={row.isAvailable}
-              onCheckedChange={(checked) => updateRow(row.dayOfWeek, { isAvailable: checked })}
-            />
-            <Input
-              type="time"
-              value={row.startTime}
-              disabled={!row.isAvailable}
-              onChange={(e) => updateRow(row.dayOfWeek, { startTime: e.target.value })}
-              className="w-28 text-sm"
-            />
-            <Input
-              type="time"
-              value={row.endTime}
-              disabled={!row.isAvailable}
-              onChange={(e) => updateRow(row.dayOfWeek, { endTime: e.target.value })}
-              className="w-28 text-sm"
-            />
+      <div className="space-y-3">
+        {days.map((day, dayOfWeek) => (
+          <div key={dayOfWeek} className="border rounded-lg p-3">
+            {/* Day header row: checkbox + day name */}
+            <div className="flex items-center gap-3 mb-2">
+              <input
+                type="checkbox"
+                id={`day-available-${dayOfWeek}`}
+                checked={day.isAvailable}
+                onChange={(e) =>
+                  setDays((prev) => prev.map((d, i) =>
+                    i === dayOfWeek ? { ...d, isAvailable: e.target.checked } : d
+                  ))
+                }
+                className="w-4 h-4 rounded border-gray-300"
+              />
+              <label htmlFor={`day-available-${dayOfWeek}`} className="font-medium text-sm cursor-pointer">
+                {DAY_NAMES[dayOfWeek]}
+              </label>
+            </div>
+
+            {/* Range list — only render when day is available */}
+            {day.isAvailable && (
+              <div className="space-y-2 pl-6">
+                {day.ranges.map((range, rangeIdx) => (
+                  <div key={rangeIdx} className="flex items-center gap-2">
+                    <input
+                      type="time"
+                      value={range.startTime}
+                      className="border rounded px-2 py-1 text-sm"
+                      onChange={(e) =>
+                        setDays((prev) => prev.map((d, di) =>
+                          di !== dayOfWeek ? d : {
+                            ...d,
+                            ranges: d.ranges.map((r, ri) =>
+                              ri === rangeIdx ? { ...r, startTime: e.target.value } : r
+                            ),
+                          }
+                        ))
+                      }
+                    />
+                    <span className="text-sm text-muted-foreground">to</span>
+                    <input
+                      type="time"
+                      value={range.endTime}
+                      className="border rounded px-2 py-1 text-sm"
+                      onChange={(e) =>
+                        setDays((prev) => prev.map((d, di) =>
+                          di !== dayOfWeek ? d : {
+                            ...d,
+                            ranges: d.ranges.map((r, ri) =>
+                              ri === rangeIdx ? { ...r, endTime: e.target.value } : r
+                            ),
+                          }
+                        ))
+                      }
+                    />
+                    {/* Remove range — only show when more than one range exists */}
+                    {day.ranges.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        type="button"
+                        onClick={() =>
+                          setDays((prev) => prev.map((d, di) =>
+                            di !== dayOfWeek ? d : {
+                              ...d,
+                              ranges: d.ranges.filter((_, ri) => ri !== rangeIdx),
+                            }
+                          ))
+                        }
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+
+                {/* Add range button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  onClick={() =>
+                    setDays((prev) => prev.map((d, di) =>
+                      di !== dayOfWeek ? d : {
+                        ...d,
+                        ranges: [...d.ranges, { startTime: '09:00', endTime: '17:00' }],
+                      }
+                    ))
+                  }
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Add range
+                </Button>
+              </div>
+            )}
           </div>
         ))}
       </div>
