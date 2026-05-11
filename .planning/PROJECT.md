@@ -111,11 +111,14 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-## Current Milestone: v5.0 (Planning next milestone)
+## Current Milestone: v5.0 Booking Experience
 
-### Active
+**Goal:** Melhorar a experiência de booking com durações flexíveis, comunicação transacional por email e sync confiável com calendários externos.
 
-(Planning next milestone)
+**Target features:**
+- Múltiplas durações por serviço (cliente escolhe 2h / 4h / 8h no mesmo serviço)
+- Emails transacionais com marca via Resend (confirmação, lembrete 24h, cancelamento)
+- Calendar Harmony — retry queue para GCal + GHL com observabilidade no admin
 
 ---
-*Last updated: 2026-05-11 — v4.0 Booking Intelligence shipped*
+*Last updated: 2026-05-11 — v5.0 Booking Experience started*

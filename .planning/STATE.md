@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v4.0
-milestone_name: Booking Intelligence
-status: verifying
-stopped_at: Completed 29-03-PLAN.md
-last_updated: "2026-05-11T17:17:38.134Z"
+milestone: v5.0
+milestone_name: Booking Experience
+status: planning
+stopped_at: —
+last_updated: "2026-05-11T00:00:00.000Z"
 last_activity: 2026-05-11
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 15
-  completed_plans: 15
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
   percent: 0
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-05-05)
 
 ## Current Position
 
-Phase: 29
-Plan: Not started
-Status: Phase complete — ready for verification
-Last activity: 2026-05-11
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-05-11 — Milestone v5.0 started
 
 Progress: [░░░░░░░░░░] 0%
 
