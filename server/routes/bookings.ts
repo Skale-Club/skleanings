@@ -163,6 +163,39 @@ router.post('/', async (req, res) => {
                     // Link booking back to subscription
                     await storage.updateBooking(booking.id, { recurringBookingId: sub.id } as any);
                     console.log(`[RecurringBooking] Created subscription ${sub.id} for booking ${booking.id} (${frequency.name})`);
+                    // Phase 29 RECUR-05: send manage-link email so customer can pause/cancel self-serve
+                    try {
+                        const { buildManageEmail } = await import("../lib/email-templates");
+                        const { sendEmail } = await import("../lib/email");
+                        const appUrl = process.env.APP_URL ?? process.env.SITE_URL ?? "";
+                        if (!appUrl) {
+                            console.warn("[RecurringBooking] APP_URL not set — manage link email skipped");
+                        } else if (booking.customerEmail) {
+                            const manageUrl = `${appUrl}/manage-subscription/${sub.manageToken}`;
+                            const companySettings = await storage.getCompanySettings();
+                            const companyName = companySettings?.companyName || "Your Cleaning Service";
+                            const svc = await storage.getService(frequency.serviceId);
+                            const emailContent = buildManageEmail({
+                                customerName: booking.customerName,
+                                serviceName: svc?.name ?? "Cleaning Service",
+                                frequencyName: frequency.name,
+                                manageUrl,
+                                companyName,
+                            });
+                            await sendEmail(
+                                booking.customerEmail,
+                                emailContent.subject,
+                                emailContent.text,
+                                emailContent.html
+                            );
+                            console.log(`[RecurringBooking] Manage-link email sent to ${booking.customerEmail} for subscription ${sub.id}`);
+                        } else {
+                            console.warn(`[RecurringBooking] No customerEmail on booking ${booking.id} — manage link email skipped`);
+                        }
+                    } catch (emailErr) {
+                        // Non-fatal: email failure never breaks booking or subscription creation
+                        console.error("[RecurringBooking] Manage-link email error:", emailErr);
+                    }
                 }
             } catch (recurringErr) {
                 console.error("[RecurringBooking] Subscription creation error:", recurringErr);
