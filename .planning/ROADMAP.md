@@ -111,7 +111,11 @@ Plans:
   2. A cron job runs daily and generates the next booking occurrence for any active subscription whose next generation date has been reached (one-ahead pattern)
   3. Generated bookings appear in the admin calendar and booking list as normal bookings linked to their recurring subscription
   4. The cron job logs its run result (subscriptions processed, bookings created, errors) without crashing on partial failures
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 27-01-PLAN.md — Schema + Migration (recurring_bookings table, bookings FK column, Drizzle types)
+- [ ] 27-02-PLAN.md — Storage methods (IStorage interface + DatabaseStorage implementations)
+- [ ] 27-03-PLAN.md — Generator service, cron HTTP endpoint, route registration, node-cron schedule, GitHub Actions workflow
 
 ### Phase 28: Recurring Bookings — Customer Flow & Notifications
 **Goal**: Customers can opt into a recurring schedule at booking time and receive automatic 48-hour email reminders before each recurring cleaning.
