@@ -7,12 +7,12 @@
 
 ### Timeline Alignment
 
-- [ ] **CAL-FIX-01**: Time gutter labels (e.g., "9:00 AM") align horizontally with the corresponding grid line in Day, Week, and By Staff views — verified at default zoom and at min/max zoom levels with no pixel offset visible
+- [x] **CAL-FIX-01**: Time gutter labels (e.g., "9:00 AM") align horizontally with the corresponding grid line in Day, Week, and By Staff views — verified at default zoom and at min/max zoom levels with no pixel offset visible
 - [ ] **CAL-FIX-02**: Switching between Month, Week, Day, and By Staff views and back leaves no stale layout state — gutter widths, header positions, and event placements re-render correctly without manual reload
 
 ### Structural Correctness
 
-- [ ] **CAL-FIX-03**: The By Staff multi-column view (Phase 19) continues to render one column per visible staff member after the refactor; column headers, gutter, and event positions remain aligned with the time grid; horizontal scroll behavior for 5+ staff is preserved
+- [x] **CAL-FIX-03**: The By Staff multi-column view (Phase 19) continues to render one column per visible staff member after the refactor; column headers, gutter, and event positions remain aligned with the time grid; horizontal scroll behavior for 5+ staff is preserved
 - [ ] **CAL-FIX-04**: Phase 19 interactive flows (drag-to-reassign with undo toast, QuickBook walk-in modal, GCal busy block guard) function identically before and after the refactor — no regression on the 5 outstanding human UAT items
 
 ## Traceability

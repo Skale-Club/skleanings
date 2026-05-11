@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Calendar Polish
 status: verifying
-stopped_at: Completed 23-02-PLAN.md
-last_updated: "2026-05-11T03:55:15.827Z"
+stopped_at: Completed 20-03-PLAN.md
+last_updated: "2026-05-11T09:14:07.107Z"
 last_activity: 2026-05-11
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 4
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -73,6 +73,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 24]: Approve/Reject buttons placed in interactive variant only, visible solely when status === awaiting_approval
 - [Phase 24]: awaiting=true query param used for Confirmation routing — works across page reloads
 - [Phase 24]: requiresConfirmation toggle placed inside Booking Rules collapsible to keep ServiceForm uncluttered
+- [Phase 20]: Strategy D selected as conservative default for CSS alignment: adds gutter slot min-height 2.25rem to match day-slot override, without touching Phase 18 transform rule (Pitfall 5 fix)
 
 ### Roadmap Evolution
 
@@ -86,6 +87,6 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-11T03:33:23.203Z
-Stopped at: Completed 23-02-PLAN.md
+Last session: 2026-05-11T09:14:02.876Z
+Stopped at: Completed 20-03-PLAN.md
 Resume file: None
