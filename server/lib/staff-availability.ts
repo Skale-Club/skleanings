@@ -25,6 +25,8 @@ interface SlotGenOptions {
   dayStartMins: number;
   dayEndMins: number;
   staffMemberId: number;
+  prefetchedBookings?: Awaited<ReturnType<typeof storage.getBookingsByDateAndStaff>>;
+  prefetchedBusyTimes?: Array<{ start: string; end: string }>;
 }
 
 /**
@@ -32,12 +34,15 @@ interface SlotGenOptions {
  * Checks booking conflicts, Google Calendar conflicts, minimum notice, and buffer times.
  */
 async function _generateSlots(opts: SlotGenOptions): Promise<string[]> {
-  const { date, durationMinutes, limits, options, dayStartMins, dayEndMins, staffMemberId } = opts;
+  const { date, durationMinutes, limits, options, dayStartMins, dayEndMins, staffMemberId,
+          prefetchedBookings, prefetchedBusyTimes } = opts;
 
-  const existingBookings = await storage.getBookingsByDateAndStaff(date, staffMemberId);
+  const existingBookings = prefetchedBookings
+    ?? await storage.getBookingsByDateAndStaff(date, staffMemberId);
 
   // Google Calendar busy times (optional — returns [] if no calendar connected)
-  const busyTimes = await getStaffBusyTimes(staffMemberId, date, options?.timeZone);
+  const busyTimes = prefetchedBusyTimes
+    ?? await getStaffBusyTimes(staffMemberId, date, options?.timeZone);
 
   const timeZone = options?.timeZone || "America/New_York";
   const now = new Date();
@@ -126,19 +131,33 @@ export async function getStaffAvailableSlots(
   }
 
   const availability = await storage.getStaffAvailability(staffMemberId);
-  const dayRecord = availability.find((a) => a.dayOfWeek === dayOfWeek);
+  const dayRecords = availability
+    .filter((a) => a.dayOfWeek === dayOfWeek && a.isAvailable)
+    .sort((a, b) => a.rangeOrder - b.rangeOrder);
 
-  if (!dayRecord || !dayRecord.isAvailable) return [];
+  if (dayRecords.length === 0) return [];
 
-  const [startHr, startMn] = dayRecord.startTime.split(":").map(Number);
-  const [endHr, endMn] = dayRecord.endTime.split(":").map(Number);
+  // Hoist DB calls outside the range loop — one fetch per date+staff, not one per range
+  const [prefetchedBookings, prefetchedBusyTimes] = await Promise.all([
+    storage.getBookingsByDateAndStaff(date, staffMemberId),
+    getStaffBusyTimes(staffMemberId, date, options?.timeZone),
+  ]);
 
-  return _generateSlots({
-    date, durationMinutes, limits, options,
-    dayStartMins: startHr * 60 + startMn,
-    dayEndMins: endHr * 60 + endMn,
-    staffMemberId,
-  });
+  const allSlots = new Set<string>();
+  for (const record of dayRecords) {
+    const [startHr, startMn] = record.startTime.split(":").map(Number);
+    const [endHr, endMn] = record.endTime.split(":").map(Number);
+    const rangeSlots = await _generateSlots({
+      date, durationMinutes, limits, options,
+      dayStartMins: startHr * 60 + startMn,
+      dayEndMins: endHr * 60 + endMn,
+      staffMemberId,
+      prefetchedBookings,
+      prefetchedBusyTimes,
+    });
+    for (const slot of rangeSlots) allSlots.add(slot);
+  }
+  return [...allSlots].sort();
 }
 
 /** Helper to get today's date string from a timezone-adjusted Date object. */

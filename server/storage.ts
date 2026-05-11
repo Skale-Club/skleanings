@@ -1736,7 +1736,7 @@ export class DatabaseStorage implements IStorage {
   async getStaffAvailability(staffMemberId: number): Promise<StaffAvailability[]> {
     return await db.select().from(staffAvailability)
       .where(eq(staffAvailability.staffMemberId, staffMemberId))
-      .orderBy(asc(staffAvailability.dayOfWeek));
+      .orderBy(asc(staffAvailability.dayOfWeek), asc(staffAvailability.rangeOrder));
   }
 
   async setStaffAvailability(

@@ -13,6 +13,7 @@ const availabilityItemSchema = z.object({
   startTime: z.string().regex(/^\d{2}:\d{2}$/),
   endTime: z.string().regex(/^\d{2}:\d{2}$/),
   isAvailable: z.boolean(),
+  rangeOrder: z.number().int().min(0).default(0),
 });
 
 async function canManageStaffCalendar(req: any, staffId: number) {
@@ -217,6 +218,23 @@ router.get("/:id/availability", async (req, res) => {
 router.put("/:id/availability", requireAdmin, async (req, res) => {
   try {
     const availability = z.array(availabilityItemSchema).parse(req.body);
+
+    // Group available ranges per day and check for overlaps
+    const dayRanges = new Map<number, Array<{ startTime: string; endTime: string }>>();
+    for (const item of availability) {
+      if (!item.isAvailable) continue;
+      if (!dayRanges.has(item.dayOfWeek)) dayRanges.set(item.dayOfWeek, []);
+      dayRanges.get(item.dayOfWeek)!.push({ startTime: item.startTime, endTime: item.endTime });
+    }
+    for (const [, ranges] of dayRanges) {
+      const sorted = [...ranges].sort((a, b) => a.startTime.localeCompare(b.startTime));
+      for (let i = 0; i < sorted.length - 1; i++) {
+        if (sorted[i].endTime > sorted[i + 1].startTime) {
+          return res.status(400).json({ message: "Time ranges on the same day must not overlap." });
+        }
+      }
+    }
+
     const saved = await storage.setStaffAvailability(Number(req.params.id), availability);
     res.json(saved);
   } catch (err) {
