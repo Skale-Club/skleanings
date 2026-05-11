@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v4.0
-milestone_name: Booking Intelligence
+milestone: v3.0
+milestone_name: Calendar Polish
 status: verifying
-stopped_at: Completed 26-03-PLAN.md
-last_updated: "2026-05-11T11:18:36.566Z"
+stopped_at: Completed 27-01-PLAN.md
+last_updated: "2026-05-11T13:21:40.751Z"
 last_activity: 2026-05-11
 progress:
-  total_phases: 5
-  completed_phases: 2
-  total_plans: 6
-  completed_plans: 6
+  total_phases: 1
+  completed_phases: 0
+  total_plans: 4
+  completed_plans: 0
   percent: 0
 ---
 
@@ -25,7 +25,7 @@ See: .planning/PROJECT.md (updated 2026-05-05)
 
 ## Current Position
 
-Phase: 27
+Phase: 24
 Plan: Not started
 Status: Phase complete — ready for verification
 Last activity: 2026-05-11
@@ -73,9 +73,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 24]: Approve/Reject buttons placed in interactive variant only, visible solely when status === awaiting_approval
 - [Phase 24]: awaiting=true query param used for Confirmation routing — works across page reloads
 - [Phase 24]: requiresConfirmation toggle placed inside Booking Rules collapsible to keep ServiceForm uncluttered
-- [Phase 26-custom-booking-questions]: Schema types for serviceBookingQuestions added in Plan 02 worktree to match Plan 01 parallel output; identical on merge
-- [Phase 26-custom-booking-questions]: questionAnswers merged into cartItems at onSubmit time, not stored in CartContext
-- [Phase 26-custom-booking-questions]: QuestionAnswer interface defined locally in SharedBookingCard to avoid coupling admin card to shared types
+- [Phase 27]: originBookingId stored as plain integer() in Drizzle (no .references()) to avoid circular reference; SQL migration enforces FK at DB level
+- [Phase 27]: recurringBookings defined before bookings in schema.ts to satisfy Drizzle forward-reference constraint for bookings.recurringBookingId FK
 
 ### Roadmap Evolution
 
@@ -89,6 +88,6 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-11T11:12:44.991Z
-Stopped at: Completed 26-03-PLAN.md
+Last session: 2026-05-11T13:21:35.131Z
+Stopped at: Completed 27-01-PLAN.md
 Resume file: None

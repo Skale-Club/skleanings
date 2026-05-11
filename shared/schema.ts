@@ -194,6 +194,42 @@ export type VisitorSession = typeof visitorSessions.$inferSelect;
 export const insertVisitorSessionSchema = createInsertSchema(visitorSessions);
 export type InsertVisitorSession = z.infer<typeof insertVisitorSessionSchema>;
 
+// Recurring subscription records — one row per customer recurring schedule (Phase 27 RECUR-01)
+// Must be defined before bookings because bookings.recurringBookingId references this table.
+export const recurringBookings = pgTable("recurring_bookings", {
+  id: serial("id").primaryKey(),
+  contactId: integer("contact_id").references(() => contacts.id, { onDelete: "set null" }),
+  serviceId: integer("service_id").references(() => services.id, { onDelete: "restrict" }).notNull(),
+  serviceFrequencyId: integer("service_frequency_id").references(() => serviceFrequencies.id, { onDelete: "restrict" }).notNull(),
+  discountPercent: numeric("discount_percent", { precision: 5, scale: 2 }).notNull().default("0"),
+  intervalDays: integer("interval_days").notNull(), // snapshot: 7 | 14 | 30
+  frequencyName: text("frequency_name").notNull(),  // snapshot of serviceFrequencies.name at creation
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date"),
+  nextBookingDate: date("next_booking_date").notNull(),
+  preferredStartTime: text("preferred_start_time").notNull(),
+  preferredStaffMemberId: integer("preferred_staff_member_id").references(() => staffMembers.id, { onDelete: "set null" }),
+  status: text("status").notNull().default("active"), // active | paused | cancelled
+  cancelledAt: timestamp("cancelled_at"),
+  pausedAt: timestamp("paused_at"),
+  // IMPORTANT: Do NOT add .references(() => bookings.id) to originBookingId — this would create
+  // a circular reference in Drizzle (bookings is defined after this table). The SQL migration
+  // enforces the FK constraint at DB level. Use plain integer() only here.
+  originBookingId: integer("origin_booking_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertRecurringBookingSchema = createInsertSchema(recurringBookings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  cancelledAt: true,
+  pausedAt: true,
+});
+export type RecurringBooking = typeof recurringBookings.$inferSelect;
+export type InsertRecurringBooking = z.infer<typeof insertRecurringBookingSchema>;
+
 export const bookings = pgTable("bookings", {
   id: serial("id").primaryKey(),
   customerName: text("customer_name").notNull(),
@@ -224,6 +260,8 @@ export const bookings = pgTable("bookings", {
   contactId: integer("contact_id").references(() => contacts.id, { onDelete: "set null" }),
   // UTM attribution FK (Phase 10 — nullable; populated by analytics hook)
   utmSessionId: uuid("utm_session_id").references(() => visitorSessions.id, { onDelete: "set null" }),
+  // Recurring subscription link — null for one-time bookings, set for cron-generated bookings (Phase 27)
+  recurringBookingId: integer("recurring_booking_id").references(() => recurringBookings.id, { onDelete: "set null" }),
 });
 
 // conversion_events: one row per tracked action (booking_completed, booking_started, chat_initiated).
