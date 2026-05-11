@@ -237,6 +237,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       })),
       selectedFrequencyId: item.selectedFrequency?.id,
       customerNotes: item.customerNotes,
+      selectedDurationId: item.selectedDurationId, // Phase 30 DUR-05
     }));
   };
 

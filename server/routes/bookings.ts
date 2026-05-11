@@ -76,6 +76,18 @@ router.post('/', async (req, res) => {
                 const options = await storage.getServiceOptions(service.id);
                 const frequencies = await storage.getServiceFrequencies(service.id);
                 const calculated = await calculateCartItemPrice(service, cartItem, options, frequencies);
+
+                // Phase 30 DUR-04/DUR-05: resolve chosen duration for snapshot
+                let durationLabel: string | null = null;
+                let resolvedDurationMinutes: number | null = null;
+                if (cartItem.selectedDurationId) {
+                    const chosenDuration = await storage.getServiceDuration(cartItem.selectedDurationId);
+                    if (chosenDuration) {
+                        durationLabel = chosenDuration.label;
+                        resolvedDurationMinutes = chosenDuration.durationMinutes;
+                    }
+                }
+
                 bookingItemsData.push({
                     serviceId: service.id,
                     serviceName: service.name,
@@ -89,6 +101,8 @@ router.post('/', async (req, res) => {
                     customerNotes: cartItem.customerNotes,
                     priceBreakdown: calculated.breakdown,
                     questionAnswers: cartItem.questionAnswers,
+                    durationLabel,                        // Phase 30 DUR-04
+                    durationMinutes: resolvedDurationMinutes, // Phase 30 DUR-04
                 });
             }
         }
