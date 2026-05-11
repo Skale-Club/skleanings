@@ -105,6 +105,10 @@ import {
   contacts,
   type Contact,
   type InsertContact,
+  recurringBookings,
+  type RecurringBooking,
+  type InsertRecurringBooking,
+  insertRecurringBookingSchema,
 } from "@shared/schema";
 import { eq, and, or, gte, lte, inArray, desc, asc, sql, ne, isNull, like } from "drizzle-orm";
 import { z } from "zod";
@@ -364,6 +368,13 @@ export interface IStorage {
     limit?: number;
     offset?: number;
   }): Promise<NotificationLog[]>;
+
+  // Recurring Bookings (Phase 27 RECUR-01, RECUR-02)
+  createRecurringBooking(data: InsertRecurringBooking): Promise<RecurringBooking>;
+  getRecurringBooking(id: number): Promise<RecurringBooking | undefined>;
+  getRecurringBookings(statusFilter?: string): Promise<RecurringBooking[]>;
+  getActiveRecurringBookingsDueForGeneration(asOfDate: string): Promise<RecurringBooking[]>;
+  updateRecurringBooking(id: number, data: Partial<Pick<RecurringBooking, 'status' | 'nextBookingDate' | 'cancelledAt' | 'pausedAt' | 'updatedAt'>>): Promise<RecurringBooking>;
 }
 
 export class DatabaseStorage implements IStorage {
