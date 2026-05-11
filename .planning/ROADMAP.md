@@ -62,7 +62,7 @@ Full details: [milestones/v3.0-ROADMAP.md](milestones/v3.0-ROADMAP.md)
 - [x] **Phase 25: Multiple Time Slots Per Day** — Multi-range daily availability with migration (completed 2026-05-11)
 - [x] **Phase 26: Custom Booking Questions** — Service-specific intake questions for admin and customers (completed 2026-05-11)
 - [x] **Phase 27: Recurring Bookings — Schema & Cron Foundation** — Database schema and auto-generation job (completed 2026-05-11)
-- [ ] **Phase 28: Recurring Bookings — Customer Flow & Notifications** — Frequency selector and 48h reminders
+- [x] **Phase 28: Recurring Bookings — Customer Flow & Notifications** — Frequency selector and 48h reminders (completed 2026-05-11)
 - [ ] **Phase 29: Recurring Bookings — Admin & Self-Serve Management** — Subscription panel and pause/cancel
 
 ---
@@ -170,7 +170,7 @@ Plans:
 | 25. Multiple Time Slots Per Day | v4.0 | 3/3 | Complete    | 2026-05-11 |
 | 26. Custom Booking Questions | v4.0 | 0/3 | Complete    | 2026-05-11 |
 | 27. Recurring Bookings — Schema & Cron Foundation | v4.0 | 3/3 | Complete    | 2026-05-11 |
-| 28. Recurring Bookings — Customer Flow & Notifications | v4.0 | 1/3 | In Progress|  |
+| 28. Recurring Bookings — Customer Flow & Notifications | v4.0 | 1/3 | Complete    | 2026-05-11 |
 | 29. Recurring Bookings — Admin & Self-Serve Management | v4.0 | 0/3 | Not started | — |
 
 ---
