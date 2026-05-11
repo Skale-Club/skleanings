@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Booking Experience
-status: planning
-stopped_at: Roadmap created — Phase 30 ready to plan
-last_updated: "2026-05-11T00:00:00.000Z"
+status: executing
+stopped_at: Completed 30-01-PLAN.md
+last_updated: "2026-05-11T22:09:47.531Z"
 last_activity: 2026-05-11
 progress:
   total_phases: 3
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 3
+  completed_plans: 1
   percent: 0
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-05-11)
 
 ## Current Position
 
-Phase: 30 of 32 (Multiple Durations per Service)
-Plan: — (not yet planned)
-Status: Ready to plan
-Last activity: 2026-05-11 — v5.0 roadmap created, Phase 30 ready to plan
+Phase: 30 (Multiple Durations per Service) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-05-11
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -50,12 +50,14 @@ See: .planning/MILESTONES.md
 All milestone decisions logged in PROJECT.md Key Decisions table.
 
 Recent decisions affecting current work:
+
 - [Research]: Do NOT use drizzle-orm query builder .for("update", { skipLocked: true }) — known bug #3554; use raw db.execute with FOR UPDATE SKIP LOCKED instead
 - [Research]: Do NOT install @react-email/components — deprecated since React Email v6; all components are now in react-email package directly
 - [Research]: Do NOT remove nodemailer — still powers v4.0 recurring subscription reminders; Resend is a parallel addition in server/lib/email-resend.ts
 - [Research]: react-email v6 peer dep conflict with React 18 — use --legacy-peer-deps; do not upgrade to React 19
 - [Research]: CartContext.totalDuration must use selected duration, not catalog default — override item.durationMinutes at selection time
 - [Research]: serviceDurations migration status uncertain — Phase 30 plan must begin with supabase db status check before implementation
+- [Phase 30-multiple-durations-per-service]: recurringBookings.durationMinutes is nullable (null = use catalog default) — safe fallback for pre-Phase-30 subscription rows
 
 ### Pending Todos
 
@@ -70,6 +72,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-11
-Stopped at: Roadmap created for v5.0 (Phases 30–32). Next: /gsd:plan-phase 30
+Last session: 2026-05-11T22:09:47.521Z
+Stopped at: Completed 30-01-PLAN.md
 Resume file: None
