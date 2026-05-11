@@ -165,7 +165,7 @@ Plans:
 | 24. Manual confirmation flow per service | standalone | 3/3 | Complete | 2026-05-11 |
 | 25. Multiple Time Slots Per Day | v4.0 | 3/3 | Complete    | 2026-05-11 |
 | 26. Custom Booking Questions | v4.0 | 0/3 | Complete    | 2026-05-11 |
-| 27. Recurring Bookings — Schema & Cron Foundation | v4.0 | 3/3 | Complete   | 2026-05-11 |
+| 27. Recurring Bookings — Schema & Cron Foundation | v4.0 | 3/3 | Complete    | 2026-05-11 |
 | 28. Recurring Bookings — Customer Flow & Notifications | v4.0 | 0/3 | Not started | — |
 | 29. Recurring Bookings — Admin & Self-Serve Management | v4.0 | 0/3 | Not started | — |
 
