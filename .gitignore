@@ -116,3 +116,4 @@ replit.nix
 
 # Supabase CLI cache
 supabase/.temp/
+.claude/worktrees/
