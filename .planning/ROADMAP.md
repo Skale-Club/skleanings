@@ -83,6 +83,7 @@ Full details: [milestones/v2.0-ROADMAP.md](milestones/v2.0-ROADMAP.md)
 | 20. Calendar Timeline & Structure Audit | v3.0 | 0/TBD | Not started | — |
 | 21. Per-service booking limits | standalone | 3/3 | Complete    | 2026-05-11 |
 | 22. Date overrides for staff availability | standalone | 0/3 | Not started | — |
+| 23. Multiple durations per service | standalone | 0/3 | Not started | — |
 
 ---
 
@@ -119,12 +120,14 @@ Plans:
 ### Phase 23: Multiple durations per service (SEED-029)
 
 **Goal:** Add serviceDurations table so a single service can offer multiple durations (e.g., 2h/$150, 4h/$250, 8h/$400). Customer selects duration in booking flow before calendar.
-**Requirements**: TBD
+**Requirements**: SEED-029-schema, SEED-029-backend, SEED-029-ui
 **Depends on:** Phase 21
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 23 to break down)
+- [ ] 23-01-PLAN.md — Wave 1: Schema + Supabase migration (serviceDurations table + Drizzle types)
+- [ ] 23-02-PLAN.md — Wave 2: Backend (storage CRUD, 5 REST endpoints, enrich GET /api/services/:id)
+- [ ] 23-03-PLAN.md — Wave 3: Admin UI (ServiceForm durations section) + booking flow duration selector
 
 ### Phase 24: Manual confirmation flow per service (SEED-030)
 
