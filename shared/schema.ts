@@ -76,6 +76,7 @@ export const services = pgTable("services", {
   bufferTimeAfter: integer("buffer_time_after").default(0).notNull(),
   minimumNoticeHours: integer("minimum_notice_hours").default(0).notNull(),
   timeSlotInterval: integer("time_slot_interval"), // nullable — null = use durationMinutes
+  requiresConfirmation: boolean("requires_confirmation").default(false).notNull(),
 });
 
 // Service add-on relationships (e.g., Sofa can suggest Ottoman as add-on)
@@ -102,6 +103,17 @@ export const serviceFrequencies = pgTable("service_frequencies", {
   name: text("name").notNull(), // e.g., "Weekly", "Every 15 days"
   discountPercent: numeric("discount_percent", { precision: 5, scale: 2 }).default("0"), // e.g., 15.00 for 15%
   order: integer("order").default(0),
+});
+
+// Service duration options (Phase 23 SEED-029)
+// When a service has rows here, the booking flow shows a duration selector.
+export const serviceDurations = pgTable("service_durations", {
+  id: serial("id").primaryKey(),
+  serviceId: integer("service_id").references(() => services.id, { onDelete: "cascade" }).notNull(),
+  label: text("label").notNull(), // e.g., "2 hours — Small apartment"
+  durationMinutes: integer("duration_minutes").notNull(),
+  price: numeric("price", { precision: 10, scale: 2 }).notNull(),
+  order: integer("order").notNull().default(0),
 });
 
 // Customer contacts — deduplicated across bookings by email (primary) or phone (fallback)
@@ -435,6 +447,7 @@ export const insertServiceSchema = createInsertSchema(services, {
 export const insertServiceAddonSchema = createInsertSchema(serviceAddons).omit({ id: true });
 export const insertServiceOptionSchema = createInsertSchema(serviceOptions).omit({ id: true });
 export const insertServiceFrequencySchema = createInsertSchema(serviceFrequencies).omit({ id: true });
+export const insertServiceDurationSchema = createInsertSchema(serviceDurations).omit({ id: true });
 // Cart item data sent from frontend for booking
 export const cartItemSchema = z.object({
   serviceId: z.number(),
@@ -519,6 +532,8 @@ export type Service = typeof services.$inferSelect;
 export type ServiceAddon = typeof serviceAddons.$inferSelect;
 export type ServiceOption = typeof serviceOptions.$inferSelect;
 export type ServiceFrequency = typeof serviceFrequencies.$inferSelect;
+export type ServiceDuration = typeof serviceDurations.$inferSelect;
+export type InsertServiceDuration = z.infer<typeof insertServiceDurationSchema>;
 export type Booking = typeof bookings.$inferSelect;
 export type BookingItem = typeof bookingItems.$inferSelect;
 export type IntegrationSettings = typeof integrationSettings.$inferSelect;
