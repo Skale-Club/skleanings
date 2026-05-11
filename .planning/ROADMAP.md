@@ -24,8 +24,8 @@
   3. Drag-to-reassign and QuickBook flows from Phase 19 continue to work after the refactor — no regression on existing UAT items
   4. `AppointmentsCalendarSection.tsx` structural issues that contribute to misalignment (e.g., HOC placement, resourceProps spread, conditional CSS) are documented and corrected
 **Plans**: 4 plans
-  - [x] 20-01-PLAN.md — Wave 0: Create UAT + DIAGNOSIS artifacts; record baseline measurements
-  - [ ] 20-02-PLAN.md — Wave 1: HIGH-confidence structural fixes (memoize components/resourceProps, delete redundant useEffect, useCallback handlers); re-measure
+  - [ ] 20-01-PLAN.md — Wave 0: Create UAT + DIAGNOSIS artifacts; record baseline measurements
+  - [x] 20-02-PLAN.md — Wave 1: HIGH-confidence structural fixes (memoize components/resourceProps, delete redundant useEffect, useCallback handlers); re-measure
   - [ ] 20-03-PLAN.md — Wave 2: Diagnosis-driven CSS strategy selection (A/B/C/D); apply and re-measure
   - [ ] 20-04-PLAN.md — Wave 3: Conditional view-resource remount + full UAT signoff (CAL-FIX-01..04 + Phase 19 regression)
 **UI hint**: yes

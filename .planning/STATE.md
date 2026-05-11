@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Calendar Polish
-status: executing
-stopped_at: Checkpoint at Task 3 of 20-01-PLAN.md (baseline measurement)
-last_updated: "2026-05-11T09:02:31.615Z"
-last_activity: 2026-05-11 -- Phase 20 execution started
+status: verifying
+stopped_at: Completed 20-02-PLAN.md (Task 1 only; Task 2 awaits human browser session)
+last_updated: "2026-05-11T09:08:48.562Z"
+last_activity: 2026-05-11
 progress:
   total_phases: 1
   completed_phases: 0
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-05)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 20 — calendar-timeline-structure-audit
+**Current focus:** Phase 22 — date-overrides-staff-availability
 
 ## Current Position
 
-Phase: 20 (calendar-timeline-structure-audit) — EXECUTING
-Plan: 1 of 4
-Status: Executing Phase 20
-Last activity: 2026-05-11 -- Phase 20 execution started
+Phase: 24
+Plan: Not started
+Status: Phase complete — ready for verification
+Last activity: 2026-05-11
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -73,8 +73,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 24]: Approve/Reject buttons placed in interactive variant only, visible solely when status === awaiting_approval
 - [Phase 24]: awaiting=true query param used for Confirmation routing — works across page reloads
 - [Phase 24]: requiresConfirmation toggle placed inside Booking Rules collapsible to keep ServiceForm uncluttered
-- [Phase 20]: Diagnosis-before-fixes: 20-DIAGNOSIS.md Baseline filled by human before Wave 1 code changes
-- [Phase 20]: CAL-FIX-04 uses per-item attribution for all 5 Phase 19 UAT items — enables regression tracking at item granularity
+- [Phase 20]: filterPopover accepted as useMemo dep without memoizing — acceptable for now, conditional scope for follow-up
+- [Phase 20]: Task 2 Post-Wave-1 browser measurement skipped pending human DevTools session
 
 ### Roadmap Evolution
 
@@ -88,6 +88,6 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-11T09:02:31.416Z
-Stopped at: Checkpoint at Task 3 of 20-01-PLAN.md (baseline measurement)
+Last session: 2026-05-11T09:08:48.556Z
+Stopped at: Completed 20-02-PLAN.md (Task 1 only; Task 2 awaits human browser session)
 Resume file: None

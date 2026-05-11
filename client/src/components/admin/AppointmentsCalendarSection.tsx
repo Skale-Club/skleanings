@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
 import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -929,20 +929,22 @@ export function AppointmentsCalendarSection({
     setHiddenStatuses(new Set());
   };
 
-  useEffect(() => {
-    setCurrentView(DEFAULT_CALENDAR_VIEW);
-  }, []);
+  const visibleStaffForResources = useMemo(
+    () => scopedStaffList.filter((s) => !hiddenStaff.has(s.id)),
+    [scopedStaffList, hiddenStaff],
+  );
 
-  const visibleStaffForResources = scopedStaffList.filter((s) => !hiddenStaff.has(s.id));
-
-  const resourceProps = isByStaff
-    ? {
-        resources: visibleStaffForResources,
-        resourceIdAccessor: (resource: any) => resource.id,
-        resourceTitleAccessor: (resource: any) => resource.firstName,
-        resourceAccessor: (event: any) => event.staffMemberId,
-      }
-    : {};
+  const resourceProps = useMemo(
+    () => isByStaff
+      ? {
+          resources: visibleStaffForResources,
+          resourceIdAccessor: (resource: any) => resource.id,
+          resourceTitleAccessor: (resource: any) => resource.firstName,
+          resourceAccessor: (event: any) => event.staffMemberId,
+        }
+      : {},
+    [isByStaff, visibleStaffForResources],
+  );
 
   const filterPopover = (
     <Popover>
@@ -1048,6 +1050,28 @@ export function AppointmentsCalendarSection({
     </Popover>
   );
 
+  const handleViewChange = useCallback((v: string) => {
+    setCurrentView(v);
+    if (v !== 'day') setIsByStaff(false);
+  }, []);
+
+  const handleByStaff = useCallback((active: boolean) => {
+    setIsByStaff(active);
+    if (active) setCurrentView(Views.DAY);
+  }, []);
+
+  const calendarComponents = useMemo(() => ({
+    event: EventComponent as any,
+    toolbar: ((toolbarProps: any) => (
+      <CalendarToolbar
+        {...toolbarProps}
+        isByStaff={isByStaff}
+        onByStaff={handleByStaff}
+        filterControl={filterPopover}
+      />
+    )) as any,
+  }), [isByStaff, handleByStaff, filterPopover]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
@@ -1107,27 +1131,11 @@ export function AppointmentsCalendarSection({
             date={currentDate}
             view={currentView as any}
             onNavigate={setCurrentDate}
-            onView={(v: string) => {
-              setCurrentView(v);
-              if (v !== 'day') setIsByStaff(false);
-            }}
+            onView={handleViewChange as any}
             views={[Views.MONTH, Views.WEEK, Views.DAY]}
             scrollToTime={DEFAULT_SCROLL_TIME}
             eventPropGetter={eventStyleGetter as any}
-            components={{
-              event: EventComponent as any,
-              toolbar: ((toolbarProps: any) => (
-                <CalendarToolbar
-                  {...toolbarProps}
-                  isByStaff={isByStaff}
-                  onByStaff={(active: boolean) => {
-                    setIsByStaff(active);
-                    if (active) setCurrentView(Views.DAY);
-                  }}
-                  filterControl={filterPopover}
-                />
-              )) as any,
-            }}
+            components={calendarComponents}
             onSelectEvent={handleSelectEvent as any}
             onSelectSlot={handleSelectSlot as any}
             selectable

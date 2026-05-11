@@ -12,7 +12,7 @@
 
 ### Structural Correctness
 
-- [x] **CAL-FIX-03**: The By Staff multi-column view (Phase 19) continues to render one column per visible staff member after the refactor; column headers, gutter, and event positions remain aligned with the time grid; horizontal scroll behavior for 5+ staff is preserved
+- [ ] **CAL-FIX-03**: The By Staff multi-column view (Phase 19) continues to render one column per visible staff member after the refactor; column headers, gutter, and event positions remain aligned with the time grid; horizontal scroll behavior for 5+ staff is preserved
 - [x] **CAL-FIX-04**: Phase 19 interactive flows (drag-to-reassign with undo toast, QuickBook walk-in modal, GCal busy block guard) function identically before and after the refactor — no regression on the 5 outstanding human UAT items
 
 ## Traceability
