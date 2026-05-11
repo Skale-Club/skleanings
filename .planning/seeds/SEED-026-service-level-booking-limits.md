@@ -3,43 +3,43 @@ id: SEED-026
 status: dormant
 planted: 2026-05-10
 planted_during: v3.0 / Phase 20 (calendar-timeline-structure-audit)
-trigger_when: quando o admin reclamar que bookings estão sendo criados sem tempo de deslocamento entre serviços, ou quando configurar minimum notice for prioridade
+trigger_when: when admin complains that bookings are being created without travel time between services, or when minimum notice becomes a priority
 scope: Medium
 ---
 
-# SEED-026: Limites de booking por serviço (buffer time, minimum notice, time-slot intervals)
+# SEED-026: Per-service booking limits (buffer time, minimum notice, time-slot intervals)
 
 ## Why This Matters
 
-O sistema atual tem um único `minimumBookingValue` em `companySettings` mas nenhum controle por serviço de:
-- **Buffer time antes/depois** — tempo de deslocamento entre serviços (sair da casa A, chegar na casa B)
-- **Minimum notice** — com quantas horas de antecedência o booking pode ser feito (evitar bookings de última hora impossíveis de atender)
-- **Time-slot intervals** — oferecer slots a cada 30min vs 1h vs duração do serviço
+The current system has a single `minimumBookingValue` in `companySettings` but no per-service control of:
+- **Buffer time before/after** — travel time between services (leaving home A, arriving at home B)
+- **Minimum notice** — how many hours in advance a booking can be made (avoid last-minute bookings that are impossible to fulfill)
+- **Time-slot intervals** — offer slots every 30min vs 1h vs service duration
 
-Para uma empresa de limpeza, buffer time é crítico: uma limpeza de 2h em Brooklin não pode ser seguida imediatamente por outra em Manhattan — precisa de 30-45min de deslocamento entre elas.
+For a cleaning company, buffer time is critical: a 2h cleaning in Brooklyn can't be immediately followed by another in Manhattan — it needs 30-45min of travel between them.
 
-**Why:** Sem buffer time, o sistema oferece horários fisicamente impossíveis de atender com equipe que precisa se deslocar entre clientes.
+**Why:** Without buffer time, the system offers physically impossible time slots to fulfill with a team that has to travel between clients.
 
 ## When to Surface
 
-**Trigger:** quando o primeiro conflito de deslocamento aparecer, ou quando o admin configurar staff com múltiplos bookings no mesmo dia.
+**Trigger:** when the first travel conflict appears, or when admin configures staff with multiple bookings on the same day.
 
 This seed should be presented during `/gsd:new-milestone` when the milestone scope matches any of these conditions:
-- Milestone de scheduling / availability improvements
-- Milestone de gestão de equipe em campo (field operations)
-- Conjunto com SEED-021 (múltiplos slots por dia)
+- Scheduling / availability improvements milestone
+- Field operations team management milestone
+- Together with SEED-021 (multiple slots per day)
 
 ## Scope Estimate
 
-**Medium** — Uma fase. Schema: adicionar em `services` colunas `bufferTimeBefore` (minutes, default 0), `bufferTimeAfter` (minutes, default 0), `minimumNoticeHours` (default 0), `timeSlotInterval` (minutes nullable — null = usa duração do serviço). Backend: `getAvailableSlots` aplica buffers ao calcular disponibilidade. UI: campos na aba de edição de serviço no admin.
+**Medium** — One phase. Schema: add columns to `services`: `bufferTimeBefore` (minutes, default 0), `bufferTimeAfter` (minutes, default 0), `minimumNoticeHours` (default 0), `timeSlotInterval` (minutes nullable — null = uses service duration). Backend: `getAvailableSlots` applies buffers when calculating availability. UI: fields in the service edit tab in admin.
 
 ## Breadcrumbs
 
-- `shared/schema.ts` — tabela `services` — adicionar 4 colunas de limite
-- `server/routes/availability.ts` — `getAvailableSlots` — aplicar buffer before/after ao marcar slot como ocupado
-- `client/src/components/admin/ServicesSection.tsx` — UI de edição de serviço — nova seção "Booking Rules"
-- `companySettings.minimumBookingValue` — existe, mas é em valor $ não em tempo — ambos coexistem
+- `shared/schema.ts` — `services` table — add 4 limit columns
+- `server/routes/availability.ts` — `getAvailableSlots` — apply buffer before/after when marking slot as occupied
+- `client/src/components/admin/ServicesSection.tsx` — service edit UI — new "Booking Rules" section
+- `companySettings.minimumBookingValue` — exists, but is in $ value not in time — both coexist
 
 ## Notes
 
-Buffer "after event" é o mais crítico para limpeza — é o tempo de deslocamento até o próximo cliente. Buffer "before event" é útil para preparação (comprar supplies específicos). Time-slot intervals: para serviços de 3h, oferecer slots a cada 1h (não a cada 3h) dá mais flexibilidade ao cliente.
+"Buffer after event" is the most critical for cleaning — it's the travel time to the next client. "Buffer before event" is useful for preparation (buying specific supplies). Time-slot intervals: for 3h services, offering slots every 1h (not every 3h) gives the customer more flexibility.

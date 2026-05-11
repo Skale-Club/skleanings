@@ -4,74 +4,74 @@ status: dormant
 planted: 2026-05-10
 last_revised: 2026-05-10
 planted_during: v3.0 / Phase 20 (calendar-timeline-structure-audit)
-trigger_when: ao implementar o catálogo de serviços do Xkedule — residencial e não-residencial precisam coexistir desde o início
+trigger_when: when implementing Xkedule's service catalog — residential and commercial must coexist from the start
 scope: Medium
 ---
 
-# SEED-028: Serviços residenciais e não-residenciais — classificação e fluxos acoplados
+# SEED-028: Residential and commercial services — classification and coupled flows
 
 ## Why This Matters
 
-O Xkedule precisa suportar **dois tipos fundamentais de serviço de limpeza simultaneamente, no mesmo tenant:**
+Xkedule must support **two fundamental types of cleaning service simultaneously, in the same tenant:**
 
-1. **Residencial** — vai na casa do cliente. Endereço completo obrigatório, formulário pede infos da casa (quartos, pets), preço normalmente fixo ou por área.
-2. **Não-residencial / Comercial** — vai em escritório, restaurante, loja, condomínio. Endereço comercial obrigatório, formulário pede infos do espaço (m², horário de funcionamento, frequência), preço normalmente por contrato/recorrência.
+1. **Residential** — goes to the customer's home. Full address required, intake form asks home info (bedrooms, pets), price usually fixed or area-based.
+2. **Non-residential / Commercial** — goes to office, restaurant, store, condo building. Commercial address required, intake form asks space info (m², business hours, frequency), price usually by contract/recurrence.
 
-Os dois fluxos têm diferenças importantes que não dá para resolver com uma só lógica:
-- Validações de endereço diferentes (apartamento vs unidade comercial)
-- Campos de intake diferentes (ver SEED-027 — perguntas customizadas por serviço)
-- Modelo de preço diferente (residencial fixo vs comercial por contrato)
-- Notificações diferentes (residencial fala com pessoa; comercial fala com responsável da empresa)
-- Booking flow diferente (residencial agenda 1 visita; comercial pode agendar recorrência indefinida)
+The two flows have important differences that can't be solved with single logic:
+- Different address validation (apartment vs commercial unit)
+- Different intake fields (see SEED-027 — custom questions per service)
+- Different pricing model (residential fixed vs commercial by contract)
+- Different notifications (residential talks to person; commercial talks to business contact)
+- Different booking flow (residential schedules 1 visit; commercial may schedule indefinite recurrence)
 
-**Why:** Se o sistema só suporta residencial, o tenant precisa criar workarounds estranhos para vender para empresas. Se só suporta comercial, perde 90% do mercado de limpeza. Acoplar os dois fluxos desde o início evita refatoração massiva depois.
+**Why:** If the system only supports residential, the tenant has to create weird workarounds to sell to businesses. If only commercial, it loses 90% of the cleaning market. Coupling both flows from the start avoids massive refactoring later.
 
 ## When to Surface
 
-**Trigger:** ao implementar o módulo de catálogo de serviços do Xkedule (conjunto com SEED-013), porque a estrutura de dados precisa suportar os dois desde o schema inicial.
+**Trigger:** when implementing Xkedule's service catalog module (together with SEED-013), because the data structure must support both from the initial schema.
 
 This seed should be presented during `/gsd:new-milestone` when the milestone scope matches any of these conditions:
-- Milestone de catálogo de serviços do Xkedule
-- Milestone de booking flow (precisa renderizar fluxos diferentes baseado no tipo)
-- Conjunto com SEED-013 (multi-tenant) e SEED-031 (recurring)
+- Xkedule service catalog milestone
+- Booking flow milestone (must render different flows based on type)
+- Together with SEED-013 (multi-tenant) and SEED-031 (recurring)
 
 ## Scope Estimate
 
-**Medium** — Uma fase substancial. Componentes:
+**Medium** — A substantial phase. Components:
 
 1. **Schema:**
-   - Coluna `serviceCategory` em `services` (enum: `residential` | `commercial` | `both`) — determina o fluxo de intake e validação
-   - Coluna `defaultLocationType` em `services` (enum: `client_address` | `business_address` | `pickup` | `phone` | `online`) — onde o serviço é executado
-   - Coluna `requiresContract` em `services` (boolean) — comerciais grandes podem exigir aceite de contrato antes do booking
-   - Coluna `customerType` em `bookings` (enum: `individual` | `business`) — registrar quem foi o cliente
+   - `serviceCategory` column in `services` (enum: `residential` | `commercial` | `both`) — determines intake flow and validation
+   - `defaultLocationType` column in `services` (enum: `client_address` | `business_address` | `pickup` | `phone` | `online`) — where the service is performed
+   - `requiresContract` column in `services` (boolean) — large commercials may require contract acceptance before booking
+   - `customerType` column in `bookings` (enum: `individual` | `business`) — record who the customer was
 
 2. **Backend:**
-   - Validação de endereço diferente por `serviceCategory` (residencial: apt opcional; comercial: razão social + responsável obrigatórios)
-   - Modelo de preço residencial vs comercial pode usar pricingType diferentes (`fixed_item` vs `custom_quote`)
+   - Address validation differs by `serviceCategory` (residential: apt optional; commercial: business name + contact required)
+   - Residential vs commercial pricing model can use different pricingTypes (`fixed_item` vs `custom_quote`)
 
 3. **Frontend:**
-   - Booking flow detecta `serviceCategory` do primeiro serviço no cart e renderiza step de Customer Details apropriado
-   - Residencial: Nome, email, telefone, endereço (com apt/unit), instruções de entrada
-   - Comercial: Razão social, CNPJ, responsável (nome, cargo, email, telefone), endereço comercial, horário de funcionamento, instruções de acesso
-   - Cart pode misturar serviços residenciais e comerciais? Decidir no planning — provavelmente NÃO (cliente diferente cada vez)
+   - Booking flow detects `serviceCategory` of the first service in cart and renders appropriate Customer Details step
+   - Residential: Name, email, phone, address (with apt/unit), entry instructions
+   - Commercial: Business name, tax ID, contact person (name, role, email, phone), commercial address, business hours, access instructions
+   - Can cart mix residential and commercial services? Decide in planning — probably NO (different customer each time)
 
 4. **Admin:**
-   - Filtro de bookings por `customerType` (individual vs business) — relatórios separados
-   - Templates de email/SMS diferentes (residencial: tom pessoal; comercial: tom institucional)
+   - Bookings filter by `customerType` (individual vs business) — separate reports
+   - Different email/SMS templates (residential: personal tone; commercial: institutional tone)
 
 ## Breadcrumbs
 
-- `shared/schema.ts` — tabela `services` (adicionar `serviceCategory`, `defaultLocationType`, `requiresContract`)
-- `shared/schema.ts` — tabela `bookings` (adicionar `customerType`, possivelmente `businessName`, `businessTaxId`, `contactPerson`)
-- `client/src/pages/BookingPage.tsx` — step de Customer Details — branching baseado em `serviceCategory`
-- `client/src/components/admin/ServicesSection.tsx` — UI de edição de serviço — campo "Categoria"
-- Conjunto com SEED-027 (custom booking questions) — cada categoria pode ter perguntas padrão diferentes
-- Conjunto com SEED-031 (recurring) — comerciais grandes tendem a ser recorrentes; alinhar UX
+- `shared/schema.ts` — `services` table (add `serviceCategory`, `defaultLocationType`, `requiresContract`)
+- `shared/schema.ts` — `bookings` table (add `customerType`, possibly `businessName`, `businessTaxId`, `contactPerson`)
+- `client/src/pages/BookingPage.tsx` — Customer Details step — branching based on `serviceCategory`
+- `client/src/components/admin/ServicesSection.tsx` — service edit UI — "Category" field
+- Together with SEED-027 (custom booking questions) — each category can have different default questions
+- Together with SEED-031 (recurring) — large commercials tend to be recurring; align UX
 
 ## Notes
 
-**Tipo `both`:** alguns serviços (ex: limpeza de tapete) podem ser vendidos tanto para residencial quanto comercial. Esse caso usa `both` e o booking flow pergunta no início do checkout "É para sua casa ou empresa?".
+**Type `both`:** some services (e.g., carpet cleaning) can be sold for both residential and commercial. This case uses `both` and the booking flow asks at checkout start "Is this for your home or business?".
 
-**Contrato para comerciais:** quando `requiresContract = true`, o booking não é confirmado até o cliente aceitar termos específicos do contrato (digital signature ou upload de PDF assinado). Pode ser uma extensão futura — começar sem isso, com aceite simples de termos.
+**Contract for commercials:** when `requiresContract = true`, the booking is not confirmed until the customer accepts contract-specific terms (digital signature or signed PDF upload). Can be a future extension — start without it, with simple terms acceptance.
 
-**Razão social / CNPJ:** para o mercado brasileiro. Para mercado americano, usar EIN. Schema deve ser genérico (`businessTaxId` text) — validação por tenant/país (SEED-011 locale).
+**Business tax ID:** for the Brazilian market, use CNPJ. For US market, use EIN. Schema should be generic (`businessTaxId` text) — validation per tenant/country (SEED-011 locale).

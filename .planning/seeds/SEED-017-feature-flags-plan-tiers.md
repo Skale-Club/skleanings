@@ -4,72 +4,72 @@ status: dormant
 planted: 2026-05-10
 last_revised: 2026-05-10
 planted_during: v3.0 / Phase 20 (calendar-timeline-structure-audit)
-trigger_when: ao definir planos de assinatura (conjunto com SEED-014)
+trigger_when: when defining subscription plans (together with SEED-014)
 scope: Medium
 ---
 
-# SEED-017: Features e limites por plano (tudo CRUD no super-admin, nada hardcoded)
+# SEED-017: Features and limits per plan (all CRUD in super-admin, nothing hardcoded)
 
 ## Why This Matters
 
-Cada plano tem um conjunto de features liberadas e limites quantitativos. Exemplos:
-- Basic: blog ❌, GHL ❌, marketing dashboard ❌, máx 2 staff, máx 100 bookings/mês
-- Pro: blog ✓, GHL ✓, marketing dashboard ✓, máx 10 staff, máx 1000 bookings/mês
-- Enterprise: tudo liberado, ilimitado
+Each plan has a set of unlocked features and quantitative limits. Examples:
+- Basic: blog ❌, GHL ❌, marketing dashboard ❌, max 2 staff, max 100 bookings/month
+- Pro: blog ✓, GHL ✓, marketing dashboard ✓, max 10 staff, max 1000 bookings/month
+- Enterprise: everything unlocked, unlimited
 
-**Princípio fundamental:** Nem as features, nem os limites podem ser hardcoded. O super-admin precisa poder criar uma nova feature ("AI suggestions") amanhã, ativar para Enterprise, e ter o sistema respeitando isso sem deploy.
+**Fundamental principle:** Neither features nor limits can be hardcoded. Super-admin must be able to create a new feature ("AI suggestions") tomorrow, enable it for Enterprise, and have the system respect it without a deploy.
 
-**Why:** Hardcoded feature flags transformam cada decisão de produto em mudança de código. Com CRUD no super-admin, o time de produto define a matriz "plano × feature × limite" como dado.
+**Why:** Hardcoded feature flags turn every product decision into a code change. With CRUD in super-admin, the product team defines the "plan × feature × limit" matrix as data.
 
 ## When to Surface
 
-**Trigger:** junto com SEED-014 (billing) e SEED-013 (multi-tenant). Os três formam o núcleo do SaaS.
+**Trigger:** together with SEED-014 (billing) and SEED-013 (multi-tenant). The three form the SaaS core.
 
 This seed should be presented during `/gsd:new-milestone` when the milestone scope matches any of these conditions:
-- Milestone de SaaS Xkedule (conjunto com SEED-013 + SEED-014)
-- Milestone de monetização / pricing strategy
-- Quando precisar diferenciar planos por feature
+- Xkedule SaaS milestone (together with SEED-013 + SEED-014)
+- Monetization / pricing strategy milestone
+- When needing to differentiate plans by feature
 
 ## Scope Estimate
 
-**Medium** — Uma fase. Componentes:
+**Medium** — One phase. Components:
 
 1. **Schema:**
-   - `features` (id, key, name, description, type enum: `boolean | numeric | enum`, defaultValue) — catálogo global de features que existem no produto
-   - `planFeatures` (planId FK, featureId FK, enabled, limitValue) — matriz plano × feature
-   - `featureUsage` (tenantId FK, featureKey, periodStart, periodEnd, currentValue) — para limites com janela (ex: bookings/mês)
+   - `features` (id, key, name, description, type enum: `boolean | numeric | enum`, defaultValue) — global catalog of features that exist in the product
+   - `planFeatures` (planId FK, featureId FK, enabled, limitValue) — plan × feature matrix
+   - `featureUsage` (tenantId FK, featureKey, periodStart, periodEnd, currentValue) — for windowed limits (e.g., bookings/month)
 
 2. **Backend:**
-   - Middleware `requireFeature(key)` que verifica se o plano do tenant tem a feature
-   - Middleware `enforceFeatureLimit(key)` que verifica e incrementa contadores (bookings, staff count, storage)
-   - Service `getEnabledFeatures(tenantId)` cacheado (5min TTL)
+   - `requireFeature(key)` middleware that checks if the tenant's plan has the feature
+   - `enforceFeatureLimit(key)` middleware that checks and increments counters (bookings, staff count, storage)
+   - `getEnabledFeatures(tenantId)` service cached (5min TTL)
 
 3. **Frontend:**
-   - Componente `<FeatureGate feature="ghl_integration">` que esconde/desabilita seções do admin
-   - Hook `useFeature(key)` que retorna `{ enabled, limit, current, remaining }`
-   - Banner de upgrade quando tenant atinge limite ou tenta acessar feature bloqueada
+   - `<FeatureGate feature="ghl_integration">` component that hides/disables admin sections
+   - `useFeature(key)` hook returning `{ enabled, limit, current, remaining }`
+   - Upgrade banner when tenant hits a limit or tries to access a blocked feature
 
 4. **Super-admin UI:**
-   - CRUD do catálogo de features (criar nova feature, definir tipo, default)
-   - Matriz visual "plano × feature" com toggles e campos de limite
-   - Auditoria: log de quais tenants atingiram limites no último mês
+   - Feature catalog CRUD (create new feature, define type, default)
+   - Visual "plan × feature" matrix with toggles and limit fields
+   - Audit: log of which tenants hit limits in the last month
 
 ## Breadcrumbs
 
-- `server/middleware/auth.ts` — pattern de middleware de guarda — feature guard segue o mesmo padrão
-- `client/src/components/admin/` — seções a serem guardadas: `MarketingSection`, `IntegrationsSection`, `BlogSection`
-- Schema novo: `features`, `planFeatures`, `featureUsage` — todos no nível Xkedule (sem `tenantId` exceto `featureUsage`)
-- Lookup: tenant → subscription → plan → planFeatures — cacheado por request
+- `server/middleware/auth.ts` — guard middleware pattern — feature guard follows the same pattern
+- `client/src/components/admin/` — sections to be guarded: `MarketingSection`, `IntegrationsSection`, `BlogSection`
+- New schema: `features`, `planFeatures`, `featureUsage` — all at Xkedule level (no `tenantId` except `featureUsage`)
+- Lookup: tenant → subscription → plan → planFeatures — cached per request
 
 ## Notes
 
-**Tipos de feature:**
-- `boolean` — on/off (ex: `ghl_integration`, `marketing_dashboard`, `ai_chat`)
-- `numeric` — limite quantitativo (ex: `max_staff = 10`, `max_bookings_per_month = 1000`)
-- `enum` — escolha entre valores (ex: `support_tier = 'email' | 'priority' | 'dedicated'`)
+**Feature types:**
+- `boolean` — on/off (e.g., `ghl_integration`, `marketing_dashboard`, `ai_chat`)
+- `numeric` — quantitative limit (e.g., `max_staff = 10`, `max_bookings_per_month = 1000`)
+- `enum` — choice between values (e.g., `support_tier = 'email' | 'priority' | 'dedicated'`)
 
-**Limites com janela:** Para limites mensais (bookings, emails enviados), `featureUsage` tem um row por (tenant, feature, mês). Reset automático no primeiro dia do ciclo de cobrança do tenant.
+**Windowed limits:** For monthly limits (bookings, emails sent), `featureUsage` has one row per (tenant, feature, month). Automatic reset on the first day of the tenant's billing cycle.
 
-**Soft vs hard limits:** Configurável por feature. Soft: avisa mas permite (com banner de upgrade). Hard: bloqueia ação completamente.
+**Soft vs hard limits:** Configurable per feature. Soft: warns but allows (with upgrade banner). Hard: blocks the action completely.
 
-**Anti-pattern a evitar:** `if (plan === 'pro' && feature === 'ghl') { ... }` em qualquer lugar do código. Sempre via `requireFeature` ou `useFeature`.
+**Anti-pattern to avoid:** `if (plan === 'pro' && feature === 'ghl') { ... }` anywhere in the code. Always via `requireFeature` or `useFeature`.

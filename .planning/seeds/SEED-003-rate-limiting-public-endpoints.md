@@ -3,37 +3,37 @@ id: SEED-003
 status: dormant
 planted: 2026-05-10
 planted_during: v1.0 / Phase 15 (schema-foundation-detokenization)
-trigger_when: antes de qualquer campanha de marketing paga, ou quando o domínio ficar público/indexado
+trigger_when: before any paid marketing campaign, or when the domain goes public/indexed
 scope: Small
 ---
 
-# SEED-003: Rate limiting nos endpoints públicos de analytics e chat
+# SEED-003: Rate limiting on public analytics and chat endpoints
 
 ## Why This Matters
 
-Os endpoints `POST /api/analytics/session` e `POST /api/analytics/events` são completamente públicos e não têm nenhuma proteção contra abuso. Um bot pode criar milhares de `visitorSessions` por minuto, inflando o marketing dashboard com dados falsos e potencialmente esgotando conexões do PostgreSQL. O chat (`POST /api/chat/message`) também é público e pode ser abusado para consumir cota de OpenAI/Gemini.
+The endpoints `POST /api/analytics/session` and `POST /api/analytics/events` are completely public and have no abuse protection. A bot can create thousands of `visitorSessions` per minute, inflating the marketing dashboard with fake data and potentially exhausting PostgreSQL connections. The chat (`POST /api/chat/message`) is also public and can be abused to drain OpenAI/Gemini quotas.
 
-**Why:** O STATE.md registra isso como um bloqueio desde Phase 10: "Rate limiting strategy for POST /api/analytics/session (public endpoint) — not yet designed". Nunca foi resolvido.
+**Why:** STATE.md has recorded this as a blocker since Phase 10: "Rate limiting strategy for POST /api/analytics/session (public endpoint) — not yet designed". It was never resolved.
 
 ## When to Surface
 
-**Trigger:** antes de rodar qualquer campanha de tráfego pago (Google Ads, Meta Ads), antes de adicionar o domínio a um diretório público, ou quando o tráfego orgânico começar a crescer.
+**Trigger:** before running any paid traffic campaign (Google Ads, Meta Ads), before adding the domain to a public directory, or when organic traffic starts growing.
 
 This seed should be presented during `/gsd:new-milestone` when the milestone scope matches any of these conditions:
-- Milestone de performance/escalabilidade
-- Milestone pré-lançamento de campanha de marketing
-- Milestone de hardening / segurança
+- Performance/scalability milestone
+- Pre-launch milestone for a marketing campaign
+- Hardening / security milestone
 
 ## Scope Estimate
 
-**Small** — Algumas horas. Express-rate-limit com memória in-process para começar (sem Redis). Limites conservadores: 10 req/min por IP para analytics/session, 20 req/min por IP para chat/message.
+**Small** — A few hours. Express-rate-limit with in-process memory to start (no Redis). Conservative limits: 10 req/min per IP for analytics/session, 20 req/min per IP for chat/message.
 
 ## Breadcrumbs
 
-- `server/routes.ts` — endpoints públicos: `POST /api/analytics/session`, `POST /api/analytics/events`, `POST /api/chat/message`
-- `server/index.ts` — middleware setup, onde rate limiter seria aplicado
-- Package sugerido: `express-rate-limit` (sem dependência extra para começar)
+- `server/routes.ts` — public endpoints: `POST /api/analytics/session`, `POST /api/analytics/events`, `POST /api/chat/message`
+- `server/index.ts` — middleware setup, where the rate limiter would be applied
+- Suggested package: `express-rate-limit` (no extra dependency to start)
 
 ## Notes
 
-Para um segundo estágio, usar Redis como backing store do rate limiter (`rate-limit-redis`) para sobreviver a restarts do processo. Para o chat, também considerar rate limit por conversationId além de IP — bots podem rotacionar IPs mas reutilizar conversation IDs.
+For a second stage, use Redis as the rate limiter backing store (`rate-limit-redis`) to survive process restarts. For chat, also consider rate limiting by conversationId beyond IP — bots can rotate IPs but reuse conversation IDs.

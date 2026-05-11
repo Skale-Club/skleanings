@@ -2,41 +2,41 @@
 id: SEED-007
 status: cancelled
 cancelled_on: 2026-05-10
-cancellation_reason: Cortado — problema só com volume real (12+ meses)
+cancellation_reason: Only a problem with real volume (12+ months)
 planted: 2026-05-10
 planted_during: v1.0 / Phase 15 (schema-foundation-detokenization)
-trigger_when: quando o chat acumular >6 meses de conversas, ou quando consultas de admin ficarem lentas
+trigger_when: when chat accumulates >6 months of conversations, or when admin queries become slow
 scope: Small
 ---
 
-# SEED-007: Arquivamento e paginação de conversas do chat
+# SEED-007: Chat conversation archival and pagination
 
 ## Why This Matters
 
-As tabelas `conversations` e `conversationMessages` crescem indefinidamente sem nenhuma política de arquivamento ou limpeza. A memória da conversa (`conversations.memory` JSONB) também cresce sem bounds para conversas longas. Depois de 6-12 meses em produção com chat ativo, a tabela de mensagens terá dezenas de milhares de registros que impactam queries de admin.
+The `conversations` and `conversationMessages` tables grow indefinitely with no archival or cleanup policy. The conversation memory (`conversations.memory` JSONB) also grows unbounded for long conversations. After 6-12 months in production with active chat, the messages table will have tens of thousands of records that impact admin queries.
 
-**Why:** O admin dashboard lista todas as conversas de uma vez (sem paginação no backend de algumas queries). À medida que o volume cresce, o tempo de carregamento do chat section vai aumentar progressivamente.
+**Why:** The admin dashboard lists all conversations at once (no backend pagination in some queries). As volume grows, chat dashboard load time will progressively increase.
 
 ## When to Surface
 
-**Trigger:** quando o admin começar a reclamar de lentidão no chat dashboard, quando a tabela `conversationMessages` ultrapassar 50k registros, ou ao iniciar um milestone de performance.
+**Trigger:** when the admin starts complaining about chat dashboard slowness, when the `conversationMessages` table exceeds 50k records, or when starting a performance milestone.
 
 This seed should be presented during `/gsd:new-milestone` when the milestone scope matches any of these conditions:
-- Milestone de performance / escalabilidade
-- Milestone de ops / manutenção de dados
-- 6+ meses após o chat estar em uso em produção
+- Performance / scalability milestone
+- Ops / data maintenance milestone
+- 6+ months after chat is in production use
 
 ## Scope Estimate
 
-**Small** — Algumas horas. Adicionar: (1) paginação no `GET /api/conversations` backend, (2) coluna `archivedAt` em `conversations`, (3) cron job mensal que arquiva conversas fechadas com >90 dias, (4) truncar `memory` JSONB para os últimos N turnos.
+**Small** — A few hours. Add: (1) backend pagination on `GET /api/conversations`, (2) `archivedAt` column on `conversations`, (3) monthly cron job that archives closed conversations >90 days old, (4) truncate `memory` JSONB to last N turns.
 
 ## Breadcrumbs
 
-- `shared/schema.ts` — tabelas `conversations`, `conversationMessages` (sem `archivedAt`)
-- `server/storage.ts` — `getConversations()` — verificar se tem LIMIT
-- `server/routes.ts` — `GET /api/conversations` — verificar paginação
-- `client/src/components/admin/` — seção de chat que lista conversas
+- `shared/schema.ts` — `conversations`, `conversationMessages` tables (no `archivedAt`)
+- `server/storage.ts` — `getConversations()` — verify if it has LIMIT
+- `server/routes.ts` — `GET /api/conversations` — verify pagination
+- `client/src/components/admin/` — chat section that lists conversations
 
 ## Notes
 
-Arquivamento ≠ deleção. Conversas arquivadas devem ser consultáveis por ID mas excluídas das listagens padrão. A limpeza do `memory` JSONB deve manter apenas as últimas 10 mensagens para limitar tokens usados em re-hidratação de contexto de chat.
+Archival ≠ deletion. Archived conversations must be queryable by ID but excluded from default listings. The `memory` JSONB cleanup must keep only the last 10 messages to limit tokens used in chat context re-hydration.

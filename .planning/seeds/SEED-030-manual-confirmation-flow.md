@@ -2,48 +2,49 @@
 id: SEED-030
 status: dormant
 planted: 2026-05-10
+last_revised: 2026-05-10
 planted_during: v3.0 / Phase 20 (calendar-timeline-structure-audit)
-trigger_when: quando o admin quiser aprovar manualmente bookings antes de confirmar, especialmente para trabalhos grandes ou novos clientes
+trigger_when: when admin wants to manually approve bookings before confirming, especially for large jobs or new customers
 scope: Small
 ---
 
-# SEED-030: Fluxo de confirmação manual por serviço (requires confirmation)
+# SEED-030: Manual confirmation flow per service (requires confirmation)
 
 ## Why This Matters
 
-O Cal.com tem "Requires confirmation — The booking needs to be manually confirmed before it is pushed to your calendar and a confirmation is sent." Para serviços de limpeza de alto valor (limpeza pós-obra, limpeza comercial), o admin pode querer avaliar o pedido antes de confirmar: verificar disponibilidade real, negociar preço, confirmar acesso ao local.
+Cal.com has "Requires confirmation — The booking needs to be manually confirmed before it is pushed to your calendar and a confirmation is sent." For high-value cleaning services (post-construction cleaning, commercial cleaning), admin may want to evaluate the request before confirming: verify real availability, negotiate price, confirm site access.
 
-Hoje o sistema cria bookings com status `pending` por padrão, mas não tem um fluxo de "esta categoria de serviço requer aprovação manual — o cliente sabe que aguarda confirmação".
+Today the system creates bookings with `pending` status by default, but doesn't have a flow for "this service category requires manual approval — the customer knows they're awaiting confirmation".
 
-**Why:** Serviços complexos ou de alto valor ($500+) merecem um processo de pré-qualificação. Sem confirmação manual, o cliente assume que está confirmado e o business pode ter problemas de capacidade.
+**Why:** Complex or high-value services ($500+) deserve a pre-qualification process. Without manual confirmation, the customer assumes it's confirmed and the business may have capacity issues.
 
 ## When to Surface
 
-**Trigger:** ao adicionar serviços de alto valor (limpeza pós-obra, limpeza comercial), ou quando o admin começar a recusar bookings depois de criados (sinal de que precisa de pré-aprovação).
+**Trigger:** when adding high-value services (post-construction cleaning, commercial cleaning), or when admin starts rejecting bookings after creation (signal that pre-approval is needed).
 
 This seed should be presented during `/gsd:new-milestone` when the milestone scope matches any of these conditions:
-- Milestone de serviços premium / enterprise
-- Milestone de gestão de bookings / workflow de aprovação
+- Premium / enterprise services milestone
+- Booking management / approval workflow milestone
 
 ## Scope Estimate
 
-**Small** — Uma fase curta. Schema: adicionar `requiresConfirmation` boolean em `services` (default false). Backend: quando `requiresConfirmation = true`, booking é criado com status `awaiting_approval` ao invés de `pending`. Email/notificação para o cliente: "Seu pedido foi recebido — aguardando confirmação do business." Admin notificado para aprovar/rejeitar. Botões de Approve/Reject no painel de bookings.
+**Small** — A short phase. Schema: add `requiresConfirmation` boolean to `services` (default false). Backend: when `requiresConfirmation = true`, booking is created with `awaiting_approval` status instead of `pending`. Email/notification to customer: "Your request has been received — awaiting business confirmation." Admin notified to approve/reject. Approve/Reject buttons in bookings panel.
 
 ## Breadcrumbs
 
-- `shared/schema.ts` — tabela `services` — nova coluna `requiresConfirmation` boolean
-- `shared/schema.ts` — tabela `bookings` — status enum pode ganhar `awaiting_approval`
-- `server/routes/bookings.ts` — `POST /api/bookings` — lógica de status inicial baseada no serviço
-- `client/src/components/admin/BookingsSection.tsx` — UI de aprovação com botões Approve/Reject
-- `server/services/notifications.ts` — notificação ao admin de novo pedido aguardando aprovação
+- `shared/schema.ts` — `services` table — new `requiresConfirmation` boolean column
+- `shared/schema.ts` — `bookings` table — status enum can gain `awaiting_approval`
+- `server/routes/bookings.ts` — `POST /api/bookings` — initial status logic based on service
+- `client/src/components/admin/BookingsSection.tsx` — approval UI with Approve/Reject buttons
+- `server/services/notifications.ts` — admin notification of new request awaiting approval
 
 ## Notes
 
-"Disable cancelling" e "Disable rescheduling" são extensões naturais desta seed — quando `requiresConfirmation = true`, o admin pode também querer `cancellationPolicy: 'admin_only'`. Podem ser campos adicionais no mesmo schema change: `cancellationPolicy` e `reschedulePolicy` por serviço.
+"Disable cancelling" and "Disable rescheduling" are natural extensions of this seed — when `requiresConfirmation = true`, admin may also want `cancellationPolicy: 'admin_only'`. Can be additional fields in the same schema change: `cancellationPolicy` and `reschedulePolicy` per service.
 
-**Decisão (2026-05-10):** Feature é OPCIONAL por tenant. Default: `requiresConfirmation = false` para todos os serviços ao criar. Tenant ativa serviço a serviço, baseado em política de negócio dele:
-- Tenant que confia em auto-confirmação (volume alto, baixo ticket) deixa todos desligados
-- Tenant que prefere triagem (alto ticket, agendas complexas) ativa em todos
-- Tenant pode ativar só em serviços premium (>$500) e deixar serviços comuns auto-confirmados
+**Decision (2026-05-10):** Feature is OPTIONAL per tenant. Default: `requiresConfirmation = false` for all services on creation. Tenant activates service by service, based on their business policy:
+- Tenant that trusts auto-confirmation (high volume, low ticket) leaves all off
+- Tenant that prefers triage (high ticket, complex schedules) activates on all
+- Tenant can activate only on premium services (>$500) and leave common services auto-confirmed
 
-A configuração por serviço (e não global do tenant) é deliberada — flexibilidade máxima sem complicar o default.
+Per-service configuration (rather than tenant-global) is deliberate — maximum flexibility without complicating the default.

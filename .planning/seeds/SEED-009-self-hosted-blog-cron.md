@@ -4,38 +4,38 @@ status: dormant
 planted: 2026-05-10
 last_revised: 2026-05-10
 planted_during: v3.0 / Phase 20 (calendar-timeline-structure-audit)
-trigger_when: ao migrar para Xkedule (Hetzner — sem Vercel Cron disponível)
+trigger_when: when migrating to Xkedule (Hetzner — no Vercel Cron available)
 scope: Small
 ---
 
-# SEED-009: Blog generation cron via GitHub Actions (substituir Vercel Cron)
+# SEED-009: Blog generation cron via GitHub Actions (replace Vercel Cron)
 
 ## Why This Matters
 
-A geração automática de blog posts hoje depende do **Vercel Cron**, que só funciona enquanto o app rodar no Vercel. Quando o Xkedule migrar para Hetzner + Caddy (padrão do skaleclub-websites — ver memória de arquitetura), o Vercel Cron deixa de existir.
+Automatic blog post generation today depends on **Vercel Cron**, which only works while the app runs on Vercel. When Xkedule migrates to Hetzner + Caddy (the skaleclub-websites standard — see architecture memory), Vercel Cron ceases to exist.
 
-A solução é **GitHub Actions com `schedule:` cron** disparando o endpoint `POST /api/blog/generate` via HTTP request autenticado. GH Actions é gratuito para repos privados (até certo limite), zero infra extra, e o YAML do schedule fica versionado no próprio repo.
+The solution is **GitHub Actions with `schedule:` cron** triggering the `POST /api/blog/generate` endpoint via authenticated HTTP request. GH Actions is free for private repos (up to a limit), zero extra infra, and the schedule YAML is versioned in the repo itself.
 
-**Why:** Migração para Hetzner sem substituir o Vercel Cron significa blog para de gerar posts no dia da migração. Precisa ter o substituto pronto antes do cutover.
+**Why:** Migrating to Hetzner without replacing Vercel Cron means the blog stops generating posts on migration day. The replacement must be ready before DNS cutover.
 
 ## When to Surface
 
-**Trigger:** ao iniciar a migração de Vercel para Hetzner (parte de SEED-013 ou milestone separada de infra). Antes do cutover do DNS.
+**Trigger:** when starting the Vercel-to-Hetzner migration (part of SEED-013 or a separate infra milestone). Before DNS cutover.
 
 This seed should be presented during `/gsd:new-milestone` when the milestone scope matches any of these conditions:
-- Milestone de infra Xkedule (Hetzner + Caddy)
-- Milestone de migração de deploy
+- Xkedule infra milestone (Hetzner + Caddy)
+- Deployment migration milestone
 
 ## Scope Estimate
 
-**Small** — Algumas horas. Componentes:
+**Small** — A few hours. Components:
 
 1. **GitHub Actions workflow** `.github/workflows/blog-cron.yml`:
    ```yaml
    on:
      schedule:
-       - cron: '0 9 * * *'  # 9h UTC todo dia
-     workflow_dispatch:      # botão manual no GitHub
+       - cron: '0 9 * * *'  # 9am UTC daily
+     workflow_dispatch:      # manual button on GitHub
    jobs:
      trigger-blog-generation:
        runs-on: ubuntu-latest
@@ -48,26 +48,26 @@ This seed should be presented during `/gsd:new-milestone` when the milestone sco
    ```
 
 2. **Backend:**
-   - Endpoint `POST /api/blog/generate` autenticado por bearer token (BLOG_CRON_TOKEN)
-   - Para Xkedule multi-tenant: workflow itera sobre tenants com `blogSettings.enabled = true` (via matrix strategy do GH Actions ou via endpoint que processa todos os tenants)
-   - Mecanismo de lock atual (`blogGenerationJobs.lockedAt`) continua válido
+   - `POST /api/blog/generate` endpoint authenticated by bearer token (BLOG_CRON_TOKEN)
+   - For Xkedule multi-tenant: workflow iterates over tenants with `blogSettings.enabled = true` (via matrix strategy in GH Actions or via endpoint that processes all tenants)
+   - Current lock mechanism (`blogGenerationJobs.lockedAt`) remains valid
 
-3. **Remoção:**
-   - Remover `vercel.json` cron config
-   - Remover tabela `systemHeartbeats` (keep-alive era para Vercel — não precisa em GH Actions)
+3. **Removal:**
+   - Remove `vercel.json` cron config
+   - Remove `systemHeartbeats` table (keep-alive was for Vercel — not needed in GH Actions)
 
 ## Breadcrumbs
 
-- `vercel.json` — config atual de cron
-- `server/routes.ts` — endpoint `POST /api/blog/generate`
-- `shared/schema.ts` — tabelas `blogGenerationJobs`, `systemHeartbeats` (remove esta última)
-- Padrão de referência: `.github/workflows/deploy.yml` do skaleclub-websites — secrets, autenticação
-- GH Actions cron: limite mínimo é 5min (não 1min); blog geração diária está bem dentro do limite
+- `vercel.json` — current cron config
+- `server/routes.ts` — `POST /api/blog/generate` endpoint
+- `shared/schema.ts` — `blogGenerationJobs`, `systemHeartbeats` tables (remove the latter)
+- Reference pattern: `.github/workflows/deploy.yml` from skaleclub-websites — secrets, authentication
+- GH Actions cron: minimum interval is 5min (not 1min); daily blog generation is well within the limit
 
 ## Notes
 
-**Por que GH Actions em vez de node-cron in-process:** Quando o app rodar em múltiplas instâncias no Hetzner (PM2 cluster mode, ou múltiplos pods), node-cron dispara N vezes uma em cada instância. GH Actions garante exatamente 1 execução por agendamento.
+**Why GH Actions instead of in-process node-cron:** When the app runs on multiple instances on Hetzner (PM2 cluster mode, or multiple pods), node-cron fires N times — once per instance. GH Actions guarantees exactly 1 execution per schedule.
 
-**Autenticação:** `BLOG_CRON_TOKEN` é um secret no GitHub Actions e uma env var no servidor. Endpoint só aceita requests com esse header. Sem isso, qualquer pessoa pode disparar geração de blog (custo OpenRouter).
+**Authentication:** `BLOG_CRON_TOKEN` is a GitHub Actions secret and a server env var. Endpoint only accepts requests with that header. Without it, anyone could trigger blog generation (OpenRouter cost).
 
-**Para Xkedule multi-tenant:** uma estratégia é o endpoint receber tenantId e processar um por vez (workflow matrix com lista de tenants). Outra é o endpoint sem tenant que itera internamente todos os tenants com blog habilitado. Decidir no planning baseado em volume.
+**For Xkedule multi-tenant:** one strategy is the endpoint receives tenantId and processes one at a time (workflow matrix with tenant list). Another is a tenant-less endpoint that internally iterates all tenants with blog enabled. Decide in planning based on volume.

@@ -3,40 +3,40 @@ id: SEED-029
 status: dormant
 planted: 2026-05-10
 planted_during: v3.0 / Phase 20 (calendar-timeline-structure-audit)
-trigger_when: quando um serviço precisar oferecer opções de duração diferentes para tamanhos de espaço diferentes
+trigger_when: when a service needs to offer different duration options for different space sizes
 scope: Small
 ---
 
-# SEED-029: Múltiplas durações por serviço (ex: Limpeza 2h / 4h / 8h)
+# SEED-029: Multiple durations per service (e.g., Cleaning 2h / 4h / 8h)
 
 ## Why This Matters
 
-O Cal.com mostra "Allow multiple durations" com o exemplo de "ACME" tendo 60m, 120m, e 240m como opções. Para limpeza, isso é direto: uma limpeza pode ser de 2h (studio), 4h (3 quartos), ou 8h (casa grande). O cliente escolhe a duração que corresponde ao seu espaço.
+Cal.com shows "Allow multiple durations" with the example of "ACME" having 60m, 120m, and 240m as options. For cleaning, this is straightforward: a cleaning can be 2h (studio), 4h (3 bedrooms), or 8h (large house). The customer chooses the duration matching their space.
 
-O sistema atual tem `durationMinutes` como campo único por serviço. Já existe `areaSizes` (JSONB) para o tipo `area_based`, mas múltiplas durações para o tipo `fixed_item` não existem.
+The current system has `durationMinutes` as a single field per service. `areaSizes` (JSONB) exists for the `area_based` type, but multiple durations for the `fixed_item` type don't exist.
 
-**Why:** Oferecer "Limpeza 2h" e "Limpeza 4h" como serviços separados multiplica o catálogo desnecessariamente. Múltiplas durações no mesmo serviço é mais limpo e permite o cliente comparar no mesmo card.
+**Why:** Offering "Cleaning 2h" and "Cleaning 4h" as separate services unnecessarily multiplies the catalog. Multiple durations on the same service is cleaner and lets the customer compare on the same card.
 
 ## When to Surface
 
-**Trigger:** quando o admin criar o segundo serviço que é essencialmente o mesmo serviço mas com duração diferente (sinal de que precisa de múltiplas durações).
+**Trigger:** when admin creates the second service that is essentially the same service but with different duration (signal that multiple durations are needed).
 
 This seed should be presented during `/gsd:new-milestone` when the milestone scope matches any of these conditions:
-- Milestone de catálogo de serviços / pricing improvements
-- Conjunto com SEED-027 (booking questions) — duração pode ser determinada pela resposta a "quantos m²?"
+- Service catalog / pricing improvements milestone
+- Together with SEED-027 (booking questions) — duration can be determined by the answer to "how many m²?"
 
 ## Scope Estimate
 
-**Small** — Uma fase curta. Schema: nova tabela `serviceDurations` (`id`, `serviceId` FK, `label` text, `durationMinutes` int, `price` numeric, `order`). Quando um serviço tem `serviceDurations`, o booking flow mostra um seletor de duração antes de ir para o calendário. `durationMinutes` no serviço vira o default/fallback.
+**Small** — A short phase. Schema: new `serviceDurations` table (`id`, `serviceId` FK, `label` text, `durationMinutes` int, `price` numeric, `order`). When a service has `serviceDurations`, the booking flow shows a duration selector before going to the calendar. `durationMinutes` on the service becomes the default/fallback.
 
 ## Breadcrumbs
 
-- `shared/schema.ts` — tabela `services` (`durationMinutes`) + nova tabela `serviceDurations`
-- `client/src/pages/BookingPage.tsx` — step de seleção de serviço — renderizar seletor de duração
-- `server/routes/services.ts` — `GET /api/services/:id` — incluir `durations` no response
-- `server/routes/availability.ts` — `getAvailableSlots` — receber `durationMinutes` dinâmico do serviço escolhido
-- `client/src/components/admin/ServicesSection.tsx` — UI de edição — seção "Available durations"
+- `shared/schema.ts` — `services` table (`durationMinutes`) + new `serviceDurations` table
+- `client/src/pages/BookingPage.tsx` — service selection step — render duration selector
+- `server/routes/services.ts` — `GET /api/services/:id` — include `durations` in response
+- `server/routes/availability.ts` — `getAvailableSlots` — receive dynamic `durationMinutes` from chosen service
+- `client/src/components/admin/ServicesSection.tsx` — service edit UI — "Available durations" section
 
 ## Notes
 
-Padrão visual: cards ou botões de seleção com label ("2h — Apartamento pequeno — R$150"), similar ao `areaSizes` já existente para `area_based`. Preço pode variar por duração (mais horas = mais caro) — cada `serviceDuration` tem seu próprio `price`.
+Visual pattern: selection cards or buttons with label ("2h — Small apartment — $150"), similar to the existing `areaSizes` for `area_based`. Price can vary by duration (more hours = more expensive) — each `serviceDuration` has its own `price`.

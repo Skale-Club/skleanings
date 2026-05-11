@@ -3,43 +3,43 @@ id: SEED-021
 status: dormant
 planted: 2026-05-10
 planted_during: v3.0 / Phase 20 (calendar-timeline-structure-audit)
-trigger_when: quando qualquer staff precisar de pausa no almoço ou turno partido
+trigger_when: when any staff member needs a lunch break or split shift
 scope: Medium
 ---
 
-# SEED-021: Múltiplos slots de horário por dia (ex: 8h-12h e 14h-19h na segunda)
+# SEED-021: Multiple time slots per day (e.g., 8am-12pm and 2pm-7pm on Monday)
 
 ## Why This Matters
 
-A tabela `staffAvailability` atual permite apenas UM período por dia por staff (`startTime`, `endTime`, `isAvailable`). Isso significa que se uma equipe trabalha de manhã e de tarde com pausa no almoço (8h-12h e 14h-19h), o sistema precisa configurar o dia inteiro como disponível (8h-19h), o que oferece slots de 12h-14h que ninguém pode atender.
+The current `staffAvailability` table allows only ONE time range per day per staff member (`startTime`, `endTime`, `isAvailable`). This means that if a team works morning and afternoon with a lunch break (8am-12pm and 2pm-7pm), the system has to configure the whole day as available (8am-7pm), which offers slots between 12pm-2pm that no one can attend.
 
-As screenshots mostram exatamente isso: segunda tem 8:00am-12:00pm E 2:00pm-7:00pm como dois ranges separados, com o botão `+` para adicionar mais ranges e o botão de lixeira para remover individualmente.
+The Cal.com screenshots show exactly this: Monday has 8:00am-12:00pm AND 2:00pm-7:00pm as two separate ranges, with `+` button to add more ranges and trash icon to remove individually.
 
-**Why:** Empresas de limpeza frequentemente têm pausa operacional no meio do dia (almoço da equipe, transporte entre locais). Sem múltiplos slots, o sistema oferece horários que não existem.
+**Why:** Cleaning companies frequently have operational pauses mid-day (team lunch, travel between locations). Without multiple slots, the system offers time slots that don't exist in reality.
 
 ## When to Surface
 
-**Trigger:** quando o primeiro staff configurar horário partido, ou quando aparecer o primeiro booking num horário de pausa que não deveria estar disponível.
+**Trigger:** when the first staff member configures split hours, or when the first booking appears in a break time that shouldn't have been available.
 
 This seed should be presented during `/gsd:new-milestone` when the milestone scope matches any of these conditions:
-- Milestone de availability / scheduling improvements
-- Milestone de fidelidade ao calendário real de trabalho
-- Qualquer milestone que toque em `staffAvailability` ou `getAvailableSlots`
+- Availability / scheduling improvements milestone
+- Real work calendar fidelity milestone
+- Any milestone that touches `staffAvailability` or `getAvailableSlots`
 
 ## Scope Estimate
 
-**Medium** — Uma fase. Schema: substituir a row única de `staffAvailability` por múltiplas rows por dia (`dayOfWeek`, `startTime`, `endTime`, `order`). Backend: `getAvailableSlots` já itera sobre os intervals disponíveis — precisa aceitar múltiplos ranges por dia. UI admin: botão `+` para adicionar range, lixeira por range, reordenar.
+**Medium** — One phase. Schema: replace the single row in `staffAvailability` with multiple rows per day (`dayOfWeek`, `startTime`, `endTime`, `order`). Backend: `getAvailableSlots` already iterates over available intervals — needs to accept multiple ranges per day. Admin UI: `+` button to add range, trash icon per range, reordering.
 
 ## Breadcrumbs
 
-- `shared/schema.ts` — tabela `staffAvailability`: `id`, `staffMemberId`, `dayOfWeek`, `startTime`, `endTime`, `isAvailable` — constraint única por (staffMemberId, dayOfWeek) precisa mudar para permitir múltiplas rows
-- `server/storage.ts` — `getStaffAvailability()`, `setStaffAvailability()` — precisam retornar/aceitar array de ranges por dia
+- `shared/schema.ts` — `staffAvailability` table: `id`, `staffMemberId`, `dayOfWeek`, `startTime`, `endTime`, `isAvailable` — unique constraint per (staffMemberId, dayOfWeek) needs to change to allow multiple rows
+- `server/storage.ts` — `getStaffAvailability()`, `setStaffAvailability()` — need to return/accept array of ranges per day
 - `server/routes/staff.ts` — `GET /api/staff/:id/availability`, `POST /api/staff/:id/availability`
-- `client/src/components/admin/StaffSection.tsx` — UI de configuração de disponibilidade por dia
-- `server/routes/availability.ts` (ou routes.ts) — `getAvailableSlots` que calcula slots — precisa iterar múltiplos ranges
+- `client/src/components/admin/StaffSection.tsx` — availability config UI per day
+- `server/routes/availability.ts` (or routes.ts) — `getAvailableSlots` that calculates slots — needs to iterate multiple ranges
 
 ## Notes
 
-Migração cuidadosa: a tabela atual tem uma row por (staffMemberId, dayOfWeek). A nova estrutura permite múltiplas rows. Migration: adicionar coluna `order` (integer), remover unique constraint, permitir múltiplas rows. Existing data continua funcionando (uma row por dia = um range).
+Careful migration: the current table has one row per (staffMemberId, dayOfWeek). The new structure allows multiple rows. Migration: add `order` column (integer), drop unique constraint, allow multiple rows. Existing data continues working (one row per day = one range).
 
-O algoritmo de available slots atual provavelmente une os ranges de disponibilidade com os ranges de bookings existentes. Com múltiplos ranges por dia, a lógica precisa iterar sobre cada range separadamente e acumular os slots.
+The current available slots algorithm probably merges availability ranges with existing booking ranges. With multiple ranges per day, the logic needs to iterate each range separately and accumulate slots.

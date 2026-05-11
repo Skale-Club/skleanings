@@ -2,44 +2,44 @@
 id: SEED-006
 status: cancelled
 cancelled_on: 2026-05-10
-cancellation_reason: Cortado — ganho de attribution é marginal
+cancellation_reason: Marginal attribution gain
 planted: 2026-05-10
 planted_during: v1.0 / Phase 15 (schema-foundation-detokenization)
-trigger_when: quando o marketing dashboard começar a mostrar gaps de atribuição, ou quando otimizar ROAS de campanhas
+trigger_when: when the marketing dashboard starts showing attribution gaps, or when optimizing campaign ROAS
 scope: Small
 ---
 
-# SEED-006: Fallback de atribuição via email quando localStorage é limpo
+# SEED-006: Email-based attribution fallback when localStorage is cleared
 
 ## Why This Matters
 
-O sistema de atribuição usa um UUID em `localStorage` (`skleanings_visitor_id_${companySlug}`) para conectar visitas ao longo de dias com o booking final. Se o usuário limpar o localStorage, trocar de dispositivo, ou usar modo privado para finalizar o booking, a atribuição é perdida — o booking aparece como "direct" mesmo que tenha vindo de uma campanha paga.
+The attribution system uses a UUID in `localStorage` (`skleanings_visitor_id_${companySlug}`) to connect visits across days with the final booking. If the user clears localStorage, switches devices, or uses private mode to complete the booking, attribution is lost — the booking appears as "direct" even though it came from a paid campaign.
 
-A decisão no STATE.md documenta: "localStorage UUID — must survive multi-day booking journeys" mas não tem fallback.
+The decision in STATE.md documents: "localStorage UUID — must survive multi-day booking journeys" but has no fallback.
 
-**Why:** Campanhas de Google Ads e Meta Ads têm jornadas de 3-7 dias. Usuários que pesquisam no mobile e fecham no desktop perdem toda a atribuição. Isso subestima o ROAS de campanhas upper-funnel.
+**Why:** Google Ads and Meta Ads campaigns have 3-7 day journeys. Users who research on mobile and close on desktop lose all attribution. This underestimates upper-funnel campaign ROAS.
 
 ## When to Surface
 
-**Trigger:** quando começar a otimizar campanhas pagas com base nos dados do marketing dashboard, ou quando o relatório de atribuição mostrar >30% de conversões sem source.
+**Trigger:** when starting to optimize paid campaigns based on marketing dashboard data, or when the attribution report shows >30% of conversions without source.
 
 This seed should be presented during `/gsd:new-milestone` when the milestone scope matches any of these conditions:
-- Milestone de marketing / attribution melhoria
-- Milestone pós White Label v2.0 com foco em analytics
-- Milestone de integração com plataformas de ads (Meta CAPI, Google Enhanced Conversions)
+- Marketing / attribution improvement milestone
+- Post-White Label v2.0 milestone focused on analytics
+- Ads platform integration milestone (Meta CAPI, Google Enhanced Conversions)
 
 ## Scope Estimate
 
-**Small** — Poucas horas. Lógica: após booking criado com email do cliente, fazer lookup em `bookings` e `visitorSessions` pelo email para recuperar o `utmSessionId` de uma sessão anterior. Aplicar post-hoc se o booking atual não tem `utmSessionId`.
+**Small** — A few hours. Logic: after booking created with customer email, look up in `bookings` and `visitorSessions` by email to recover `utmSessionId` from a previous session. Apply post-hoc if the current booking has no `utmSessionId`.
 
 ## Breadcrumbs
 
-- `server/routes.ts` — `POST /api/bookings`, onde `linkBookingToAttribution` é chamado
-- `server/storage.ts` — `getVisitorSessionByEmail()` seria uma nova query
-- `shared/schema.ts` — tabela `visitorSessions` (tem `convertedAt`, sem campo de email)
-- `shared/schema.ts` — tabela `bookings` (tem `customerEmail`)
-- Decisão Phase 11: "linkBookingToAttribution silently no-ops when visitorId not found" — fallback de email seria chamado nesse caso
+- `server/routes.ts` — `POST /api/bookings`, where `linkBookingToAttribution` is called
+- `server/storage.ts` — `getVisitorSessionByEmail()` would be a new query
+- `shared/schema.ts` — `visitorSessions` table (has `convertedAt`, no email field)
+- `shared/schema.ts` — `bookings` table (has `customerEmail`)
+- Phase 11 decision: "linkBookingToAttribution silently no-ops when visitorId not found" — email fallback would be called in this case
 
 ## Notes
 
-Considerar adicionar `customerEmail` como campo opcional em `visitorSessions` durante a primeira visita (capturado se o usuário preencher um form). Isso permitiria cross-device attribution além do fallback pós-booking.
+Consider adding `customerEmail` as optional field in `visitorSessions` during the first visit (captured if user fills a form). This would enable cross-device attribution beyond post-booking fallback.

@@ -3,38 +3,53 @@ id: SEED-016
 status: dormant
 planted: 2026-05-10
 planted_during: v3.0 / Phase 20 (calendar-timeline-structure-audit)
-trigger_when: ao ter o primeiro tenant que queira seu próprio domínio (ex: booking.limpezaxyz.com)
+trigger_when: when the first tenant wants their own domain (e.g., booking.cleanco.com)
 scope: Medium
 ---
 
-# SEED-016: Roteamento por domínio customizado por tenant
+# SEED-016: Custom domain routing per tenant
 
 ## Why This Matters
 
-Hoje cada tenant precisa de um deploy separado para ter seu próprio domínio. Em um modelo multi-tenant SaaS, um único deploy precisa servir `booking.empresa-a.com` e `booking.empresa-b.com` — resolvendo o tenant correto pela análise do `Host` header em cada requisição.
+Today each tenant needs a separate deploy to have their own domain. In a multi-tenant SaaS model, a single deploy must serve `booking.cleanco-a.com` and `booking.cleanco-b.com` — resolving the correct tenant by parsing the `Host` header on every request.
 
-**Why:** Domínio próprio é um requisito básico de qualquer white-label credível. O cliente precisa que os bookings apareçam no domínio deles, não em `skleanings.vercel.app/tenant-x`.
+The `skaleclub-websites` already does this in production (50+ tenants, each on their own domain). Pattern to copy:
+- Cloudflare SaaS handles DNS + TLS for tenant custom domains
+- Caddy reverse proxy terminates TLS, sets `X-Forwarded-Host`
+- Express middleware resolves tenant by hostname (LRU cached, 500 entries, 5min TTL)
+- `domains` table maps `hostname → tenantId`
+
+**Why:** Custom domains are a baseline requirement of any credible white-label product. The client needs bookings to show up on THEIR domain, not on `xkedule.app/tenant-x`.
 
 ## When to Surface
 
-**Trigger:** quando o primeiro tenant pedir domínio próprio, ou ao iniciar SEED-013 (multi-tenant architecture) — domínio customizado é parte do pacote multi-tenant.
+**Trigger:** when the first tenant requests their own domain, or when starting SEED-013 (multi-tenant architecture) — custom domains are part of the multi-tenant package.
 
 This seed should be presented during `/gsd:new-milestone` when the milestone scope matches any of these conditions:
-- Milestone de multi-tenant (pré-requisito: SEED-013)
-- Milestone de white-label avançado
-- Ao ter 2+ tenants cada um com seu próprio domínio
+- Multi-tenant milestone (prerequisite: SEED-013)
+- Advanced white-label milestone
+- When having 2+ tenants each with their own domain
 
 ## Scope Estimate
 
-**Medium** — Uma fase. Partes: (1) tabela `tenantDomains` com domínio verificado e tenant ID; (2) middleware Express que lê o `Host` header e resolve o tenant; (3) SSL automático via Vercel/Cloudflare wildcard cert ou Let's Encrypt per-domain; (4) DNS setup guide para tenants.
+**Medium** — One phase. Copy the skaleclub-websites pattern:
+
+1. `domains` table (tenantId, hostname, isPrimary, status, provisioningStrategy, caddyConfPath)
+2. `resolveTenantMiddleware` reading `X-Forwarded-Host`
+3. Caddy snippet template that gets dropped into `/etc/caddy/conf.d/{tenant}.conf` when a domain is added
+4. Cloudflare SaaS API integration to add custom hostnames programmatically
+5. DNS setup guide for tenants (CNAME or A record to Xkedule's edge)
 
 ## Breadcrumbs
 
-- `server/index.ts` — middleware registration point — tenant resolver seria o primeiro middleware
-- `vercel.json` — current rewrite rules — precisaria de rewrites por domínio ou uso de Vercel Domains API
-- Alternativa: Cloudflare Workers com `request.headers.get('Host')` para resolver tenant antes de chegar no Express
-- `shared/schema.ts` — nova tabela `tenantDomains` (`tenantId`, `domain`, `verifiedAt`, `sslStatus`)
+- Reference: `skaleclub-websites` `infra/Caddyfile` + `server/middleware/resolveTenant.ts`
+- `shared/schema.ts` — new `domains` table (copy from skaleclub-websites)
+- `server/index.ts` — middleware registration point — tenant resolver is the first middleware
+- New: `infra/templates/tenant-domain.caddy.tmpl` — Caddy config template per tenant
+- Cloudflare SaaS docs: custom hostnames API for programmatic domain addition
 
 ## Notes
 
-Vercel tem suporte nativo a custom domains via CLI/API — `vercel domains add booking.empresa-a.com`. Para SSL automático, Vercel provisiona via Let's Encrypt. O middleware de resolução de tenant via Host header é a peça central — deve ser o primeiro middleware registrado, antes de qualquer autenticação.
+For SSL: Cloudflare SaaS provisions free Let's Encrypt certs for each custom hostname automatically. Caddy can also do per-domain Let's Encrypt as a fallback. The skaleclub-websites uses both strategies — `provisioningStrategy: 'cloudflare_origin_ca' | 'letsencrypt'` per domain.
+
+The tenant resolution middleware MUST be the first middleware registered, before any authentication — auth context depends on tenant context.

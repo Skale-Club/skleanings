@@ -3,77 +3,77 @@ id: SEED-032
 status: dormant
 planted: 2026-05-10
 planted_during: v3.0 / Phase 20 (calendar-timeline-structure-audit)
-trigger_when: ao migrar para Xkedule multi-tenant — primeiro tenant que precisar receber pagamentos online dos próprios clientes
+trigger_when: when migrating to Xkedule multi-tenant — first tenant that needs to receive online payments from their own customers
 scope: Large
 ---
 
-# SEED-032: Stripe Connect — tenant conecta sua conta Stripe via OAuth (plug & play)
+# SEED-032: Stripe Connect — tenant connects their Stripe account via OAuth (plug & play)
 
 ## Why This Matters
 
-Hoje o Skleanings tem Stripe integrado com uma única API key (a do dono atual). Quando virar Xkedule multi-tenant, **cada tenant precisa receber os pagamentos dos próprios clientes na conta Stripe DELE** — não na conta da Xkedule.
+Today Skleanings has Stripe integrated with a single API key (the current owner's). When it becomes Xkedule multi-tenant, **each tenant needs to receive payments from their own customers in THEIR Stripe account** — not in Xkedule's account.
 
-A solução é **Stripe Connect com OAuth**: o tenant clica em "Conectar Stripe" no admin → é redirecionado para o Stripe → autoriza a Xkedule → volta com tokens armazenados no banco. A partir daí, todos os checkouts dos clientes daquele tenant são criados na conta Stripe do tenant via `stripeAccount` parameter.
+The solution is **Stripe Connect with OAuth**: tenant clicks "Connect Stripe" in admin → is redirected to Stripe → authorizes Xkedule → returns with tokens stored in the database. From that point, all checkouts from that tenant's customers are created in the tenant's Stripe account via the `stripeAccount` parameter.
 
-**Why:** Sem Stripe Connect, o dinheiro dos clientes finais entraria na conta da Xkedule e teria que ser repassado manualmente — operação inviável legalmente (a Xkedule não é processadora de pagamentos), fiscalmente (NF do tenant não pode ser emitida sobre receita da Xkedule), e operacionalmente. Stripe Connect resolve tudo isso de forma plug & play.
+**Why:** Without Stripe Connect, the end customers' money would land in Xkedule's account and would have to be manually transferred — legally unviable (Xkedule isn't a payment processor), fiscally (tenant's invoice can't be issued on Xkedule revenue), and operationally. Stripe Connect solves all of this in plug-and-play fashion.
 
-Este é um billing **completamente separado** do SEED-014 (Xkedule cobrando tenants). Aqui é tenant cobrando os clientes finais.
+This is a billing flow **completely separate** from SEED-014 (Xkedule charging tenants). Here it's tenant charging end customers.
 
 ## When to Surface
 
-**Trigger:** ao planejar a migração do Skleanings para Xkedule multi-tenant (SEED-013), porque o sistema de pagamento atual precisa ser refatorado para Stripe Connect antes do segundo tenant existir.
+**Trigger:** when planning the Skleanings → Xkedule multi-tenant migration (SEED-013), because the current payment system must be refactored to Stripe Connect before the second tenant exists.
 
 This seed should be presented during `/gsd:new-milestone` when the milestone scope matches any of these conditions:
-- Milestone de SaaS Xkedule (conjunto com SEED-013)
-- Milestone de pagamentos / financeiro
-- Antes do primeiro segundo tenant pagante
+- Xkedule SaaS milestone (together with SEED-013)
+- Payments / finance milestone
+- Before the first second paying tenant
 
 ## Scope Estimate
 
-**Large** — Uma fase completa. Componentes:
+**Large** — A complete phase. Components:
 
 1. **Schema:**
    - `tenantStripeConnections` (tenantId FK unique, stripeAccountId, accessToken, refreshToken, scope, livemode, chargesEnabled, payoutsEnabled, detailsSubmitted, connectedAt, lastSyncedAt)
-   - Migration: remover Stripe API key de `integrationSettings` (era global) — agora cada tenant tem sua conexão
+   - Migration: remove Stripe API key from `integrationSettings` (was global) — now each tenant has their own connection
 
 2. **OAuth flow:**
-   - `GET /api/admin/integrations/stripe/connect` — gera URL de autorização do Stripe Connect e redireciona
-   - `GET /api/admin/integrations/stripe/callback` — recebe `code`, troca por access token via `stripe.oauth.token`, salva em `tenantStripeConnections`
-   - `POST /api/admin/integrations/stripe/disconnect` — chama `stripe.oauth.deauthorize` e remove tokens
-   - Sincronização: `GET /api/admin/integrations/stripe/account` — chama `stripe.accounts.retrieve(stripeAccountId)` para refrescar status de `chargesEnabled` etc.
+   - `GET /api/admin/integrations/stripe/connect` — generates Stripe Connect authorization URL and redirects
+   - `GET /api/admin/integrations/stripe/callback` — receives `code`, exchanges for access token via `stripe.oauth.token`, saves to `tenantStripeConnections`
+   - `POST /api/admin/integrations/stripe/disconnect` — calls `stripe.oauth.deauthorize` and removes tokens
+   - Sync: `GET /api/admin/integrations/stripe/account` — calls `stripe.accounts.retrieve(stripeAccountId)` to refresh status of `chargesEnabled` etc.
 
 3. **Checkout refactor:**
-   - `POST /api/payments/create-session` — antes usava API key global; agora aceita o tenant do middleware, busca `tenantStripeConnections`, cria session com `{ stripeAccount: connection.stripeAccountId }`
-   - Webhook handler — agora processa eventos de múltiplas contas connected; usar `event.account` para identificar o tenant
+   - `POST /api/payments/create-session` — previously used global API key; now accepts the tenant from middleware, fetches `tenantStripeConnections`, creates session with `{ stripeAccount: connection.stripeAccountId }`
+   - Webhook handler — now processes events from multiple connected accounts; use `event.account` to identify the tenant
 
-4. **UI admin:**
-   - Seção "Pagamentos" com botão grande "Conectar Stripe" se não conectado
-   - Se conectado: mostra account ID, status (chargesEnabled, payoutsEnabled), botão "Reconectar" e "Desconectar"
-   - Banner se `detailsSubmitted = false` (precisa completar onboarding do Stripe)
+4. **Admin UI:**
+   - "Payments" section with large "Connect Stripe" button if not connected
+   - If connected: shows account ID, status (chargesEnabled, payoutsEnabled), "Reconnect" and "Disconnect" buttons
+   - Banner if `detailsSubmitted = false` (needs to complete Stripe onboarding)
 
 5. **Booking flow guard:**
-   - Se o tenant não tem Stripe conectado OU `chargesEnabled = false`, esconder opção "Pagar online" do customer booking flow — só mostrar "Pagar no local"
+   - If tenant doesn't have Stripe connected OR `chargesEnabled = false`, hide "Pay online" option from customer booking flow — only show "Pay on site"
 
 ## Breadcrumbs
 
-- `server/routes/payments.ts` — endpoints atuais de Stripe que precisam ser refatorados para usar `stripeAccount` parameter
-- `shared/schema.ts` — tabela `integrationSettings` (tem Stripe key hoje) + nova `tenantStripeConnections`
-- `client/src/pages/BookingPage.tsx` — step de payment method que precisa esconder "online" se tenant não tem Stripe
-- Stripe Connect docs: Standard accounts (recomendado — tenant tem dashboard próprio) vs Express accounts (mais simples mas Xkedule responsável por compliance)
-- App registrada no Stripe: precisa de Connect application com OAuth flow habilitado, redirect URI configurada, branding
+- `server/routes/payments.ts` — current Stripe endpoints that need to be refactored to use `stripeAccount` parameter
+- `shared/schema.ts` — `integrationSettings` table (has Stripe key today) + new `tenantStripeConnections`
+- `client/src/pages/BookingPage.tsx` — payment method step that needs to hide "online" if tenant has no Stripe
+- Stripe Connect docs: Standard accounts (recommended — tenant has own dashboard) vs Express accounts (simpler but Xkedule responsible for compliance)
+- Stripe app registration: needs a Connect application with OAuth flow enabled, redirect URI configured, branding
 
 ## Notes
 
 **Standard vs Express accounts:**
-- **Standard (recomendado):** Tenant cria/usa conta Stripe própria. Tem dashboard Stripe completo, gerencia disputas, payouts vão direto pra ele. Xkedule só facilita o pagamento.
-- **Express:** Conta criada via API, Xkedule responsável por onboarding e compliance. Mais friction.
+- **Standard (recommended):** Tenant creates/uses own Stripe account. Has complete Stripe dashboard, manages disputes, payouts go directly to them. Xkedule just facilitates the payment.
+- **Express:** Account created via API, Xkedule responsible for onboarding and compliance. More friction.
 
-Começar com Standard. Se um tenant não tem conta Stripe ainda, o Stripe Connect cria durante o OAuth (`stripe.com/connect/...?signup`).
+Start with Standard. If a tenant doesn't have a Stripe account yet, Stripe Connect creates one during OAuth (`stripe.com/connect/...?signup`).
 
-**Application fee (revenue share):** Stripe Connect permite Xkedule cobrar uma taxa por transação (`application_fee_amount` no checkout session). Pode ser modelo de receita adicional — ex: 1% por transação processada além da mensalidade. Configurável por plano (SEED-017).
+**Application fee (revenue share):** Stripe Connect allows Xkedule to charge a per-transaction fee (`application_fee_amount` in the checkout session). Can be an additional revenue model — e.g., 1% per processed transaction in addition to subscription. Configurable per plan (SEED-017).
 
-**Webhook routing:** Eventos de contas connected chegam no webhook da Xkedule com `event.account` populado. Lookup `tenantStripeConnections.stripeAccountId` → resolve tenant → processar.
+**Webhook routing:** Connected account events arrive at the Xkedule webhook with `event.account` populated. Lookup `tenantStripeConnections.stripeAccountId` → resolve tenant → process.
 
-**Tokens:** `access_token` do Stripe Connect não expira (não precisa refresh) — diferente de OAuth tradicional. Mas se o tenant revogar acesso no dashboard Stripe, o token vira inválido — capturar erros e marcar `connection.status = 'revoked'`.
+**Tokens:** Stripe Connect `access_token` doesn't expire (no refresh needed) — different from traditional OAuth. But if the tenant revokes access in the Stripe dashboard, the token becomes invalid — capture errors and mark `connection.status = 'revoked'`.
 
-**Princípio:** Plug & play significa que o tenant nunca toca em API key, secret key, webhook secret — Xkedule cuida disso. O tenant só clica em "Conectar" e autoriza.
+**Principle:** Plug & play means the tenant never touches API key, secret key, webhook secret — Xkedule handles that. The tenant just clicks "Connect" and authorizes.

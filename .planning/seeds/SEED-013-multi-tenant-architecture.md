@@ -3,39 +3,51 @@ id: SEED-013
 status: dormant
 planted: 2026-05-10
 planted_during: v3.0 / Phase 20 (calendar-timeline-structure-audit)
-trigger_when: quando assinar o segundo tenant pago, ou ao iniciar o modelo SaaS
+trigger_when: when starting the Xkedule SaaS model (Skleanings becomes the first tenant of Xkedule)
 scope: Large
 ---
 
-# SEED-013: Arquitetura multi-tenant (isolamento de dados entre tenants)
+# SEED-013: Multi-tenant architecture (data isolation between tenants)
 
 ## Why This Matters
 
-Hoje o white-label funciona por deploy separado — cada tenant tem sua própria instância do app e seu próprio banco. Isso não escala como SaaS: cada novo cliente requer um novo deploy, novo banco, nova infra. Para um modelo SaaS real, múltiplos tenants precisam compartilhar a mesma infra com isolamento completo de dados.
+Today white-label works per separate deploy — each tenant has their own app instance and their own database. This doesn't scale as SaaS: each new client requires a new deploy, new database, new infra. For a real SaaS model, multiple tenants must share the same infra with complete data isolation.
 
-**Why:** Sem multi-tenancy, o custo de infra por tenant é alto e o onboarding de novos clientes é manual. Com multi-tenancy, um único deploy serve N tenants — o custo marginal por novo cliente é próximo de zero.
+The reference pattern is the `skaleclub-websites` project (see `xkedule_architecture_reference.md` memory): single Express instance, `tenant_id` on every business table, hostname-based tenant resolution, `DatabaseStorage.forTenant()` storage layer pattern.
+
+**Why:** Without multi-tenancy, infra cost per tenant is high and onboarding new clients is manual. With multi-tenancy, a single deploy serves N tenants — marginal cost per new client approaches zero. Xkedule is the SaaS product; Skleanings is just the first tenant.
 
 ## When to Surface
 
-**Trigger:** ao assinar o segundo tenant pago (porque aí o problema de escalar deploys manualmente se torna real), ou ao iniciar um milestone de SaaS/plataforma.
+**Trigger:** when signing the second paying tenant (because that's when the problem of manually scaling deploys becomes real), or when starting a SaaS/platform milestone.
 
 This seed should be presented during `/gsd:new-milestone` when the milestone scope matches any of these conditions:
-- Milestone de SaaS / plataforma multi-cliente
-- Milestone de crescimento (escalar para 5+ tenants)
-- Milestone após SEED-015 (super-admin panel)
+- Xkedule SaaS / multi-client platform milestone
+- Growth milestone (scaling to 5+ tenants)
+- Post-SEED-015 milestone (super-admin panel)
 
 ## Scope Estimate
 
-**Large** — Uma milestone de alta complexidade. Estratégias: (A) Row-Level Security no PostgreSQL com coluna `tenantId` em todas as tabelas — simples mas exige cuidado em cada query. (B) Schema separado por tenant no mesmo PostgreSQL — isolamento mais forte. (C) Database separado por tenant (modelo atual) mas com provisionamento automatizado. Recomendado: opção A (RLS) com Supabase para começar.
+**Large** — A high-complexity milestone. Adopt the `skaleclub-websites` proven pattern:
+
+1. **Schema:** Add `tenants`, `domains`, `userTenants` tables (copy structure from skaleclub-websites). Add `tenantId NOT NULL` column to ALL business tables.
+2. **Storage layer:** Refactor `DatabaseStorage` to `.forTenant(id)` pattern — every query auto-filters by tenantId.
+3. **Middleware:** `resolveTenantMiddleware` (reads `X-Forwarded-Host`, looks up in `domains` table, attaches `res.locals.tenant` + `res.locals.storage`) + `requireTenantMiddleware`.
+4. **Infra migration:** Vercel → Hetzner CX23 VM + Caddy + Cloudflare (long-running processes, per-tenant custom domains).
+5. **LRU cache:** 500 entries, 5min TTL for tenant resolution to avoid hitting DB on every request.
+6. **Data migration:** All existing Skleanings data gets `tenantId = 1` (Skleanings is tenant #1).
 
 ## Breadcrumbs
 
-- `shared/schema.ts` — TODAS as tabelas precisariam de `tenantId` coluna
-- `server/storage.ts` — TODAS as queries precisariam de filtro por `tenantId`
-- `server/index.ts` — middleware de resolução de tenant (por domínio ou por header)
-- `server/routes/` — autenticação de admin precisa ser scoped por tenant
-- Supabase RLS: políticas por tenant usando `current_setting('app.tenant_id')` — funciona com o stack atual
+- Reference: `C:\Users\Vanildo\Dev\skaleclub-websites` — production pattern with 50+ tenants
+- `shared/schema.ts` — ALL tables need `tenantId` column
+- `server/storage.ts` — refactor to `.forTenant(id)` pattern
+- `server/middleware/` — new files for tenant resolution
+- `vercel.json` — to be removed after Hetzner migration
+- New: `infra/Caddyfile`, `infra/app.service` (systemd unit), `.github/workflows/deploy.yml`
 
 ## Notes
 
-Esta é a maior mudança arquitetural do projeto. Não deve ser feita até ter demanda real de múltiplos tenants — o custo de migração é alto. Quando o momento chegar, fazer feature-branch longa e migrar tabela por tabela com testes antes de mergar. Considerar SEED-015 (super-admin) antes de iniciar — o super-admin precisa existir para gerenciar múltiplos tenants.
+This is the biggest architectural change in the project. Should not be done until there's real demand for multiple tenants — the migration cost is high. When the moment comes, do a long feature-branch and migrate table by table with tests before merging. SEED-015 (super-admin) must exist BEFORE starting — the super-admin is needed to manage multiple tenants.
+
+The `skaleclub-websites` is a CMS for service businesses (different product). Don't try to merge — Xkedule is a separate platform that copies the architectural PATTERN, not the code directly. Domain-specific business logic (booking, staff, calendar, Stripe) comes from Skleanings; multi-tenancy plumbing comes from skaleclub-websites.

@@ -3,39 +3,44 @@ id: SEED-015
 status: dormant
 planted: 2026-05-10
 planted_during: v3.0 / Phase 20 (calendar-timeline-structure-audit)
-trigger_when: ao ter 3+ tenants ativos, ou antes de implementar multi-tenancy
+trigger_when: when there are 3+ active tenants, or before implementing multi-tenancy
 scope: Medium
 ---
 
-# SEED-015: Super-admin panel (gerenciar todos os tenants em um painel)
+# SEED-015: Super-admin panel (manage all tenants from one panel)
 
 ## Why This Matters
 
-Com múltiplos tenants, o time que opera o produto precisa de uma interface para ver todos os clientes, verificar health de cada instância, aplicar patches de configuração em massa, ver métricas agregadas de uso, e acessar o admin de qualquer tenant para suporte. Hoje isso é feito diretamente no banco de dados.
+With multiple tenants, the team operating the product needs an interface to see all clients, check the health of each instance, apply config patches in bulk, see aggregate usage metrics, and access the admin of any tenant for support. Today this is done directly in the database.
 
-**Why:** Sem super-admin, operar 5+ tenants significa SSH no banco, queries manuais, e zero visibilidade de qual tenant está com problema. É o tipo de dívida operacional que explode quando a base cresce.
+**Why:** Without super-admin, operating 5+ tenants means SSH into the database, manual queries, and zero visibility into which tenant has a problem. It's the kind of operational debt that explodes when the base grows.
 
 ## When to Surface
 
-**Trigger:** ao ter 3+ tenants ativos, ou ao iniciar o milestone de multi-tenancy (SEED-013), pois o super-admin é pré-requisito para gerenciar a migração.
+**Trigger:** when there are 3+ active tenants, or when starting the multi-tenancy milestone (SEED-013), since super-admin is a prerequisite for managing the migration.
 
 This seed should be presented during `/gsd:new-milestone` when the milestone scope matches any of these conditions:
-- Milestone de operações / multi-tenant
-- Conjunto com SEED-013 (multi-tenant architecture)
-- Quando começar a crescer para 5+ tenants
+- Operations / multi-tenant milestone
+- Together with SEED-013 (multi-tenant architecture)
+- When starting to grow to 5+ tenants
 
 ## Scope Estimate
 
-**Medium** — Uma fase. Features mínimas: lista de todos os tenants (nome, plano, status, último acesso, bookings/mês), impersonation (acessar o admin de qualquer tenant como suporte), health check por tenant (DB conectado?, migrations aplicadas?), ação de mass-update em configurações.
+**Medium** — One phase. Follow the `skaleclub-websites` pattern: super-admin lives at a dedicated host (e.g., `xkedule.skale.club` or `admin.xkedule.com`), host-gated middleware ensures `/api/super-admin/*` routes only respond on that host.
+
+Minimum features: list all tenants (name, plan, status, last access, bookings/month), impersonation (access any tenant's admin as support), per-tenant health check (DB connected?, migrations applied?), bulk update action on settings, error logs, storage usage.
 
 ## Breadcrumbs
 
-- `server/middleware/auth.ts` — sistema de roles existente (admin/staff/viewer) — super-admin seria um novo role acima de admin
-- `shared/schema.ts` — tabela `users` com `isAdmin` e `role` — novo role `superadmin`
-- `server/routes/` — novas rotas `/api/superadmin/*` com guard separado
-- `client/src/pages/admin/` — novo módulo de UI fora do admin normal do tenant
-- Segurança: super-admin routes precisam de IP allowlist ou MFA obrigatório
+- Reference: `skaleclub-websites` super-admin at `websites.skale.club` — same pattern to replicate
+- `server/middleware/auth.ts` — existing role system (admin/staff/viewer) — super-admin would be a new role above admin
+- `shared/schema.ts` — `users` table with `isAdmin` and `role` — new `superadmin` role
+- `server/routes/` — new `/api/super-admin/*` routes with separate guard
+- `client/src/pages/admin/` — new UI module outside the tenant's normal admin
+- Security: super-admin routes require IP allowlist or mandatory MFA
 
 ## Notes
 
-O super-admin panel é um produto separado do admin do tenant — mesmo stack, deploy separado ou sub-rota protegida (ex: `/superadmin`). Nunca expor rotas de super-admin nos mesmos endpoints do tenant admin — surface de ataque muito grande.
+Super-admin panel is a separate product from tenant admin — same stack, separate deploy or protected sub-route (e.g., `/superadmin`). Never expose super-admin routes on the same endpoints as tenant admin — attack surface too large.
+
+The `skaleclub-websites` pattern uses host-gating: requests to `websites.skale.club` get super-admin context, requests to tenant domains don't. Copy this approach for Xkedule.

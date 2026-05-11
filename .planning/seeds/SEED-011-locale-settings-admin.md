@@ -2,47 +2,48 @@
 id: SEED-011
 status: dormant
 planted: 2026-05-10
+last_revised: 2026-05-10
 planted_during: v3.0 / Phase 20 (calendar-timeline-structure-audit)
-trigger_when: ao onboardar o primeiro tenant não-inglês (confirmado que haverá tenants não-inglês no Xkedule, em menor intensidade)
+trigger_when: when onboarding the first non-English tenant (confirmed Xkedule will have non-English tenants, at lower intensity)
 scope: Small
 priority: medium
 ---
 
-# SEED-011: Configurações de locale no admin (idioma, start of week, formato de data)
+# SEED-011: Locale settings in admin (language, start of week, date format)
 
 ## Why This Matters
 
-O `companySettings` já tem `timeFormat` (12h/24h) e `timeZone`, mas não tem `language` nem `startOfWeek`. Para um produto white-label servindo diferentes mercados, essas configurações são básicas:
-- Empresa brasileira quer semana começando na segunda, datas em pt-BR, formato 24h
-- Empresa americana quer semana começando no domingo, datas en-US, formato 12h
+`companySettings` already has `timeFormat` (12h/24h) and `timeZone`, but no `language` or `startOfWeek`. For a white-label product serving different markets, these settings are basic:
+- Brazilian company wants Monday-starting week, pt-BR dates, 24h format
+- American company wants Sunday-starting week, en-US dates, 12h format
 
-Atualmente `timeFormat` existe na tabela mas não há `language` nem `startOfWeek`. O calendário admin usa hardcoded `Sunday` como início de semana.
+Currently `timeFormat` exists in the table but there's no `language` or `startOfWeek`. The admin calendar uses hardcoded `Sunday` as start of week.
 
-**Why:** Cada novo tenant em um mercado diferente vai pedir isso no primeiro mês de uso. É o tipo de detalhe que parece pequeno mas bloqueia adoção.
+**Why:** Every new tenant in a different market will ask for this in the first month of use. It's the kind of detail that seems small but blocks adoption.
 
 ## When to Surface
 
-**Trigger:** ao iniciar qualquer milestone de internacionalização, ou quando adicionar o primeiro tenant fora dos EUA.
+**Trigger:** when starting any internationalization milestone, or when adding the first non-US tenant.
 
 This seed should be presented during `/gsd:new-milestone` when the milestone scope matches any of these conditions:
-- Milestone de locale / internacionalização
-- Milestone de onboarding de novos tenants internacionais
-- Milestone de white-label self-serve
+- Locale / internationalization milestone
+- International tenant onboarding milestone
+- White-label self-serve milestone
 
 ## Scope Estimate
 
-**Small** — Uma fase curta. Schema: adicionar `language` (text, default 'en') e `startOfWeek` (text, default 'sunday') em `companySettings`. UI: adicionar selects na seção General de Company Settings — Language, Start of week. Consumo: calendário admin respeita `startOfWeek`, frontend usa `language` para Intl.DateTimeFormat.
+**Small** — A short phase. Schema: add `language` (text, default 'en') and `startOfWeek` (text, default 'sunday') to `companySettings`. UI: add selects in the General section of Company Settings — Language, Start of week. Consumption: admin calendar respects `startOfWeek`, frontend uses `language` for Intl.DateTimeFormat.
 
 ## Breadcrumbs
 
-- `shared/schema.ts` — tabela `companySettings`, já tem `timeFormat` e `timeZone` (padrão para novos campos)
-- `client/src/components/admin/CompanySettingsSection.tsx` — onde novos selects seriam adicionados
-- `client/src/components/admin/AppointmentsCalendarSection.tsx` — consome configurações de calendário; `startOfWeek` afetaria `culture` prop do RBC
-- `client/src/hooks/useCompanySettings.ts` — hook que expõe settings para o frontend
-- `react-big-calendar` — suporta `culture` prop para localização do calendário
+- `shared/schema.ts` — `companySettings` table, already has `timeFormat` and `timeZone` (pattern for new fields)
+- `client/src/components/admin/CompanySettingsSection.tsx` — where new selects would be added
+- `client/src/components/admin/AppointmentsCalendarSection.tsx` — consumes calendar settings; `startOfWeek` would affect RBC `culture` prop
+- `client/src/hooks/useCompanySettings.ts` — hook that exposes settings to the frontend
+- `react-big-calendar` — supports `culture` prop for calendar localization
 
 ## Notes
 
-O seletor de Language no admin controla o locale padrão do site público (booking flow). Cada tenant fica em um locale. Não é i18n completo (não traduz strings) — é locale para formatação de datas, números e moeda.
+The Language selector in admin controls the default locale of the public site (booking flow). Each tenant sits in one locale. It's not full i18n (doesn't translate strings) — it's locale for date, number, and currency formatting.
 
-**Decisão estratégica (2026-05-10):** SEED-012 (i18n completo) foi cancelado. Esta seed (locale settings) cobre o caso de menor intensidade: tenant não-inglês recebe UI em inglês mas com formatação de datas/números/moeda no locale dele. Tradução completa do booking flow fica para um momento muito futuro.
+**Strategic decision (2026-05-10):** SEED-012 (full i18n) was cancelled. This seed (locale settings) covers the lower-intensity case: a non-English tenant gets UI in English but with date/number/currency formatting in their locale. Full booking flow translation is for a much later moment.

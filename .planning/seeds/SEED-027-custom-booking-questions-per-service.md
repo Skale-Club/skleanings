@@ -3,43 +3,43 @@ id: SEED-027
 status: dormant
 planted: 2026-05-10
 planted_during: v3.0 / Phase 20 (calendar-timeline-structure-audit)
-trigger_when: quando o admin precisar de informações específicas por serviço antes de confirmar o booking
+trigger_when: when admin needs service-specific information before confirming the booking
 scope: Medium
 ---
 
-# SEED-027: Perguntas customizadas de intake por serviço (booking questions)
+# SEED-027: Custom intake questions per service (booking questions)
 
 ## Why This Matters
 
-O booking flow atual captura sempre os mesmos campos: nome, email, telefone, endereço. Mas cada serviço pode precisar de informações específicas:
-- Limpeza residencial: "Quantos quartos?", "Tem pets?", "Algum produto para evitar?"
-- Limpeza pós-obra: "Quantos m²?", "Há reboco/tinta fresca?"
-- Limpeza de estofados: "Qual material do sofá?", "Manchas específicas?"
+The current booking flow always captures the same fields: name, email, phone, address. But each service may need specific information:
+- Residential cleaning: "How many bedrooms?", "Pets?", "Any products to avoid?"
+- Post-construction cleaning: "How many m²?", "Is there fresh plaster/paint?"
+- Upholstery cleaning: "What sofa material?", "Specific stains?"
 
-O Cal.com mostra isso como "Booking questions" — campos adicionais configuráveis por event type com tipos (text, long text, multiple choice, checkbox) e flag de obrigatório/opcional.
+Cal.com shows this as "Booking questions" — additional configurable fields per event type with types (text, long text, multiple choice, checkbox) and required/optional flag.
 
-**Why:** Sem perguntas customizadas, o admin precisa ligar para cada cliente para coletar informações básicas antes do serviço — friction desnecessária que atrasa a confirmação.
+**Why:** Without custom questions, admin has to call each customer to gather basic information before the service — unnecessary friction that delays confirmation.
 
 ## When to Surface
 
-**Trigger:** quando o primeiro serviço especializado for adicionado que requer informações além do endereço, ou quando o admin implementar um fluxo de pré-qualificação.
+**Trigger:** when the first specialized service is added that requires information beyond the address, or when admin implements a pre-qualification flow.
 
 This seed should be presented during `/gsd:new-milestone` when the milestone scope matches any of these conditions:
-- Milestone de booking flow improvements
-- Milestone de serviços especializados / expansão de catálogo
-- Qualquer milestone que adicione novos tipos de serviço
+- Booking flow improvements milestone
+- Specialized services / catalog expansion milestone
+- Any milestone that adds new service types
 
 ## Scope Estimate
 
-**Medium** — Uma fase. Schema: nova tabela `serviceBookingQuestions` (`id`, `serviceId` FK, `label`, `type` enum (text|textarea|select|checkbox|number), `options` JSONB (para select), `required` boolean, `order`). Os valores respondidos vão em `bookingItems.customerNotes` JSONB (já existe) ou nova coluna `questionAnswers` JSONB. UI: seção de perguntas na edição do serviço + renderização das perguntas no step de Customer Details do booking flow.
+**Medium** — One phase. Schema: new `serviceBookingQuestions` table (`id`, `serviceId` FK, `label`, `type` enum (text|textarea|select|checkbox|number), `options` JSONB (for select), `required` boolean, `order`). Answered values go in `bookingItems.customerNotes` JSONB (already exists) or a new `questionAnswers` JSONB column. UI: questions section in service edit + dynamic question rendering in the Customer Details step of the booking flow.
 
 ## Breadcrumbs
 
-- `shared/schema.ts` — tabela `services` + `bookingItems` (tem `customerNotes` text — poderia virar JSONB ou adicionar `questionAnswers` JSONB)
-- `server/routes/services.ts` — `GET /api/services/:id` — incluir `bookingQuestions` no response
-- `client/src/pages/BookingPage.tsx` — step de Customer Details — renderizar perguntas dinâmicas
-- `client/src/components/admin/ServicesSection.tsx` — UI de edição de serviço — seção "Booking Questions"
+- `shared/schema.ts` — `services` + `bookingItems` tables (has `customerNotes` text — could become JSONB or add `questionAnswers` JSONB)
+- `server/routes/services.ts` — `GET /api/services/:id` — include `bookingQuestions` in response
+- `client/src/pages/BookingPage.tsx` — Customer Details step — render dynamic questions
+- `client/src/components/admin/ServicesSection.tsx` — service edit UI — "Booking Questions" section
 
 ## Notes
 
-O campo `customerNotes` em `bookingItems` já existe como texto livre — no curto prazo, documentar na UI admin que o staff deve pedir essas infos via notas. A seed é para a versão estruturada com campos tipados. Começar com 3 tipos: text, textarea, select — suficiente para 90% dos casos.
+The `customerNotes` field in `bookingItems` already exists as free text — in the short term, document in admin UI that staff should ask these infos via notes. The seed is for the structured version with typed fields. Start with 3 types: text, textarea, select — enough for 90% of cases.

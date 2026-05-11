@@ -3,48 +3,48 @@ id: SEED-031
 status: dormant
 planted: 2026-05-10
 planted_during: v3.0 / Phase 20 (calendar-timeline-structure-audit)
-trigger_when: quando o primeiro cliente pedir para configurar limpeza semanal/quinzenal automática, ou ao lançar planos de manutenção
+trigger_when: when the first customer asks to set up automatic weekly/biweekly cleaning, or when launching maintenance plans
 scope: Large
 ---
 
-# SEED-031: Bookings recorrentes — assinatura de limpeza (semanal, quinzenal, mensal)
+# SEED-031: Recurring bookings — cleaning subscription (weekly, biweekly, monthly)
 
 ## Why This Matters
 
-Limpeza recorrente é o modelo de negócio mais lucrativo para uma empresa de limpeza: o cliente não precisa re-agendar toda semana, a receita é previsível, e o churn é baixo. O Cal.com mostra "Recurring event — People can subscribe for recurring events."
+Recurring cleaning is the most profitable business model for a cleaning company: the customer doesn't need to re-schedule every week, revenue is predictable, and churn is low. Cal.com shows "Recurring event — People can subscribe for recurring events."
 
-O sistema atual tem `serviceFrequencies` (semanal, quinzenal, mensal) com desconto percentual — mas isso é apenas um desconto aplicado a um booking único, não um agendamento automático de bookings futuros. A diferença é enorme: com recorrência real, o sistema cria todos os bookings futuros automaticamente (ou um a um conforme a data se aproxima).
+The current system has `serviceFrequencies` (weekly, biweekly, monthly) with percentage discount — but this is just a discount applied to a single booking, not automatic scheduling of future bookings. The difference is huge: with real recurrence, the system creates all future bookings automatically (or one at a time as the date approaches).
 
-**Why:** Sem recorrência real, o cliente precisa re-entrar no site toda semana para agendar a próxima limpeza. Com recorrência, ele agenda uma vez e está feito. Isso reduz o custo de aquisição por transação e aumenta o LTV drasticamente.
+**Why:** Without real recurrence, the customer has to re-enter the site every week to schedule the next cleaning. With recurrence, they schedule once and it's done. This reduces acquisition cost per transaction and dramatically increases LTV.
 
 ## When to Surface
 
-**Trigger:** quando o primeiro cliente ligar perguntando "como configuro limpeza semanal?", ou ao lançar um plano de assinatura de limpeza como produto.
+**Trigger:** when the first customer calls asking "how do I set up weekly cleaning?", or when launching a cleaning subscription plan as a product.
 
 This seed should be presented during `/gsd:new-milestone` when the milestone scope matches any of these conditions:
-- Milestone de subscription / recorrência
-- Milestone de revenue expansion (aumentar LTV)
-- Pós SEED-014 (SaaS billing) — recorrência de bookings é o equivalente de produto ao billing recorrente de SaaS
+- Subscription / recurrence milestone
+- Revenue expansion milestone (increase LTV)
+- Post-SEED-014 (SaaS billing) — booking recurrence is the product equivalent of SaaS subscription billing
 
 ## Scope Estimate
 
-**Large** — Uma milestone completa. Componentes:
-1. Schema: tabela `recurringBookings` (`id`, `contactId` FK, `serviceId`, `frequency` enum, `startDate`, `endDate` nullable, `status` active|paused|cancelled, `nextBookingDate`, `discountPercent`, `preferredStaffId`)
-2. Backend: job cron que cria o próximo booking N dias antes da data (ex: 7 dias antes)
-3. Frontend: seletor de frequência no booking flow com preview do calendário de limpezas futuras
-4. Admin: painel de assinaturas recorrentes (listar, pausar, cancelar, alterar frequência)
-5. Notificações: lembrete para o cliente 48h antes de cada limpeza recorrente
+**Large** — A complete milestone. Components:
+1. Schema: `recurringBookings` table (`id`, `contactId` FK, `serviceId`, `frequency` enum, `startDate`, `endDate` nullable, `status` active|paused|cancelled, `nextBookingDate`, `discountPercent`, `preferredStaffId`)
+2. Backend: cron job that creates the next booking N days before the date (e.g., 7 days before)
+3. Frontend: frequency selector in booking flow with preview of future cleaning calendar
+4. Admin: recurring subscriptions panel (list, pause, cancel, change frequency)
+5. Notifications: reminder for customer 48h before each recurring cleaning
 
 ## Breadcrumbs
 
-- `shared/schema.ts` — tabela `serviceFrequencies` (discountPercent) — já existe o conceito de frequência com desconto; recorrência real é a próxima etapa
-- `shared/schema.ts` — tabela `bookings` — adicionar `recurringBookingId` FK nullable
-- `server/routes/bookings.ts` — `POST /api/bookings` — suporte a criação de série recorrente
-- `server/services/notifications.ts` — lembretes automáticos para bookings recorrentes
-- `client/src/pages/BookingPage.tsx` — step de frequência com opção de ativar recorrência
+- `shared/schema.ts` — `serviceFrequencies` table (discountPercent) — concept of frequency with discount already exists; real recurrence is the next step
+- `shared/schema.ts` — `bookings` table — add `recurringBookingId` nullable FK
+- `server/routes/bookings.ts` — `POST /api/bookings` — support recurring series creation
+- `server/services/notifications.ts` — automatic reminders for recurring bookings
+- `client/src/pages/BookingPage.tsx` — frequency step with option to activate recurrence
 
 ## Notes
 
-Estratégia de geração: criar o próximo booking apenas 7 dias antes (não todos de uma vez) — evita calendar pollution e permite ajustes de disponibilidade. O `serviceFrequencies` atual (com descountPercent) alimenta o preço dos bookings recorrentes diretamente — aproveitar a tabela existente.
+Generation strategy: create the next booking only 7 days in advance (not all at once) — avoids calendar pollution and allows for availability adjustments. The current `serviceFrequencies` (with discountPercent) feeds the price of recurring bookings directly — leverage the existing table.
 
-"Pausar" é uma feature importante: cliente vai viajar em dezembro, pausa as limpezas e retoma em janeiro sem cancelar a assinatura. Isso é um diferencial de produto em relação a "cancelar e criar novo".
+"Pause" is an important feature: customer is traveling in December, pauses cleanings and resumes in January without cancelling the subscription. This is a product differentiator vs "cancel and create new".
