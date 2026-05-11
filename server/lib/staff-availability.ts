@@ -17,27 +17,22 @@ export function shiftHHMM(hhmm: string, minutes: number): string {
   return `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
 }
 
+interface SlotGenOptions {
+  date: string;
+  durationMinutes: number;
+  limits?: BookingLimits;
+  options?: { timeZone?: string };
+  dayStartMins: number;
+  dayEndMins: number;
+  staffMemberId: number;
+}
+
 /**
- * Compute available time slots for a specific staff member on a date.
- * Uses the staff member's staffAvailability weekly schedule and their existing bookings.
- * If no availability record exists for that day of week, returns [].
+ * Generate time slots for a staff member given already-resolved start/end minutes.
+ * Checks booking conflicts, Google Calendar conflicts, minimum notice, and buffer times.
  */
-export async function getStaffAvailableSlots(
-  staffMemberId: number,
-  date: string,
-  durationMinutes: number,
-  options?: { timeZone?: string },
-  limits?: BookingLimits
-): Promise<string[]> {
-  const dayOfWeek = new Date(date + "T12:00:00").getDay(); // 0=Sun … 6=Sat
-
-  const availability = await storage.getStaffAvailability(staffMemberId);
-  const dayRecord = availability.find((a) => a.dayOfWeek === dayOfWeek);
-
-  if (!dayRecord || !dayRecord.isAvailable) return [];
-
-  const [startHr, startMn] = dayRecord.startTime.split(":").map(Number);
-  const [endHr, endMn] = dayRecord.endTime.split(":").map(Number);
+async function _generateSlots(opts: SlotGenOptions): Promise<string[]> {
+  const { date, durationMinutes, limits, options, dayStartMins, dayEndMins, staffMemberId } = opts;
 
   const existingBookings = await storage.getBookingsByDateAndStaff(date, staffMemberId);
 
@@ -54,8 +49,6 @@ export async function getStaffAvailableSlots(
   const noticeMs = (limits?.minimumNoticeHours ?? 0) * 60 * 60 * 1000;
   const cutoffTs = tzNow.getTime() + noticeMs;
 
-  const dayStartMins = startHr * 60 + startMn;
-  const dayEndMins = endHr * 60 + endMn;
   const step = limits?.timeSlotInterval ?? durationMinutes;
 
   const slots: string[] = [];
@@ -97,6 +90,55 @@ export async function getStaffAvailableSlots(
   }
 
   return slots;
+}
+
+/**
+ * Compute available time slots for a specific staff member on a date.
+ * Checks date-specific overrides first, then falls through to weekly schedule.
+ * Uses the staff member's staffAvailability weekly schedule and their existing bookings.
+ * If no availability record exists for that day of week, returns [].
+ */
+export async function getStaffAvailableSlots(
+  staffMemberId: number,
+  date: string,
+  durationMinutes: number,
+  options?: { timeZone?: string },
+  limits?: BookingLimits
+): Promise<string[]> {
+  const dayOfWeek = new Date(date + "T12:00:00").getDay(); // 0=Sun … 6=Sat
+
+  // Override check: date-specific block or custom hours take priority over weekly schedule
+  const override = await storage.getStaffAvailabilityOverridesByDate(staffMemberId, date);
+  if (override) {
+    if (override.isUnavailable) return []; // whole day blocked
+    if (override.startTime && override.endTime) {
+      // Swap weekly hours for override hours
+      const [startHr, startMn] = override.startTime.split(":").map(Number);
+      const [endHr, endMn] = override.endTime.split(":").map(Number);
+      const dayStartMins = startHr * 60 + startMn;
+      const dayEndMins = endHr * 60 + endMn;
+      return _generateSlots({
+        date, durationMinutes, limits, options,
+        dayStartMins, dayEndMins, staffMemberId,
+      });
+    }
+    // override exists but has no times and isUnavailable=false → treat as no override
+  }
+
+  const availability = await storage.getStaffAvailability(staffMemberId);
+  const dayRecord = availability.find((a) => a.dayOfWeek === dayOfWeek);
+
+  if (!dayRecord || !dayRecord.isAvailable) return [];
+
+  const [startHr, startMn] = dayRecord.startTime.split(":").map(Number);
+  const [endHr, endMn] = dayRecord.endTime.split(":").map(Number);
+
+  return _generateSlots({
+    date, durationMinutes, limits, options,
+    dayStartMins: startHr * 60 + startMn,
+    dayEndMins: endHr * 60 + endMn,
+    staffMemberId,
+  });
 }
 
 /** Helper to get today's date string from a timezone-adjusted Date object. */

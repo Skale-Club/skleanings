@@ -227,6 +227,63 @@ router.put("/:id/availability", requireAdmin, async (req, res) => {
   }
 });
 
+// ─── Availability Overrides ────────────────────────────────────────────────────
+
+const availabilityOverrideSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "date must be YYYY-MM-DD"),
+  isUnavailable: z.boolean(),
+  startTime: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
+  reason: z.string().nullable().optional(),
+});
+
+// GET /api/staff/:id/availability-overrides — list all overrides for a staff member
+router.get("/:id/availability-overrides", requireAdmin, async (req, res) => {
+  try {
+    const overrides = await storage.getStaffAvailabilityOverrides(Number(req.params.id));
+    res.json(overrides);
+  } catch (err) {
+    res.status(500).json({ message: (err as Error).message });
+  }
+});
+
+// POST /api/staff/:id/availability-overrides — create or replace an override for a date
+router.post("/:id/availability-overrides", requireAdmin, async (req, res) => {
+  try {
+    const staffMemberId = Number(req.params.id);
+    const body = availabilityOverrideSchema.parse(req.body);
+    // Upsert: delete any existing override for same date, then insert
+    const existing = await storage.getStaffAvailabilityOverridesByDate(staffMemberId, body.date);
+    if (existing) {
+      await storage.deleteStaffAvailabilityOverride(existing.id);
+    }
+    const override = await storage.createStaffAvailabilityOverride({
+      staffMemberId,
+      date: body.date,
+      isUnavailable: body.isUnavailable,
+      startTime: body.startTime ?? null,
+      endTime: body.endTime ?? null,
+      reason: body.reason ?? null,
+    });
+    res.status(201).json(override);
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({ message: "Validation error", errors: err.errors });
+    }
+    res.status(400).json({ message: (err as Error).message });
+  }
+});
+
+// DELETE /api/staff/:id/availability-overrides/:overrideId — remove a specific override
+router.delete("/:id/availability-overrides/:overrideId", requireAdmin, async (req, res) => {
+  try {
+    await storage.deleteStaffAvailabilityOverride(Number(req.params.overrideId));
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ message: (err as Error).message });
+  }
+});
+
 // ─── Google Calendar OAuth ─────────────────────────────────────────────────────
 
 // GET /api/staff/:id/calendar/busy?date=YYYY-MM-DD — GCal busy times for a date (cached)
