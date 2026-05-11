@@ -7,7 +7,8 @@ import { api } from "@shared/routes";
 import {
     insertCategorySchema,
     insertSubcategorySchema,
-    insertServiceSchema
+    insertServiceSchema,
+    insertServiceDurationSchema
 } from "@shared/schema";
 import { invalidateChatCache } from "./chat/tools";
 import {
@@ -249,7 +250,8 @@ router.get('/api/services/:id', async (req, res) => {
     try {
         const service = await storage.getService(Number(req.params.id));
         if (!service) return res.status(404).json({ message: "Service not found" });
-        res.json(service);
+        const durations = await storage.getServiceDurations(Number(req.params.id));
+        res.json({ ...service, durations });
     } catch (err) {
         res.status(500).json({ message: (err as Error).message });
     }
@@ -367,6 +369,55 @@ router.put('/api/services/:id/frequencies', requireAdmin, async (req, res) => {
         if (err instanceof z.ZodError) {
             return res.status(400).json({ message: 'Validation error', errors: err.errors });
         }
+        res.status(400).json({ message: (err as Error).message });
+    }
+});
+
+// Service Durations (Phase 23 SEED-029)
+router.get('/api/services/:id/durations', async (req, res) => {
+    try {
+        const durations = await storage.getServiceDurations(Number(req.params.id));
+        res.json(durations);
+    } catch (err) {
+        console.error("[catalog] Failed to load service durations. Check DB schema/migrations.", err);
+        res.json([]);
+    }
+});
+
+router.post('/api/services/:id/durations', requireAdmin, async (req, res) => {
+    try {
+        const data = insertServiceDurationSchema.parse({
+            ...req.body,
+            serviceId: Number(req.params.id),
+        });
+        const duration = await storage.createServiceDuration(data);
+        res.status(201).json(duration);
+    } catch (err) {
+        if (err instanceof z.ZodError) {
+            return res.status(400).json({ message: 'Validation error', errors: err.errors });
+        }
+        res.status(400).json({ message: (err as Error).message });
+    }
+});
+
+router.patch('/api/services/:id/durations/:durationId', requireAdmin, async (req, res) => {
+    try {
+        const data = insertServiceDurationSchema.partial().parse(req.body);
+        const duration = await storage.updateServiceDuration(Number(req.params.durationId), data);
+        res.json(duration);
+    } catch (err) {
+        if (err instanceof z.ZodError) {
+            return res.status(400).json({ message: 'Validation error', errors: err.errors });
+        }
+        res.status(400).json({ message: (err as Error).message });
+    }
+});
+
+router.delete('/api/services/:id/durations/:durationId', requireAdmin, async (req, res) => {
+    try {
+        await storage.deleteServiceDuration(Number(req.params.durationId));
+        res.json({ success: true });
+    } catch (err) {
         res.status(400).json({ message: (err as Error).message });
     }
 });
