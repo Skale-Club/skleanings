@@ -95,7 +95,11 @@ Plans:
   3. Customer booking a service with questions sees those questions in the Customer Details step before submitting
   4. A required question blocks booking submission with a clear validation message if left blank
   5. Admin viewing a completed booking sees all customer answers alongside the standard booking details
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 26-01-PLAN.md — Schema + Migrations (service_booking_questions table, question_answers column, shared/schema.ts types, cartItemSchema extension)
+- [ ] 26-02-PLAN.md — Backend: storage methods, questions sub-routes, GET /api/services/:id includes questions, booking creation persists answers
+- [ ] 26-03-PLAN.md — Frontend: ServiceForm Booking Questions collapsible, BookingPage step 4 dynamic fields + validation, SharedBookingCard answers display
 **UI hint**: yes
 
 ### Phase 27: Recurring Bookings — Schema & Cron Foundation
