@@ -129,7 +129,7 @@ Plans:
 **Plans**: 3 plans
 Plans:
 - [ ] 28-01-PLAN.md — Migration (intervalDays column), schema update, date-utils, IStorage.getServiceFrequency, generator fix, frequency selector UI, POST /api/bookings subscription creation
-- [ ] 28-02-PLAN.md — Email infrastructure: server/lib/email.ts (nodemailer transporter), server/lib/email-templates.ts (buildReminderEmail), .env.example additions
+- [x] 28-02-PLAN.md — Email infrastructure: server/lib/email.ts (nodemailer transporter), server/lib/email-templates.ts (buildReminderEmail), .env.example additions
 - [ ] 28-03-PLAN.md — Reminder service (runRecurringBookingReminders), POST /cron/send-reminders route, local-dev cron schedule, GitHub Actions workflow extension
 **UI hint**: yes
 
@@ -170,7 +170,7 @@ Plans:
 | 25. Multiple Time Slots Per Day | v4.0 | 3/3 | Complete    | 2026-05-11 |
 | 26. Custom Booking Questions | v4.0 | 0/3 | Complete    | 2026-05-11 |
 | 27. Recurring Bookings — Schema & Cron Foundation | v4.0 | 3/3 | Complete    | 2026-05-11 |
-| 28. Recurring Bookings — Customer Flow & Notifications | v4.0 | 0/3 | Not started | — |
+| 28. Recurring Bookings — Customer Flow & Notifications | v4.0 | 1/3 | In Progress|  |
 | 29. Recurring Bookings — Admin & Self-Serve Management | v4.0 | 0/3 | Not started | — |
 
 ---

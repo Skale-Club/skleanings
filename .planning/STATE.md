@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Booking Intelligence
-status: verifying
-stopped_at: Completed 27-03-PLAN.md
-last_updated: "2026-05-11T13:43:01.247Z"
+status: executing
+stopped_at: Completed 28-02-PLAN.md
+last_updated: "2026-05-11T14:18:42.995Z"
 last_activity: 2026-05-11
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 9
-  completed_plans: 8
+  total_plans: 12
+  completed_plans: 9
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-05)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 22 — date-overrides-staff-availability
+**Current focus:** Phase 28 — recurring-bookings-customer-flow-and-notifications
 
 ## Current Position
 
-Phase: 28
-Plan: Not started
-Status: Phase complete — ready for verification
+Phase: 28 (recurring-bookings-customer-flow-and-notifications) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
 Last activity: 2026-05-11
 
 Progress: [░░░░░░░░░░] 0%
@@ -78,6 +78,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 27]: updateRecurringBooking always stamps updatedAt: new Date() on every call
 - [Phase 27]: Raw db.transaction used (not storage.createBooking) to bypass GHL/Twilio notifications — Phase 28 decides notification strategy
 - [Phase 27]: advanceDate handles intervalDays=30 as calendar-month with end-of-month clamp to prevent drift
+- [Phase 28]: EMAIL_PORT defaults to 587 when absent/non-numeric; port 465 triggers TLS, all others use STARTTLS
+- [Phase 28]: buildReminderEmail formats YYYY-MM-DD via UTC midnight to avoid timezone-driven off-by-one on date-only strings
 
 ### Roadmap Evolution
 
@@ -91,6 +93,6 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-11T13:38:06.417Z
-Stopped at: Completed 27-03-PLAN.md
+Last session: 2026-05-11T14:18:42.978Z
+Stopped at: Completed 28-02-PLAN.md
 Resume file: None
