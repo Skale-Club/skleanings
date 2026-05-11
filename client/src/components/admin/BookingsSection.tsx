@@ -70,6 +70,7 @@ type BookingUpdatePayload = Partial<{
 };
 
 import { SharedBookingCard, useBookingItems } from '@/components/admin/shared/SharedBookingCard';
+import { RecurringSubscriptionsPanel } from '@/components/admin/RecurringSubscriptionsPanel';
 
 function BookingEditDialog({
   booking,
@@ -415,6 +416,7 @@ export function BookingsSection({ getAccessToken }: { getAccessToken: () => Prom
     queryKey: ['/api/services']
   });
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<'bookings' | 'subscriptions'>('bookings');
   const [bookingView, setBookingView] = useState<'upcoming' | 'past' | 'all'>('upcoming');
 
   const filteredBookings = useMemo(() => {
@@ -483,62 +485,86 @@ export function BookingsSection({ getAccessToken }: { getAccessToken: () => Prom
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Bookings</h1>
-          <p className="text-muted-foreground">Manage all customer bookings</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Badge variant="secondary" className="text-sm font-semibold px-4 py-2 border-0 bg-muted dark:text-white">
-            {filteredBookings.length} Total
-          </Badge>
-          <Select
-            value={bookingView}
-            onValueChange={(value) => setBookingView(value as 'upcoming' | 'past' | 'all')}
-          >
-            <SelectTrigger
-              className="h-10 w-[150px] px-4 border-0 bg-muted text-sm font-semibold shadow-none"
-              data-testid="select-bookings-view"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="upcoming">Upcoming</SelectItem>
-              <SelectItem value="past">Past</SelectItem>
-              <SelectItem value="all">All</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      {/* Phase 29 RECUR-04: section-level tab bar */}
+      <div className="flex gap-2 border-b border-border pb-3">
+        <Button
+          variant={activeTab === 'bookings' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setActiveTab('bookings')}
+        >
+          All Bookings
+        </Button>
+        <Button
+          variant={activeTab === 'subscriptions' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setActiveTab('subscriptions')}
+        >
+          Recurring Subscriptions
+        </Button>
       </div>
 
-      {/* Booking list or empty states */}
-      {bookings?.length === 0 ? (
-        <div className="p-12 text-center rounded-lg bg-card border border-border">
-          <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="font-semibold text-lg mb-2">No bookings yet</h3>
-          <p className="text-muted-foreground">Bookings will appear here when customers make them</p>
-        </div>
-      ) : filteredBookings.length === 0 ? (
-        <div className="p-12 text-center rounded-lg bg-card border border-border">
-          <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="font-semibold text-lg mb-2">No bookings in this view</h3>
-          <p className="text-muted-foreground">Try switching the filter to see past or upcoming bookings</p>
-        </div>
+      {activeTab === 'subscriptions' ? (
+        <RecurringSubscriptionsPanel getAccessToken={getAccessToken} />
       ) : (
-        <div className="space-y-3">
-          {filteredBookings.map((booking) => (
-            <InteractiveBookingCard
-              key={booking.id}
-              booking={booking}
-              services={services}
-              onUpdate={handleUpdate}
-              onDelete={handleDelete}
-              isSaving={updateMutation.isPending}
-              getAccessToken={getAccessToken}
-            />
-          ))}
-        </div>
+        <>
+          {/* Header */}
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold">Bookings</h1>
+              <p className="text-muted-foreground">Manage all customer bookings</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Badge variant="secondary" className="text-sm font-semibold px-4 py-2 border-0 bg-muted dark:text-white">
+                {filteredBookings.length} Total
+              </Badge>
+              <Select
+                value={bookingView}
+                onValueChange={(value) => setBookingView(value as 'upcoming' | 'past' | 'all')}
+              >
+                <SelectTrigger
+                  className="h-10 w-[150px] px-4 border-0 bg-muted text-sm font-semibold shadow-none"
+                  data-testid="select-bookings-view"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="upcoming">Upcoming</SelectItem>
+                  <SelectItem value="past">Past</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Booking list or empty states */}
+          {bookings?.length === 0 ? (
+            <div className="p-12 text-center rounded-lg bg-card border border-border">
+              <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="font-semibold text-lg mb-2">No bookings yet</h3>
+              <p className="text-muted-foreground">Bookings will appear here when customers make them</p>
+            </div>
+          ) : filteredBookings.length === 0 ? (
+            <div className="p-12 text-center rounded-lg bg-card border border-border">
+              <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="font-semibold text-lg mb-2">No bookings in this view</h3>
+              <p className="text-muted-foreground">Try switching the filter to see past or upcoming bookings</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredBookings.map((booking) => (
+                <InteractiveBookingCard
+                  key={booking.id}
+                  booking={booking}
+                  services={services}
+                  onUpdate={handleUpdate}
+                  onDelete={handleDelete}
+                  isSaving={updateMutation.isPending}
+                  getAccessToken={getAccessToken}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

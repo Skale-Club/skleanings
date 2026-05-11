@@ -87,6 +87,7 @@ const Team = lazy(() => import("@/pages/Team").then(m => ({ default: () => <Page
 const StaffSettings = lazy(() => import("@/pages/StaffSettings").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const AccountShell = lazy(() => import("@/pages/AccountShell").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const ClientLogin = lazy(() => import("@/pages/ClientLogin").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const ManageSubscription = lazy(() => import("@/pages/ManageSubscription").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 
 function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const { data: settings } = useQuery<CompanySettings>({
@@ -202,6 +203,7 @@ function Router() {
             <Route path="/blog/:slug" component={BlogPost} />
             <Route path="/service-areas" component={ServiceAreas} />
             <Route path="/team" component={Team} />
+            <Route path="/manage-subscription/:token" component={ManageSubscription} />
             <Route component={NotFound} />
           </Switch>
         </Suspense>
