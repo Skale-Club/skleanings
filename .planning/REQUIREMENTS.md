@@ -1,30 +1,59 @@
-# Requirements: Skleanings — v3.0 Calendar Polish
+# Requirements: v4.0 Booking Intelligence
 
-**Defined:** 2026-05-05
-**Core Value:** A receptionist or admin can run the daily booking floor on a calendar that renders structurally correct in every view — the UI never gets in the way.
+## v4.0 Requirements
 
-## v3.0 Requirements
+### Availability — Multiple Slots Per Day (SEED-021)
 
-### Timeline Alignment
+- [ ] **SLOTS-01**: Staff availability supports multiple time ranges per day (e.g., 8am-12pm AND 2pm-7pm on Monday)
+- [ ] **SLOTS-02**: Admin can add, remove, and reorder time ranges per day in the availability editor
+- [ ] **SLOTS-03**: Booking slot generation respects all configured ranges — no slots offered during gaps between ranges
+- [ ] **SLOTS-04**: Migration preserves existing single-range availability data without data loss or behavioral change
 
-- [x] **CAL-FIX-01**: Time gutter labels (e.g., "9:00 AM") align horizontally with the corresponding grid line in Day, Week, and By Staff views — verified at default zoom and at min/max zoom levels with no pixel offset visible
-- [ ] **CAL-FIX-02**: Switching between Month, Week, Day, and By Staff views and back leaves no stale layout state — gutter widths, header positions, and event placements re-render correctly without manual reload
+### Booking Questions — Custom Intake Per Service (SEED-027)
 
-### Structural Correctness
+- [ ] **QUEST-01**: Admin can add custom intake questions to a service (text, textarea, select types) with required/optional flag
+- [ ] **QUEST-02**: Admin can set display order and delete questions; changes apply to future bookings only
+- [ ] **QUEST-03**: Customer sees service-specific questions in the Customer Details step of the booking flow
+- [ ] **QUEST-04**: Customer answers are stored with the booking record and visible to admin in booking details
 
-- [x] **CAL-FIX-03**: The By Staff multi-column view (Phase 19) continues to render one column per visible staff member after the refactor; column headers, gutter, and event positions remain aligned with the time grid; horizontal scroll behavior for 5+ staff is preserved
-- [ ] **CAL-FIX-04**: Phase 19 interactive flows (drag-to-reassign with undo toast, QuickBook walk-in modal, GCal busy block guard) function identically before and after the refactor — no regression on the 5 outstanding human UAT items
+### Recurring Bookings — Cleaning Subscriptions (SEED-031)
+
+- [ ] **RECUR-01**: Customer can select a recurring frequency (weekly, biweekly, monthly) with discount preview when booking
+- [ ] **RECUR-02**: System automatically generates the next booking 7 days before the scheduled date (one-ahead generation)
+- [ ] **RECUR-03**: Customer receives an automatic 48h reminder notification before each recurring cleaning
+- [ ] **RECUR-04**: Admin can view all recurring subscriptions, see next booking date, pause, and cancel
+- [ ] **RECUR-05**: Customer can pause (temporary) and cancel (permanent) their recurring subscription from a self-serve page
+
+## Future Requirements (deferred)
+
+- Multiple range reordering via drag-and-drop (SLOTS-02 starts with up/down buttons)
+- Question types: number, checkbox, date picker (QUEST-01 ships with text, textarea, select only)
+- Recurring booking rescheduling per-occurrence (edit one without affecting the series)
+- Customer-side subscription management portal with full history
+- Discount codes tied to recurring subscriptions
+- Multi-staff recurring bookings (preferred staff + fallback)
+
+## Out of Scope (v4.0)
+
+- Google Calendar sync for recurring events — sync is already per-booking; recurring will reuse the same mechanism
+- SMS reminders — email reminders only for v4.0
+- Customer login/account for managing subscriptions — self-serve cancel/pause via email link token
+- Stripe subscription billing — payment is still per-booking (charge on generation); SaaS billing is SEED-032
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CAL-FIX-01 | Phase 20 | Not started |
-| CAL-FIX-02 | Phase 20 | Not started |
-| CAL-FIX-03 | Phase 20 | Not started |
-| CAL-FIX-04 | Phase 20 | Not started |
-
-## Notes
-
-- Scope is intentionally narrow (timeline alignment + structural correctness). Performance, mobile responsiveness, and behavior changes are out of scope for v3.0 — open as v3.1 if needed.
-- Phase 18 already shipped a `.rbc-label` alignment fix (commit a326c33). If the issue is back, Phase 20 must root-cause why Phase 18's fix regressed (likely Phase 19's DnDCalendar HOC + resourceProps changes).
+| SLOTS-01 | Phase 25 | Not started |
+| SLOTS-02 | Phase 25 | Not started |
+| SLOTS-03 | Phase 25 | Not started |
+| SLOTS-04 | Phase 25 | Not started |
+| QUEST-01 | Phase 26 | Not started |
+| QUEST-02 | Phase 26 | Not started |
+| QUEST-03 | Phase 26 | Not started |
+| QUEST-04 | Phase 26 | Not started |
+| RECUR-01 | Phase 27 | Not started |
+| RECUR-02 | Phase 28 | Not started |
+| RECUR-03 | Phase 28 | Not started |
+| RECUR-04 | Phase 29 | Not started |
+| RECUR-05 | Phase 29 | Not started |
