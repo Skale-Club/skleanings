@@ -75,7 +75,9 @@ export async function runRecurringBookingGeneration(
         // Compute booking fields from the subscription snapshot
         const bookingDate = sub.nextBookingDate; // YYYY-MM-DD
         const startTime = sub.preferredStartTime; // HH:MM
-        const durationMinutes = service.durationMinutes;
+        // Phase 30 DUR-06: prefer the subscription's duration snapshot; fall back to catalog default.
+        // sub.durationMinutes is null for subscriptions created before Phase 30 — fallback is intentional.
+        const durationMinutes = sub.durationMinutes ?? service.durationMinutes;
         const endTime = computeEndTime(startTime, durationMinutes);
 
         // Apply discount from snapshot
