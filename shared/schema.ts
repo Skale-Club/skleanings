@@ -71,6 +71,11 @@ export const services = pgTable("services", {
   pricePerUnit: numeric("price_per_unit", { precision: 10, scale: 2 }), // Price per sq ft for area_based (custom input)
   minimumPrice: numeric("minimum_price", { precision: 10, scale: 2 }), // Minimum price for area_based and custom_quote
   areaSizes: jsonb("area_sizes").$type<AreaSizePreset[]>(), // Preset sizes for area_based pricing
+  // Booking limits fields (Phase 21)
+  bufferTimeBefore: integer("buffer_time_before").default(0).notNull(),
+  bufferTimeAfter: integer("buffer_time_after").default(0).notNull(),
+  minimumNoticeHours: integer("minimum_notice_hours").default(0).notNull(),
+  timeSlotInterval: integer("time_slot_interval"), // nullable — null = use durationMinutes
 });
 
 // Service add-on relationships (e.g., Sofa can suggest Ottoman as add-on)
