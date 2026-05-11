@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Calendar Polish
 status: verifying
-stopped_at: Completed 23-02-PLAN.md
-last_updated: "2026-05-11T03:55:15.827Z"
+stopped_at: Completed 26-01-PLAN.md
+last_updated: "2026-05-11T11:03:33.613Z"
 last_activity: 2026-05-11
 progress:
   total_phases: 1
@@ -73,6 +73,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 24]: Approve/Reject buttons placed in interactive variant only, visible solely when status === awaiting_approval
 - [Phase 24]: awaiting=true query param used for Confirmation routing — works across page reloads
 - [Phase 24]: requiresConfirmation toggle placed inside Booking Rules collapsible to keep ServiceForm uncluttered
+- [Phase 26-custom-booking-questions]: QuestionAnswer stores label and type snapshots at booking time so answers survive question deletion or editing
+- [Phase 26-custom-booking-questions]: cartItemSchema extended with questionAnswers field to prevent Zod silent stripping of answers before reaching server
 
 ### Roadmap Evolution
 
@@ -86,6 +88,6 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-11T03:33:23.203Z
-Stopped at: Completed 23-02-PLAN.md
+Last session: 2026-05-11T11:03:33.609Z
+Stopped at: Completed 26-01-PLAN.md
 Resume file: None
