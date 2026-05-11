@@ -81,6 +81,7 @@ Full details: [milestones/v2.0-ROADMAP.md](milestones/v2.0-ROADMAP.md)
 | 18. Admin Calendar Improvements | v2.0 | 3/3 | Complete | 2026-04-30 |
 | 19. Receptionist Booking Flow & Multi-Staff View | v2.0 | 4/4 | Complete | 2026-04-30 |
 | 20. Calendar Timeline & Structure Audit | v3.0 | 0/TBD | Not started | — |
+| 21. Per-service booking limits | standalone | 0/3 | Not started | — |
 
 ---
 
@@ -89,6 +90,18 @@ Full details: [milestones/v2.0-ROADMAP.md](milestones/v2.0-ROADMAP.md)
 | Phase | Requirements |
 |-------|-------------|
 | Phase 20 | CAL-FIX-01, CAL-FIX-02, CAL-FIX-03, CAL-FIX-04 |
+
+### Phase 21: Per-service booking limits — buffer time, minimum notice, time-slot interval
+
+**Goal:** Add `bufferTimeBefore`, `bufferTimeAfter`, `minimumNoticeHours`, and `timeSlotInterval` columns to the `services` table and apply them in the availability logic and admin UI. Cleaning company operators can configure travel buffer time and booking notice requirements per service.
+**Requirements**: BOOKING-LIMITS-01, BOOKING-LIMITS-02, BOOKING-LIMITS-03
+**Depends on:** Phase 20
+**Plans:** 3 plans
+
+Plans:
+- [ ] 21-01-PLAN.md — Wave 1: Schema + Supabase migration (4 new columns on services table)
+- [ ] 21-02-PLAN.md — Wave 2: Backend availability logic (buffer, notice, interval in getAvailableSlots)
+- [ ] 21-03-PLAN.md — Wave 2: Admin UI (Booking Rules section in ServiceForm)
 
 ---
 
