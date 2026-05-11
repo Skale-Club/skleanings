@@ -25,7 +25,7 @@
   4. `AppointmentsCalendarSection.tsx` structural issues that contribute to misalignment (e.g., HOC placement, resourceProps spread, conditional CSS) are documented and corrected
 **Plans**: 4 plans
   - [ ] 20-01-PLAN.md — Wave 0: Create UAT + DIAGNOSIS artifacts; record baseline measurements
-  - [ ] 20-02-PLAN.md — Wave 1: HIGH-confidence structural fixes (memoize components/resourceProps, delete redundant useEffect, useCallback handlers); re-measure
+  - [x] 20-02-PLAN.md — Wave 1: HIGH-confidence structural fixes (memoize components/resourceProps, delete redundant useEffect, useCallback handlers); re-measure
   - [ ] 20-03-PLAN.md — Wave 2: Diagnosis-driven CSS strategy selection (A/B/C/D); apply and re-measure
   - [ ] 20-04-PLAN.md — Wave 3: Conditional view-resource remount + full UAT signoff (CAL-FIX-01..04 + Phase 19 regression)
 **UI hint**: yes
@@ -80,7 +80,7 @@ Full details: [milestones/v2.0-ROADMAP.md](milestones/v2.0-ROADMAP.md)
 | 17. Favicon, Legal & Company Type Admin UI | v2.0 | 3/3 | Complete | 2026-04-30 |
 | 18. Admin Calendar Improvements | v2.0 | 3/3 | Complete | 2026-04-30 |
 | 19. Receptionist Booking Flow & Multi-Staff View | v2.0 | 4/4 | Complete | 2026-04-30 |
-| 20. Calendar Timeline & Structure Audit | v3.0 | 0/TBD | Not started | — |
+| 20. Calendar Timeline & Structure Audit | v3.0 | 1/4 | In Progress|  |
 | 21. Per-service booking limits | standalone | 3/3 | Complete    | 2026-05-11 |
 | 22. Date overrides for staff availability | standalone | 3/3 | Complete    | 2026-05-11 |
 | 23. Multiple durations per service | standalone | 0/3 | Complete    | 2026-05-11 |
