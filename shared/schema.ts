@@ -103,6 +103,7 @@ export const serviceFrequencies = pgTable("service_frequencies", {
   name: text("name").notNull(), // e.g., "Weekly", "Every 15 days"
   discountPercent: numeric("discount_percent", { precision: 5, scale: 2 }).default("0"), // e.g., 15.00 for 15%
   order: integer("order").default(0),
+  intervalDays: integer("interval_days").notNull().default(7), // Phase 28 RECUR-01: days between bookings
 });
 
 // Service duration options (Phase 23 SEED-029)

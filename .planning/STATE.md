@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v4.0
-milestone_name: Booking Intelligence
-status: executing
-stopped_at: Completed 28-02-PLAN.md
-last_updated: "2026-05-11T14:18:42.995Z"
+milestone: v3.0
+milestone_name: Calendar Polish
+status: verifying
+stopped_at: Completed 28-01-PLAN.md
+last_updated: "2026-05-11T14:32:58.627Z"
 last_activity: 2026-05-11
 progress:
-  total_phases: 5
-  completed_phases: 2
-  total_plans: 12
-  completed_plans: 9
+  total_phases: 1
+  completed_phases: 0
+  total_plans: 4
+  completed_plans: 0
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-05)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 28 — recurring-bookings-customer-flow-and-notifications
+**Current focus:** Phase 22 — date-overrides-staff-availability
 
 ## Current Position
 
-Phase: 28 (recurring-bookings-customer-flow-and-notifications) — EXECUTING
-Plan: 2 of 3
-Status: Ready to execute
+Phase: 24
+Plan: Not started
+Status: Phase complete — ready for verification
 Last activity: 2026-05-11
 
 Progress: [░░░░░░░░░░] 0%
@@ -73,13 +73,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 24]: Approve/Reject buttons placed in interactive variant only, visible solely when status === awaiting_approval
 - [Phase 24]: awaiting=true query param used for Confirmation routing — works across page reloads
 - [Phase 24]: requiresConfirmation toggle placed inside Booking Rules collapsible to keep ServiceForm uncluttered
-- [Phase 27]: 5 recurring-booking storage methods added to IStorage + DatabaseStorage: create, get, list(filter), getActiveDue(cron), update
-- [Phase 27]: getActiveRecurringBookingsDueForGeneration uses lte(nextBookingDate, asOfDate) AND (endDate IS NULL OR endDate > nextBookingDate)
-- [Phase 27]: updateRecurringBooking always stamps updatedAt: new Date() on every call
-- [Phase 27]: Raw db.transaction used (not storage.createBooking) to bypass GHL/Twilio notifications — Phase 28 decides notification strategy
-- [Phase 27]: advanceDate handles intervalDays=30 as calendar-month with end-of-month clamp to prevent drift
-- [Phase 28]: EMAIL_PORT defaults to 587 when absent/non-numeric; port 465 triggers TLS, all others use STARTTLS
-- [Phase 28]: buildReminderEmail formats YYYY-MM-DD via UTC midnight to avoid timezone-driven off-by-one on date-only strings
+- [Phase 28-01]: Phase 27 schema prerequisites added in worktree (recurringBookings table, storage methods, generator) since dev branch was ahead of worktree base
+- [Phase 28-01]: selectedFrequencyId threaded into cartItems[0] only for single-service carts; multi-service carts show no frequency selector
 
 ### Roadmap Evolution
 
@@ -93,6 +88,6 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-11T14:18:42.978Z
-Stopped at: Completed 28-02-PLAN.md
+Last session: 2026-05-11T14:32:51.179Z
+Stopped at: Completed 28-01-PLAN.md
 Resume file: None

@@ -10,7 +10,6 @@ import {
   serviceOptions,
   serviceFrequencies,
   serviceDurations,
-  serviceBookingQuestions,
   bookings,
   bookingItems,
   chatSettings,
@@ -38,9 +37,6 @@ import {
   type ServiceDuration,
   type InsertServiceDuration,
   insertServiceDurationSchema,
-  type ServiceBookingQuestion,
-  type InsertServiceBookingQuestion,
-  insertServiceBookingQuestionSchema,
   type Booking,
   type BookingItem,
   type CompanySettings,
@@ -159,6 +155,7 @@ export interface IStorage {
 
   // Service Frequencies (for base_plus_addons pricing)
   getServiceFrequencies(serviceId: number): Promise<ServiceFrequency[]>;
+  getServiceFrequency(id: number): Promise<ServiceFrequency | undefined>;
   createServiceFrequency(frequency: InsertServiceFrequency): Promise<ServiceFrequency>;
   updateServiceFrequency(id: number, frequency: Partial<InsertServiceFrequency>): Promise<ServiceFrequency>;
   deleteServiceFrequency(id: number): Promise<void>;
@@ -169,12 +166,6 @@ export interface IStorage {
   createServiceDuration(duration: InsertServiceDuration): Promise<ServiceDuration>;
   updateServiceDuration(id: number, data: Partial<InsertServiceDuration>): Promise<ServiceDuration>;
   deleteServiceDuration(id: number): Promise<void>;
-
-  // Service Booking Questions (Phase 26 QUEST-01, QUEST-02)
-  getServiceBookingQuestions(serviceId: number): Promise<ServiceBookingQuestion[]>;
-  createServiceBookingQuestion(q: InsertServiceBookingQuestion): Promise<ServiceBookingQuestion>;
-  updateServiceBookingQuestion(id: number, data: Partial<InsertServiceBookingQuestion>): Promise<ServiceBookingQuestion>;
-  deleteServiceBookingQuestion(id: number): Promise<void>;
 
   // Bookings
   createBooking(booking: InsertBooking & { totalPrice: string, totalDurationMinutes: number, endTime: string, bookingItemsData?: any[], userId?: string | null }): Promise<Booking>;
@@ -379,7 +370,7 @@ export interface IStorage {
     offset?: number;
   }): Promise<NotificationLog[]>;
 
-  // Recurring Bookings (Phase 27 RECUR-01, RECUR-02)
+  // Recurring Bookings (Phase 27 RECUR-01)
   createRecurringBooking(data: InsertRecurringBooking): Promise<RecurringBooking>;
   getRecurringBooking(id: number): Promise<RecurringBooking | undefined>;
   getRecurringBookings(statusFilter?: string): Promise<RecurringBooking[]>;
@@ -645,6 +636,15 @@ export class DatabaseStorage implements IStorage {
       .orderBy(asc(serviceFrequencies.order), asc(serviceFrequencies.id));
   }
 
+  async getServiceFrequency(id: number): Promise<ServiceFrequency | undefined> {
+    const [freq] = await db
+      .select()
+      .from(serviceFrequencies)
+      .where(eq(serviceFrequencies.id, id))
+      .limit(1);
+    return freq;
+  }
+
   async createServiceFrequency(frequency: InsertServiceFrequency): Promise<ServiceFrequency> {
     const [newFrequency] = await db.insert(serviceFrequencies).values(frequency).returning();
     return newFrequency;
@@ -702,33 +702,6 @@ export class DatabaseStorage implements IStorage {
     await db.delete(serviceDurations).where(eq(serviceDurations.id, id));
   }
 
-  async getServiceBookingQuestions(serviceId: number): Promise<ServiceBookingQuestion[]> {
-    return db
-      .select()
-      .from(serviceBookingQuestions)
-      .where(eq(serviceBookingQuestions.serviceId, serviceId))
-      .orderBy(asc(serviceBookingQuestions.order), asc(serviceBookingQuestions.id));
-  }
-
-  async createServiceBookingQuestion(q: InsertServiceBookingQuestion): Promise<ServiceBookingQuestion> {
-    const [newQ] = await db.insert(serviceBookingQuestions).values(q).returning();
-    return newQ;
-  }
-
-  async updateServiceBookingQuestion(id: number, data: Partial<InsertServiceBookingQuestion>): Promise<ServiceBookingQuestion> {
-    const [updated] = await db
-      .update(serviceBookingQuestions)
-      .set(data)
-      .where(eq(serviceBookingQuestions.id, id))
-      .returning();
-    if (!updated) throw new Error(`ServiceBookingQuestion ${id} not found`);
-    return updated;
-  }
-
-  async deleteServiceBookingQuestion(id: number): Promise<void> {
-    await db.delete(serviceBookingQuestions).where(eq(serviceBookingQuestions.id, id));
-  }
-
   async getService(id: number): Promise<Service | undefined> {
     const [service] = await db
       .select()
@@ -774,7 +747,6 @@ export class DatabaseStorage implements IStorage {
             selectedFrequency: item.selectedFrequency,
             customerNotes: item.customerNotes,
             priceBreakdown: item.priceBreakdown,
-            questionAnswers: item.questionAnswers,
           });
         }
       } else if (booking.serviceIds && booking.serviceIds.length > 0) {
@@ -1785,7 +1757,7 @@ export class DatabaseStorage implements IStorage {
   async getStaffAvailability(staffMemberId: number): Promise<StaffAvailability[]> {
     return await db.select().from(staffAvailability)
       .where(eq(staffAvailability.staffMemberId, staffMemberId))
-      .orderBy(asc(staffAvailability.dayOfWeek), asc(staffAvailability.rangeOrder));
+      .orderBy(asc(staffAvailability.dayOfWeek));
   }
 
   async setStaffAvailability(
@@ -1994,10 +1966,11 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(bookings).where(and(gte(bookings.bookingDate, from), lte(bookings.bookingDate, to))).orderBy(asc(bookings.bookingDate));
   }
 
-  // Recurring Bookings (Phase 27 RECUR-01, RECUR-02)
+  // === Recurring Bookings (Phase 27 RECUR-01) ===
 
   async createRecurringBooking(data: InsertRecurringBooking): Promise<RecurringBooking> {
-    const [row] = await db.insert(recurringBookings).values(data).returning();
+    const validated = insertRecurringBookingSchema.parse(data);
+    const [row] = await db.insert(recurringBookings).values(validated).returning();
     return row;
   }
 
@@ -2018,16 +1991,10 @@ export class DatabaseStorage implements IStorage {
         .where(eq(recurringBookings.status, statusFilter))
         .orderBy(desc(recurringBookings.createdAt));
     }
-    return db
-      .select()
-      .from(recurringBookings)
-      .orderBy(desc(recurringBookings.createdAt));
+    return db.select().from(recurringBookings).orderBy(desc(recurringBookings.createdAt));
   }
 
   async getActiveRecurringBookingsDueForGeneration(asOfDate: string): Promise<RecurringBooking[]> {
-    // Returns active subscriptions where next_booking_date <= asOfDate
-    // AND (end_date IS NULL OR end_date > next_booking_date)
-    // asOfDate format: YYYY-MM-DD
     return db
       .select()
       .from(recurringBookings)
@@ -2037,11 +2004,11 @@ export class DatabaseStorage implements IStorage {
           lte(recurringBookings.nextBookingDate, asOfDate),
           or(
             isNull(recurringBookings.endDate),
+            // endDate > nextBookingDate prevents generating into the expired window
             sql`${recurringBookings.endDate} > ${recurringBookings.nextBookingDate}`
           )
         )
-      )
-      .orderBy(asc(recurringBookings.nextBookingDate));
+      );
   }
 
   async updateRecurringBooking(

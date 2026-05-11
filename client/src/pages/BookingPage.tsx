@@ -55,12 +55,8 @@ export default function BookingPage() {
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
   // Map from serviceId → chosen ServiceDuration (only for services that have durations)
   const [selectedDurations, setSelectedDurations] = useState<Record<number, any>>({});
-
-  // Phase 26: question answers per service
-  // key: serviceId → questionId → answer string
-  const [questionAnswers, setQuestionAnswers] = useState<Record<number, Record<number, string>>>({});
-  // key: questionId → error message
-  const [questionErrors, setQuestionErrors] = useState<Record<number, string>>({});
+  // Phase 28 RECUR-01: null = one-time, number = serviceFrequency.id
+  const [selectedFrequencyId, setSelectedFrequencyId] = useState<number | null>(null);
 
   // Staff
   const { data: staffCountData } = useStaffCount();
@@ -134,6 +130,16 @@ export default function BookingPage() {
     })),
   });
 
+  // Phase 28 RECUR-01: fetch frequencies for the primary (and only) cart item.
+  // Only shown for single-service carts to avoid ambiguity about which service recurs.
+  const primaryServiceId = items.length === 1 ? items[0].id : undefined;
+  const { data: frequencies } = useQuery<import("@shared/schema").ServiceFrequency[]>({
+    queryKey: ['/api/services', primaryServiceId, 'frequencies'],
+    queryFn: () => fetch(`/api/services/${primaryServiceId}/frequencies`).then(r => r.json()),
+    enabled: !!primaryServiceId,
+    staleTime: 60_000,
+  });
+
   // Derive which services need duration selection
   const itemsWithDurations = serviceDetailsQueries
     .filter(q => Array.isArray(q.data?.durations) && q.data.durations.length > 0)
@@ -142,16 +148,6 @@ export default function BookingPage() {
   const allDurationsSelected = itemsWithDurations.length === 0 || itemsWithDurations.every(
     (svc: any) => selectedDurations[svc.id] !== undefined
   );
-
-  // Phase 26: all required questions answered
-  const allRequiredAnswered = serviceDetailsQueries.every(q => {
-    if (!q.data?.questions?.length) return true;
-    return q.data.questions
-      .filter((question: any) => question.required)
-      .every((question: any) =>
-        (questionAnswers[q.data.id]?.[question.id] ?? '').trim() !== ''
-      );
-  });
 
   const serviceDetailsLoading = serviceDetailsQueries.some(q => q.isLoading);
 
@@ -268,23 +264,18 @@ export default function BookingPage() {
 
     const fullAddress = `${data.customerStreet}${data.customerUnit ? `, ${data.customerUnit}` : ""}, ${data.customerCity}, ${data.customerState}`;
 
-    // Build cartItems with questionAnswers merged in per service
-    const cartItemsWithAnswers = getCartItemsForBooking().map((cartItem: any) => {
-      const svcQuery = serviceDetailsQueries.find(q => q.data?.id === cartItem.serviceId);
-      const questions = svcQuery?.data?.questions ?? [];
-      const answers = questions.map((question: any) => ({
-        questionId: question.id,
-        label: question.label,
-        type: question.type,
-        answer: questionAnswers[cartItem.serviceId]?.[question.id] ?? '',
-      }));
-      return answers.length > 0 ? { ...cartItem, questionAnswers: answers } : cartItem;
+    // Phase 28 RECUR-01: attach selectedFrequencyId to the first cart item only
+    const cartItemsWithFrequency = getCartItemsForBooking().map((cartItem: any, idx: number) => {
+      if (idx === 0 && selectedFrequencyId !== null) {
+        return { ...cartItem, selectedFrequencyId };
+      }
+      return cartItem;
     });
 
     const bookingPayload = {
       ...data,
       customerAddress: fullAddress,
-      cartItems: cartItemsWithAnswers,
+      cartItems: cartItemsWithFrequency,
       bookingDate: selectedDate,
       startTime: selectedTime,
       endTime: endTime,
@@ -666,109 +657,14 @@ export default function BookingPage() {
                     {form.formState.errors.customerPhone && <p className="text-red-500 text-xs">{form.formState.errors.customerPhone.message}</p>}
                   </div>
 
-                  {/* Dynamic service-specific questions (Phase 26 QUEST-03) */}
-                  {serviceDetailsQueries.some(q => q.data?.questions?.length > 0) && (
-                    <div className="space-y-6 pt-4 border-t border-gray-100">
-                      <p className="text-sm font-semibold text-slate-700">Additional Information</p>
-                      {serviceDetailsQueries.map(q => {
-                        if (!q.data?.questions?.length) return null;
-                        return (
-                          <div key={q.data.id} className="space-y-4">
-                            {serviceDetailsQueries.filter(x => x.data?.questions?.length > 0).length > 1 && (
-                              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                                {q.data.name}
-                              </p>
-                            )}
-                            {q.data.questions.map((question: any) => (
-                              <div key={question.id} className="space-y-1">
-                                <label className="block text-sm font-medium text-slate-700">
-                                  {question.label}
-                                  {question.required && <span className="text-red-500 ml-1">*</span>}
-                                </label>
-                                {question.type === 'textarea' ? (
-                                  <textarea
-                                    rows={3}
-                                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                                    value={questionAnswers[q.data.id]?.[question.id] ?? ''}
-                                    onChange={e => {
-                                      setQuestionAnswers(prev => ({
-                                        ...prev,
-                                        [q.data.id]: { ...prev[q.data.id], [question.id]: e.target.value },
-                                      }));
-                                      if (e.target.value.trim()) {
-                                        setQuestionErrors(prev => { const n = { ...prev }; delete n[question.id]; return n; });
-                                      }
-                                    }}
-                                  />
-                                ) : question.type === 'select' ? (
-                                  <select
-                                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    value={questionAnswers[q.data.id]?.[question.id] ?? ''}
-                                    onChange={e => {
-                                      setQuestionAnswers(prev => ({
-                                        ...prev,
-                                        [q.data.id]: { ...prev[q.data.id], [question.id]: e.target.value },
-                                      }));
-                                      if (e.target.value) {
-                                        setQuestionErrors(prev => { const n = { ...prev }; delete n[question.id]; return n; });
-                                      }
-                                    }}
-                                  >
-                                    <option value="">Select an option...</option>
-                                    {question.options?.map((opt: string) => (
-                                      <option key={opt} value={opt}>{opt}</option>
-                                    ))}
-                                  </select>
-                                ) : (
-                                  <input
-                                    type="text"
-                                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    value={questionAnswers[q.data.id]?.[question.id] ?? ''}
-                                    onChange={e => {
-                                      setQuestionAnswers(prev => ({
-                                        ...prev,
-                                        [q.data.id]: { ...prev[q.data.id], [question.id]: e.target.value },
-                                      }));
-                                      if (e.target.value.trim()) {
-                                        setQuestionErrors(prev => { const n = { ...prev }; delete n[question.id]; return n; });
-                                      }
-                                    }}
-                                  />
-                                )}
-                                {questionErrors[question.id] && (
-                                  <p className="text-xs text-red-500">{questionErrors[question.id]}</p>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
                   {step === 4 && (
                     <button
                       type="button"
                       onClick={async () => {
                         const isValid = await form.trigger(["customerName", "customerEmail", "customerPhone"]);
-                        if (!isValid) return;
-
-                        // Validate required question answers (Phase 26 QUEST-03)
-                        const errors: Record<number, string> = {};
-                        serviceDetailsQueries.forEach(q => {
-                          if (!q.data?.questions?.length) return;
-                          q.data.questions
-                            .filter((question: any) => question.required)
-                            .forEach((question: any) => {
-                              if (!(questionAnswers[q.data.id]?.[question.id] ?? '').trim()) {
-                                errors[question.id] = `${question.label} is required`;
-                              }
-                            });
-                        });
-                        setQuestionErrors(errors);
-                        if (Object.keys(errors).length > 0) return;
-
-                        handleNextStep(5);
+                        if (isValid) {
+                          handleNextStep(5);
+                        }
                       }}
                       className="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
                     >
@@ -989,6 +885,47 @@ export default function BookingPage() {
                 <p className="text-xs text-slate-400 mt-2">
                   A minimum order of ${minimumBookingValue.toFixed(2)} applies
                 </p>
+              )}
+
+              {/* Phase 28 RECUR-01: frequency selector — shown after time slot selected, single-service carts only */}
+              {step === 3 && selectedDate && selectedTime && frequencies && frequencies.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <p className="text-sm font-semibold text-slate-700 mb-3">How often?</p>
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedFrequencyId(null)}
+                      className={clsx(
+                        "w-full px-4 py-3 rounded-xl border-2 text-left text-sm transition-all",
+                        selectedFrequencyId === null
+                          ? "border-primary bg-primary/5 font-semibold"
+                          : "border-slate-200 hover:border-slate-300"
+                      )}
+                    >
+                      One-time cleaning
+                    </button>
+                    {frequencies.map(f => (
+                      <button
+                        type="button"
+                        key={f.id}
+                        onClick={() => setSelectedFrequencyId(f.id)}
+                        className={clsx(
+                          "w-full px-4 py-3 rounded-xl border-2 text-left text-sm transition-all",
+                          selectedFrequencyId === f.id
+                            ? "border-primary bg-primary/5 font-semibold"
+                            : "border-slate-200 hover:border-slate-300"
+                        )}
+                      >
+                        <span>{f.name}</span>
+                        {Number(f.discountPercent) > 0 && (
+                          <span className="ml-2 text-green-600 font-bold">
+                            {Number(f.discountPercent)}% off
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
 
               <div className="mt-8">
