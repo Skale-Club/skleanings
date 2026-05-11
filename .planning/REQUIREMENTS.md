@@ -55,10 +55,23 @@
 
 ## Traceability
 
-_Preenchido pelo roadmapper após criação do ROADMAP.md_
-
 | REQ-ID | Phase | Plan |
 |--------|-------|------|
-| DUR-01–06 | — | — |
-| EMAIL-01–05 | — | — |
-| SYNC-01–07 | — | — |
+| DUR-01 | Phase 30 | — |
+| DUR-02 | Phase 30 | — |
+| DUR-03 | Phase 30 | — |
+| DUR-04 | Phase 30 | — |
+| DUR-05 | Phase 30 | — |
+| DUR-06 | Phase 30 | — |
+| EMAIL-01 | Phase 31 | — |
+| EMAIL-02 | Phase 31 | — |
+| EMAIL-03 | Phase 31 | — |
+| EMAIL-04 | Phase 31 | — |
+| EMAIL-05 | Phase 31 | — |
+| SYNC-01 | Phase 32 | — |
+| SYNC-02 | Phase 32 | — |
+| SYNC-03 | Phase 32 | — |
+| SYNC-04 | Phase 32 | — |
+| SYNC-05 | Phase 32 | — |
+| SYNC-06 | Phase 32 | — |
+| SYNC-07 | Phase 32 | — |

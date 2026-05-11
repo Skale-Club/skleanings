@@ -6,6 +6,7 @@
 - ✅ **v2.0 White Label** — Phases 15–19 (shipped 2026-05-05)
 - ✅ **v3.0 Calendar Polish** — Phase 20 (shipped 2026-05-11)
 - ✅ **v4.0 Booking Intelligence** — Phases 25–29 (shipped 2026-05-11)
+- 🚧 **v5.0 Booking Experience** — Phases 30–32 (in progress)
 
 ---
 
@@ -65,6 +66,60 @@ Full details: [milestones/v4.0-ROADMAP.md](milestones/v4.0-ROADMAP.md)
 
 ---
 
+### 🚧 v5.0 Booking Experience (In Progress)
+
+**Milestone Goal:** Improve the booking experience with flexible service durations, branded transactional email communication, and reliable external calendar sync via a durable retry queue.
+
+## Phases
+
+- [ ] **Phase 30: Multiple Durations per Service** - Customers choose their preferred duration (e.g. 2h / 4h / 8h) when booking; admins configure duration options per service
+- [ ] **Phase 31: Branded Transactional Email via Resend** - Customers receive on-brand confirmation, reminder, and cancellation emails; admins configure email credentials in the admin panel
+- [ ] **Phase 32: Calendar Harmony Retry Queue** - Booking sync to Google Calendar and GoHighLevel uses a durable queue with exponential backoff; admins can monitor and retry failed jobs
+
+## Phase Details
+
+### Phase 30: Multiple Durations per Service
+**Goal**: Customers can select their preferred service duration during booking, and that selection is accurately reflected in slot availability, pricing, and booking records
+**Depends on**: Nothing (first phase of milestone)
+**Requirements**: DUR-01, DUR-02, DUR-03, DUR-04, DUR-05, DUR-06
+**Success Criteria** (what must be TRUE):
+  1. Admin can add, remove, and reorder duration options (label, minutes, price) on the service edit screen
+  2. Customer sees duration cards (label + time + price) and can select one before choosing a time slot, when the service has durations configured
+  3. Available time slots shown to the customer reflect the selected duration, not the catalog default
+  4. The completed booking record stores the chosen duration label and minutes as a snapshot
+  5. Recurring booking instances are generated using the duration chosen at original booking time, not the current catalog default
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 31: Branded Transactional Email via Resend
+**Goal**: Customers receive timely, on-brand transactional emails at key booking lifecycle moments; admins can configure and enable the Resend integration from the admin panel
+**Depends on**: Phase 30
+**Requirements**: EMAIL-01, EMAIL-02, EMAIL-03, EMAIL-04, EMAIL-05
+**Success Criteria** (what must be TRUE):
+  1. Admin can enter a Resend API key, from-address, and toggle transactional emails on or off from the admin Integrations panel
+  2. Customer receives a confirmation email with service name, date, time, address, and selected duration label within 60 seconds of a confirmed booking
+  3. Customer receives a reminder email approximately 24 hours before their scheduled appointment via cron job
+  4. Customer receives a cancellation email immediately when their booking is cancelled by either party
+  5. All email templates display the company logo, name, and brand colors sourced from companySettings
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 32: Calendar Harmony Retry Queue
+**Goal**: Booking sync events to Google Calendar and GoHighLevel are processed through a durable queue with automatic retries, and admins have visibility into sync health and can manually retry failed jobs
+**Depends on**: Phase 31
+**Requirements**: SYNC-01, SYNC-02, SYNC-03, SYNC-04, SYNC-05, SYNC-06, SYNC-07
+**Success Criteria** (what must be TRUE):
+  1. Booking creation, update, and cancellation enqueue sync jobs rather than calling GCal and GHL APIs directly — no fire-and-forget direct calls remain in the booking handler
+  2. The sync worker processes jobs with SELECT FOR UPDATE SKIP LOCKED and retries up to 6 times with exponential backoff before marking a job as permanently failed
+  3. Admin can view a sync health panel showing pending and failed job counts by target (GCal, GHL) and a table of recent failures with error messages
+  4. Admin can trigger a manual retry for failed jobs on a specific booking from the admin panel
+  5. A banner appears in admin when 10 or more consecutive failures are detected for a target, prompting reconnection
+  6. A GitHub Actions workflow fires the sync worker every 5 minutes, replacing node-cron (which is a no-op on Vercel serverless)
+**Plans**: TBD
+**UI hint**: yes
+
+---
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -73,6 +128,9 @@ Full details: [milestones/v4.0-ROADMAP.md](milestones/v4.0-ROADMAP.md)
 | 15–19 | v2.0 | 15/15 | Complete | 2026-05-05 |
 | 20 | v3.0 | 4/4 | Complete | 2026-05-11 |
 | 21–29 | v4.0 | 27/27 | Complete | 2026-05-11 |
+| 30. Multiple Durations per Service | v5.0 | 0/TBD | Not started | - |
+| 31. Branded Transactional Email via Resend | v5.0 | 0/TBD | Not started | - |
+| 32. Calendar Harmony Retry Queue | v5.0 | 0/TBD | Not started | - |
 
 ---
 
