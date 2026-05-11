@@ -8,6 +8,7 @@ import { DEFAULT_BUSINESS_HOURS, INDUSTRY_OPTIONS } from '@/components/admin/sha
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -15,8 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Trash2, Building2, Check, Image, Loader2, MapPin, Plus } from 'lucide-react';
+import { Trash2, Building2, Check, Image, Loader2, MapPin, Plus, Globe, Palette } from 'lucide-react';
 import { UnifiedServiceAreasManager } from './company/ServiceAreasManager';
+import { LegalBrandingTab } from './LegalBrandingTab';
 
 const normalizeIndustryValue = (value: string) => value.trim().toLowerCase();
 
@@ -26,6 +28,7 @@ const resolveIndustrySelection = (value?: string | null) => {
   const match = INDUSTRY_OPTIONS.find((option) => normalizeIndustryValue(option) === normalized);
   return match || 'Other';
 };
+
 export function CompanySettingsSection({ getAccessToken }: { getAccessToken: () => Promise<string | null> }) {
   const { toast } = useToast();
   const [settings, setSettings] = useState<CompanySettingsData>({
@@ -51,6 +54,10 @@ export function CompanySettingsSection({ getAccessToken }: { getAccessToken: () 
     timeZone: 'America/New_York',
     businessHours: DEFAULT_BUSINESS_HOURS,
     minimumBookingValue: '0',
+    faviconUrl: '',
+    serviceDeliveryModel: 'at-customer',
+    privacyPolicyContent: '',
+    termsOfServiceContent: '',
   });
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -70,9 +77,7 @@ export function CompanySettingsSection({ getAccessToken }: { getAccessToken: () 
 
   useEffect(() => {
     return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     };
   }, []);
 
@@ -84,16 +89,11 @@ export function CompanySettingsSection({ getAccessToken }: { getAccessToken: () 
         toast({ title: 'Save failed', description: 'Authentication required', variant: 'destructive' });
         return;
       }
-
       await authenticatedRequest('PUT', '/api/company-settings', token, newSettings);
       queryClient.invalidateQueries({ queryKey: ['/api/company-settings'] });
       setLastSaved(new Date());
     } catch (error: any) {
-      toast({
-        title: 'Error saving settings',
-        description: error.message,
-        variant: 'destructive'
-      });
+      toast({ title: 'Error saving settings', description: error.message, variant: 'destructive' });
     } finally {
       setIsSaving(false);
     }
@@ -101,11 +101,7 @@ export function CompanySettingsSection({ getAccessToken }: { getAccessToken: () 
 
   const updateField = useCallback(<K extends keyof CompanySettingsData>(field: K, value: CompanySettingsData[K]) => {
     setSettings(prev => ({ ...prev, [field]: value }));
-
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(() => {
       saveSettings({ [field]: value });
     }, 800);
@@ -114,31 +110,19 @@ export function CompanySettingsSection({ getAccessToken }: { getAccessToken: () 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'main' | 'dark' | 'icon') => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     try {
-      // Get access token for authentication
-      const token = await getAccessToken(); // This should be available from useAdminAuth
+      const token = await getAccessToken();
       if (!token) {
         toast({ title: 'Upload failed', description: 'Authentication required', variant: 'destructive' });
         return;
       }
-
-      // Use authenticated request to get upload URL
       const uploadRes = await authenticatedRequest('POST', '/api/upload', token);
       const { uploadURL, objectPath } = await uploadRes.json() as { uploadURL: string; objectPath: string };
-
-      await fetch(uploadURL, {
-        method: 'PUT',
-        body: file,
-        headers: { 'Content-Type': file.type }
-      });
-
+      await fetch(uploadURL, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
       const fieldMap = { main: 'logoMain', dark: 'logoDark', icon: 'logoIcon' } as const;
       const fieldName = fieldMap[type];
-
       setSettings(prev => ({ ...prev, [fieldName]: objectPath }));
       await saveSettings({ [fieldName]: objectPath });
-
       toast({ title: 'Asset uploaded and saved' });
     } catch (error: any) {
       toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
@@ -155,6 +139,7 @@ export function CompanySettingsSection({ getAccessToken }: { getAccessToken: () 
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold">Company Settings</h1>
@@ -162,26 +147,48 @@ export function CompanySettingsSection({ getAccessToken }: { getAccessToken: () 
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           {isSaving ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Saving...</span>
-            </>
+            <><Loader2 className="h-4 w-4 animate-spin" /><span>Saving...</span></>
           ) : lastSaved ? (
-            <>
-              <Check className="h-4 w-4 text-green-500" />
-              <span>Auto-saved</span>
-            </>
+            <><Check className="h-4 w-4 text-green-500" /><span>Auto-saved</span></>
           ) : null}
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-muted p-6 rounded-lg space-y-6 transition-all">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-primary" />
-              Business Information
-            </h2>
+      <Tabs defaultValue="general">
+        <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent gap-0">
+          <TabsTrigger
+            value="general"
+            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-2.5 text-sm font-medium gap-2"
+          >
+            <Building2 className="w-4 h-4" />
+            General
+          </TabsTrigger>
+          <TabsTrigger
+            value="branding"
+            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-2.5 text-sm font-medium gap-2"
+          >
+            <Palette className="w-4 h-4" />
+            Branding
+          </TabsTrigger>
+          <TabsTrigger
+            value="areas"
+            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-2.5 text-sm font-medium gap-2"
+          >
+            <MapPin className="w-4 h-4" />
+            Service Areas
+          </TabsTrigger>
+          <TabsTrigger
+            value="legal"
+            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-2.5 text-sm font-medium gap-2"
+          >
+            <Globe className="w-4 h-4" />
+            Legal
+          </TabsTrigger>
+        </TabsList>
+
+        {/* ── General ── */}
+        <TabsContent value="general" className="mt-6">
+          <div className="bg-muted p-6 rounded-lg space-y-6">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="companyName">Company Name</Label>
@@ -215,9 +222,7 @@ export function CompanySettingsSection({ getAccessToken }: { getAccessToken: () 
                   </SelectTrigger>
                   <SelectContent>
                     {INDUSTRY_OPTIONS.map((option) => (
-                      <SelectItem key={option} value={option}>
-                        {option}
-                      </SelectItem>
+                      <SelectItem key={option} value={option}>{option}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -275,163 +280,168 @@ export function CompanySettingsSection({ getAccessToken }: { getAccessToken: () 
                   data-testid="input-map-embed-url"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Paste the iframe "src" attribute from Google Maps "Share -{'>'} Embed a map" to update the map shown on the home page.
+                  Paste the iframe "src" attribute from Google Maps "Share → Embed a map" to update the map shown on the home page.
                 </p>
               </div>
             </div>
           </div>
+        </TabsContent>
 
-          <div className="bg-muted p-6 rounded-lg space-y-6 transition-all">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-primary" />
-              Service Areas
-            </h2>
-            <p className="text-sm text-muted-foreground">Manage regions/counties where you provide services (e.g., MetroWest, Greater Boston)</p>
-            <UnifiedServiceAreasManager />
-          </div>
-
-        </div>
-
-        <div className="space-y-6">
-          <div className="bg-muted p-6 rounded-lg space-y-6 transition-all">
+        {/* ── Branding ── */}
+        <TabsContent value="branding" className="mt-6 space-y-6">
+          <div className="bg-muted p-6 rounded-lg space-y-6">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Image className="w-5 h-5 text-primary" />
-              Branding Assets
+              Logos
             </h2>
-
-            <div className="space-y-4">
+            <div className="grid gap-6 sm:grid-cols-3">
+              {/* Main logo */}
               <div className="space-y-2">
                 <Label className="text-sm">Main Logo (Light Mode)</Label>
-                <div className="flex flex-col gap-3">
-                  <div className="h-32 rounded-lg border-2 border-dashed border-border bg-white flex items-center justify-center overflow-hidden relative group">
-                    {settings.logoMain ? (
-                      <img src={settings.logoMain} alt="Main Logo" className="max-h-full max-w-full object-contain p-2" />
-                    ) : (
-                      <div className="text-center p-4">
-                        <Image className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                        <p className="text-xs text-muted-foreground">Main Logo</p>
-                      </div>
-                    )}
-                    <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-                      <Input type="file" className="hidden" onChange={(e) => handleLogoUpload(e, 'main')} accept="image/*" />
-                      <Plus className="w-8 h-8 text-white" />
-                    </label>
-                  </div>
+                <div className="h-32 rounded-lg border-2 border-dashed border-border bg-white flex items-center justify-center overflow-hidden relative group">
+                  {settings.logoMain ? (
+                    <img src={settings.logoMain} alt="Main Logo" className="max-h-full max-w-full object-contain p-2" />
+                  ) : (
+                    <div className="text-center p-4">
+                      <Image className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-xs text-muted-foreground">Main Logo</p>
+                    </div>
+                  )}
+                  <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                    <Input type="file" className="hidden" onChange={(e) => handleLogoUpload(e, 'main')} accept="image/*" />
+                    <Plus className="w-8 h-8 text-white" />
+                  </label>
                 </div>
               </div>
 
+              {/* Dark logo */}
               <div className="space-y-2">
                 <Label className="text-sm">Dark Logo (Optional)</Label>
-                <div className="flex flex-col gap-3">
-                  <div className="h-32 rounded-lg border-2 border-dashed border-border bg-slate-900 dark:bg-slate-100 flex items-center justify-center overflow-hidden relative group">
-                    {settings.logoDark ? (
-                      <img src={settings.logoDark} alt="Dark Logo" className="max-h-full max-w-full object-contain p-2" />
-                    ) : (
-                      <div className="text-center p-4">
-                        <Image className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                        <p className="text-xs text-muted-foreground">Dark Logo</p>
-                      </div>
-                    )}
-                    <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-                      <Input type="file" className="hidden" onChange={(e) => handleLogoUpload(e, 'dark')} accept="image/*" />
-                      <Plus className="w-8 h-8 text-white" />
-                    </label>
-                  </div>
+                <div className="h-32 rounded-lg border-2 border-dashed border-border bg-slate-900 dark:bg-slate-100 flex items-center justify-center overflow-hidden relative group">
+                  {settings.logoDark ? (
+                    <img src={settings.logoDark} alt="Dark Logo" className="max-h-full max-w-full object-contain p-2" />
+                  ) : (
+                    <div className="text-center p-4">
+                      <Image className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-xs text-muted-foreground">Dark Logo</p>
+                    </div>
+                  )}
+                  <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                    <Input type="file" className="hidden" onChange={(e) => handleLogoUpload(e, 'dark')} accept="image/*" />
+                    <Plus className="w-8 h-8 text-white" />
+                  </label>
                 </div>
               </div>
+
+              {/* Icon / favicon */}
               <div className="space-y-2">
                 <Label className="text-sm">Favicon / App Icon</Label>
-                <div className="flex flex-col gap-3">
-                  <div className="h-24 w-24 rounded-lg border-2 border-dashed border-border bg-white flex items-center justify-center overflow-hidden relative group mx-auto">
-                    {settings.logoIcon ? (
-                      <img src={settings.logoIcon} alt="Icon" className="max-h-full max-w-full object-contain p-2" />
-                    ) : (
-                      <div className="text-center p-2">
-                        <Image className="w-6 h-6 text-muted-foreground mx-auto mb-1" />
-                        <p className="text-[10px] text-muted-foreground">Icon</p>
-                      </div>
-                    )}
-                    <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-                      <Input type="file" className="hidden" onChange={(e) => handleLogoUpload(e, 'icon')} accept="image/*" />
-                      <Plus className="w-6 h-6 text-white" />
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4 border-t pt-6 mt-2">
-                <Label className="text-base font-semibold">Social Media Links (Max 5)</Label>
-                <div className="space-y-3">
-                  {(settings.socialLinks || []).map((link, index) => (
-                    <div key={index} className="flex gap-2 items-start">
-                      <div className="flex-1 space-y-2">
-                        <Select
-                          value={link.platform}
-                          onValueChange={(value) => {
-                            const newLinks = [...(settings.socialLinks || [])];
-                            newLinks[index].platform = value;
-                            setSettings(prev => ({ ...prev, socialLinks: newLinks }));
-                            saveSettings({ socialLinks: newLinks });
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select Platform" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="facebook">Facebook</SelectItem>
-                            <SelectItem value="instagram">Instagram</SelectItem>
-                            <SelectItem value="twitter">X (Twitter)</SelectItem>
-                            <SelectItem value="youtube">YouTube</SelectItem>
-                            <SelectItem value="linkedin">LinkedIn</SelectItem>
-                            <SelectItem value="tiktok">TikTok</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Input
-                          value={link.url}
-                          onChange={(e) => {
-                            const newLinks = [...(settings.socialLinks || [])];
-                            newLinks[index].url = e.target.value;
-                            setSettings(prev => ({ ...prev, socialLinks: newLinks }));
-                          }}
-                          onBlur={() => saveSettings({ socialLinks: settings.socialLinks })}
-                          placeholder="https://social-media.com/yourprofile"
-                          className="flex-1"
-                        />
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="mt-1"
-                        onClick={() => {
-                          const newLinks = (settings.socialLinks || []).filter((_, i) => i !== index);
-                          setSettings(prev => ({ ...prev, socialLinks: newLinks }));
-                          saveSettings({ socialLinks: newLinks });
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
+                <div className="h-32 rounded-lg border-2 border-dashed border-border bg-white flex items-center justify-center overflow-hidden relative group">
+                  {settings.logoIcon ? (
+                    <img src={settings.logoIcon} alt="Icon" className="max-h-full max-w-full object-contain p-4" />
+                  ) : (
+                    <div className="text-center p-4">
+                      <Image className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-xs text-muted-foreground">App Icon</p>
                     </div>
-                  ))}
-
-                  {(settings.socialLinks || []).length < 5 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full border-dashed"
-                      onClick={() => {
-                        const newLinks = [...(settings.socialLinks || []), { platform: 'facebook', url: '' }];
-                        setSettings(prev => ({ ...prev, socialLinks: newLinks }));
-                      }}
-                    >
-                      <Plus className="w-4 h-4 mr-2" /> Add Social Link
-                    </Button>
                   )}
+                  <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                    <Input type="file" className="hidden" onChange={(e) => handleLogoUpload(e, 'icon')} accept="image/*" />
+                    <Plus className="w-8 h-8 text-white" />
+                  </label>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
+
+          <div className="bg-muted p-6 rounded-lg space-y-4">
+            <h2 className="text-lg font-semibold">Social Media Links <span className="text-sm font-normal text-muted-foreground">(max 5)</span></h2>
+            <div className="space-y-3">
+              {(settings.socialLinks || []).map((link, index) => (
+                <div key={index} className="flex gap-2 items-start">
+                  <div className="flex-1 space-y-2">
+                    <Select
+                      value={link.platform}
+                      onValueChange={(value) => {
+                        const newLinks = [...(settings.socialLinks || [])];
+                        newLinks[index].platform = value;
+                        setSettings(prev => ({ ...prev, socialLinks: newLinks }));
+                        saveSettings({ socialLinks: newLinks });
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Platform" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="facebook">Facebook</SelectItem>
+                        <SelectItem value="instagram">Instagram</SelectItem>
+                        <SelectItem value="twitter">X (Twitter)</SelectItem>
+                        <SelectItem value="youtube">YouTube</SelectItem>
+                        <SelectItem value="linkedin">LinkedIn</SelectItem>
+                        <SelectItem value="tiktok">TikTok</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      value={link.url}
+                      onChange={(e) => {
+                        const newLinks = [...(settings.socialLinks || [])];
+                        newLinks[index].url = e.target.value;
+                        setSettings(prev => ({ ...prev, socialLinks: newLinks }));
+                      }}
+                      onBlur={() => saveSettings({ socialLinks: settings.socialLinks })}
+                      placeholder="https://social-media.com/yourprofile"
+                    />
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="mt-1"
+                    onClick={() => {
+                      const newLinks = (settings.socialLinks || []).filter((_, i) => i !== index);
+                      setSettings(prev => ({ ...prev, socialLinks: newLinks }));
+                      saveSettings({ socialLinks: newLinks });
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4 text-destructive" />
+                  </Button>
+                </div>
+              ))}
+              {(settings.socialLinks || []).length < 5 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full border-dashed"
+                  onClick={() => {
+                    const newLinks = [...(settings.socialLinks || []), { platform: 'facebook', url: '' }];
+                    setSettings(prev => ({ ...prev, socialLinks: newLinks }));
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-2" /> Add Social Link
+                </Button>
+              )}
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* ── Service Areas ── */}
+        <TabsContent value="areas" className="mt-6">
+          <div className="bg-muted p-6 rounded-lg space-y-4">
+            <div>
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-primary" />
+                Service Areas
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">Manage regions/counties where you provide services (e.g., MetroWest, Greater Boston)</p>
+            </div>
+            <UnifiedServiceAreasManager />
+          </div>
+        </TabsContent>
+
+        {/* ── Legal ── */}
+        <TabsContent value="legal" className="mt-6">
+          <LegalBrandingTab settings={settings} updateField={updateField} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

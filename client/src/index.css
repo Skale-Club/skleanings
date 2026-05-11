@@ -385,6 +385,14 @@
     @apply text-xs text-muted-foreground;
   }
 
+  .appointments-calendar .rbc-time-gutter .rbc-label {
+    display: block;
+    padding-top: 0;
+    line-height: 1;
+    transform: translateY(-50%);
+    overflow: visible;
+  }
+
   .appointments-calendar .rbc-current-time-indicator {
     background-color: hsl(var(--primary));
     height: 2px;

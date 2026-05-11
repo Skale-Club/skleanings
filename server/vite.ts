@@ -5,6 +5,7 @@ import viteConfig from "../vite.config";
 import fs from "fs";
 import path from "path";
 import { nanoid } from "nanoid";
+import { injectSeoMeta, getCachedSettings } from "./lib/seo-injector";
 
 const viteLogger = createLogger();
 
@@ -49,7 +50,14 @@ export async function setupVite(server: Server, app: Express) {
         `src="/src/main.tsx?v=${nanoid()}"`,
       );
       const page = await vite.transformIndexHtml(url, template);
-      res.status(200).set({ "Content-Type": "text/html" }).end(page);
+      // Phase 16: server-side SEO meta injection (must run AFTER transformIndexHtml — Pitfall 1)
+      const settings = await getCachedSettings();
+      const injected = injectSeoMeta(page, settings, {
+        protocol: req.protocol,
+        host: req.get("host") || "",
+        originalUrl: req.originalUrl,
+      });
+      res.status(200).set({ "Content-Type": "text/html" }).end(injected);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);
       next(e);

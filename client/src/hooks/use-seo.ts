@@ -1,11 +1,14 @@
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { buildLocalBusinessSchema } from '@shared/seo';
+import type { CompanySettings } from '@shared/schema';
 
 interface SeoSettings {
   seoTitle: string | null;
   seoDescription: string | null;
   ogImage: string | null;
   logoIcon: string | null;
+  faviconUrl: string | null;
   seoKeywords: string | null;
   seoAuthor: string | null;
   seoCanonicalUrl: string | null;
@@ -19,6 +22,8 @@ interface SeoSettings {
   companyEmail: string | null;
   companyPhone: string | null;
   companyAddress: string | null;
+  industry?: string | null;
+  schemaLocalBusiness?: unknown;
 }
 
 function setMetaTag(property: string, content: string | null | undefined, isProperty = false) {
@@ -45,26 +50,14 @@ function setLinkTag(rel: string, href: string | null | undefined) {
 }
 
 function createLocalBusinessSchema(settings: SeoSettings): string {
-  const schema = {
-    "@context": "https://schema.org",
-    "@type": "LocalBusiness",
-    "name": settings.companyName || settings.ogSiteName || "Cleaning Service",
-    "description": settings.seoDescription || "",
-    "@id": settings.seoCanonicalUrl || window.location.origin,
-    "url": settings.seoCanonicalUrl || window.location.origin,
-    ...(settings.companyPhone && { "telephone": settings.companyPhone }),
-    ...(settings.companyEmail && { "email": settings.companyEmail }),
-    ...(settings.companyAddress && {
-      "address": {
-        "@type": "PostalAddress",
-        "streetAddress": settings.companyAddress
-      }
-    }),
-    ...(settings.ogImage && { "image": settings.ogImage }),
-    "priceRange": "$$",
-    "serviceType": "Cleaning Service"
-  };
-  
+  const canonicalUrl = settings.seoCanonicalUrl || window.location.origin;
+  // Delegate to the shared builder so client and server produce IDENTICAL JSON-LD shape.
+  // SeoSettings is a structural subset of CompanySettings — buildLocalBusinessSchema only reads
+  // optional fields and treats missing as falsy, so the cast is safe.
+  const schema = buildLocalBusinessSchema(
+    settings as unknown as CompanySettings,
+    canonicalUrl,
+  );
   return JSON.stringify(schema);
 }
 
@@ -125,7 +118,6 @@ export function useSEO() {
         favicon.rel = 'icon';
         document.head.appendChild(favicon);
       }
-      favicon.type = 'image/png';
       favicon.href = settings.logoIcon;
     }
 

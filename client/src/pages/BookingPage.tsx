@@ -10,7 +10,7 @@ import { Trash2, Calendar as CalendarIcon, Clock, ChevronRight, CheckCircle2, Ar
 import { clsx } from "clsx";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueries } from "@tanstack/react-query";
 import { trackBeginCheckout, trackEvent } from "@/lib/analytics";
 import type { StaffMember } from "@shared/schema";
 import { useCompanySettings } from "@/context/CompanySettingsContext";
@@ -77,6 +77,46 @@ export default function BookingPage() {
 
   // API Hooks
   const { data: slots, isLoading: isLoadingSlots, isFetching: isFetchingSlots } = useAvailability(selectedDate, totalDuration, availabilityOptions);
+
+  // D-15, D-16: per-staff availability for multi-staff sites
+  const perStaffAvailability = useQueries({
+    queries: (staffList ?? []).map((member) => ({
+      queryKey: ['/api/availability', selectedDate, totalDuration, member.id, serviceIds],
+      queryFn: async (): Promise<Array<{ time: string; available: boolean }>> => {
+        if (!selectedDate || totalDuration === 0) return [];
+        const params = new URLSearchParams({
+          date: selectedDate,
+          totalDurationMinutes: String(totalDuration),
+          staffId: String(member.id),
+        });
+        if (serviceIds.length) params.append('serviceIds', serviceIds.join(','));
+        const res = await fetch(`/api/availability?${params}`);
+        if (!res.ok) return [];
+        return res.json();
+      },
+      enabled: !!selectedDate && totalDuration > 0 && staffCount > 1,
+      staleTime: 0,
+      gcTime: 0,
+    })),
+  });
+
+  // Build a map from time slot → array of available staff for that slot
+  const staffBySlot = new Map<string, StaffMember[]>();
+  if (staffCount > 1 && staffList) {
+    perStaffAvailability.forEach((query, idx) => {
+      const member = staffList[idx];
+      if (!member || !query.data) return;
+      query.data
+        .filter((s) => s.available)
+        .forEach((s) => {
+          const existing = staffBySlot.get(s.time) ?? [];
+          staffBySlot.set(s.time, [...existing, member]);
+        });
+    });
+  }
+
+  const isPerStaffLoading = staffCount > 1 && perStaffAvailability.some((q) => q.isLoading);
+
   const createBooking = useCreateBooking();
 
   const checkoutMutation = useMutation({
@@ -109,7 +149,7 @@ export default function BookingPage() {
   const viewYear = viewDate.getFullYear();
   const viewMonth = viewDate.getMonth() + 1; // 1-12
   const { data: monthAvailability, isLoading: isLoadingMonthAvailability, isFetching: isFetchingMonthAvailability } = useMonthAvailability(viewYear, viewMonth, totalDuration, availabilityOptions);
-  const isSlotsPending = isLoadingSlots || isFetchingSlots;
+  const isSlotsPending = isLoadingSlots || isFetchingSlots || isPerStaffLoading;
   const isMonthAvailabilityPending = isLoadingMonthAvailability || isFetchingMonthAvailability;
   const timeFormat = companySettings?.timeFormat || '12h';
   const minimumBookingValueStr = companySettings?.minimumBookingValue || '0';
@@ -409,21 +449,41 @@ export default function BookingPage() {
                         <div className="grid grid-cols-1 gap-3">
                           {slots
                             .filter((slot) => slot.available)
-                            .map((slot) => (
-                              <div key={slot.time} className="px-1 py-1">
-                                <button
-                                  onClick={() => handleTimeSelect(slot.time)}
-                                  className={clsx(
-                                    "w-full py-4 px-6 rounded-xl font-bold transition-all border text-center text-sm",
-                                    selectedTime === slot.time
-                                      ? "bg-primary text-white border-primary shadow-lg shadow-primary/20 scale-[1.01]"
-                                      : "bg-white border-slate-200 text-slate-600 hover:border-primary hover:text-primary hover:bg-primary/5"
-                                  )}
-                                >
-                                  {formatTime(slot.time, timeFormat)}
-                                </button>
-                              </div>
-                            ))}
+                            .map((slot) => {
+                              const availableStaff = staffBySlot.get(slot.time) ?? [];
+                              return (
+                                <div key={slot.time} className="px-1 py-1">
+                                  <button
+                                    onClick={() => handleTimeSelect(slot.time)}
+                                    className={clsx(
+                                      "w-full py-4 px-6 rounded-xl font-bold transition-all border text-center",
+                                      selectedTime === slot.time
+                                        ? "bg-primary text-white border-primary shadow-lg shadow-primary/20 scale-[1.01]"
+                                        : "bg-white border-slate-200 text-slate-600 hover:border-primary hover:text-primary hover:bg-primary/5"
+                                    )}
+                                  >
+                                    <div className="text-sm">{formatTime(slot.time, timeFormat)}</div>
+                                    {staffCount > 1 && availableStaff.length > 0 && (
+                                      <div className="flex flex-wrap justify-center gap-1 mt-2">
+                                        {availableStaff.map((member) => (
+                                          <span
+                                            key={member.id}
+                                            className={clsx(
+                                              "inline-block rounded-full px-2 py-0.5 text-xs font-medium",
+                                              selectedTime === slot.time
+                                                ? "bg-white/20 text-white"
+                                                : "bg-slate-100 text-slate-600"
+                                            )}
+                                          >
+                                            {member.firstName}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </button>
+                                </div>
+                              );
+                            })}
                         </div>
                       ) : (
                         <div className="text-center py-12 px-4 border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50/50">

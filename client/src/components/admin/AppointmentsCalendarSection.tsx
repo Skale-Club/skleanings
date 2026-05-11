@@ -1,5 +1,8 @@
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
+import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 import {
   addDays,
   endOfMonth,
@@ -13,16 +16,20 @@ import {
 import { enUS } from 'date-fns/locale';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
   CalendarDays,
+  Check,
   ChevronLeft,
   ChevronRight,
+  ChevronsUpDown,
   Clock3,
+  Plus,
   RotateCcw,
   SlidersHorizontal,
+  Trash2,
   Users2,
 } from 'lucide-react';
 import {
@@ -38,7 +45,6 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
-  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -49,8 +55,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -59,13 +63,17 @@ import {
   Command,
   CommandEmpty,
   CommandGroup,
+  CommandInput,
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
 import { useToast } from '@/hooks/use-toast';
+import { ToastAction } from '@/components/ui/toast';
+import { useCompanySettings } from '@/context/CompanySettingsContext';
 import { apiRequest, authenticatedRequest } from '@/lib/queryClient';
 import { cn } from '@/lib/utils';
 import type { Booking, Service, StaffMember } from '@shared/schema';
+import { QuickBookModal } from './QuickBookModal';
 
 const bookingFormSchema = z.object({
   customerName: z.string().min(2, 'Name is required'),
@@ -75,15 +83,18 @@ const bookingFormSchema = z.object({
     .email('Invalid email')
     .optional()
     .or(z.literal('')),
-  customerAddress: z.string().min(3, 'Address is required'),
+  customerAddress: z.string().optional().or(z.literal('')),
   bookingDate: z.string().min(1),
   startTime: z.string().min(1),
   endTime: z.string().min(1),
   staffMemberId: z.number().nullable().optional(),
-  serviceId: z.number({ invalid_type_error: 'Select a service' }).int().positive(),
-  quantity: z.number().int().min(1).default(1),
+  services: z.array(
+    z.object({
+      serviceId: z.number({ invalid_type_error: 'Select a service' }).int().positive(),
+      quantity: z.number().int().min(1).default(1),
+    })
+  ).min(1),
   customerNotes: z.string().optional(),
-  endTimeOverride: z.boolean().default(false),
 });
 
 type BookingFormValues = z.infer<typeof bookingFormSchema>;
@@ -125,11 +136,14 @@ const VIEW_LABELS: Record<string, string> = {
   month: 'Month',
   week: 'Week',
   day: 'Day',
+  'by-staff': 'By Staff',
 };
 
 const STATUSES = ['pending', 'confirmed', 'completed', 'cancelled'];
 const DEFAULT_CALENDAR_VIEW = Views.WEEK;
 const DEFAULT_SCROLL_TIME = new Date(1970, 0, 1, 8, 0, 0);
+
+const DnDCalendar = withDragAndDrop(Calendar);
 
 interface CalendarEvent {
   bookingId: number;
@@ -183,6 +197,8 @@ function CalendarToolbar({
   view,
   views,
   filterControl,
+  isByStaff,
+  onByStaff,
 }: {
   label: string;
   onNavigate: (action: 'PREV' | 'NEXT' | 'TODAY') => void;
@@ -190,6 +206,8 @@ function CalendarToolbar({
   view: string;
   views: string[];
   filterControl?: ReactNode;
+  isByStaff?: boolean;
+  onByStaff?: (active: boolean) => void;
 }) {
   return (
     <div className="appointments-calendar-toolbar">
@@ -238,6 +256,21 @@ function CalendarToolbar({
               {VIEW_LABELS[calendarView] ?? calendarView}
             </button>
           ))}
+          {onByStaff && (
+            <button
+              type="button"
+              onClick={() => onByStaff(!isByStaff)}
+              className={cn(
+                'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
+                isByStaff
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+              )}
+            >
+              <Users2 className="h-3.5 w-3.5" />
+              By Staff
+            </button>
+          )}
         </div>
         <Button
           type="button"
@@ -362,6 +395,7 @@ export function AppointmentsCalendarSection({
   const [, setLocation] = useLocation();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState<string>(DEFAULT_CALENDAR_VIEW);
+  const [isByStaff, setIsByStaff] = useState(false);
   const [hiddenStaff, setHiddenStaff] = useState<Set<number>>(new Set());
   const [hiddenStatuses, setHiddenStatuses] = useState<Set<string>>(new Set());
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
@@ -369,6 +403,7 @@ export function AppointmentsCalendarSection({
     date: string;
     startTime: string;
     staffMemberId?: number;
+    isQuickBook?: boolean;
   } | null>(null);
   const [gcalBusy, setGcalBusy] = useState<CalendarEvent[]>([]);
 
@@ -403,6 +438,7 @@ export function AppointmentsCalendarSection({
       if (!res.ok) return [];
       return res.json();
     },
+    refetchInterval: 30_000,  // D-14: 30-second polling for receptionist workflow
   });
 
   const { data: staffList = [] } = useQuery<StaffMember[]>({
@@ -530,6 +566,11 @@ export function AppointmentsCalendarSection({
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { settings: companySettings } = useCompanySettings();
+  const showAddressField =
+    companySettings?.serviceDeliveryModel == null ||
+    companySettings.serviceDeliveryModel === 'at-customer' ||
+    companySettings.serviceDeliveryModel === 'both';
 
   // Active services for the service dropdown
   const { data: services = [] } = useQuery<Service[]>({
@@ -551,16 +592,23 @@ export function AppointmentsCalendarSection({
       startTime: '',
       endTime: '',
       staffMemberId: null,
-      serviceId: undefined as unknown as number,
-      quantity: 1,
+      services: [{ serviceId: undefined as unknown as number, quantity: 1 }],
       customerNotes: '',
-      endTimeOverride: false,
     },
   });
+
+  const { fields: serviceFields, append: appendService, remove: removeService } = useFieldArray({
+    control: form.control,
+    name: 'services',
+  });
+
+  const [userEditedEndTime, setUserEditedEndTime] = useState(false);
+  const [openServiceIdx, setOpenServiceIdx] = useState<number | null>(null);
 
   // Reset form whenever a new slot is clicked
   useEffect(() => {
     if (newBookingSlot) {
+      setUserEditedEndTime(false);
       form.reset({
         customerName: '',
         customerPhone: '',
@@ -570,18 +618,21 @@ export function AppointmentsCalendarSection({
         startTime: newBookingSlot.startTime,
         endTime: '',
         staffMemberId: newBookingSlot.staffMemberId ?? null,
-        serviceId: undefined as unknown as number,
-        quantity: 1,
+        services: [{ serviceId: undefined as unknown as number, quantity: 1 }],
         customerNotes: '',
-        endTimeOverride: false,
       });
     }
   }, [newBookingSlot]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const watchedServiceId = form.watch('serviceId');
-  const watchedQuantity = form.watch('quantity');
+  const watchedServices = form.watch('services');
   const watchedStartTime = form.watch('startTime');
-  const watchedEndTimeOverride = form.watch('endTimeOverride');
+
+  // Clear customerAddress when field is hidden (D-09)
+  useEffect(() => {
+    if (!showAddressField) {
+      form.setValue('customerAddress', '', { shouldValidate: false });
+    }
+  }, [showAddressField]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Customer type-ahead search (Plan 14-02)
   type ContactSuggestion = {
@@ -609,35 +660,32 @@ export function AppointmentsCalendarSection({
     staleTime: 30_000,
   });
 
-  const selectedService = useMemo(
-    () => selectableServices.find((s) => s.id === watchedServiceId),
-    [selectableServices, watchedServiceId],
-  );
-
   const computedEndTime = useMemo(() => {
-    if (!selectedService || !watchedStartTime) return '';
-    return addMinutesToHHMM(
-      watchedStartTime,
-      selectedService.durationMinutes * (watchedQuantity || 1),
-    );
-  }, [selectedService, watchedStartTime, watchedQuantity]);
-
-  const computedTotalDurationMinutes = useMemo(() => {
-    if (!selectedService) return 0;
-    return selectedService.durationMinutes * (watchedQuantity || 1);
-  }, [selectedService, watchedQuantity]);
+    if (!watchedStartTime || !watchedServices?.length) return '';
+    const totalMinutes = watchedServices.reduce((sum, row) => {
+      const svc = selectableServices.find((s) => s.id === row.serviceId);
+      return sum + (svc ? svc.durationMinutes * (row.quantity || 1) : 0);
+    }, 0);
+    if (totalMinutes === 0) return '';
+    return addMinutesToHHMM(watchedStartTime, totalMinutes);
+  }, [watchedServices, watchedStartTime, selectableServices]);
 
   const estimatedTotal = useMemo(() => {
-    if (!selectedService) return null;
-    return (Number(selectedService.price) * (watchedQuantity || 1)).toFixed(2);
-  }, [selectedService, watchedQuantity]);
+    const total = watchedServices?.reduce((sum, row) => {
+      const svc = selectableServices.find((s) => s.id === row.serviceId);
+      return sum + (svc ? Number(svc.price) * (row.quantity || 1) : 0);
+    }, 0) ?? 0;
+    return total > 0 ? total.toFixed(2) : null;
+  }, [watchedServices, selectableServices]);
 
-  // Sync computed endTime into the form when override is OFF
+  // Sync computed endTime into the form when admin hasn't manually changed it (D-06)
+  // Deps intentionally exclude userEditedEndTime — we only want this to fire when
+  // the computed value changes, not when the user's edited flag changes (avoids race overwrite)
   useEffect(() => {
-    if (!watchedEndTimeOverride && computedEndTime) {
+    if (!userEditedEndTime && computedEndTime) {
       form.setValue('endTime', computedEndTime, { shouldValidate: false });
     }
-  }, [computedEndTime, watchedEndTimeOverride]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [computedEndTime]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Inline server error (409 conflict, non-Zod 400 messages) — D-16
   const [serverError, setServerError] = useState<string | null>(null);
@@ -696,6 +744,22 @@ export function AppointmentsCalendarSection({
     },
   });
 
+  const reassignMutation = useMutation({
+    mutationFn: async (payload: {
+      id: number;
+      startTime: string;
+      endTime: string;
+      staffMemberId?: number | null;
+    }) => {
+      const { id, ...updates } = payload;
+      const res = await apiRequest('PUT', `/api/bookings/${id}`, updates);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/bookings'] });
+    },
+  });
+
   // Clear serverError when the user starts editing again
   useEffect(() => {
     if (!serverError) return;
@@ -706,23 +770,18 @@ export function AppointmentsCalendarSection({
   const onSubmit = (values: BookingFormValues) => {
     setServerError(null);
 
-    if (!selectedService) {
-      form.setError('serviceId', { type: 'manual', message: 'Select a service' });
-      return;
-    }
+    // Derive totalDurationMinutes from startTime/endTime difference (D-07: no endTimeOverride)
+    const [sh, sm] = values.startTime.split(':').map(Number);
+    const [eh, em] = values.endTime.split(':').map(Number);
+    const totalDurationMinutes = Math.max(0, (eh * 60 + em) - (sh * 60 + sm));
 
-    // Compute totalDurationMinutes:
-    //   - When override is OFF: service.durationMinutes × quantity (already in computedTotalDurationMinutes)
-    //   - When override is ON: derive from startTime/endTime difference
-    let totalDurationMinutes = computedTotalDurationMinutes;
-    if (values.endTimeOverride && values.startTime && values.endTime) {
-      const [sh, sm] = values.startTime.split(':').map(Number);
-      const [eh, em] = values.endTime.split(':').map(Number);
-      const diff = (eh * 60 + em) - (sh * 60 + sm);
-      if (diff > 0) totalDurationMinutes = diff;
-    }
-
-    const totalPrice = (Number(selectedService.price) * (values.quantity || 1)).toFixed(2);
+    // Compute totalPrice as sum across all service rows (D-04)
+    const totalPrice = values.services
+      .reduce((sum, row) => {
+        const svc = selectableServices.find((s) => s.id === row.serviceId);
+        return sum + (svc ? Number(svc.price) * (row.quantity || 1) : 0);
+      }, 0)
+      .toFixed(2);
 
     const payload = {
       customerName: values.customerName,
@@ -734,17 +793,14 @@ export function AppointmentsCalendarSection({
       endTime: values.endTime,
       totalDurationMinutes,
       totalPrice,
-      paymentMethod: 'site' as const, // D-11
+      paymentMethod: 'site' as const,
       staffMemberId: values.staffMemberId ?? null,
-      cartItems: [
-        {
-          serviceId: values.serviceId,
-          quantity: values.quantity || 1,
-          // D-02: notes attach to the cart item (server stores in bookingItems.customerNotes)
-          ...(values.customerNotes ? { customerNotes: values.customerNotes } : {}),
-        },
-      ],
-      // D-18: visitorId intentionally omitted
+      // customerNotes attaches to first cart item only (consistent with prior D-02 pattern)
+      cartItems: values.services.map((row, idx) => ({
+        serviceId: row.serviceId,
+        quantity: row.quantity || 1,
+        ...(idx === 0 && values.customerNotes ? { customerNotes: values.customerNotes } : {}),
+      })),
     };
 
     createBookingMutation.mutate(payload);
@@ -756,13 +812,78 @@ export function AppointmentsCalendarSection({
     if (booking) setSelectedBooking(booking);
   };
 
-  const handleSelectSlot = ({ start }: { start: Date }) => {
+  const handleSelectSlot = ({ start, resourceId }: { start: Date; resourceId?: string | number }) => {
     const visibleStaff = scopedStaffList.filter((staff) => !hiddenStaff.has(staff.id));
+    const resourceIdNum = typeof resourceId === 'string' ? Number(resourceId) : resourceId;
+    const prefilledStaffId =
+      resourceIdNum ??  // D-04: By Staff column click always pre-fills from column
+      (visibleStaff.length === 1 ? visibleStaff[0].id : undefined);  // D-13 fallback (Phase 14)
+
     setNewBookingSlot({
       date: format(start, 'yyyy-MM-dd'),
       startTime: format(start, 'HH:mm'),
-      staffMemberId: visibleStaff.length === 1 ? visibleStaff[0].id : undefined,
+      staffMemberId: prefilledStaffId,
+      isQuickBook: resourceId !== undefined,  // true = Quick Book modal (D-05); false = full form
     });
+  };
+
+  const handleEventDrop = ({
+    event,
+    start,
+    end,
+    resourceId,
+  }: {
+    event: CalendarEvent;
+    start: Date;
+    end: Date;
+    resourceId?: number;
+  }) => {
+    if (event.isGcalBusy) return;  // D-13: gcal blocks are not draggable
+
+    const originalStart = event.start;
+    const originalEnd = event.end;
+    const originalStaffId = event.staffMemberId;
+
+    const newStartTime = format(start, 'HH:mm');
+    const newEndTime = format(end, 'HH:mm');
+    // D-11: resourceId is the target staff column's id; fall back to original if not in By Staff view
+    const newStaffId = resourceId !== undefined ? resourceId : event.staffMemberId;
+
+    const staffName =
+      scopedStaffList.find((s) => s.id === newStaffId)?.firstName ?? 'Staff';
+
+    reassignMutation.mutate(
+      {
+        id: event.bookingId,
+        startTime: newStartTime,
+        endTime: newEndTime,
+        staffMemberId: newStaffId,
+      },
+      {
+        onSuccess: () => {
+          // D-12: undo toast with 5-second window
+          toast({
+            description: `${staffName} — ${format(start, 'h:mm a')} ✓`,
+            action: (
+              <ToastAction
+                altText="Undo"
+                onClick={() => {
+                  reassignMutation.mutate({
+                    id: event.bookingId,
+                    startTime: format(originalStart, 'HH:mm'),
+                    endTime: format(originalEnd, 'HH:mm'),
+                    staffMemberId: originalStaffId,
+                  });
+                }}
+              >
+                Undo
+              </ToastAction>
+            ),
+            duration: 5000,
+          });
+        },
+      },
+    );
   };
 
   const eventStyleGetter = (event: CalendarEvent) => {
@@ -811,6 +932,17 @@ export function AppointmentsCalendarSection({
   useEffect(() => {
     setCurrentView(DEFAULT_CALENDAR_VIEW);
   }, []);
+
+  const visibleStaffForResources = scopedStaffList.filter((s) => !hiddenStaff.has(s.id));
+
+  const resourceProps = isByStaff
+    ? {
+        resources: visibleStaffForResources,
+        resourceIdAccessor: (resource: any) => resource.id,
+        resourceTitleAccessor: (resource: any) => resource.firstName,
+        resourceAccessor: (event: any) => event.staffMemberId,
+      }
+    : {};
 
   const filterPopover = (
     <Popover>
@@ -959,8 +1091,14 @@ export function AppointmentsCalendarSection({
       </div>
 
       <div className="appointments-calendar-shell">
-        <div className="appointments-calendar-shell__board" style={{ height: 720 }}>
-          <Calendar
+        <div
+          className="appointments-calendar-shell__board"
+          style={{ height: 720, overflowX: isByStaff ? 'auto' : undefined }}
+        >
+          <DnDCalendar
+            {...resourceProps}
+            draggableAccessor={((event: CalendarEvent) => !event.isGcalBusy) as any}
+            onEventDrop={handleEventDrop as any}
             className="appointments-calendar"
             localizer={localizer}
             events={allEvents}
@@ -969,18 +1107,29 @@ export function AppointmentsCalendarSection({
             date={currentDate}
             view={currentView as any}
             onNavigate={setCurrentDate}
-            onView={setCurrentView}
+            onView={(v: string) => {
+              setCurrentView(v);
+              if (v !== 'day') setIsByStaff(false);
+            }}
             views={[Views.MONTH, Views.WEEK, Views.DAY]}
             scrollToTime={DEFAULT_SCROLL_TIME}
-            eventPropGetter={eventStyleGetter}
+            eventPropGetter={eventStyleGetter as any}
             components={{
               event: EventComponent as any,
               toolbar: ((toolbarProps: any) => (
-                <CalendarToolbar {...toolbarProps} filterControl={filterPopover} />
+                <CalendarToolbar
+                  {...toolbarProps}
+                  isByStaff={isByStaff}
+                  onByStaff={(active: boolean) => {
+                    setIsByStaff(active);
+                    if (active) setCurrentView(Views.DAY);
+                  }}
+                  filterControl={filterPopover}
+                />
               )) as any,
             }}
-            onSelectEvent={handleSelectEvent}
-            onSelectSlot={handleSelectSlot}
+            onSelectEvent={handleSelectEvent as any}
+            onSelectSlot={handleSelectSlot as any}
             selectable
             style={{ height: '100%' }}
             popup
@@ -1071,8 +1220,28 @@ export function AppointmentsCalendarSection({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!newBookingSlot} onOpenChange={() => setNewBookingSlot(null)}>
-        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      {/* Quick Book modal — By Staff column slot click (D-05) */}
+      {newBookingSlot?.isQuickBook && (
+        <QuickBookModal
+          open={newBookingSlot.isQuickBook}
+          slot={newBookingSlot}
+          staffList={scopedStaffList}
+          onClose={() => setNewBookingSlot(null)}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['/api/bookings'] });
+            toast({ title: 'Booking created' });
+          }}
+          getAccessToken={getAccessToken}
+          onOpenFullForm={() => {
+            // Switch to full form: keep slot data, set isQuickBook=false
+            setNewBookingSlot((prev) => prev ? { ...prev, isQuickBook: false } : null);
+          }}
+        />
+      )}
+
+      {/* Full Create Booking modal — regular slot click or "Full form →" from Quick Book */}
+      <Dialog open={!!newBookingSlot && !newBookingSlot.isQuickBook} onOpenChange={() => setNewBookingSlot(null)}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create Booking</DialogTitle>
           </DialogHeader>
@@ -1127,83 +1296,86 @@ export function AppointmentsCalendarSection({
                   />
                 )}
 
-                <FormField
-                  control={form.control}
-                  name="customerName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Customer name</FormLabel>
-                      <Popover
-                        open={contactSearchOpen && debouncedContactSearch.trim().length >= 2}
-                        onOpenChange={setContactSearchOpen}
-                      >
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Input
-                              placeholder="Type to search or enter new"
-                              {...field}
-                              onFocus={() => {
-                                if (field.value && field.value.trim().length >= 2) setContactSearchOpen(true);
-                              }}
-                              onChange={(e) => {
-                                field.onChange(e);
-                                setContactSearchOpen(e.target.value.trim().length >= 2);
-                              }}
-                              autoComplete="off"
-                            />
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent
-                          align="start"
-                          className="w-[--radix-popover-trigger-width] p-0"
-                          onOpenAutoFocus={(e) => e.preventDefault()}
+                {/* Customer name + phone on one row (D-11) */}
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="customerName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Customer name</FormLabel>
+                        <Popover
+                          open={contactSearchOpen && debouncedContactSearch.trim().length >= 2}
+                          onOpenChange={setContactSearchOpen}
                         >
-                          <Command shouldFilter={false}>
-                            <CommandList>
-                              {contactsLoading ? (
-                                <div className="p-3 text-sm text-muted-foreground">Searching…</div>
-                              ) : contactSuggestions.length === 0 ? (
-                                <CommandEmpty>No matches — type a new name to create</CommandEmpty>
-                              ) : (
-                                <CommandGroup heading="Existing customers">
-                                  {contactSuggestions.map((c) => (
-                                    <CommandItem
-                                      key={c.id}
-                                      value={`${c.id}-${c.name}`}
-                                      onSelect={() => {
-                                        form.setValue('customerName', c.name, { shouldValidate: true });
-                                        form.setValue('customerPhone', c.phone ?? '', { shouldValidate: true });
-                                        form.setValue('customerEmail', c.email ?? '', { shouldValidate: true });
-                                        form.setValue('customerAddress', c.address ?? '', { shouldValidate: true });
-                                        setContactSearchOpen(false);
-                                      }}
-                                      className="flex flex-col items-start gap-0.5"
-                                    >
-                                      <span className="font-medium">{c.name}</span>
-                                      <span className="text-xs text-muted-foreground">
-                                        {c.phone ?? 'no phone'}
-                                        {c.email ? ` · ${c.email}` : ''}
-                                      </span>
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              )}
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Input
+                                placeholder="Type to search or enter new"
+                                {...field}
+                                onFocus={() => {
+                                  if (field.value && field.value.trim().length >= 2) setContactSearchOpen(true);
+                                }}
+                                onChange={(e) => {
+                                  field.onChange(e);
+                                  setContactSearchOpen(e.target.value.trim().length >= 2);
+                                }}
+                                autoComplete="off"
+                              />
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            align="start"
+                            className="w-[--radix-popover-trigger-width] p-0"
+                            onOpenAutoFocus={(e) => e.preventDefault()}
+                          >
+                            <Command shouldFilter={false}>
+                              <CommandList>
+                                {contactsLoading ? (
+                                  <div className="p-3 text-sm text-muted-foreground">Searching…</div>
+                                ) : contactSuggestions.length === 0 ? (
+                                  <CommandEmpty>No matches — type a new name to create</CommandEmpty>
+                                ) : (
+                                  <CommandGroup heading="Existing customers">
+                                    {contactSuggestions.map((c) => (
+                                      <CommandItem
+                                        key={c.id}
+                                        value={`${c.id}-${c.name}`}
+                                        onSelect={() => {
+                                          form.setValue('customerName', c.name, { shouldValidate: true });
+                                          form.setValue('customerPhone', c.phone ?? '', { shouldValidate: true });
+                                          form.setValue('customerEmail', c.email ?? '', { shouldValidate: true });
+                                          form.setValue('customerAddress', c.address ?? '', { shouldValidate: true });
+                                          setContactSearchOpen(false);
+                                        }}
+                                        className="flex flex-col items-start gap-0.5"
+                                      >
+                                        <span className="font-medium">{c.name}</span>
+                                        <span className="text-xs text-muted-foreground">
+                                          {c.phone ?? 'no phone'}
+                                          {c.email ? ` · ${c.email}` : ''}
+                                        </span>
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                )}
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField control={form.control} name="customerPhone" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone</FormLabel>
+                      <FormControl><Input {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
-                  )}
-                />
-
-                <FormField control={form.control} name="customerPhone" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone</FormLabel>
-                    <FormControl><Input {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
+                  )} />
+                </div>
 
                 <FormField control={form.control} name="customerEmail" render={({ field }) => (
                   <FormItem>
@@ -1213,75 +1385,137 @@ export function AppointmentsCalendarSection({
                   </FormItem>
                 )} />
 
-                <FormField control={form.control} name="customerAddress" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Address</FormLabel>
-                    <FormControl><Input {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
+                {showAddressField && (
+                  <FormField control={form.control} name="customerAddress" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Address</FormLabel>
+                      <FormControl><Input {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                )}
 
-                <FormField control={form.control} name="serviceId" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Service</FormLabel>
-                    <Select
-                      onValueChange={(v) => field.onChange(Number(v))}
-                      value={field.value ? String(field.value) : undefined}
-                    >
-                      <FormControl>
-                        <SelectTrigger><SelectValue placeholder="Select a service" /></SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {selectableServices.map((s) => (
-                          <SelectItem key={s.id} value={String(s.id)}>
-                            {s.name} — ${Number(s.price).toFixed(2)} ({s.durationMinutes}m)
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )} />
+                {/* Service rows (CAL-03) */}
+                <div className="space-y-2">
+                  <FormLabel>Services</FormLabel>
+                  {serviceFields.map((field, index) => (
+                    <div key={field.id} className="flex items-end gap-2">
+                      <FormField
+                        control={form.control}
+                        name={`services.${index}.serviceId`}
+                        render={({ field: f }) => (
+                          <FormItem className="flex-1">
+                            <Popover
+                              open={openServiceIdx === index}
+                              onOpenChange={(o) => setOpenServiceIdx(o ? index : null)}
+                            >
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    className={cn(
+                                      'w-full justify-between font-normal',
+                                      !f.value && 'text-muted-foreground'
+                                    )}
+                                  >
+                                    {f.value
+                                      ? selectableServices.find((s) => s.id === f.value)?.name ?? 'Select a service'
+                                      : 'Select a service'}
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-[300px] p-0" align="start">
+                                <Command>
+                                  <CommandInput placeholder="Search service..." />
+                                  <CommandList>
+                                    <CommandEmpty>No service found.</CommandEmpty>
+                                    <CommandGroup>
+                                      {selectableServices.map((s) => (
+                                        <CommandItem
+                                          key={s.id}
+                                          value={s.name}
+                                          onSelect={() => {
+                                            f.onChange(s.id);
+                                            setOpenServiceIdx(null);
+                                          }}
+                                        >
+                                          <Check
+                                            className={cn(
+                                              'mr-2 h-4 w-4',
+                                              f.value === s.id ? 'opacity-100' : 'opacity-0'
+                                            )}
+                                          />
+                                          {s.name} — ${Number(s.price).toFixed(2)} ({s.durationMinutes}m)
+                                        </CommandItem>
+                                      ))}
+                                    </CommandGroup>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={`services.${index}.quantity`}
+                        render={({ field: f }) => (
+                          <FormItem className="w-20">
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min={1}
+                                {...f}
+                                onChange={(e) => f.onChange(Number(e.target.value) || 1)}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        disabled={serviceFields.length === 1}
+                        onClick={() => removeService(index)}
+                        className="mb-0.5 shrink-0"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full border-dashed"
+                    onClick={() => appendService({ serviceId: undefined as unknown as number, quantity: 1 })}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add service
+                  </Button>
+                </div>
 
-                <FormField control={form.control} name="quantity" render={({ field }) => (
+                {/* End time: always-editable, auto-fills from computed duration sum (CAL-04) */}
+                <FormField control={form.control} name="endTime" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Quantity</FormLabel>
+                    <FormLabel>End time</FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        min={1}
+                        type="time"
                         {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value) || 1)}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          setUserEditedEndTime(true);
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
-
-                {/* End time: computed read-only by default, editable when override is on */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm">End time</Label>
-                    <FormField control={form.control} name="endTimeOverride" render={({ field }) => (
-                      <div className="flex items-center gap-2 text-xs">
-                        <span className="text-muted-foreground">Adjust end time</span>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} />
-                      </div>
-                    )} />
-                  </div>
-                  {watchedEndTimeOverride ? (
-                    <FormField control={form.control} name="endTime" render={({ field }) => (
-                      <FormItem>
-                        <FormControl><Input type="time" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                  ) : (
-                    <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm font-medium">
-                      {computedEndTime || <span className="text-muted-foreground">Select a service to compute end time</span>}
-                    </div>
-                  )}
-                </div>
 
                 {/* Estimated total */}
                 <div className="flex justify-between rounded-md bg-muted/30 px-3 py-2 text-sm">

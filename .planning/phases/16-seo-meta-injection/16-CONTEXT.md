@@ -1,4 +1,4 @@
-# Phase 16: SEO Meta Injection — Context
+# Phase 16: SEO Meta Injection - Context
 
 **Gathered:** 2026-04-29
 **Status:** Ready for planning
@@ -6,71 +6,80 @@
 <domain>
 ## Phase Boundary
 
-Express middleware reads `companySettings` at request time and rewrites `<title>`, canonical URL, Open Graph tags, Twitter Card tags, and a schema.org JSON-LD `<script>` block in the HTML response — replacing the hardcoded "Skleanings" meta currently embedded in `client/index.html`.
+Server-side injection of tenant-specific SEO meta tags into the HTML response so search-engine crawlers and social platforms see correct values without depending on client-side React hydration.
 
-**In scope:**
-- New SEO middleware (or transform function) that runs in BOTH dev (`server/vite.ts`) and prod (`server/static.ts`) paths
-- Single tenant-derived meta set applied globally to all routes
-- `client/index.html` rewritten to use placeholder tokens (e.g., `{{seoTitle}}`)
-- In-memory cache (60s TTL) of the resolved meta payload to avoid per-request DB hits
-- JSON-LD sourced from `companySettings.schemaLocalBusiness` (jsonb), with `name` auto-filled from `companyName` when the jsonb is empty
-- Zero `"Skleanings"` matches in `client/index.html` (SEO-05)
+Specifically: every HTML response from the app emits `<title>`, `<meta name="description">`, `<link rel="canonical">`, full Open Graph set (og:title, og:description, og:image, og:url, og:type, og:site_name), Twitter Card set (twitter:card, twitter:title, twitter:description, twitter:image), and a `<script type="application/ld+json">` LocalBusiness block — all populated from `companySettings` at request time.
 
-**Out of scope (other phases):**
-- Per-route page titles (e.g., "Services | Company") — deferred, not in v2.0 milestone
-- Favicon dynamic serving — Phase 17
-- Admin UI for editing SEO fields — already exists for `seoTitle`, `seoDescription`, `ogImage`; Phase 17 adds favicon + legal
-- Sitemap generation, robots.txt customization, hreflang per-tenant
-- Per-page Open Graph image overrides
+Out of scope: route-aware per-page meta (e.g., distinct `<title>` per blog post or service slug). Site-wide meta from `companySettings` is emitted for every URL; per-page dynamic updates remain the responsibility of the existing client-side `useSEO` hook + page components like `BlogPost.tsx`. Anything that adds new admin UI (favicon upload, legal pages, service-delivery selector) belongs to Phase 17.
 
 </domain>
 
 <decisions>
 ## Implementation Decisions
 
-### Meta Coverage Model
-- **D-01:** Single tenant-derived meta set applied to ALL routes — no per-route customization in this phase. Every route serves the same `<title>`, og:*, twitter:*, JSON-LD derived from `companySettings`. Per-route titles ("Services | Company") are deferred to a future phase.
-- **D-02:** All 6 success-criterion meta groups injected: `<title>`, canonical, og:* (title/description/image/site_name/url/type/locale), twitter:* (card/title/description/image), and JSON-LD LocalBusiness `<script>` block.
+### Production Rendering Pipeline
+- **D-01:** HTML requests are rerouted through Express on Vercel — `vercel.json` rewrite for non-asset, non-API GETs goes to `/api/index.js` (the Express handler) instead of the static `/index.html`. The Express route reads `dist/public/index.html` from disk, runs the meta-injection transformer, and returns the rendered HTML. Static assets under `/assets/*` continue to be served directly by Vercel CDN with long-cache headers.
+- **D-02:** Same injection function is mounted in two places: (a) `server/vite.ts` dev pipeline, between `vite.transformIndexHtml` and the response, and (b) the new prod Express HTML route. One injector, two mount points — dev parity guaranteed.
+- **D-03:** `companySettings` singleton is cached in memory with a short TTL (30–60s) and explicit invalidation when admin saves company settings. Each HTML request re-renders the template (cheap string replacement on cached values) — no rendered-HTML caching layer.
 
-### Token Replacement Strategy
-- **D-03:** `client/index.html` uses placeholder tokens with `{{handlebars-style}}` syntax — example: `<title>{{seoTitle}}</title>`, `<meta property="og:title" content="{{ogTitle}}">`. The middleware reads the file template and runs simple `String.replaceAll` per token.
-- **D-04:** No new dependency added (no cheerio, jsdom, handlebars, eta). String-replace is fast enough for the few-dozen tokens involved and matches the project's lean-stack philosophy.
-- **D-05:** Token list (canonical names) is centralized in a single TypeScript source file (e.g., `server/lib/seo-meta.ts`) so the dev path (`server/vite.ts`), prod path (`server/static.ts`), and the static `client/index.html` template stay in sync.
+### Template Strategy (SEO-05)
+- **D-04:** `client/index.html` is retemplated to use explicit token markers wherever brand-specific content currently lives. Token list (subject to refinement during planning):
+  - `{{SEO_TITLE}}` — `<title>` and twitter:title and og:title
+  - `{{SEO_DESCRIPTION}}` — `<meta name="description">`, og:description, twitter:description
+  - `{{CANONICAL_URL}}` — `<link rel="canonical">`, og:url, hreflang href
+  - `{{OG_IMAGE}}` — og:image, twitter:image
+  - `{{OG_IMAGE_ALT}}` — og:image:alt, twitter:image:alt
+  - `{{OG_TYPE}}`, `{{OG_SITE_NAME}}`, `{{OG_LOCALE}}`
+  - `{{TWITTER_CARD}}`, `{{TWITTER_SITE}}`, `{{TWITTER_CREATOR}}`
+  - `{{ROBOTS}}`, `{{COMPANY_NAME_ALT}}` (favicon alt fallbacks)
+  - `{{JSON_LD}}` — full JSON string (no surrounding quotes; injected as raw schema body)
+- **D-05:** The middleware does naive global string replacement (`String.prototype.replaceAll`) on each token. No HTML parsing — keeps the cost negligible and audit easy (`grep '{{' client/index.html` shows every injection point).
+- **D-06:** All replacement values are HTML-attribute-escaped before substitution (`&`, `<`, `>`, `"`, `'`) to prevent broken markup or XSS from admin-entered values. JSON-LD content is JSON-stringified (so embedded `</script>` is escaped to `<\/script>`), then injected literally.
 
-### Caching Strategy
-- **D-06:** In-memory cache of the resolved meta payload with **60-second TTL**. First request after expiry hits the DB; subsequent requests hit cache. No invalidation on `POST /api/company-settings` — admin accepts up to 60s lag for SEO meta changes.
-- **D-07:** Cache key is the rendered meta object (one row, one tenant) — single global key, no per-tenant or per-route partitioning. Cache stored as a module-level variable in `server/lib/seo-meta.ts`.
-- **D-08:** Cache is populated lazily on first HTML request, NOT pre-warmed at server startup. If `companySettings` row is missing or all SEO fields empty, the cache stores the empty/default payload and tokens resolve to empty strings.
+### Empty / Day-One Tenant Fallbacks
+- **D-07:** When `companySettings` row is missing or a field is empty, the injector emits **generic industry fallbacks**, not empty strings:
+  - Title fallback: `companySettings.industry` value if present (e.g., `"Cleaning Services"`), else a literal generic like `"Professional Services"` (final wording decided in planning).
+  - Description fallback: short generic line tied to industry.
+  - og:image fallback: omitted entirely (do not emit `<meta property="og:image">` with empty content — crawlers prefer absent over empty).
+  - Canonical fallback: `req.protocol + req.get('host') + req.originalUrl` if `seoCanonicalUrl` is empty.
+  - JSON-LD fallback: a valid minimal LocalBusiness object with at least `@context`, `@type`, and `name` derived from `companyName || industry || "Local Business"`.
+- **D-08:** Day-one site must remain indexable and presentable on social shares — never render `<title></title>` or empty meta tags.
 
 ### JSON-LD Source
-- **D-09:** Read `companySettings.schemaLocalBusiness` (jsonb) directly and inject as the JSON-LD body — admin owns the entire structured-data object.
-- **D-10:** When `schemaLocalBusiness` is empty `{}` or missing `name`, auto-fill `name` from `companySettings.companyName`. This guarantees SEO-04 ("LocalBusiness schema whose `name` matches `companySettings.companyName`") is satisfied even when admin hasn't edited the jsonb.
-- **D-11:** When BOTH `schemaLocalBusiness` and `companyName` are empty, omit the entire `<script type="application/ld+json">` block from the response (don't render `{}` or `{"name":""}` — empty schema is worse than no schema).
+- **D-09:** LocalBusiness schema is built by **deep-merging** `companySettings.schemaLocalBusiness` JSONB on top of a base object computed from individual fields. Base shape (mirrors current `client/src/hooks/use-seo.ts:47-69`):
+  ```
+  {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "name":         companySettings.companyName,
+    "description":  companySettings.seoDescription,
+    "@id":          canonicalUrl,
+    "url":          canonicalUrl,
+    "telephone":    companySettings.companyPhone   (only if non-empty),
+    "email":        companySettings.companyEmail   (only if non-empty),
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": companySettings.companyAddress
+    } (only if companyAddress non-empty),
+    "image":        companySettings.ogImage         (only if non-empty)
+  }
+  ```
+  Then `schemaLocalBusiness` JSONB deep-merges on top — admin can override any field or add new ones (priceRange, openingHoursSpecification, sameAs, areaServed, etc.) without code changes.
+- **D-10:** Success criterion #4 (`name matches companyName`) is satisfied by default — admin can override `name` via `schemaLocalBusiness.name` only if they explicitly want to. Document this in admin UI guidance (deferred to Phase 17 if surfaced there).
 
-### Static File Treatment
-- **D-12:** `client/index.html` strips ALL hardcoded "Skleanings" / "https://skleanings.com" / brand-specific meta values. Replaced with token placeholders. Net result: `grep -n "Skleanings" client/index.html` returns ZERO matches (SEO-05).
-- **D-13:** `<link rel="icon">` is left as-is in `client/index.html` for Phase 16 — favicon dynamic serving is Phase 17. The static `/favicon.png` reference remains.
-- **D-14:** Non-brand static elements (Google Fonts preconnect, format-detection meta, `<div id="root">`, initial loader divs) remain unchanged.
+### Coexistence with Client Hook
+- **D-11:** Existing `client/src/hooks/use-seo.ts` continues to run after server-side injection — defense in depth. Server is authoritative for first paint (and is what crawlers see); the client hook keeps tags correct after route changes and after admin saves settings without a full page reload. Tag updates are idempotent (the hook's `setMetaTag`/`setLinkTag` find-or-create logic already handles existing server-injected tags).
+- **D-12:** Phase 16 does NOT modify `use-seo.ts` JSON-LD generation behaviorally, but **must keep it consistent** with the server's merge logic (D-09). If the client hook is left as-is, it will overwrite the server-emitted JSON-LD on hydration — the hook should be updated to use the same merge function (extracted to a shared helper) so both sides agree. Final implementation choice (extract shared util vs. duplicate logic) is left to planning.
 
-### Middleware Wiring
-- **D-15:** SEO transform is implemented as a SHARED function `applySeoMeta(template: string): Promise<string>` in `server/lib/seo-meta.ts` — called by both `server/vite.ts` (dev) and `server/static.ts` (prod) so the transform logic has one source of truth.
-- **D-16:** In dev (`server/vite.ts`), the transform runs AFTER the existing `vite.transformIndexHtml(url, template)` call — Vite's transform handles HMR injection; SEO transform handles brand tokens. Order: read file → vite transform → SEO transform → respond.
-- **D-17:** In prod (`server/static.ts`), the transform runs in a custom Express middleware registered BEFORE `app.use(express.static(distPath))` — this middleware intercepts requests for `/`, `/index.html`, and the catch-all `*`. The middleware reads `dist/public/index.html` once at startup, applies the SEO transform per request (with cache), and responds with the rewritten HTML. Static asset requests (`/assets/*`, images, etc.) bypass the middleware via path-prefix matching.
-- **D-18:** Cache: even though the transformed output could be cached, only the META PAYLOAD (the resolved `companySettings` values) is cached. The string-replace on the template runs per request because the template is small and the operation is microsecond-cheap.
-
-### Empty/Missing Data Handling
-- **D-19:** White-label principle (carried from Phase 15 D-11): when a SEO field is empty, render an empty string in its meta tag rather than a brand-specific fallback. Example: `<meta property="og:title" content="">`. Never inject "Skleanings" as a fallback.
-- **D-20:** Exception for SEO hygiene: if `seoTitle` is empty BUT `companyName` is set, fall back `<title>` to `companyName`. An empty `<title>` is bad for SEO; a tenant name is better than nothing.
+### Page-Aware Meta (Out of Scope)
+- **D-13:** Phase 16 emits site-wide meta only — same `companySettings`-derived tags on every URL. Per-page meta (e.g., `/blog/<slug>` distinct title from blog-post record) is **deferred** to future phase if needed. Existing client-side per-page updates in `BlogPost.tsx` (and any similar page) continue to work as today.
 
 ### Claude's Discretion
-- Exact module file path: `server/lib/seo-meta.ts` (recommended) vs `server/middleware/seo.ts` — planner picks
-- Exact token names (`{{seoTitle}}` vs `{{COMPANY_NAME}}` vs `<!--SEO_TITLE-->`) — planner picks; consistent throughout
-- Cache implementation: simple `{ value, expiresAt }` object vs `Map` vs LRU — planner picks (60s TTL with one key, simplest is fine)
-- Exact set of canonical URL tags (`<link rel="canonical">`, hreflang variants) — researcher to confirm SEO best practice; planner picks reasonable defaults
-- Whether to also strip Twitter image:alt and og:image:alt or leave as static — planner decides
-
-### Folded Todos
-None — backlog has no Phase 16 candidates.
+- Exact token-marker naming (e.g., `{{SEO_TITLE}}` vs `<!--SEO_TITLE-->`) — pick whichever lints cleanly in HTML and Vite during planning.
+- Cache TTL exact value within the 30–60s range.
+- Whether to extract a shared `buildLocalBusinessSchema()` helper used by both server middleware and `use-seo.ts`, or keep two parallel implementations that compute the same thing.
+- Whether `vercel.json` rewrites for HTML go to a dedicated function file (e.g., `api/html.js`) or reuse the existing `api/index.js` Express handler with route-based dispatch.
+- Default industry-fallback strings (the literal text emitted when `companySettings.industry` is also empty).
 
 </decisions>
 
@@ -80,29 +89,29 @@ None — backlog has no Phase 16 candidates.
 **Downstream agents MUST read these before planning or implementing.**
 
 ### Roadmap & Requirements
-- `.planning/ROADMAP.md` Phase 16 (lines 171–181) — goal + 5 success criteria
-- `.planning/REQUIREMENTS.md` SEO-01 through SEO-05 — full requirement text
+- `.planning/ROADMAP.md` § "Phase 16: SEO Meta Injection" — phase goal and 5 success criteria
+- `.planning/REQUIREMENTS.md` lines 189-193 — SEO-01 through SEO-05 acceptance bullets
+- `.planning/PROJECT.md` — project principles, white-label v2.0 vision
 
-### Schema (already in place from Phase 15)
-- `shared/schema.ts:656` — `seoTitle`, `seoDescription`, `ogImage` columns (text, default '')
-- `shared/schema.ts:672` — `schemaLocalBusiness` (jsonb, default `{}`)
-- `shared/schema.ts:633+` — full `companySettings` table; check for any other SEO-relevant columns (canonical URL, og:site_name, twitter handle)
+### Schema (read-only — no schema changes in this phase)
+- `shared/schema.ts:633-690` — `companySettings` table definition; relevant SEO fields: `seoTitle`, `seoDescription`, `seoKeywords`, `seoAuthor`, `seoCanonicalUrl`, `seoRobotsTag`, `ogImage`, `ogType`, `ogSiteName`, `twitterCard`, `twitterSite`, `twitterCreator`, `schemaLocalBusiness` (jsonb), plus `companyName`, `companyEmail`, `companyPhone`, `companyAddress`, `industry`, `logoIcon`
 
-### Files to modify
-- `client/index.html` — replace ALL brand-specific meta with token placeholders (SEO-05)
-- `server/vite.ts` lines 34–57 — dev mode handler; integrate SEO transform between `vite.transformIndexHtml` and the response (D-16)
-- `server/static.ts` lines 10–49 — prod mode static serving; add SEO middleware before `express.static` (D-17)
-- `server/lib/seo-meta.ts` — NEW file; shared `applySeoMeta(template)` function + token list + cache (D-15)
+### Reference Implementation (client-side)
+- `client/src/hooks/use-seo.ts` — complete reference for which tags to emit, how og:image absolute-URL handling works (`startsWith('http')` check), and the LocalBusiness schema shape currently produced. The server injector should mirror this output exactly (modulo D-09 merge with `schemaLocalBusiness`)
 
-### Storage layer
-- `server/storage.ts` `getCompanySettings()` (line ~891) — full-row select confirmed in Phase 15 Risk 1; the SEO middleware can use this directly
+### Server Pipeline (mount points)
+- `server/index.ts:113-118` — production vs. dev branch; `serveStatic` is the prod static handler
+- `server/static.ts` — current static serving; the new HTML middleware must run BEFORE the catch-all `app.use("*", res.sendFile(...))` at line 46
+- `server/vite.ts:34-57` — dev HTML pipeline; `vite.transformIndexHtml(url, template)` is where dev-mode injection chains in
+- `server/routes/company.ts:20-60` — `publicCompanySettingsFallback` shape; informs what an "empty" settings response looks like and is the contract for the `/api/company-settings` endpoint already used by `useSEO`
 
-### Phase 15 carry-forward
-- `.planning/phases/15-schema-foundation-detokenization/15-CONTEXT.md` D-11 — empty over wrong tenant name (white-label principle)
-- `.planning/phases/15-schema-foundation-detokenization/15-VERIFICATION.md` — DETOK-03 left zero "Skleanings" in `client/src/`; Phase 16 extends the assertion to `client/index.html`
+### Static Template (target of SEO-05)
+- `client/index.html` — file that must be retemplated; current hardcoded "Skleanings" strings are at lines 6, 7, 14, 15, 17, 20, 21, 23, 24, 26, 29
 
-### Build constraint (carried from earlier phases)
-- `companySettings` is a singleton row — middleware MUST handle missing row with safe defaults (no crash)
+### Deployment
+- `vercel.json` — current rewrite rules (lines 4-30); D-01 requires updating the `/(.*)` catch-all so HTML routes hit `/api/index.js` instead of `/index.html`. Static `/assets/*` and direct file requests must keep their fast paths
+- `api/index.js` — current Vercel Express handler (build artifact)
+- `script/build.mjs` — server build pipeline; verify the new middleware ships into `dist/`
 
 </canonical_refs>
 
@@ -110,50 +119,48 @@ None — backlog has no Phase 16 candidates.
 ## Existing Code Insights
 
 ### Reusable Assets
-- **`getCompanySettings()` storage method** (server/storage.ts:891) — full-row select; the only DB call the SEO middleware needs.
-- **Existing schema fields ready for SEO:** `seoTitle`, `seoDescription`, `ogImage`, `schemaLocalBusiness` (jsonb), `companyName`. No new columns needed.
-- **`server/vite.ts:34` catch-all** — already reads `client/index.html` from disk per request and runs `vite.transformIndexHtml`. Drop-in extension point for the SEO transform.
-- **`server/static.ts:43,46` static serving** — `express.static(distPath)` + catch-all SPA fallback. The SEO middleware sits in front of both.
+- **`client/src/hooks/use-seo.ts`** — full reference for tag list, og:image absolute-URL normalization, and JSON-LD shape; reuse as the contract for what server emits. Consider extracting `buildLocalBusinessSchema()` and the og:image absolutifier into `shared/` utilities consumed by both client and server.
+- **`server/routes/company.ts` `publicCompanySettingsFallback`** — already defines a "safe defaults" object for missing `companySettings`; align the empty-fallback contract (D-07) with this so client and server have one notion of "empty".
+- **`server/lib/sanitize.ts`** (`sanitizeHomepageContent`) — established pattern for sanitizing admin-entered content before it leaves the server; D-06 attribute escaping should follow the same defensive-by-default style.
+- **In-memory caching pattern** — repo already does light caching elsewhere (e.g., `server/lib/seeds.ts`, `public-data-fallback.ts`). Pick the pattern most consistent with existing code rather than introducing a new cache library.
 
 ### Established Patterns
-- **Lean stack** — no new deps. String-replace + a small in-memory cache fit this philosophy.
-- **Module-level singletons** — server-side modules use module-level variables for caches (e.g., `db.ts` connection). Same pattern for the SEO meta cache.
-- **Async middleware** — Express handlers in this project are async functions returning HTML. The SEO transform is async because the storage call is async; cache hit returns synchronously inside the async fn.
+- **Singleton companySettings**: every consumer treats missing row as "empty defaults", never as an error. The injector follows this pattern.
+- **Storage layer is authoritative**: all DB reads go through `server/storage.ts` (`storage.getCompanySettings()`); the injector calls the storage method, not raw SQL.
+- **Type safety**: `CompanySettings` type from `shared/schema.ts` is the canonical shape. Injector parameters are typed against it.
+- **Express middleware order**: `server/index.ts` registers routes via `registerRoutes` then mounts static / vite. New HTML injection middleware must register BEFORE `serveStatic` (prod) and BEFORE Vite's catch-all (dev).
 
 ### Integration Points
-- **Dev middleware order:** Vite middlewares (HMR, asset serving) → catch-all `app.use("*", ...)` → response. SEO transform fits inside the catch-all.
-- **Prod middleware order:** routes → `/assets` static (cached) → `express.static(distPath)` → catch-all. SEO middleware MUST register BEFORE `express.static` to intercept `/` and `/index.html`. Use a path filter to avoid intercepting other static files.
-- **No service worker / no SSR framework** — this is plain Vite + Express with hand-rolled SPA shell. No Next.js, no Remix, no special meta API.
+- **vercel.json rewrites** (D-01) — the single deployment switch that makes everything else reachable in prod.
+- **`server/static.ts`** — needs a new HTML route registered before the catch-all `app.use("*")`, OR the catch-all itself replaced by the injecting handler.
+- **`server/vite.ts:46-52`** — between `transformIndexHtml` and `res.end(page)`, run the injector on the transformed string.
+- **`storage.getCompanySettings()`** — likely already exists from Phase 15; verify and use as the cache source-of-truth.
+- **Admin save path** for company settings (PATCH/PUT in `server/routes/company.ts`) — emit a cache-invalidation event after successful write so the next HTML request re-fetches.
 
-### Constraints
-- The SEO middleware runs on EVERY HTML request. Performance budget: <5ms per request including cache lookup. String-replace on a ~4KB template is microseconds; DB call is the only slow operation, and it's cached.
-- Vite dev mode adds HMR script tags to the HTML. The SEO transform must NOT strip those — run AFTER Vite's transform per D-16.
-- The static path resolver in `server/static.ts:12-17` tries multiple paths (Vercel, local, build). The SEO middleware must use the SAME resolved path to read the prod template.
+### Constraints from Architecture
+- **No SSR framework** — this is a Vite SPA, not Next.js. The injector is a plain string-template middleware, not React renderToString.
+- **Vercel serverless cold start** — every HTML request hitting Express on a cold instance pays the cold start. The companySettings cache mitigates ongoing cost; first request after deploy will be slower (acceptable trade-off).
+- **No automated test runner** (per `AGENTS.md`/codebase TESTING.md) — verification will rely on `curl` checks per success criteria #1–#5 and admin-side smoke tests.
 
 </code_context>
 
 <specifics>
 ## Specific Ideas
 
-- The existing `client/index.html` has a `<script id="ld-localbusiness" type="application/ld+json">` block (line ~28). Phase 16 replaces its body with the token-resolved JSON-LD object. The script tag itself remains; only its content is templated.
-- The hardcoded `<link rel="canonical" href="https://skleanings.com/">` line MUST be replaced with token. Researcher should verify whether `companySettings` has a `canonicalBaseUrl` column or if we use `req.protocol + req.get('host')` to derive it.
-- `<meta property="og:url">` should reflect the actual URL of the page being served (per OG spec) — researcher confirms whether to derive from `req.originalUrl` or use a static value.
+- The injector's input contract = (req: Request, html: string, settings: CompanySettings | null) → string. Pure function (modulo cache read inside the wrapper) — easy to unit-test mentally and trivially swappable.
+- Token list in D-04 is a starting list, not exhaustive — planning may add tokens for `<meta name="keywords">`, `<meta name="author">`, `<meta name="theme-color">`, etc. as needed by REQUIREMENTS spot-checks.
+- The "no static 'Skleanings'" verification (SEO-05) is a literal grep test: `grep -i "skleanings" client/index.html` must return zero matches. Add this as a one-line check the verifier can run.
 
 </specifics>
 
 <deferred>
 ## Deferred Ideas
 
-- **Per-route page titles** ("Services | Company", "Privacy | Company") — natural extension once tenant meta is wired; defer to v2.x or a polish phase.
-- **Per-page og:image overrides** — admin sets a different OG image per page (e.g., the services hero on `/services`). Defer.
-- **Sitemap auto-generation** — sitemap.xml served from DB.
-- **robots.txt per-tenant** — tenant choice between index/noindex; not in v2.0 scope.
-- **Cache invalidation on admin write** — current 60s TTL is acceptable; instant invalidation can be added later if admins complain about lag.
-- **Hreflang per-tenant** — currently hardcoded `en-US`; multi-locale is a future capability.
-- **Twitter `@handle` field** — not in current `companySettings` schema; not in Phase 16 success criteria.
-
-### Reviewed Todos (not folded)
-None.
+- **Per-page dynamic meta** (route-aware titles, e.g., `/blog/<slug>` distinct og:image from blog post record). Phase 16 goal can be read as requiring this, but the success criteria explicitly only test homepage/site-wide values. Belongs in a future "SEO per-page" phase if customer demand emerges.
+- **Sitemap.xml and robots.txt generation** (already routed via `vercel.json` to `/api/index.js`, but no implementation yet inspected) — separate concern from meta injection. Track for a future SEO-completeness phase.
+- **Multi-locale meta** (hreflang variants for non-en-US tenants) — current `companySettings` has no locale list; would require schema additions. Defer.
+- **Schema.org types other than LocalBusiness** (Organization, Service, Product) — the JSONB column technically supports any `@type`, but Phase 16 commits only to LocalBusiness as success criterion #4 specifies.
+- **Cache-Control headers for HTML responses** — adjacent to D-03 caching but a different layer. Default to `no-cache, must-revalidate` until a real CDN strategy is decided.
 
 </deferred>
 

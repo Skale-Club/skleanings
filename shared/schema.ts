@@ -682,6 +682,7 @@ export const companySettings = pgTable("company_settings", {
   serviceDeliveryModel: text("service_delivery_model").default('at-customer'),
   privacyPolicyContent: text("privacy_policy_content").default(''),
   termsOfServiceContent: text("terms_of_service_content").default(''),
+  faviconUrl: text("favicon_url").default(''),
 });
 
 export const insertCompanySettingsSchema = createInsertSchema(companySettings, {
