@@ -91,6 +91,13 @@ export function ServiceForm({
   const [serviceOptions, setServiceOptions] = useState<ServiceOptionInput[]>([]);
   const [serviceFrequencies, setServiceFrequencies] = useState<ServiceFrequencyInput[]>([]);
 
+  // Booking Rules
+  const [bufferTimeBefore, setBufferTimeBefore] = useState<number>(service?.bufferTimeBefore ?? 0);
+  const [bufferTimeAfter, setBufferTimeAfter] = useState<number>(service?.bufferTimeAfter ?? 0);
+  const [minimumNoticeHours, setMinimumNoticeHours] = useState<number>(service?.minimumNoticeHours ?? 0);
+  const [timeSlotInterval, setTimeSlotInterval] = useState<number | null>(service?.timeSlotInterval ?? null);
+  const [showBookingRules, setShowBookingRules] = useState(false);
+
   useEffect(() => {
     if (service?.id && pricingType === 'base_plus_addons') {
       fetch(`/api/services/${service.id}/options`)
@@ -142,6 +149,7 @@ export function ServiceForm({
       name, description, price: String(price),
       durationMinutes: (durationHours * 60) + durationMinutes,
       categoryId: Number(categoryId), imageUrl, isHidden, addonIds: selectedAddons, pricingType,
+      bufferTimeBefore, bufferTimeAfter, minimumNoticeHours, timeSlotInterval,
     } as any;
 
     if (subcategoryId) data.subcategoryId = Number(subcategoryId);
@@ -320,6 +328,87 @@ export function ServiceForm({
             <Label htmlFor="durationMinutes">Duration (Minutes)</Label>
             <Input id="durationMinutes" type="number" min="0" max="59" value={durationMinutes} onChange={(e) => setDurationMinutes(Number(e.target.value))} data-testid="input-service-minutes" />
           </div>
+        </div>
+
+        {/* Booking Rules section */}
+        <div className="pt-2">
+          <button
+            type="button"
+            onClick={() => setShowBookingRules(v => !v)}
+            className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-colors"
+          >
+            <span className="text-xs text-muted-foreground">{showBookingRules ? '▲' : '▼'}</span>
+            Booking Rules
+            {(bufferTimeBefore > 0 || bufferTimeAfter > 0 || minimumNoticeHours > 0 || timeSlotInterval !== null) && (
+              <span className="ml-1 text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">configured</span>
+            )}
+          </button>
+          {showBookingRules && (
+            <div className="mt-3 space-y-4 p-4 border rounded-lg bg-muted/30">
+              <p className="text-xs text-muted-foreground">
+                Controls how this service blocks calendar time and when customers can book.
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="bufferTimeBefore">Buffer Before (min)</Label>
+                  <Input
+                    id="bufferTimeBefore"
+                    type="number"
+                    min="0"
+                    step="5"
+                    value={bufferTimeBefore}
+                    onChange={(e) => setBufferTimeBefore(Number(e.target.value))}
+                    placeholder="0"
+                  />
+                  <p className="text-[11px] text-muted-foreground">Prep time before service starts</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bufferTimeAfter">Buffer After (min)</Label>
+                  <Input
+                    id="bufferTimeAfter"
+                    type="number"
+                    min="0"
+                    step="5"
+                    value={bufferTimeAfter}
+                    onChange={(e) => setBufferTimeAfter(Number(e.target.value))}
+                    placeholder="0"
+                  />
+                  <p className="text-[11px] text-muted-foreground">Travel time to next client</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="minimumNoticeHours">Minimum Notice (hours)</Label>
+                  <Input
+                    id="minimumNoticeHours"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={minimumNoticeHours}
+                    onChange={(e) => setMinimumNoticeHours(Number(e.target.value))}
+                    placeholder="0"
+                  />
+                  <p className="text-[11px] text-muted-foreground">Hours ahead required for booking</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="timeSlotInterval">Slot Interval (min)</Label>
+                  <Input
+                    id="timeSlotInterval"
+                    type="number"
+                    min="5"
+                    step="5"
+                    value={timeSlotInterval ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setTimeSlotInterval(val === '' ? null : Number(val));
+                    }}
+                    placeholder="Leave blank to use duration"
+                  />
+                  <p className="text-[11px] text-muted-foreground">Blank = use service duration as step</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="space-y-2">
