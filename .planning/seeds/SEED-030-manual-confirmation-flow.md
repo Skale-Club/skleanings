@@ -40,3 +40,10 @@ This seed should be presented during `/gsd:new-milestone` when the milestone sco
 ## Notes
 
 "Disable cancelling" e "Disable rescheduling" são extensões naturais desta seed — quando `requiresConfirmation = true`, o admin pode também querer `cancellationPolicy: 'admin_only'`. Podem ser campos adicionais no mesmo schema change: `cancellationPolicy` e `reschedulePolicy` por serviço.
+
+**Decisão (2026-05-10):** Feature é OPCIONAL por tenant. Default: `requiresConfirmation = false` para todos os serviços ao criar. Tenant ativa serviço a serviço, baseado em política de negócio dele:
+- Tenant que confia em auto-confirmação (volume alto, baixo ticket) deixa todos desligados
+- Tenant que prefere triagem (alto ticket, agendas complexas) ativa em todos
+- Tenant pode ativar só em serviços premium (>$500) e deixar serviços comuns auto-confirmados
+
+A configuração por serviço (e não global do tenant) é deliberada — flexibilidade máxima sem complicar o default.

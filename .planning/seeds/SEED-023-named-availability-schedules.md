@@ -1,6 +1,8 @@
 ---
 id: SEED-023
-status: dormant
+status: cancelled
+cancelled_on: 2026-05-10
+cancellation_reason: Cortado — luxo do Cal.com; 1 schedule por staff resolve 95% dos casos
 planted: 2026-05-10
 planted_during: v3.0 / Phase 20 (calendar-timeline-structure-audit)
 trigger_when: quando um staff precisar alternar entre dois schedules diferentes (ex: verão vs inverno)

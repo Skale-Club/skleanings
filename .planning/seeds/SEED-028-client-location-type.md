@@ -2,47 +2,76 @@
 id: SEED-028
 status: dormant
 planted: 2026-05-10
+last_revised: 2026-05-10
 planted_during: v3.0 / Phase 20 (calendar-timeline-structure-audit)
-trigger_when: quando adicionar serviços que não são no endereço do cliente, ou ao expandir para serviços híbridos
-scope: Small
+trigger_when: ao implementar o catálogo de serviços do Xkedule — residencial e não-residencial precisam coexistir desde o início
+scope: Medium
 ---
 
-# SEED-028: Tipo de localização por serviço (client's address, business address, pickup)
+# SEED-028: Serviços residenciais e não-residenciais — classificação e fluxos acoplados
 
 ## Why This Matters
 
-Hoje todos os bookings assumem que o serviço é prestado no endereço do cliente (`customerAddress` em `bookings`). O Cal.com mostra que cada "event type" pode ter um tipo de localização diferente: "In person (attendee address)" = casa do cliente, "In person (organizer address)" = endereço comercial, "Phone call", etc.
+O Xkedule precisa suportar **dois tipos fundamentais de serviço de limpeza simultaneamente, no mesmo tenant:**
 
-Para uma empresa de limpeza que pode crescer para incluir:
-- **Client's address** (padrão — limpeza residencial/comercial onde o cliente está)
-- **Drop-off** (cliente traz tapetes/estofados para limpeza no depósito)
-- **On-site consultation** (visita para orçamento antes do serviço)
+1. **Residencial** — vai na casa do cliente. Endereço completo obrigatório, formulário pede infos da casa (quartos, pets), preço normalmente fixo ou por área.
+2. **Não-residencial / Comercial** — vai em escritório, restaurante, loja, condomínio. Endereço comercial obrigatório, formulário pede infos do espaço (m², horário de funcionamento, frequência), preço normalmente por contrato/recorrência.
 
-Cada um tem uma UX diferente no booking flow: "client's address" pede endereço completo, "drop-off" pede o horário de chegada no depósito, "consultation" é mais curto.
+Os dois fluxos têm diferenças importantes que não dá para resolver com uma só lógica:
+- Validações de endereço diferentes (apartamento vs unidade comercial)
+- Campos de intake diferentes (ver SEED-027 — perguntas customizadas por serviço)
+- Modelo de preço diferente (residencial fixo vs comercial por contrato)
+- Notificações diferentes (residencial fala com pessoa; comercial fala com responsável da empresa)
+- Booking flow diferente (residencial agenda 1 visita; comercial pode agendar recorrência indefinida)
 
-**Why:** À medida que o catálogo de serviços cresce, alguns não acontecem na casa do cliente. Sem tipo de localização por serviço, o booking flow sempre pede um endereço que pode não ser necessário.
+**Why:** Se o sistema só suporta residencial, o tenant precisa criar workarounds estranhos para vender para empresas. Se só suporta comercial, perde 90% do mercado de limpeza. Acoplar os dois fluxos desde o início evita refatoração massiva depois.
 
 ## When to Surface
 
-**Trigger:** ao adicionar o primeiro serviço que não é no endereço do cliente (ex: "Limpeza de tapete — trazer ao depósito"), ou ao lançar serviços de consultoria/orçamento.
+**Trigger:** ao implementar o módulo de catálogo de serviços do Xkedule (conjunto com SEED-013), porque a estrutura de dados precisa suportar os dois desde o schema inicial.
 
 This seed should be presented during `/gsd:new-milestone` when the milestone scope matches any of these conditions:
-- Milestone de expansão de catálogo de serviços
-- Milestone de novos tipos de serviço (pickup, consultation)
-- Qualquer milestone que modifique o booking flow step de endereço
+- Milestone de catálogo de serviços do Xkedule
+- Milestone de booking flow (precisa renderizar fluxos diferentes baseado no tipo)
+- Conjunto com SEED-013 (multi-tenant) e SEED-031 (recurring)
 
 ## Scope Estimate
 
-**Small** — Uma fase curta. Schema: adicionar `locationType` em `services` (enum: `client_address` | `business_address` | `pickup` | `phone` | `online`, default `client_address`). Backend: `POST /api/bookings` valida o endereço apenas quando `locationType = client_address`. UI: booking flow mostra/esconde campo de endereço baseado no `locationType` do primeiro serviço no cart.
+**Medium** — Uma fase substancial. Componentes:
+
+1. **Schema:**
+   - Coluna `serviceCategory` em `services` (enum: `residential` | `commercial` | `both`) — determina o fluxo de intake e validação
+   - Coluna `defaultLocationType` em `services` (enum: `client_address` | `business_address` | `pickup` | `phone` | `online`) — onde o serviço é executado
+   - Coluna `requiresContract` em `services` (boolean) — comerciais grandes podem exigir aceite de contrato antes do booking
+   - Coluna `customerType` em `bookings` (enum: `individual` | `business`) — registrar quem foi o cliente
+
+2. **Backend:**
+   - Validação de endereço diferente por `serviceCategory` (residencial: apt opcional; comercial: razão social + responsável obrigatórios)
+   - Modelo de preço residencial vs comercial pode usar pricingType diferentes (`fixed_item` vs `custom_quote`)
+
+3. **Frontend:**
+   - Booking flow detecta `serviceCategory` do primeiro serviço no cart e renderiza step de Customer Details apropriado
+   - Residencial: Nome, email, telefone, endereço (com apt/unit), instruções de entrada
+   - Comercial: Razão social, CNPJ, responsável (nome, cargo, email, telefone), endereço comercial, horário de funcionamento, instruções de acesso
+   - Cart pode misturar serviços residenciais e comerciais? Decidir no planning — provavelmente NÃO (cliente diferente cada vez)
+
+4. **Admin:**
+   - Filtro de bookings por `customerType` (individual vs business) — relatórios separados
+   - Templates de email/SMS diferentes (residencial: tom pessoal; comercial: tom institucional)
 
 ## Breadcrumbs
 
-- `shared/schema.ts` — tabela `services` — nova coluna `locationType`
-- `client/src/pages/BookingPage.tsx` — step de Customer Details — campo de endereço condicional
-- `server/routes/bookings.ts` — `POST /api/bookings` — validação condicional de endereço
-- `client/src/components/admin/ServicesSection.tsx` — UI de edição — dropdown de "Location type"
-- `companySettings.companyAddress` — endereço da empresa usado quando `locationType = business_address`
+- `shared/schema.ts` — tabela `services` (adicionar `serviceCategory`, `defaultLocationType`, `requiresContract`)
+- `shared/schema.ts` — tabela `bookings` (adicionar `customerType`, possivelmente `businessName`, `businessTaxId`, `contactPerson`)
+- `client/src/pages/BookingPage.tsx` — step de Customer Details — branching baseado em `serviceCategory`
+- `client/src/components/admin/ServicesSection.tsx` — UI de edição de serviço — campo "Categoria"
+- Conjunto com SEED-027 (custom booking questions) — cada categoria pode ter perguntas padrão diferentes
+- Conjunto com SEED-031 (recurring) — comerciais grandes tendem a ser recorrentes; alinhar UX
 
 ## Notes
 
-Quando o cart tem serviços com `locationType` mistos (raro mas possível), usar o do serviço principal (maior preço). Para `phone` e `online`, o campo de endereço some do booking flow e o campo de telefone fica obrigatório. O endereço da empresa para `business_address` vem de `companySettings.companyAddress`.
+**Tipo `both`:** alguns serviços (ex: limpeza de tapete) podem ser vendidos tanto para residencial quanto comercial. Esse caso usa `both` e o booking flow pergunta no início do checkout "É para sua casa ou empresa?".
+
+**Contrato para comerciais:** quando `requiresContract = true`, o booking não é confirmado até o cliente aceitar termos específicos do contrato (digital signature ou upload de PDF assinado). Pode ser uma extensão futura — começar sem isso, com aceite simples de termos.
+
+**Razão social / CNPJ:** para o mercado brasileiro. Para mercado americano, usar EIN. Schema deve ser genérico (`businessTaxId` text) — validação por tenant/país (SEED-011 locale).

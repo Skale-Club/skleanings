@@ -1,6 +1,8 @@
 ---
 id: SEED-001
-status: dormant
+status: cancelled
+cancelled_on: 2026-05-10
+cancellation_reason: Cortado — não justifica esforço sem segundo dev no time
 planted: 2026-05-10
 planted_during: v1.0 / Phase 15 (schema-foundation-detokenization)
 trigger_when: início de qualquer fase que toque no booking flow, availability logic, ou GHL sync

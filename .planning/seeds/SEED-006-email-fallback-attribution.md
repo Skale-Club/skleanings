@@ -1,6 +1,8 @@
 ---
 id: SEED-006
-status: dormant
+status: cancelled
+cancelled_on: 2026-05-10
+cancellation_reason: Cortado — ganho de attribution é marginal
 planted: 2026-05-10
 planted_during: v1.0 / Phase 15 (schema-foundation-detokenization)
 trigger_when: quando o marketing dashboard começar a mostrar gaps de atribuição, ou quando otimizar ROAS de campanhas

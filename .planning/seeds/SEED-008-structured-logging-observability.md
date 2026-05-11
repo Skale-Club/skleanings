@@ -1,6 +1,8 @@
 ---
 id: SEED-008
-status: dormant
+status: cancelled
+cancelled_on: 2026-05-10
+cancellation_reason: Cortado — console.log funciona; voltar quando bug grave em prod aparecer
 planted: 2026-05-10
 planted_during: v1.0 / Phase 15 (schema-foundation-detokenization)
 trigger_when: quando o primeiro bug sério em produção for difícil de diagnosticar via logs, ou ao escalar para múltiplos tenants

@@ -1,6 +1,8 @@
 ---
 id: SEED-020
-status: dormant
+status: cancelled
+cancelled_on: 2026-05-10
+cancellation_reason: Cortado — só quando primeiro tenant pedir integração específica
 planted: 2026-05-10
 planted_during: v3.0 / Phase 20 (calendar-timeline-structure-audit)
 trigger_when: quando um tenant precisar conectar o sistema a uma ferramenta externa diferente de GHL/Stripe

@@ -3,8 +3,9 @@ id: SEED-011
 status: dormant
 planted: 2026-05-10
 planted_during: v3.0 / Phase 20 (calendar-timeline-structure-audit)
-trigger_when: quando qualquer tenant reclamar de idioma ou quando internacionalizar o booking flow
+trigger_when: ao onboardar o primeiro tenant não-inglês (confirmado que haverá tenants não-inglês no Xkedule, em menor intensidade)
 scope: Small
+priority: medium
 ---
 
 # SEED-011: Configurações de locale no admin (idioma, start of week, formato de data)
@@ -42,4 +43,6 @@ This seed should be presented during `/gsd:new-milestone` when the milestone sco
 
 ## Notes
 
-O seletor de Language no admin controla o locale padrão do site público (booking flow). Cada tenant fica em um locale. Não é i18n completo (não traduz strings) — é locale para formatação de datas, números e moeda. i18n completo (tradução de UI strings) é uma seed separada (SEED-012).
+O seletor de Language no admin controla o locale padrão do site público (booking flow). Cada tenant fica em um locale. Não é i18n completo (não traduz strings) — é locale para formatação de datas, números e moeda.
+
+**Decisão estratégica (2026-05-10):** SEED-012 (i18n completo) foi cancelado. Esta seed (locale settings) cobre o caso de menor intensidade: tenant não-inglês recebe UI em inglês mas com formatação de datas/números/moeda no locale dele. Tradução completa do booking flow fica para um momento muito futuro.

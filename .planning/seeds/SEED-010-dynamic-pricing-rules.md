@@ -1,6 +1,8 @@
 ---
 id: SEED-010-dynamic-pricing-rules.md
-status: dormant
+status: cancelled
+cancelled_on: 2026-05-10
+cancellation_reason: Cortado — feature avançada, produto precisa maturar primeiro
 planted: 2026-05-10
 planted_during: v1.0 / Phase 15 (schema-foundation-detokenization)
 trigger_when: quando a demanda crescer ao ponto de ter slots ociosos em alguns dias e overbooking em outros

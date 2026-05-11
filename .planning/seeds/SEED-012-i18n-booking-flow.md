@@ -1,6 +1,8 @@
 ---
 id: SEED-012
-status: dormant
+status: cancelled
+cancelled_on: 2026-05-10
+cancellation_reason: Cortado — locale settings (SEED-011) atende o caso de menor intensidade; i18n completo é caro demais para o retorno
 planted: 2026-05-10
 planted_during: v3.0 / Phase 20 (calendar-timeline-structure-audit)
 trigger_when: quando o primeiro tenant não-inglês precisar do booking flow traduzido

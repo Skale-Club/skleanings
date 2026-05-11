@@ -1,6 +1,8 @@
 ---
 id: SEED-024
-status: dormant
+status: cancelled
+cancelled_on: 2026-05-10
+cancellation_reason: Cortado — workaround: staff usa um calendário só para trabalho
 planted: 2026-05-10
 planted_during: v3.0 / Phase 20 (calendar-timeline-structure-audit)
 trigger_when: quando um staff tiver compromissos pessoais no Google Calendar que conflitam com bookings

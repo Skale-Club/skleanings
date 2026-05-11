@@ -1,6 +1,8 @@
 ---
 id: SEED-007
-status: dormant
+status: cancelled
+cancelled_on: 2026-05-10
+cancellation_reason: Cortado — problema só com volume real (12+ meses)
 planted: 2026-05-10
 planted_during: v1.0 / Phase 15 (schema-foundation-detokenization)
 trigger_when: quando o chat acumular >6 meses de conversas, ou quando consultas de admin ficarem lentas

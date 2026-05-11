@@ -1,6 +1,8 @@
 ---
 id: SEED-025
-status: dormant
+status: cancelled
+cancelled_on: 2026-05-10
+cancellation_reason: Cortado — só faz sentido com 5+ staff no tenant
 planted: 2026-05-10
 planted_during: v3.0 / Phase 20 (calendar-timeline-structure-audit)
 trigger_when: quando a empresa crescer e precisar de um horário padrão para toda a equipe vs exceções individuais
