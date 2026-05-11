@@ -27,6 +27,13 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { authenticatedRequest } from '@/lib/queryClient';
 
+interface QuestionAnswer {
+    questionId: number;
+    label: string;
+    type: string;
+    answer: string;
+}
+
 interface BookingItem {
     id: number;
     bookingId: number;
@@ -34,6 +41,7 @@ interface BookingItem {
     serviceName: string;
     quantity?: number;
     price: string;
+    questionAnswers?: QuestionAnswer[];
 }
 
 export function useBookingItems(bookingId: number, getAccessToken: () => Promise<string | null>, enabled: boolean = true) {
@@ -415,12 +423,24 @@ export function SharedBookingCard({
                         ) : bookingItems && bookingItems.length > 0 ? (
                             <ul className="space-y-2">
                                 {bookingItems.map((item) => (
-                                    <li key={item.id} className="text-sm flex items-center justify-between">
-                                        <span>
-                                            {item.serviceName}
-                                            {item.quantity && item.quantity > 1 ? ` ×${item.quantity}` : ''}
-                                        </span>
-                                        <span className="font-medium text-foreground">${item.price}</span>
+                                    <li key={item.id} className="text-sm">
+                                        <div className="flex items-center justify-between">
+                                            <span>
+                                                {item.serviceName}
+                                                {item.quantity && item.quantity > 1 ? ` ×${item.quantity}` : ''}
+                                            </span>
+                                            <span className="font-medium text-foreground">${item.price}</span>
+                                        </div>
+                                        {item.questionAnswers && item.questionAnswers.length > 0 && (
+                                            <div className="mt-2 space-y-1 pl-2 border-l-2 border-muted">
+                                                {item.questionAnswers.map((qa) => (
+                                                    <div key={qa.questionId} className="text-xs text-muted-foreground">
+                                                        <span className="font-medium text-foreground/70">{qa.label}:</span>{' '}
+                                                        <span>{qa.answer || <em>No answer</em>}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </li>
                                 ))}
                             </ul>
