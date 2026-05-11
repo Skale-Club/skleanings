@@ -155,7 +155,7 @@ Plans:
 | 22. Date overrides for staff availability | standalone | 3/3 | Complete | 2026-05-11 |
 | 23. Multiple durations per service | standalone | 3/3 | Complete | 2026-05-11 |
 | 24. Manual confirmation flow per service | standalone | 3/3 | Complete | 2026-05-11 |
-| 25. Multiple Time Slots Per Day | v4.0 | 3/3 | Complete   | 2026-05-11 |
+| 25. Multiple Time Slots Per Day | v4.0 | 3/3 | Complete    | 2026-05-11 |
 | 26. Custom Booking Questions | v4.0 | 0/3 | Not started | — |
 | 27. Recurring Bookings — Schema & Cron Foundation | v4.0 | 0/3 | Not started | — |
 | 28. Recurring Bookings — Customer Flow & Notifications | v4.0 | 0/3 | Not started | — |
