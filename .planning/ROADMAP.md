@@ -82,9 +82,9 @@ Full details: [milestones/v2.0-ROADMAP.md](milestones/v2.0-ROADMAP.md)
 | 19. Receptionist Booking Flow & Multi-Staff View | v2.0 | 4/4 | Complete | 2026-04-30 |
 | 20. Calendar Timeline & Structure Audit | v3.0 | 0/TBD | Not started | — |
 | 21. Per-service booking limits | standalone | 3/3 | Complete    | 2026-05-11 |
-| 22. Date overrides for staff availability | standalone | 3/3 | Complete   | 2026-05-11 |
-| 23. Multiple durations per service | standalone | 0/3 | Not started | — |
-| 24. Manual confirmation flow per service | standalone | 3/3 | Complete   | 2026-05-11 |
+| 22. Date overrides for staff availability | standalone | 3/3 | Complete    | 2026-05-11 |
+| 23. Multiple durations per service | standalone | 0/3 | Complete    | 2026-05-11 |
+| 24. Manual confirmation flow per service | standalone | 3/3 | Complete    | 2026-05-11 |
 
 ---
 
@@ -123,7 +123,7 @@ Plans:
 **Goal:** Add serviceDurations table so a single service can offer multiple durations (e.g., 2h/$150, 4h/$250, 8h/$400). Customer selects duration in booking flow before calendar.
 **Requirements**: SEED-029-schema, SEED-029-backend, SEED-029-ui
 **Depends on:** Phase 21
-**Plans:** 3 plans
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] 23-01-PLAN.md — Wave 1: Schema + Supabase migration (serviceDurations table + Drizzle types)
