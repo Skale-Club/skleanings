@@ -110,6 +110,9 @@ import {
   type InsertRecurringBooking,
   type RecurringBookingWithDetails,
   insertRecurringBookingSchema,
+  serviceBookingQuestions,
+  type ServiceBookingQuestion,
+  type InsertServiceBookingQuestion,
 } from "@shared/schema";
 import { eq, and, or, gte, lte, inArray, desc, asc, sql, ne, isNull, like } from "drizzle-orm";
 import { z } from "zod";
@@ -167,6 +170,12 @@ export interface IStorage {
   createServiceDuration(duration: InsertServiceDuration): Promise<ServiceDuration>;
   updateServiceDuration(id: number, data: Partial<InsertServiceDuration>): Promise<ServiceDuration>;
   deleteServiceDuration(id: number): Promise<void>;
+
+  // Service Booking Questions (Phase 26 QUEST-01, QUEST-02)
+  getServiceBookingQuestions(serviceId: number): Promise<ServiceBookingQuestion[]>;
+  createServiceBookingQuestion(data: InsertServiceBookingQuestion): Promise<ServiceBookingQuestion>;
+  updateServiceBookingQuestion(id: number, data: Partial<InsertServiceBookingQuestion>): Promise<ServiceBookingQuestion>;
+  deleteServiceBookingQuestion(id: number): Promise<void>;
 
   // Bookings
   createBooking(booking: InsertBooking & { totalPrice: string, totalDurationMinutes: number, endTime: string, bookingItemsData?: any[], userId?: string | null }): Promise<Booking>;
@@ -707,6 +716,33 @@ export class DatabaseStorage implements IStorage {
 
   async deleteServiceDuration(id: number): Promise<void> {
     await db.delete(serviceDurations).where(eq(serviceDurations.id, id));
+  }
+
+  async getServiceBookingQuestions(serviceId: number): Promise<ServiceBookingQuestion[]> {
+    return await db
+      .select()
+      .from(serviceBookingQuestions)
+      .where(eq(serviceBookingQuestions.serviceId, serviceId))
+      .orderBy(asc(serviceBookingQuestions.order), asc(serviceBookingQuestions.id));
+  }
+
+  async createServiceBookingQuestion(data: InsertServiceBookingQuestion): Promise<ServiceBookingQuestion> {
+    const [row] = await db.insert(serviceBookingQuestions).values(data).returning();
+    return row;
+  }
+
+  async updateServiceBookingQuestion(id: number, data: Partial<InsertServiceBookingQuestion>): Promise<ServiceBookingQuestion> {
+    const [updated] = await db
+      .update(serviceBookingQuestions)
+      .set(data)
+      .where(eq(serviceBookingQuestions.id, id))
+      .returning();
+    if (!updated) throw new Error(`ServiceBookingQuestion ${id} not found`);
+    return updated;
+  }
+
+  async deleteServiceBookingQuestion(id: number): Promise<void> {
+    await db.delete(serviceBookingQuestions).where(eq(serviceBookingQuestions.id, id));
   }
 
   async getService(id: number): Promise<Service | undefined> {
@@ -2034,15 +2070,13 @@ export class DatabaseStorage implements IStorage {
     const [row] = await db
       .select()
       .from(recurringBookings)
-      .where(eq(recurringBookings.manageToken, token))
-      .limit(1);
+      .where(eq(recurringBookings.manageToken, token));
     return row;
   }
 
   async getRecurringBookingsWithDetails(): Promise<RecurringBookingWithDetails[]> {
     const rows = await db
       .select({
-        // Spread all recurringBookings columns
         id: recurringBookings.id,
         contactId: recurringBookings.contactId,
         serviceId: recurringBookings.serviceId,
@@ -2062,17 +2096,20 @@ export class DatabaseStorage implements IStorage {
         manageToken: recurringBookings.manageToken,
         createdAt: recurringBookings.createdAt,
         updatedAt: recurringBookings.updatedAt,
-        // Joined fields
         contactName: contacts.name,
-        customerEmail: contacts.email,
         serviceName: services.name,
+        customerEmail: contacts.email,
       })
       .from(recurringBookings)
       .leftJoin(contacts, eq(recurringBookings.contactId, contacts.id))
-      .innerJoin(services, eq(recurringBookings.serviceId, services.id))
+      .leftJoin(services, eq(recurringBookings.serviceId, services.id))
       .orderBy(desc(recurringBookings.createdAt));
-
-    return rows as RecurringBookingWithDetails[];
+    return rows.map((r) => ({
+      ...r,
+      contactName: r.contactName ?? null,
+      serviceName: r.serviceName ?? "Unknown Service",
+      customerEmail: r.customerEmail ?? null,
+    }));
   }
 }
 

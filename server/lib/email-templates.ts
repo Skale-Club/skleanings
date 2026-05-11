@@ -91,3 +91,79 @@ ${companyName}`;
 
   return { subject, text, html };
 }
+
+// ============================================================
+// Phase 29 RECUR-05: Self-serve subscription management email
+// ============================================================
+
+export interface ManageEmailData {
+  customerName: string;
+  serviceName: string;
+  frequencyName: string;
+  manageUrl: string;    // full URL: https://yourdomain.com/manage-subscription/<token>
+  companyName: string;
+}
+
+/**
+ * Build the email sent when a recurring subscription is created.
+ * Contains a permanent manage link the customer can use to pause or cancel.
+ */
+export function buildManageEmail(data: ManageEmailData): {
+  subject: string;
+  text: string;
+  html: string;
+} {
+  const { customerName, serviceName, frequencyName, manageUrl, companyName } = data;
+
+  const subject = `Manage your ${frequencyName.toLowerCase()} cleaning subscription — ${serviceName}`;
+
+  const text = `Hi ${customerName},
+
+Your ${frequencyName.toLowerCase()} cleaning subscription for ${serviceName} has been set up.
+
+You can pause or cancel your subscription at any time using the link below:
+${manageUrl}
+
+This link is unique to your subscription. Keep it handy in case you need to make changes.
+
+Thank you for choosing ${companyName}!`;
+
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><style>
+  body { font-family: Inter, Arial, sans-serif; color: #1e293b; margin: 0; padding: 0; }
+  .container { max-width: 520px; margin: 32px auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 12px; }
+  h2 { font-family: Outfit, sans-serif; color: #1C53A3; margin: 0 0 16px; }
+  .detail-row { display: flex; gap: 8px; margin: 8px 0; font-size: 15px; }
+  .label { font-weight: 600; color: #475569; min-width: 96px; }
+  .cta-btn {
+    display: inline-block;
+    margin-top: 24px;
+    padding: 12px 28px;
+    background-color: #FFFF01;
+    color: #000;
+    font-weight: 700;
+    font-family: Outfit, sans-serif;
+    text-decoration: none;
+    border-radius: 999px;
+  }
+  .footer { margin-top: 28px; font-size: 13px; color: #94a3b8; }
+  .link-fallback { margin-top: 16px; font-size: 13px; color: #64748b; word-break: break-all; }
+</style></head>
+<body>
+<div class="container">
+  <h2>Your Recurring Cleaning Is Set Up</h2>
+  <p>Hi ${customerName},</p>
+  <p>Your <strong>${frequencyName.toLowerCase()}</strong> cleaning subscription for <strong>${serviceName}</strong> is now active. We'll automatically schedule your next cleaning based on your preferred time.</p>
+  <div class="detail-row"><span class="label">Service</span><span>${serviceName}</span></div>
+  <div class="detail-row"><span class="label">Frequency</span><span>${frequencyName}</span></div>
+  <p style="margin-top: 24px">Need to pause or cancel? Use the button below — no login required:</p>
+  <a class="cta-btn" href="${manageUrl}">Manage My Subscription</a>
+  <p class="link-fallback">Or copy this link: ${manageUrl}</p>
+  <div class="footer">${companyName}</div>
+</div>
+</body>
+</html>`;
+
+  return { subject, text, html };
+}
