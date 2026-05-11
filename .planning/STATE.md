@@ -4,7 +4,7 @@ milestone: v3.0
 milestone_name: Calendar Polish
 status: verifying
 stopped_at: Completed 23-02-PLAN.md
-last_updated: "2026-05-11T03:33:23.206Z"
+last_updated: "2026-05-11T03:39:33.882Z"
 last_activity: 2026-05-11
 progress:
   total_phases: 1
@@ -70,6 +70,9 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 24-manual-confirmation-flow-per-service]: requiresConfirmation boolean added as NOT NULL default false — safe for existing rows with no backfill
 - [Phase 24-manual-confirmation-flow-per-service]: status passed to createBooking via as-any type assertion — Zod omits status by design but DB default is overridable
 - [Phase 24-manual-confirmation-flow-per-service]: rejection reason logged server-side only — no notes column in bookings table; Plan 03 may add persistence
+- [Phase 24]: Approve/Reject buttons placed in interactive variant only, visible solely when status === awaiting_approval
+- [Phase 24]: awaiting=true query param used for Confirmation routing — works across page reloads
+- [Phase 24]: requiresConfirmation toggle placed inside Booking Rules collapsible to keep ServiceForm uncluttered
 
 ### Roadmap Evolution
 
