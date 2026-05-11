@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v4.0
-milestone_name: Booking Intelligence
+milestone: v3.0
+milestone_name: Calendar Polish
 status: verifying
-stopped_at: Completed 28-03-PLAN.md
-last_updated: "2026-05-11T15:47:46.951Z"
+stopped_at: Completed 29-01-PLAN.md
+last_updated: "2026-05-11T12:00:00.000Z"
 last_activity: 2026-05-11
 progress:
-  total_phases: 5
-  completed_phases: 3
-  total_plans: 12
-  completed_plans: 11
+  total_phases: 1
+  completed_phases: 0
+  total_plans: 4
+  completed_plans: 0
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-05)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 22 — date-overrides-staff-availability
+**Current focus:** Phase 29 — recurring-bookings-admin-and-self-serve
 
 ## Current Position
 
 Phase: 29
-Plan: Not started
-Status: All 3 plans complete — ready for verification
+Plan: 01 complete
+Status: In progress
 Last activity: 2026-05-11
 
 Progress: [░░░░░░░░░░] 0%
@@ -73,12 +73,9 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 24]: Approve/Reject buttons placed in interactive variant only, visible solely when status === awaiting_approval
 - [Phase 24]: awaiting=true query param used for Confirmation routing — works across page reloads
 - [Phase 24]: requiresConfirmation toggle placed inside Booking Rules collapsible to keep ServiceForm uncluttered
-- [Phase 28-01]: Phase 27 schema prerequisites added in worktree (recurringBookings table, storage methods, generator) since dev branch was ahead of worktree base
-- [Phase 28-01]: selectedFrequencyId threaded into cartItems[0] only for single-service carts; multi-service carts show no frequency selector
-- [Phase 28-03]: reminderDate = today + 2 days using date-fns addDays to avoid DST edge cases
-- [Phase 28-03]: No sent-flag needed — bookingDate as natural lookup key ensures once-daily idempotency
-- [Phase 28-03]: Dynamic import of recurring-booking-reminder inside node-cron callback to avoid circular initialization at startup
-- [Phase 28-03]: GitHub Actions send-reminders step runs after generate step in same job — generated bookings exist before reminder query
+- [Phase 29-01]: manageToken uses uuid() Drizzle type with sql`gen_random_uuid()` default to align with migration
+- [Phase 29-01]: manageToken added to insertRecurringBookingSchema omit list — always DB-generated, never caller-set
+- [Phase 29-01]: getRecurringBookingsWithDetails uses explicit column select (not Drizzle spread) to satisfy join result typing
 
 ### Roadmap Evolution
 
@@ -92,6 +89,6 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-11T18:59:00.000Z
-Stopped at: Completed 28-03-PLAN.md
+Last session: 2026-05-11T12:00:00.000Z
+Stopped at: Completed 29-01-PLAN.md
 Resume file: None

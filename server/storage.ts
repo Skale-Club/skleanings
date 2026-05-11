@@ -108,6 +108,7 @@ import {
   recurringBookings,
   type RecurringBooking,
   type InsertRecurringBooking,
+  type RecurringBookingWithDetails,
   insertRecurringBookingSchema,
 } from "@shared/schema";
 import { eq, and, or, gte, lte, inArray, desc, asc, sql, ne, isNull, like } from "drizzle-orm";
@@ -376,6 +377,12 @@ export interface IStorage {
   getRecurringBookings(statusFilter?: string): Promise<RecurringBooking[]>;
   getActiveRecurringBookingsDueForGeneration(asOfDate: string): Promise<RecurringBooking[]>;
   updateRecurringBooking(id: number, data: Partial<Pick<RecurringBooking, 'status' | 'nextBookingDate' | 'cancelledAt' | 'pausedAt' | 'updatedAt'>>): Promise<RecurringBooking>;
+
+  // Phase 29 RECUR-05: look up subscription by its manage_token UUID (public self-serve route)
+  getRecurringBookingByToken(token: string): Promise<RecurringBooking | undefined>;
+
+  // Phase 29 RECUR-04: admin panel — JOIN contacts + services to avoid N+1 secondary calls
+  getRecurringBookingsWithDetails(): Promise<RecurringBookingWithDetails[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2021,6 +2028,51 @@ export class DatabaseStorage implements IStorage {
       .where(eq(recurringBookings.id, id))
       .returning();
     return row;
+  }
+
+  async getRecurringBookingByToken(token: string): Promise<RecurringBooking | undefined> {
+    const [row] = await db
+      .select()
+      .from(recurringBookings)
+      .where(eq(recurringBookings.manageToken, token))
+      .limit(1);
+    return row;
+  }
+
+  async getRecurringBookingsWithDetails(): Promise<RecurringBookingWithDetails[]> {
+    const rows = await db
+      .select({
+        // Spread all recurringBookings columns
+        id: recurringBookings.id,
+        contactId: recurringBookings.contactId,
+        serviceId: recurringBookings.serviceId,
+        serviceFrequencyId: recurringBookings.serviceFrequencyId,
+        discountPercent: recurringBookings.discountPercent,
+        intervalDays: recurringBookings.intervalDays,
+        frequencyName: recurringBookings.frequencyName,
+        startDate: recurringBookings.startDate,
+        endDate: recurringBookings.endDate,
+        nextBookingDate: recurringBookings.nextBookingDate,
+        preferredStartTime: recurringBookings.preferredStartTime,
+        preferredStaffMemberId: recurringBookings.preferredStaffMemberId,
+        status: recurringBookings.status,
+        cancelledAt: recurringBookings.cancelledAt,
+        pausedAt: recurringBookings.pausedAt,
+        originBookingId: recurringBookings.originBookingId,
+        manageToken: recurringBookings.manageToken,
+        createdAt: recurringBookings.createdAt,
+        updatedAt: recurringBookings.updatedAt,
+        // Joined fields
+        contactName: contacts.name,
+        customerEmail: contacts.email,
+        serviceName: services.name,
+      })
+      .from(recurringBookings)
+      .leftJoin(contacts, eq(recurringBookings.contactId, contacts.id))
+      .innerJoin(services, eq(recurringBookings.serviceId, services.id))
+      .orderBy(desc(recurringBookings.createdAt));
+
+    return rows as RecurringBookingWithDetails[];
   }
 }
 
