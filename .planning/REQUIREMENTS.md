@@ -11,10 +11,10 @@
 
 ### Booking Questions — Custom Intake Per Service (SEED-027)
 
-- [ ] **QUEST-01**: Admin can add custom intake questions to a service (text, textarea, select types) with required/optional flag
-- [ ] **QUEST-02**: Admin can set display order and delete questions; changes apply to future bookings only
-- [ ] **QUEST-03**: Customer sees service-specific questions in the Customer Details step of the booking flow
-- [ ] **QUEST-04**: Customer answers are stored with the booking record and visible to admin in booking details
+- [x] **QUEST-01**: Admin can add custom intake questions to a service (text, textarea, select types) with required/optional flag
+- [x] **QUEST-02**: Admin can set display order and delete questions; changes apply to future bookings only
+- [x] **QUEST-03**: Customer sees service-specific questions in the Customer Details step of the booking flow
+- [x] **QUEST-04**: Customer answers are stored with the booking record and visible to admin in booking details
 
 ### Recurring Bookings — Cleaning Subscriptions (SEED-031)
 

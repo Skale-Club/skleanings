@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v3.0
-milestone_name: Calendar Polish
+milestone: v4.0
+milestone_name: Booking Intelligence
 status: verifying
-stopped_at: Completed 26-02-PLAN.md
-last_updated: "2026-05-11T11:04:34.506Z"
+stopped_at: Completed 26-03-PLAN.md
+last_updated: "2026-05-11T11:12:53.093Z"
 last_activity: 2026-05-11
 progress:
-  total_phases: 1
-  completed_phases: 0
-  total_plans: 4
-  completed_plans: 0
+  total_phases: 5
+  completed_phases: 2
+  total_plans: 6
+  completed_plans: 6
   percent: 0
 ---
 
@@ -74,6 +74,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 24]: awaiting=true query param used for Confirmation routing — works across page reloads
 - [Phase 24]: requiresConfirmation toggle placed inside Booking Rules collapsible to keep ServiceForm uncluttered
 - [Phase 26-custom-booking-questions]: Schema types for serviceBookingQuestions added in Plan 02 worktree to match Plan 01 parallel output; identical on merge
+- [Phase 26-custom-booking-questions]: questionAnswers merged into cartItems at onSubmit time, not stored in CartContext
+- [Phase 26-custom-booking-questions]: QuestionAnswer interface defined locally in SharedBookingCard to avoid coupling admin card to shared types
 
 ### Roadmap Evolution
 
@@ -87,6 +89,6 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-11T11:04:30.937Z
-Stopped at: Completed 26-02-PLAN.md
+Last session: 2026-05-11T11:12:44.991Z
+Stopped at: Completed 26-03-PLAN.md
 Resume file: None
