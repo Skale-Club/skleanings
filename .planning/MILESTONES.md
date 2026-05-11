@@ -1,5 +1,15 @@
 # Milestones
 
+## v3.0 Calendar Polish (Shipped: 2026-05-11)
+
+**Phases completed:** 1 phases, 4 plans, 6 tasks
+
+**Key accomplishments:**
+
+- 20-HUMAN-UAT.md (4 UAT entries) and 20-DIAGNOSIS.md skeleton (3 nine-row tables + DevTools snippet) created; Task 3 baseline measurement awaiting human browser session
+
+---
+
 ## v2.0 White Label (Shipped: 2026-05-05)
 
 **Phases completed:** 5 phases, 15 plans, 19 tasks

@@ -10,12 +10,13 @@ Customers can discover, book, and pay for cleaning services online without calli
 
 ## Current State
 
-**Two milestones shipped (2026-04-25 through 2026-04-30):**
+**Three milestones shipped:**
 
 - **v1.0 Marketing Attribution** — First-party UTM tracking, booking flow attribution, marketing dashboard, GoHighLevel CRM UTM sync, admin calendar create-booking-from-slot
 - **v2.0 White Label** — Hardcoded brand removed, DB-driven SEO/favicon/legal pages, receptionist multi-staff calendar view with drag-to-reassign and QuickBook walk-in flow
+- **v3.0 Calendar Polish** — RBC component identity stabilized (useMemo/useCallback fixes per RBC #2588), CSS Strategy D applied for non-integer zoom alignment (Pitfall 5), DnDCalendar forced remount on view+resource change (CAL-FIX-02), manual confirmation flow per service (awaiting_approval status, admin approve/reject UI)
 
-**Pending human verification (Phase 19 UAT):** By Staff calendar column layout, Quick Book 30-second walk-in flow, drag-to-reassign with undo toast, and customer per-staff availability badges — all require a live browser session to verify.
+**Pending human UAT:** Phase 19 (5 items) and Phase 20 (4 CAL-FIX items) — browser-only visual checks deferred to a live session.
 
 ## Requirements
 
@@ -42,6 +43,8 @@ Customers can discover, book, and pay for cleaning services online without calli
 - ✓ Favicon, Legal & Company Type Admin UI — faviconUrl upload, service delivery model selector, Privacy Policy and Terms of Service DB-driven at /privacy-policy and /terms-of-service — Phase 17
 - ✓ Admin Calendar Improvements — widened modal, multi-service useFieldArray, always-editable end time, conditional address field, brand yellow submit — Phase 18
 - ✓ Receptionist Booking Flow & Multi-Staff View — "By Staff" parallel-column calendar, DnDCalendar drag-to-reassign with undo toast, QuickBookModal for walk-in booking, 30s polling, per-staff availability badges on customer BookingPage step 3 — Phase 19
+- ✓ Calendar Timeline & Structure Audit — RBC component memoization (calendarComponents, resourceProps, visibleStaffForResources), useCallback handlers, deleted redundant mount useEffect, CSS gutter slot min-height alignment (Strategy D), forced DnDCalendar remount on view+resource change — Phase 20
+- ✓ Manual Confirmation Flow Per Service — requiresConfirmation boolean on services, awaiting_approval booking status, admin approve/reject endpoints, amber "Request Received" confirmation screen — Phase 24
 
 ### Active
 
@@ -60,11 +63,11 @@ Customers can discover, book, and pay for cleaning services online without calli
 
 **Admin panel:** All admin views use the same sidebar navigation, card-based layout, and React Query patterns. New admin features must match existing UI conventions.
 
-**Codebase state:** Two milestones (10 phases, 30 plans) shipped. Server routes split into domain modules (`server/routes/`). Drizzle schema in `shared/schema.ts` with collocated types. Supabase CLI only for migrations — never drizzle-kit push.
+**Codebase state:** Three milestones (Phases 1–20+, ~40+ plans) shipped. Server routes split into domain modules (`server/routes/`). Drizzle schema in `shared/schema.ts` with collocated types. Supabase CLI only for migrations — never drizzle-kit push.
 
 **White-label status:** All "Skleanings" literals removed from frontend and server. Brand identity, SEO, favicon, and legal pages are fully configurable via admin. The platform can be redeployed for any tenant by updating `companySettings` in the DB.
 
-**Pending UAT (Phase 19):** Five browser-only checks in `.planning/phases/19-receptionist-booking-flow-multi-staff-view/19-HUMAN-UAT.md` — By Staff column layout, Quick Book flow, drag-to-reassign, GCal busy block guard, and customer per-staff badges.
+**Pending UAT:** Phase 19 (5 browser checks — By Staff layout, QuickBook, drag-to-reassign, GCal busy guard, customer badges) and Phase 20 (4 CAL-FIX checks — zoom matrix, view-switch sequence, By Staff multi-column, Phase 19 regression). Both require a live browser session.
 
 ## Constraints
 
@@ -105,4 +108,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-05 after v1.0 + v2.0 milestone archival*
+*Last updated: 2026-05-11 after v3.0 Calendar Polish milestone*
