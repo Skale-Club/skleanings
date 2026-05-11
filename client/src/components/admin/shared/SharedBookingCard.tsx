@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
 import { Calendar, ChevronDown, Clock, ExternalLink, Loader2, MapPin, Pencil, Trash2, User } from 'lucide-react';
@@ -13,6 +13,19 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { authenticatedRequest } from '@/lib/queryClient';
 
 interface BookingItem {
     id: number;
@@ -56,7 +69,10 @@ export function SharedBookingCard({
     onDelete,
 }: SharedBookingCardProps) {
     const [expanded, setExpanded] = useState(false);
+    const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+    const [rejectReason, setRejectReason] = useState('');
     const { data: bookingItems, isLoading } = useBookingItems(booking.id, getAccessToken, expanded);
+    const queryClient = useQueryClient();
 
     const initials = (booking.customerName || '?')
         .split(' ')
@@ -70,7 +86,34 @@ export function SharedBookingCard({
         confirmed: 'bg-primary/15 text-primary border-primary/30',
         completed: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30',
         cancelled: 'bg-destructive/15 text-destructive border-destructive/30',
+        awaiting_approval: 'bg-amber-500/15 text-amber-600 border-amber-500/30',
     }[booking.status] ?? 'bg-muted text-muted-foreground border-border';
+
+    const approveMutation = useMutation({
+        mutationFn: async () => {
+            const token = await getAccessToken();
+            if (!token) throw new Error('Authentication required');
+            const res = await authenticatedRequest('PUT', `/api/bookings/${booking.id}/approve`, token);
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['/api/bookings'] });
+        },
+    });
+
+    const rejectMutation = useMutation({
+        mutationFn: async (reason: string) => {
+            const token = await getAccessToken();
+            if (!token) throw new Error('Authentication required');
+            const res = await authenticatedRequest('PUT', `/api/bookings/${booking.id}/reject`, token, { reason });
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['/api/bookings'] });
+            setRejectDialogOpen(false);
+            setRejectReason('');
+        },
+    });
 
     return (
         <Card className="overflow-hidden border border-border/60 bg-card shadow-sm hover:shadow-md transition-shadow">
@@ -188,6 +231,12 @@ export function SharedBookingCard({
                                                 Cancelled
                                             </span>
                                         </SelectItem>
+                                        <SelectItem value="awaiting_approval">
+                                            <span className="flex items-center gap-2">
+                                                <span className="w-2 h-2 rounded-full bg-amber-500/70" />
+                                                Awaiting Approval
+                                            </span>
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
 
@@ -222,7 +271,7 @@ export function SharedBookingCard({
                             <div className="hidden lg:block w-px bg-border/50 my-4 shrink-0" />
 
                             {/* Amount + Actions */}
-                            <div className="flex lg:flex-col items-center justify-between lg:justify-center gap-3 p-5 lg:px-5 lg:py-5 lg:w-[120px] lg:shrink-0">
+                            <div className="flex lg:flex-col items-center justify-between lg:justify-center gap-3 p-5 lg:px-5 lg:py-5 lg:w-[140px] lg:shrink-0">
                                 <div className="text-center">
                                     <p className="text-xs text-muted-foreground mb-0.5">Amount</p>
                                     <p
@@ -232,6 +281,64 @@ export function SharedBookingCard({
                                         ${booking.totalPrice}
                                     </p>
                                 </div>
+
+                                {/* Approve/Reject buttons — only for awaiting_approval bookings */}
+                                {booking.status === 'awaiting_approval' && (
+                                    <div className="flex flex-col gap-1.5 w-full">
+                                        <Button
+                                            size="sm"
+                                            className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white w-full"
+                                            onClick={() => approveMutation.mutate()}
+                                            disabled={approveMutation.isPending}
+                                            data-testid={`button-approve-booking-${booking.id}`}
+                                        >
+                                            {approveMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+                                            Approve
+                                        </Button>
+
+                                        <AlertDialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+                                            <AlertDialogTrigger asChild>
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="h-8 text-xs border-destructive text-destructive hover:bg-destructive/10 w-full"
+                                                    data-testid={`button-reject-booking-${booking.id}`}
+                                                >
+                                                    Reject
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Reject this booking?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        The booking will be cancelled. You can optionally provide a reason.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <div className="py-2">
+                                                    <Textarea
+                                                        placeholder="Reason (optional)"
+                                                        value={rejectReason}
+                                                        onChange={(e) => setRejectReason(e.target.value)}
+                                                        className="resize-none"
+                                                        rows={3}
+                                                    />
+                                                </div>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction
+                                                        className="bg-destructive hover:bg-destructive/90"
+                                                        onClick={() => rejectMutation.mutate(rejectReason)}
+                                                        disabled={rejectMutation.isPending}
+                                                    >
+                                                        {rejectMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin mr-1 inline" /> : null}
+                                                        Reject booking
+                                                    </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </div>
+                                )}
+
                                 <div className="flex items-center gap-0.5">
                                     <Button
                                         variant="ghost"
