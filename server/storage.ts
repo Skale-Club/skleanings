@@ -9,6 +9,7 @@ import {
   serviceAddons,
   serviceOptions,
   serviceFrequencies,
+  serviceDurations,
   bookings,
   bookingItems,
   chatSettings,
@@ -33,6 +34,9 @@ import {
   type ServiceAddon,
   type ServiceOption,
   type ServiceFrequency,
+  type ServiceDuration,
+  type InsertServiceDuration,
+  insertServiceDurationSchema,
   type Booking,
   type BookingItem,
   type CompanySettings,
@@ -151,6 +155,12 @@ export interface IStorage {
   updateServiceFrequency(id: number, frequency: Partial<InsertServiceFrequency>): Promise<ServiceFrequency>;
   deleteServiceFrequency(id: number): Promise<void>;
   setServiceFrequencies(serviceId: number, frequencies: Omit<InsertServiceFrequency, 'serviceId'>[]): Promise<ServiceFrequency[]>;
+
+  // Service Durations (Phase 23 SEED-029)
+  getServiceDurations(serviceId: number): Promise<ServiceDuration[]>;
+  createServiceDuration(duration: InsertServiceDuration): Promise<ServiceDuration>;
+  updateServiceDuration(id: number, data: Partial<InsertServiceDuration>): Promise<ServiceDuration>;
+  deleteServiceDuration(id: number): Promise<void>;
 
   // Bookings
   createBooking(booking: InsertBooking & { totalPrice: string, totalDurationMinutes: number, endTime: string, bookingItemsData?: any[], userId?: string | null }): Promise<Booking>;
@@ -641,6 +651,34 @@ export class DatabaseStorage implements IStorage {
       order: freq.order ?? index,
     }));
     return await db.insert(serviceFrequencies).values(values).returning();
+  }
+
+  // Service Durations (Phase 23 SEED-029)
+  async getServiceDurations(serviceId: number): Promise<ServiceDuration[]> {
+    return await db
+      .select()
+      .from(serviceDurations)
+      .where(eq(serviceDurations.serviceId, serviceId))
+      .orderBy(asc(serviceDurations.order), asc(serviceDurations.id));
+  }
+
+  async createServiceDuration(duration: InsertServiceDuration): Promise<ServiceDuration> {
+    const [newDuration] = await db.insert(serviceDurations).values(duration).returning();
+    return newDuration;
+  }
+
+  async updateServiceDuration(id: number, data: Partial<InsertServiceDuration>): Promise<ServiceDuration> {
+    const [updated] = await db
+      .update(serviceDurations)
+      .set(data)
+      .where(eq(serviceDurations.id, id))
+      .returning();
+    if (!updated) throw new Error(`ServiceDuration ${id} not found`);
+    return updated;
+  }
+
+  async deleteServiceDuration(id: number): Promise<void> {
+    await db.delete(serviceDurations).where(eq(serviceDurations.id, id));
   }
 
   async getService(id: number): Promise<Service | undefined> {
