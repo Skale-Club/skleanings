@@ -143,7 +143,11 @@ Plans:
   3. Customer receives a self-serve link (via email) that lets them pause or cancel their subscription without logging in
   4. A paused subscription resumes generating bookings when the admin or customer un-pauses it
   5. A cancelled subscription shows as cancelled in the admin panel and generates no further bookings
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 29-01-PLAN.md — Migration (manage_token UUID column + unique index), shared/schema.ts update, storage methods (getRecurringBookingByToken, getRecurringBookingsWithDetails)
+- [ ] 29-02-PLAN.md — Email template (buildManageEmail), admin routes (GET list, PATCH status), public routes (GET token, POST action), manage-link email in POST /api/bookings
+- [ ] 29-03-PLAN.md — Admin RecurringSubscriptionsPanel component, BookingsSection tab bar, public ManageSubscription page, App.tsx route registration
 **UI hint**: yes
 
 ---
