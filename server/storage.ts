@@ -2094,6 +2094,7 @@ export class DatabaseStorage implements IStorage {
         pausedAt: recurringBookings.pausedAt,
         originBookingId: recurringBookings.originBookingId,
         manageToken: recurringBookings.manageToken,
+        durationMinutes: recurringBookings.durationMinutes, // Phase 30 DUR-06: snapshot of chosen duration
         createdAt: recurringBookings.createdAt,
         updatedAt: recurringBookings.updatedAt,
         contactName: contacts.name,

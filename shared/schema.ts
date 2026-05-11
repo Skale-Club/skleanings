@@ -219,6 +219,8 @@ export const recurringBookings = pgTable("recurring_bookings", {
   originBookingId: integer("origin_booking_id"),
   // Phase 29 RECUR-05: permanent UUID token for customer self-serve manage link
   manageToken: uuid("manage_token").notNull().default(sql`gen_random_uuid()`),
+  // Phase 30 DUR-06: snapshot of chosen duration (null = use service.durationMinutes)
+  durationMinutes: integer("duration_minutes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -500,6 +502,8 @@ export const bookingItems = pgTable("booking_items", {
   customerNotes: text("customer_notes"), // Notes for custom_quote
   priceBreakdown: jsonb("price_breakdown").$type<PriceBreakdown>(), // Detailed price calculation
   questionAnswers: jsonb("question_answers").$type<QuestionAnswer[]>(), // Customer answers to service-specific questions (Phase 26)
+  durationLabel: text("duration_label"),       // Phase 30 DUR-04: snapshot of chosen ServiceDuration.label
+  durationMinutes: integer("duration_minutes"), // Phase 30 DUR-04: snapshot of chosen ServiceDuration.durationMinutes
 });
 
 // === SCHEMAS ===
@@ -544,6 +548,8 @@ export const cartItemSchema = z.object({
     type: z.string(),
     answer: z.string(),
   })).optional(),
+  // Phase 30 DUR-05: chosen duration ID — MUST be declared or Zod strips it silently
+  selectedDurationId: z.number().optional(),
 });
 
 export type CartItemData = z.infer<typeof cartItemSchema>;
