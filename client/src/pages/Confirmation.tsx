@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { CheckCircle2, Home, Loader2, AlertCircle, CreditCard } from "lucide-react";
+import { CheckCircle2, Home, Loader2, AlertCircle, CreditCard, Clock } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -21,6 +21,7 @@ export default function Confirmation() {
   const searchParams = new URLSearchParams(window.location.search);
   const sessionId = searchParams.get("session_id");
   const isStripeFlow = !!sessionId;
+  const isAwaitingApproval = searchParams.get("awaiting") === "true";
 
   const { data: verifyData, isLoading: isVerifying } = useQuery<{
     paid: boolean;
@@ -107,6 +108,35 @@ export default function Confirmation() {
             <Link href="/services">
               <button className="w-full py-3 bg-white text-slate-600 font-bold rounded-xl border border-gray-200 hover:bg-gray-50 transition-all">
                 Book Another Service
+              </button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Awaiting approval flow (requiresConfirmation service)
+  if (!isStripeFlow && isAwaitingApproval) {
+    return (
+      <div className="min-h-[80vh] flex flex-col items-center justify-center p-4 bg-slate-50">
+        <div className="bg-white p-12 rounded-3xl shadow-xl border border-gray-100 text-center max-w-lg w-full animate-in zoom-in duration-300">
+          <div className="w-24 h-24 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-8">
+            <Clock className="w-12 h-12" />
+          </div>
+          <h1 className="text-3xl font-bold text-slate-900 mb-4">Request Received</h1>
+          <p className="text-slate-600 mb-8 leading-relaxed">
+            Thank you for your request. Your booking is awaiting confirmation — we'll be in touch shortly to confirm your appointment.
+          </p>
+          <div className="flex flex-col gap-4">
+            <Link href="/">
+              <button className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
+                <Home className="w-4 h-4" /> Return Home
+              </button>
+            </Link>
+            <Link href="/services">
+              <button className="w-full py-3 bg-white text-slate-600 font-bold rounded-xl border border-gray-200 hover:bg-gray-50 transition-all">
+                Browse Services
               </button>
             </Link>
           </div>

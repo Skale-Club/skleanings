@@ -41,7 +41,7 @@ type BookingFormValues = z.infer<typeof bookingFormSchema>;
 
 export default function BookingPage() {
   const [step, setStep] = useState<2 | 3 | 4 | 5>(2);
-  const { items, totalPrice, totalDuration, removeItem, updateQuantity, getCartItemsForBooking } = useCart();
+  const { items, totalPrice, totalDuration, removeItem, updateQuantity, updateItem, getCartItemsForBooking } = useCart();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   // Phase 15 D-07: company-aware visitor key; aliased to avoid name collision with the
@@ -53,6 +53,8 @@ export default function BookingPage() {
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [viewDate, setViewDate] = useState<Date>(new Date());
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
+  // Map from serviceId → chosen ServiceDuration (only for services that have durations)
+  const [selectedDurations, setSelectedDurations] = useState<Record<number, any>>({});
 
   // Staff
   const { data: staffCountData } = useStaffCount();
@@ -117,6 +119,26 @@ export default function BookingPage() {
 
   const isPerStaffLoading = staffCount > 1 && perStaffAvailability.some((q) => q.isLoading);
 
+  // Fetch service details (with durations) for each cart item
+  const serviceDetailsQueries = useQueries({
+    queries: items.map(item => ({
+      queryKey: ['/api/services', item.id],
+      queryFn: () => fetch(`/api/services/${item.id}`).then(r => r.json()),
+      staleTime: 60_000,
+    })),
+  });
+
+  // Derive which services need duration selection
+  const itemsWithDurations = serviceDetailsQueries
+    .filter(q => Array.isArray(q.data?.durations) && q.data.durations.length > 0)
+    .map(q => q.data);
+
+  const allDurationsSelected = itemsWithDurations.length === 0 || itemsWithDurations.every(
+    (svc: any) => selectedDurations[svc.id] !== undefined
+  );
+
+  const serviceDetailsLoading = serviceDetailsQueries.some(q => q.isLoading);
+
   const createBooking = useCreateBooking();
 
   const checkoutMutation = useMutation({
@@ -149,7 +171,7 @@ export default function BookingPage() {
   const viewYear = viewDate.getFullYear();
   const viewMonth = viewDate.getMonth() + 1; // 1-12
   const { data: monthAvailability, isLoading: isLoadingMonthAvailability, isFetching: isFetchingMonthAvailability } = useMonthAvailability(viewYear, viewMonth, totalDuration, availabilityOptions);
-  const isSlotsPending = isLoadingSlots || isFetchingSlots || isPerStaffLoading;
+  const isSlotsPending = isLoadingSlots || isFetchingSlots || isPerStaffLoading || serviceDetailsLoading;
   const isMonthAvailabilityPending = isLoadingMonthAvailability || isFetchingMonthAvailability;
   const timeFormat = companySettings?.timeFormat || '12h';
   const minimumBookingValueStr = companySettings?.minimumBookingValue || '0';
@@ -252,8 +274,12 @@ export default function BookingPage() {
       checkoutMutation.mutate(bookingPayload);
     } else {
       createBooking.mutate(bookingPayload as any, {
-        onSuccess: () => {
-          setLocation("/confirmation");
+        onSuccess: (data: any) => {
+          if (data?.status === 'awaiting_approval') {
+            setLocation("/confirmation?awaiting=true");
+          } else {
+            setLocation("/confirmation");
+          }
         },
         onError: (error) => {
           toast({
@@ -347,8 +373,61 @@ export default function BookingPage() {
               </div>
             )}
 
+            {/* DURATION SELECTOR — rendered before calendar when services have durations */}
+            {step === 3 && itemsWithDurations.length > 0 && !allDurationsSelected && (
+              <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-4">
+                <h2 className="text-2xl font-bold mb-2">Choose Your Duration</h2>
+                <p className="text-slate-500 text-sm mb-6">Select how long you need for each service.</p>
+                <div className="space-y-6">
+                  {itemsWithDurations.map((svc: any) => (
+                    <div key={svc.id}>
+                      <p className="font-semibold mb-3 text-slate-800">{svc.name}</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {svc.durations.map((d: any) => (
+                          <button
+                            key={d.id}
+                            onClick={() => setSelectedDurations(prev => ({ ...prev, [svc.id]: d }))}
+                            className={clsx(
+                              "p-4 rounded-xl border-2 text-left transition-all",
+                              selectedDurations[svc.id]?.id === d.id
+                                ? "border-primary bg-primary/5"
+                                : "border-slate-200 hover:border-slate-300"
+                            )}
+                          >
+                            <p className="font-semibold text-sm">{d.label}</p>
+                            <p className="text-slate-500 text-xs mt-1">
+                              {Math.floor(d.durationMinutes / 60)}h {d.durationMinutes % 60 > 0 ? `${d.durationMinutes % 60}m ` : ''}— ${Number(d.price).toFixed(2)}
+                            </p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  disabled={!allDurationsSelected}
+                  onClick={() => {
+                    // Apply selected durations to cart items
+                    itemsWithDurations.forEach((svc: any) => {
+                      const chosen = selectedDurations[svc.id];
+                      if (chosen) {
+                        updateItem(svc.id, {
+                          service: { ...svc, durationMinutes: chosen.durationMinutes },
+                          calculatedPrice: Number(chosen.price),
+                          selectedDurationId: chosen.id,
+                        });
+                      }
+                    });
+                  }}
+                  className="mt-6 w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  Continue to Schedule <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
             {/* STEP 3: SCHEDULE */}
-            {step === 3 && (
+            {step === 3 && (allDurationsSelected || itemsWithDurations.length === 0) && (
               <div ref={calendarRef} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-4 text-slate-900">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                   {/* Calendar Column */}
