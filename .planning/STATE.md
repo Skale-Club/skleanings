@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Calendar Polish
 status: executing
-stopped_at: "Phase 20 Plan 01 — paused at Task 3 checkpoint:human-verify (awaiting baseline measurements)"
-last_updated: "2026-05-05T19:08:05.222Z"
-last_activity: 2026-05-05 -- Phase 20 execution started
+stopped_at: Completed 21-01-PLAN.md
+last_updated: "2026-05-11T02:55:55.970Z"
+last_activity: 2026-05-11
 progress:
   total_phases: 1
   completed_phases: 0
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-05)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 20 — calendar-timeline-structure-audit
+**Current focus:** Phase 21 — per-service-booking-limits-buffer-time-minimum-notice-time-slot-interval
 
 ## Current Position
 
-Phase: 20 (calendar-timeline-structure-audit) — EXECUTING
-Plan: 1 of 4
-Status: Executing Phase 20
-Last activity: 2026-05-05 -- Phase 20 execution started
+Phase: 21 (per-service-booking-limits-buffer-time-minimum-notice-time-slot-interval) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-05-11
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -56,6 +56,12 @@ See: .planning/MILESTONES.md
 
 All milestone decisions logged in PROJECT.md Key Decisions table.
 
+- [Phase 21]: timeSlotInterval is nullable (null = use durationMinutes) to avoid requiring a value on every existing service row
+
+### Roadmap Evolution
+
+- Phase 21 added: Per-service booking limits — buffer time, minimum notice, time-slot interval (SEED-026)
+
 ### Blockers/Concerns
 
 - **MIGRATION PENDING** — `supabase/migrations/20260425000000_add_utm_tracking.sql` requires `POSTGRES_URL_NON_POOLING` (direct connection, port 5432). Get from Supabase Dashboard > Settings > Database.
@@ -64,6 +70,6 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-05T19:08:05.218Z
-Stopped at: Phase 20 Plan 01 — paused at Task 3 checkpoint:human-verify (awaiting baseline measurements)
+Last session: 2026-05-11T02:55:55.967Z
+Stopped at: Completed 21-01-PLAN.md
 Resume file: None
