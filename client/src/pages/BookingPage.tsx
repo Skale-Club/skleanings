@@ -55,6 +55,8 @@ export default function BookingPage() {
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
   // Map from serviceId → chosen ServiceDuration (only for services that have durations)
   const [selectedDurations, setSelectedDurations] = useState<Record<number, any>>({});
+  // Phase 28 RECUR-01: null = one-time, number = serviceFrequency.id
+  const [selectedFrequencyId, setSelectedFrequencyId] = useState<number | null>(null);
 
   // Staff
   const { data: staffCountData } = useStaffCount();
@@ -126,6 +128,16 @@ export default function BookingPage() {
       queryFn: () => fetch(`/api/services/${item.id}`).then(r => r.json()),
       staleTime: 60_000,
     })),
+  });
+
+  // Phase 28 RECUR-01: fetch frequencies for the primary (and only) cart item.
+  // Only shown for single-service carts to avoid ambiguity about which service recurs.
+  const primaryServiceId = items.length === 1 ? items[0].id : undefined;
+  const { data: frequencies } = useQuery<import("@shared/schema").ServiceFrequency[]>({
+    queryKey: ['/api/services', primaryServiceId, 'frequencies'],
+    queryFn: () => fetch(`/api/services/${primaryServiceId}/frequencies`).then(r => r.json()),
+    enabled: !!primaryServiceId,
+    staleTime: 60_000,
   });
 
   // Derive which services need duration selection
@@ -252,10 +264,18 @@ export default function BookingPage() {
 
     const fullAddress = `${data.customerStreet}${data.customerUnit ? `, ${data.customerUnit}` : ""}, ${data.customerCity}, ${data.customerState}`;
 
+    // Phase 28 RECUR-01: attach selectedFrequencyId to the first cart item only
+    const cartItemsWithFrequency = getCartItemsForBooking().map((cartItem: any, idx: number) => {
+      if (idx === 0 && selectedFrequencyId !== null) {
+        return { ...cartItem, selectedFrequencyId };
+      }
+      return cartItem;
+    });
+
     const bookingPayload = {
       ...data,
       customerAddress: fullAddress,
-      cartItems: getCartItemsForBooking(),
+      cartItems: cartItemsWithFrequency,
       bookingDate: selectedDate,
       startTime: selectedTime,
       endTime: endTime,
@@ -865,6 +885,47 @@ export default function BookingPage() {
                 <p className="text-xs text-slate-400 mt-2">
                   A minimum order of ${minimumBookingValue.toFixed(2)} applies
                 </p>
+              )}
+
+              {/* Phase 28 RECUR-01: frequency selector — shown after time slot selected, single-service carts only */}
+              {step === 3 && selectedDate && selectedTime && frequencies && frequencies.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <p className="text-sm font-semibold text-slate-700 mb-3">How often?</p>
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedFrequencyId(null)}
+                      className={clsx(
+                        "w-full px-4 py-3 rounded-xl border-2 text-left text-sm transition-all",
+                        selectedFrequencyId === null
+                          ? "border-primary bg-primary/5 font-semibold"
+                          : "border-slate-200 hover:border-slate-300"
+                      )}
+                    >
+                      One-time cleaning
+                    </button>
+                    {frequencies.map(f => (
+                      <button
+                        type="button"
+                        key={f.id}
+                        onClick={() => setSelectedFrequencyId(f.id)}
+                        className={clsx(
+                          "w-full px-4 py-3 rounded-xl border-2 text-left text-sm transition-all",
+                          selectedFrequencyId === f.id
+                            ? "border-primary bg-primary/5 font-semibold"
+                            : "border-slate-200 hover:border-slate-300"
+                        )}
+                      >
+                        <span>{f.name}</span>
+                        {Number(f.discountPercent) > 0 && (
+                          <span className="ml-2 text-green-600 font-bold">
+                            {Number(f.discountPercent)}% off
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
 
               <div className="mt-8">
