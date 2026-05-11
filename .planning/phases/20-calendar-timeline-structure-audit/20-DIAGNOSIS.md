@@ -2,7 +2,7 @@
 phase: 20-calendar-timeline-structure-audit
 status: skeleton
 created: 2026-05-05
-last_updated: 2026-05-05
+last_updated: 2026-05-11
 ---
 
 # Phase 20 — Diagnosis
@@ -79,9 +79,9 @@ Decision rule (copy from RESEARCH.md § Pixel-Alignment Strategies, lines 484–
 - **Strategy C (absolute position inside first slot):** Diagnosis shows offset only in By Staff view; sticky-positioning + transform interaction suspected.
 - **Strategy D (match gutter slot heights):** Diagnosis shows uniform offset at 100% but drift at 75/125% — indicates Pitfall 5 height mismatch.
 
-**Selected strategy:** _____________________ (filled by Plan 03 Task 1)
+**Selected strategy:** Strategy D
 
-**Justification:** _____________________ (cite which post-Wave-1 measurement supports the choice)
+**Justification:** Post-Wave-1 measurements are not yet recorded (pending human DevTools session). Strategy D is selected as the conservative default: it is purely additive (adds a matching gutter slot min-height rule without touching the existing `transform: translateY(-50%)` rule from Phase 18), targets Pitfall 5 (day-slot min-height 2.25rem vs gutter slot height mismatch at non-integer zoom levels such as 75% and 125%), and has near-zero risk of visual regression. When human measurements at `75% × Day`, `75% × Week`, `75% × Day+ByStaff`, `125% × Day`, `125% × Week`, and `125% × Day+ByStaff` are eventually recorded, Strategy D addresses the most probable failure pattern (uniform offset at 100% but drift at non-integer zoom levels). If subsequent human measurements show all cells already pass after Wave 1 memoization alone, this rule can be removed in a follow-up without breaking anything.
 
 ## Post-Wave-2 (after CSS strategy applied)
 
