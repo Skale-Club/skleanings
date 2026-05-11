@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Calendar Polish
-status: verifying
-stopped_at: Completed 23-02-PLAN.md
-last_updated: "2026-05-11T03:55:15.827Z"
-last_activity: 2026-05-11
+status: executing
+stopped_at: Checkpoint at Task 3 of 20-01-PLAN.md (baseline measurement)
+last_updated: "2026-05-11T09:02:31.615Z"
+last_activity: 2026-05-11 -- Phase 20 execution started
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 4
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-05)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 22 — date-overrides-staff-availability
+**Current focus:** Phase 20 — calendar-timeline-structure-audit
 
 ## Current Position
 
-Phase: 24
-Plan: Not started
-Status: Phase complete — ready for verification
-Last activity: 2026-05-11
+Phase: 20 (calendar-timeline-structure-audit) — EXECUTING
+Plan: 1 of 4
+Status: Executing Phase 20
+Last activity: 2026-05-11 -- Phase 20 execution started
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -73,6 +73,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 24]: Approve/Reject buttons placed in interactive variant only, visible solely when status === awaiting_approval
 - [Phase 24]: awaiting=true query param used for Confirmation routing — works across page reloads
 - [Phase 24]: requiresConfirmation toggle placed inside Booking Rules collapsible to keep ServiceForm uncluttered
+- [Phase 20]: Diagnosis-before-fixes: 20-DIAGNOSIS.md Baseline filled by human before Wave 1 code changes
+- [Phase 20]: CAL-FIX-04 uses per-item attribution for all 5 Phase 19 UAT items — enables regression tracking at item granularity
 
 ### Roadmap Evolution
 
@@ -86,6 +88,6 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-11T03:33:23.203Z
-Stopped at: Completed 23-02-PLAN.md
+Last session: 2026-05-11T09:02:31.416Z
+Stopped at: Checkpoint at Task 3 of 20-01-PLAN.md (baseline measurement)
 Resume file: None
