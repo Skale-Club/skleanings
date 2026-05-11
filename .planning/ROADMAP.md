@@ -103,6 +103,46 @@ Plans:
 - [x] 21-02-PLAN.md — Wave 2: Backend availability logic (buffer, notice, interval in getAvailableSlots)
 - [x] 21-03-PLAN.md — Wave 2: Admin UI (Booking Rules section in ServiceForm)
 
+### Phase 22: Date overrides for staff availability (SEED-022)
+
+**Goal:** Add staffAvailabilityOverrides table so staff members can block specific dates or set different hours on a date, overriding their weekly schedule.
+**Requirements**: TBD
+**Depends on:** Phase 21
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 22 to break down)
+
+### Phase 23: Multiple durations per service (SEED-029)
+
+**Goal:** Add serviceDurations table so a single service can offer multiple durations (e.g., 2h/$150, 4h/$250, 8h/$400). Customer selects duration in booking flow before calendar.
+**Requirements**: TBD
+**Depends on:** Phase 21
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 23 to break down)
+
+### Phase 24: Manual confirmation flow per service (SEED-030)
+
+**Goal:** Add requiresConfirmation boolean to services table. When true, bookings are created with awaiting_approval status. Admin sees approve/reject buttons. Customer receives "request received, pending confirmation" notification.
+**Requirements**: TBD
+**Depends on:** Phase 21
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 24 to break down)
+
+### Phase 25: Multiple time slots per day (SEED-021)
+
+**Goal:** Allow staff availability to have multiple time ranges per day (e.g., 8am-12pm AND 2pm-7pm). Replace single-slot-per-day constraint with multi-row support in staffAvailability. Admin UI gets + button to add ranges per day.
+**Requirements**: TBD
+**Depends on:** Phase 21
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 25 to break down)
+
 ---
 
 *Full milestone archives: [milestones/](milestones/)*
