@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Calendar Polish
-status: verifying
-stopped_at: Completed 21-02-PLAN.md
-last_updated: "2026-05-11T03:07:35.632Z"
+status: executing
+stopped_at: Completed 22-01-PLAN.md
+last_updated: "2026-05-11T03:21:31.631Z"
 last_activity: 2026-05-11
 progress:
   total_phases: 1
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-05)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 21 — per-service-booking-limits-buffer-time-minimum-notice-time-slot-interval
+**Current focus:** Phase 22 — date-overrides-staff-availability
 
 ## Current Position
 
-Phase: 21
-Plan: Not started
-Status: Phase complete — ready for verification
+Phase: 22 (date-overrides-staff-availability) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
 Last activity: 2026-05-11
 
 Progress: [░░░░░░░░░░] 0%
@@ -61,6 +61,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 21]: Import BookingLimits/shiftHHMM into availability.ts from staff-availability.ts; no circular dependency
 - [Phase 21]: Limits loaded BEFORE staffId fast-path in getSlotsForServices so fast-path receives populated limits
 - [Phase 21]: getAvailabilityRange (month-view) left unchanged — month-view limits out of scope for phase 21
+- [Phase 22-date-overrides-staff-availability]: uniqueIndex used for named compound unique index on staffAvailabilityOverrides(staffMemberId, date)
+- [Phase 22-date-overrides-staff-availability]: date column uses Drizzle date() type (YYYY-MM-DD string) for consistency with slot booking flow
 
 ### Roadmap Evolution
 
@@ -74,6 +76,6 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-11T03:02:15.315Z
-Stopped at: Completed 21-02-PLAN.md
+Last session: 2026-05-11T03:21:31.628Z
+Stopped at: Completed 22-01-PLAN.md
 Resume file: None
