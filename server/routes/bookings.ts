@@ -9,8 +9,8 @@ import { checkAvailability } from "../lib/availability";
 import { canCreateBooking, recordBookingCreation } from "../lib/rate-limit";
 import { acquireTimeSlotLock, releaseTimeSlotLock } from "../lib/time-slot-lock";
 import { syncBookingToGhl } from "../lib/booking-ghl-sync";
-import { sendBookingNotification } from "../integrations/twilio";
-import { sendBookingNotification as sendTelegramBookingNotification } from "../integrations/telegram";
+import { sendBookingNotification, sendAwaitingApprovalNotification } from "../integrations/twilio";
+import { sendBookingNotification as sendTelegramBookingNotification, sendAwaitingApprovalNotification as sendTelegramAwaitingApprovalNotification } from "../integrations/telegram";
 import { calculateCartItemPrice } from "../lib/pricing";
 
 const router = Router();
@@ -102,11 +102,24 @@ router.post('/', async (req, res) => {
             // Auth failure on a public endpoint is non-fatal — proceed as guest
         }
 
+        // Determine if primary service requires manual confirmation
+        let primaryRequiresConfirmation = false;
+        try {
+            const primaryServiceId = validatedData.cartItems?.[0]?.serviceId ?? validatedData.serviceIds?.[0];
+            if (primaryServiceId) {
+                const primaryService = await storage.getService(primaryServiceId);
+                primaryRequiresConfirmation = primaryService?.requiresConfirmation ?? false;
+            }
+        } catch {
+            // Non-fatal: if lookup fails, proceed with standard pending status
+        }
+
         const booking = await storage.createBooking({
             ...validatedData,
             bookingItemsData,
             userId: bookingUserId,
-        });
+            status: primaryRequiresConfirmation ? 'awaiting_approval' : 'pending',
+        } as any);
 
         // Auto-link contact: upsert by email/phone, then set contactId on booking
         try {
@@ -160,31 +173,62 @@ router.post('/', async (req, res) => {
                 storage.getCompanySettings(),
             ]);
 
-            if (twilioSettings?.enabled && twilioSettings.authToken && twilioSettings.fromPhoneNumber) {
-                try {
-                    await sendBookingNotification(
-                        booking,
-                        serviceNames,
-                        twilioSettings,
-                        companySettings?.companyName || 'the business',
-                        booking.id
-                    );
-                } catch (twilioError) {
-                    console.error("Twilio Notification Error:", twilioError);
+            if (primaryRequiresConfirmation) {
+                // Send awaiting_approval notifications instead of new_booking
+                if (twilioSettings?.enabled && twilioSettings.authToken && twilioSettings.fromPhoneNumber) {
+                    try {
+                        await sendAwaitingApprovalNotification(
+                            booking,
+                            serviceNames,
+                            twilioSettings,
+                            companySettings?.companyName || 'the business',
+                            booking.id
+                        );
+                    } catch (twilioError) {
+                        console.error("Twilio Awaiting Approval Notification Error:", twilioError);
+                    }
                 }
-            }
+                if (telegramSettings?.enabled && telegramSettings.botToken && telegramSettings.chatIds.length > 0) {
+                    try {
+                        await sendTelegramAwaitingApprovalNotification(
+                            booking,
+                            serviceNames,
+                            telegramSettings,
+                            companySettings?.companyName || 'the business',
+                            booking.id
+                        );
+                    } catch (telegramError) {
+                        console.error("Telegram Awaiting Approval Notification Error:", telegramError);
+                    }
+                }
+            } else {
+                // Existing new_booking notifications (no change)
+                if (twilioSettings?.enabled && twilioSettings.authToken && twilioSettings.fromPhoneNumber) {
+                    try {
+                        await sendBookingNotification(
+                            booking,
+                            serviceNames,
+                            twilioSettings,
+                            companySettings?.companyName || 'the business',
+                            booking.id
+                        );
+                    } catch (twilioError) {
+                        console.error("Twilio Notification Error:", twilioError);
+                    }
+                }
 
-            if (telegramSettings?.enabled && telegramSettings.botToken && telegramSettings.chatIds.length > 0) {
-                try {
-                    await sendTelegramBookingNotification(
-                        booking,
-                        serviceNames,
-                        telegramSettings,
-                        companySettings?.companyName || 'the business',
-                        booking.id
-                    );
-                } catch (telegramError) {
-                    console.error("Telegram Notification Error:", telegramError);
+                if (telegramSettings?.enabled && telegramSettings.botToken && telegramSettings.chatIds.length > 0) {
+                    try {
+                        await sendTelegramBookingNotification(
+                            booking,
+                            serviceNames,
+                            telegramSettings,
+                            companySettings?.companyName || 'the business',
+                            booking.id
+                        );
+                    } catch (telegramError) {
+                        console.error("Telegram Notification Error:", telegramError);
+                    }
                 }
             }
         } catch (error) {
@@ -223,6 +267,35 @@ router.put('/:id(\\d+)/status', requireAdmin, async (req, res) => {
         if (!status) return res.status(400).json({ message: "Status is required" });
 
         const booking = await storage.updateBookingStatus(Number(req.params.id), status);
+        res.json(booking);
+    } catch (err) {
+        res.status(500).json({ message: (err as Error).message });
+    }
+});
+
+// Approve a booking awaiting confirmation — sets status to confirmed
+router.put('/:id(\\d+)/approve', requireAdmin, async (req, res) => {
+    try {
+        const booking = await storage.updateBookingStatus(Number(req.params.id), 'confirmed');
+        res.json(booking);
+    } catch (err) {
+        res.status(500).json({ message: (err as Error).message });
+    }
+});
+
+// Reject a booking awaiting confirmation — sets status to cancelled
+// Optional: { reason: string } in body, stored via generic updateBooking
+router.put('/:id(\\d+)/reject', requireAdmin, async (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        await storage.updateBookingStatus(id, 'cancelled');
+        // If a reason was provided, log it server-side
+        // (bookings table has no notes column — Plan 03 UI will pass reason in request body)
+        const { reason } = req.body as { reason?: string };
+        if (reason) {
+            console.log(`Booking ${id} rejected. Reason: ${reason}`);
+        }
+        const booking = await storage.getBooking(id);
         res.json(booking);
     } catch (err) {
         res.status(500).json({ message: (err as Error).message });
