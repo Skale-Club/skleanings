@@ -108,6 +108,7 @@ export function ServiceForm({
   const [minimumNoticeHours, setMinimumNoticeHours] = useState<number>(service?.minimumNoticeHours ?? 0);
   const [timeSlotInterval, setTimeSlotInterval] = useState<number | null>(service?.timeSlotInterval ?? null);
   const [showBookingRules, setShowBookingRules] = useState(false);
+  const [requiresConfirmation, setRequiresConfirmation] = useState<boolean>(service?.requiresConfirmation ?? false);
 
   useEffect(() => {
     if (service?.id && pricingType === 'base_plus_addons') {
@@ -237,6 +238,7 @@ export function ServiceForm({
       durationMinutes: (durationHours * 60) + durationMinutes,
       categoryId: Number(categoryId), imageUrl, isHidden, addonIds: selectedAddons, pricingType,
       bufferTimeBefore, bufferTimeAfter, minimumNoticeHours, timeSlotInterval,
+      requiresConfirmation,
     } as any;
 
     if (subcategoryId) data.subcategoryId = Number(subcategoryId);
@@ -494,6 +496,20 @@ export function ServiceForm({
                   <p className="text-[11px] text-muted-foreground">Blank = use service duration as step</p>
                 </div>
               </div>
+              <div className="flex items-center gap-2 pt-2">
+                <Checkbox
+                  id="requires-confirmation"
+                  checked={requiresConfirmation}
+                  onCheckedChange={(checked) => setRequiresConfirmation(checked === true)}
+                  data-testid="checkbox-requires-confirmation"
+                />
+                <Label htmlFor="requires-confirmation" className="text-sm font-normal cursor-pointer">
+                  Requires manual confirmation
+                </Label>
+              </div>
+              <p className="text-xs text-muted-foreground -mt-1">
+                When enabled, bookings for this service start with "awaiting approval" status and must be manually approved by an admin.
+              </p>
             </div>
           )}
         </div>
