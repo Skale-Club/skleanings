@@ -2,6 +2,7 @@ import type { TelegramSettings } from "@shared/schema";
 import {
   type BookingNotificationPayload,
   buildBookingNotification,
+  buildAwaitingApprovalNotification,
   buildNewChatNotification,
   renderNotificationHtml,
 } from "../lib/notification-templates";
@@ -180,6 +181,24 @@ export async function sendBookingNotification(
   );
 
   return sendMessageToAll(settings, message, "HTML", { trigger: "new_booking", bookingId });
+}
+
+export async function sendAwaitingApprovalNotification(
+  booking: BookingNotificationPayload,
+  serviceNames: string[],
+  settings: TelegramSettings,
+  companyName?: string,
+  bookingId?: number
+): Promise<{ success: boolean; message?: string }> {
+  if (!settings.enabled) {
+    return { success: false, message: "Telegram notifications are disabled" };
+  }
+
+  const message = renderNotificationHtml(
+    buildAwaitingApprovalNotification(booking, serviceNames, companyName)
+  );
+
+  return sendMessageToAll(settings, message, "HTML", { trigger: "booking_awaiting_approval", bookingId });
 }
 
 export async function sendTelegramTestMessage(

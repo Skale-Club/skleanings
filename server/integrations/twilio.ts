@@ -2,6 +2,7 @@ import type { TwilioSettings } from "@shared/schema";
 import {
   type BookingNotificationPayload,
   buildBookingNotification,
+  buildAwaitingApprovalNotification,
   buildNewChatNotification,
   renderNotificationPlain,
 } from "../lib/notification-templates";
@@ -164,6 +165,61 @@ export async function sendBookingNotification(
     return { success: true };
   } catch (error: any) {
     console.error("Failed to send Twilio booking notification:", error);
+    return { success: false, message: error?.message || "Unknown error" };
+  }
+}
+
+export async function sendAwaitingApprovalNotification(
+  booking: BookingNotificationPayload,
+  serviceNames: string[],
+  twilioSettings: TwilioSettings,
+  companyName?: string,
+  bookingId?: number
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    if (!twilioSettings.enabled || !twilioSettings.accountSid || !twilioSettings.authToken || !twilioSettings.fromPhoneNumber || !twilioSettings.toPhoneNumbers || twilioSettings.toPhoneNumbers.length === 0) {
+      return { success: false, message: "Twilio settings are incomplete" };
+    }
+
+    const { default: twilio } = await import("twilio");
+    const client = twilio(twilioSettings.accountSid, twilioSettings.authToken);
+    const message = renderNotificationPlain(
+      buildAwaitingApprovalNotification(booking, serviceNames, companyName)
+    );
+
+    for (const phoneNumber of twilioSettings.toPhoneNumbers) {
+      try {
+        const result = await client.messages.create({
+          body: message,
+          from: twilioSettings.fromPhoneNumber,
+          to: phoneNumber,
+        });
+        await logNotification({
+          channel: "sms",
+          trigger: "booking_awaiting_approval",
+          recipient: phoneNumber,
+          preview: message,
+          status: "sent",
+          providerMessageId: result.sid,
+          bookingId,
+        });
+      } catch (err: any) {
+        await logNotification({
+          channel: "sms",
+          trigger: "booking_awaiting_approval",
+          recipient: phoneNumber,
+          preview: message,
+          status: "failed",
+          errorMessage: err?.message,
+          bookingId,
+        });
+        throw err;
+      }
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Failed to send Twilio awaiting approval notification:", error);
     return { success: false, message: error?.message || "Unknown error" };
   }
 }
