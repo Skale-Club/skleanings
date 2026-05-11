@@ -1,0 +1,64 @@
+name: Recurring Bookings Generation
+
+on:
+  schedule:
+    - cron: '0 6 * * *'   # 06:00 UTC daily
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual trigger'
+        required: false
+        default: 'Manual trigger'
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Generate Recurring Bookings
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "ERROR: CRON_SECRET secret is not configured"
+            exit 1
+          fi
+          if [ -z "$APP_URL" ]; then
+            echo "ERROR: APP_URL variable is not configured"
+            exit 1
+          fi
+
+          APP_URL="${APP_URL%/}"
+          echo "Using APP_URL: $APP_URL"
+
+          call_generate() {
+            curl -L -s -w "\n%{http_code}" -X POST \
+              "${APP_URL}/api/recurring-bookings/cron/generate" \
+              -H "Authorization: Bearer ${CRON_SECRET}" \
+              -H "Content-Type: application/json" \
+              --max-time 60
+          }
+
+          echo "Triggering recurring booking generation at $(date -u)"
+          RESPONSE=$(call_generate)
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          if [ "$HTTP_CODE" -ge 500 ]; then
+            echo "Received HTTP $HTTP_CODE. Retrying once after 10s..."
+            sleep 10
+            RESPONSE=$(call_generate)
+            HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+            BODY=$(echo "$RESPONSE" | sed '$d')
+          fi
+
+          echo "Response: $BODY"
+          echo "HTTP Status: $HTTP_CODE"
+
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "Recurring booking cron endpoint failed with HTTP $HTTP_CODE"
+            exit 1
+          fi
+          echo "Recurring booking generation completed successfully"
