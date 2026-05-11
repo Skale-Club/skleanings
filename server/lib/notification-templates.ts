@@ -134,6 +134,52 @@ export function buildBookingNotification(
   };
 }
 
+export function buildAwaitingApprovalNotification(
+  booking: BookingNotificationPayload,
+  serviceNames: string[],
+  companyName?: string
+): NotificationMessage {
+  const normalizedServices = serviceNames.length > 0 ? serviceNames : ["N/A"];
+  return {
+    companyName: normalizeCompanyName(companyName),
+    title: "Booking awaiting approval",
+    titleEmoji: "⏳",
+    sections: [
+      {
+        heading: "Customer",
+        lines: [
+          booking.customerName || "N/A",
+          `Phone: ${booking.customerPhone || "N/A"}`,
+          `Email: ${booking.customerEmail || "N/A"}`,
+        ],
+      },
+      {
+        heading: "Schedule",
+        lines: [
+          `Date: ${formatBookingDate(booking.bookingDate)}`,
+          `Time: ${formatBookingTime(booking.startTime)}`,
+        ],
+      },
+      {
+        heading: "Address",
+        lines: [booking.customerAddress || "N/A"],
+      },
+      {
+        heading: "Total",
+        lines: [`$${formatMoney(booking.totalPrice)}`],
+      },
+      {
+        heading: serviceNames.length > 1 ? "Services" : "Service",
+        lines: normalizedServices.map((service) => `- ${service}`),
+      },
+      {
+        heading: "Action required",
+        lines: ["Visit the admin panel to approve or reject this booking."],
+      },
+    ],
+  };
+}
+
 export function renderNotificationPlain(message: NotificationMessage): string {
   const parts: string[] = [`${message.companyName}`, "", `${message.titleEmoji} ${message.title}`];
 
