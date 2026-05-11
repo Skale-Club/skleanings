@@ -38,10 +38,25 @@ router.get("/api/availability", async (req, res) => {
       // No staff in system — legacy global logic
       const ghlSettings = await storage.getIntegrationSettings("gohighlevel");
       const useGhl = !!(ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.calendarId);
+
+      // Load booking limits from primary service (if any) — no-staff day-view path
+      let limits: import("../lib/staff-availability").BookingLimits | undefined;
+      if (parsedServiceIds.length > 0) {
+        const primarySvc = await storage.getService(parsedServiceIds[0]);
+        if (primarySvc) {
+          limits = {
+            bufferTimeBefore: primarySvc.bufferTimeBefore ?? 0,
+            bufferTimeAfter: primarySvc.bufferTimeAfter ?? 0,
+            minimumNoticeHours: primarySvc.minimumNoticeHours ?? 0,
+            timeSlotInterval: primarySvc.timeSlotInterval ?? null,
+          };
+        }
+      }
+
       slots = await getAvailabilityForDate(date, totalDurationMinutes, useGhl, ghlSettings, {
         timeZone,
         requireGhl: false,
-      });
+      }, limits);
     } else if (parsedServiceIds.length > 0 || staffId) {
       slots = await getSlotsForServices(date, totalDurationMinutes, parsedServiceIds, staffId, { timeZone });
     } else {

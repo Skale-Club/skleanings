@@ -2,6 +2,7 @@
 import { storage } from "../storage";
 import { getGHLFreeSlots } from "../integrations/ghl";
 import { DEFAULT_BUSINESS_HOURS, type BusinessHours, type DayHours } from "@shared/schema";
+import { type BookingLimits, shiftHHMM } from "./staff-availability";
 
 export function getTodayStr(date: Date = new Date(), timeZone: string = 'America/New_York'): string {
     const tzFormatter = new Intl.DateTimeFormat('en-US', {
@@ -30,7 +31,8 @@ export async function getAvailabilityForDate(
     durationMinutes: number,
     useGhl: boolean,
     ghlSettings: any,
-    options?: { requireGhl?: boolean; timeZone?: string }
+    options?: { requireGhl?: boolean; timeZone?: string },
+    limits?: BookingLimits
 ) {
     const company = await storage.getCompanySettings();
     const businessHours: BusinessHours = (company?.businessHours as BusinessHours) || DEFAULT_BUSINESS_HOURS;
@@ -72,53 +74,52 @@ export async function getAvailabilityForDate(
 
     const now = new Date();
     const tzNow = new Date(now.toLocaleString('en-US', { timeZone })); // Note: This creates a date object where getHours() returns time in timeZone
-    const todayStr = tzNow.toISOString().split('T')[0];
-    const isToday = date === todayStr;
-    const currentHour = tzNow.getHours();
-    const currentMinute = tzNow.getMinutes();
 
     const [startHr, startMn] = dayHours.start.split(':').map(Number);
     const [endHr, endMn] = dayHours.end.split(':').map(Number);
 
+    const step = limits?.timeSlotInterval ?? durationMinutes;
+    const dayStartMins = startHr * 60 + startMn;
+    const dayEndMins = endHr * 60 + endMn;
+
+    // Minimum-notice cutoff — use tzNow (already computed above) for TZ correctness
+    const noticeMs = (limits?.minimumNoticeHours ?? 0) * 60 * 60 * 1000;
+    const cutoffTs = tzNow.getTime() + noticeMs;
+
     const slots: string[] = [];
 
-    for (let h = startHr; h < endHr || (h === endHr && 0 < endMn); h++) {
-        for (let m = 0; m < 60; m += 30) {
-            if (h === startHr && m < startMn) continue;
-            if (h > endHr || (h === endHr && m >= endMn)) continue;
+    for (let slotMins = dayStartMins; slotMins < dayEndMins; slotMins += step) {
+        const slotH = Math.floor(slotMins / 60);
+        const slotM = slotMins % 60;
+        const startTime = `${String(slotH).padStart(2, '0')}:${String(slotM).padStart(2, '0')}`;
 
-            const slotHour = h.toString().padStart(2, '0');
-            const slotMinute = m.toString().padStart(2, '0');
-            const startTime = `${slotHour}:${slotMinute}`;
+        // Minimum notice check — skip if slot is within the cutoff window
+        const slotTs = new Date(`${date}T${startTime}:00`).getTime();
+        if (slotTs < cutoffTs) continue;
 
-            if (isToday) {
-                if (h < currentHour || (h === currentHour && m <= currentMinute)) continue;
-            }
+        const slotEndMins = slotMins + durationMinutes;
+        if (slotEndMins > dayEndMins) continue;
+        const endH = Math.floor(slotEndMins / 60);
+        const endM = slotEndMins % 60;
+        const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
 
-            const slotDate = new Date(`2000-01-01T${startTime}:00`);
-            slotDate.setMinutes(slotDate.getMinutes() + durationMinutes);
-            if (slotDate.getHours() > endHr || (slotDate.getHours() === endHr && slotDate.getMinutes() > endMn)) {
-                continue;
-            }
+        let available = true;
 
-            const endHour = slotDate.getHours().toString().padStart(2, '0');
-            const endMinute = slotDate.getMinutes().toString().padStart(2, '0');
-            const endTime = `${endHour}:${endMinute}`;
-
-            let available = true;
-
-            if (useGhl) {
-                available = ghlFreeSlots.includes(startTime);
-            }
-
-            if (available) {
-                available = !existingBookings.some(b => startTime < b.endTime && endTime > b.startTime);
-            }
-
-            if (available) {
-                slots.push(startTime);
-            }
+        if (useGhl) {
+            available = ghlFreeSlots.includes(startTime);
         }
+
+        if (available) {
+            const bufBefore = limits?.bufferTimeBefore ?? 0;
+            const bufAfter = limits?.bufferTimeAfter ?? 0;
+            available = !existingBookings.some((b) => {
+                const occupiedStart = shiftHHMM(b.startTime, -bufBefore);
+                const occupiedEnd = shiftHHMM(b.endTime, bufAfter);
+                return startTime < occupiedEnd && endTime > occupiedStart;
+            });
+        }
+
+        if (available) slots.push(startTime);
     }
 
     return slots;
