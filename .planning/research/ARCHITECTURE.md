@@ -1,703 +1,430 @@
-# Architecture Research: First-Party UTM Tracking Integration
+# Architecture Research
 
-**Domain:** Marketing attribution layer for a cleaning service booking platform
-**Researched:** 2026-04-25
-**Confidence:** HIGH — recommendations are grounded in codebase inspection of actual file paths plus verified patterns from production analytics systems (Umami, PostHog)
-
----
-
-## Standard Architecture
-
-### System Overview
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        BROWSER (Customer)                           │
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │  useUTMCapture hook (new)                                    │   │
-│  │  · Reads URL params on first load                           │   │
-│  │  · Reads/writes localStorage: skleanings_visitor_id         │   │
-│  │  │                            skleanings_first_touch        │   │
-│  │  │                            skleanings_last_touch         │   │
-│  │  · Fires POST /api/analytics/session (fire-and-forget)      │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-│  ┌──────────────────┐   ┌──────────────────────────────────────┐   │
-│  │  BookingPage.tsx │   │  Confirmation.tsx (modified)         │   │
-│  │  (modified)      │──▶│  · reads visitorId from localStorage │   │
-│  │  · reads         │   │  · appends to POST /api/bookings     │   │
-│  │    visitorId     │   │  · fires POST /api/analytics/events  │   │
-│  └──────────────────┘   └──────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────┘
-                │ HTTP                           │ HTTP
-                ▼                                ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                    EXPRESS SERVER (server/)                          │
-│                                                                     │
-│  server/routes/analytics.ts (new)                                   │
-│  ├── POST /api/analytics/session   → upsertVisitorSession()        │
-│  ├── POST /api/analytics/events    → recordConversionEvent()        │
-│  ├── GET  /api/analytics/overview  → getMarketingOverview()        │
-│  ├── GET  /api/analytics/campaigns → getCampaignPerformance()      │
-│  ├── GET  /api/analytics/sources   → getSourcePerformance()        │
-│  ├── GET  /api/analytics/conversions → getConversionsList()        │
-│  └── GET  /api/analytics/journey/:visitorId → getVisitorJourney()  │
-│                                                                     │
-│  server/routes/bookings.ts (modified)                               │
-│  └── POST /api/bookings            → createBooking() with          │
-│                                       visitorId from body           │
-│                                       → storage.linkBookingAttrib() │
-│                                                                     │
-│  server/storage/analytics.ts (new)                                  │
-│  ├── upsertVisitorSession()                                         │
-│  ├── recordConversionEvent()                                        │
-│  ├── linkBookingToAttribution()                                     │
-│  └── query functions for each dashboard view                        │
-└─────────────────────────────────────────────────────────────────────┘
-                │ Drizzle ORM
-                ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                    POSTGRESQL (Supabase)                             │
-│                                                                     │
-│  visitor_sessions          conversion_events                        │
-│  (one row per visitor)     (one row per event per visitor)          │
-│                                                                     │
-│  bookings (modified)                                                │
-│  · utm_session_id FK (nullable)                                     │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
-### Component Responsibilities
-
-| Component | Responsibility | New / Modified |
-|-----------|---------------|----------------|
-| `useUTMCapture` hook | Reads URL params, generates/persists visitor UUID, fires session POST | New — `client/src/hooks/use-utm-capture.ts` |
-| `App.tsx` `AnalyticsProvider` | Mount point for `useUTMCapture` (runs on every route load) | Modified — add hook call inside existing `AnalyticsProvider` |
-| `BookingPage.tsx` | Reads `visitorId` from localStorage; injects into booking form payload | Modified — adds one field to the submitted payload |
-| `Confirmation.tsx` | Fires `booking_completed` conversion event after successful booking | Modified — adds POST to `/api/analytics/events` |
-| `server/routes/analytics.ts` | All analytics API endpoints; admin endpoints protected by `requireAdmin` | New |
-| `server/storage/analytics.ts` | All DB queries for UTM tables; follows domain-module pattern | New |
-| `shared/schema.ts` | Adds `visitorSessions` and `conversionEvents` table definitions | Modified |
-| `visitor_sessions` table | One row per visitor; first-touch preserved, last-touch updated | New DB table |
-| `conversion_events` table | One row per tracked action; links to visitor session | New DB table |
-| `bookings.utm_session_id` | FK connecting a booking to the attribution row | New nullable column |
+**Domain:** Booking platform — v5.0 Booking Experience milestone
+**Researched:** 2026-05-11
+**Confidence:** HIGH (based on direct codebase inspection)
 
 ---
 
-## Database Schema Design
+## Existing Architecture Baseline
 
-### Table: `visitor_sessions`
+Before mapping new features, the current system structure:
 
-One row per anonymous visitor. First-touch columns are written once and never overwritten. Last-touch columns are updated on every meaningful visit (any visit that carries UTM params or a new referrer).
-
-```typescript
-// shared/schema.ts addition
-export const visitorSessions = pgTable("visitor_sessions", {
-  id: uuid("id").primaryKey(),              // client-generated UUID (localStorage)
-  // First-touch attribution (written once, never updated)
-  firstSource:      text("first_source"),   // utm_source or classified source
-  firstMedium:      text("first_medium"),   // utm_medium or classified medium
-  firstCampaign:    text("first_campaign"), // utm_campaign
-  firstTerm:        text("first_term"),     // utm_term
-  firstContent:     text("first_content"),  // utm_content
-  firstLandingPage: text("first_landing_page"), // full pathname
-  firstReferrer:    text("first_referrer"),  // document.referrer
-  firstSeenAt:      timestamp("first_seen_at").defaultNow().notNull(),
-  // Last-touch attribution (overwritten on each meaningful visit)
-  lastSource:       text("last_source"),
-  lastMedium:       text("last_medium"),
-  lastCampaign:     text("last_campaign"),
-  lastTerm:         text("last_term"),
-  lastContent:      text("last_content"),
-  lastLandingPage:  text("last_landing_page"),
-  lastReferrer:     text("last_referrer"),
-  lastSeenAt:       timestamp("last_seen_at").defaultNow().notNull(),
-  // Classification (derived on server from UTM params + referrer)
-  trafficSource:    text("traffic_source").notNull().default("unknown"),
-  // 'organic_search' | 'paid_search' | 'organic_social' | 'paid_social'
-  // | 'email' | 'referral' | 'direct' | 'unknown'
-  visitCount:       integer("visit_count").notNull().default(1),
-  convertedAt:      timestamp("converted_at"),   // first conversion timestamp
-  totalBookings:    integer("total_bookings").notNull().default(0),
-});
+```
+shared/schema.ts              — single source of truth: Drizzle tables + Zod schemas + TS types
+server/storage.ts             — IStorage interface + DatabaseStorage implementation (all DB I/O)
+server/routes/                — domain-split Express routers (catalog, bookings, availability, staff...)
+server/lib/                   — pure helpers (pricing, availability, email, booking-ghl-sync...)
+server/services/              — stateful background services (cron, blog-generator, recurring-*)
+server/integrations/          — thin wrappers for external APIs (ghl.ts, twilio, telegram)
+server/lib/google-calendar.ts — Google Calendar OAuth + busy-time queries
+client/src/pages/BookingPage.tsx — 5-step booking flow (39 KB monolith, step state via local state)
 ```
 
-**Indexes:**
-
-```sql
--- Fast lookup when a booking is created and we resolve the visitor
-CREATE INDEX idx_visitor_sessions_first_source ON visitor_sessions(first_source);
-CREATE INDEX idx_visitor_sessions_traffic_source ON visitor_sessions(traffic_source);
-CREATE INDEX idx_visitor_sessions_first_seen_at ON visitor_sessions(first_seen_at);
-CREATE INDEX idx_visitor_sessions_last_seen_at ON visitor_sessions(last_seen_at);
--- Supports campaign performance query (GROUP BY first_campaign)
-CREATE INDEX idx_visitor_sessions_first_campaign ON visitor_sessions(first_campaign);
-```
-
-### Table: `conversion_events`
-
-One row per conversion action. Captures a denormalized snapshot of attribution at time of event so reports never need joins to get source context.
-
-```typescript
-export const conversionEvents = pgTable("conversion_events", {
-  id:              serial("id").primaryKey(),
-  visitorId:       uuid("visitor_id").references(() => visitorSessions.id, { onDelete: "set null" }),
-  eventType:       text("event_type").notNull(),
-  // 'booking_completed' | 'form_submit' | 'phone_click' | 'quote_request'
-  bookingId:       integer("booking_id").references(() => bookings.id, { onDelete: "set null" }),
-  bookingValue:    numeric("booking_value", { precision: 10, scale: 2 }),
-  // Denormalized attribution snapshot at event time (no JOIN needed for reports)
-  attributedSource:   text("attributed_source"),
-  attributedMedium:   text("attributed_medium"),
-  attributedCampaign: text("attributed_campaign"),
-  attributedLandingPage: text("attributed_landing_page"),
-  attributionModel: text("attribution_model").notNull().default("last_touch"),
-  // 'first_touch' | 'last_touch'
-  occurredAt:      timestamp("occurred_at").defaultNow().notNull(),
-  pageUrl:         text("page_url"),
-  metadata:        jsonb("metadata").default({}), // flexible extra data
-});
-```
-
-**Indexes:**
-
-```sql
--- Primary reporting queries: by date, by type, by source
-CREATE INDEX idx_conversion_events_occurred_at ON conversion_events(occurred_at);
-CREATE INDEX idx_conversion_events_event_type ON conversion_events(event_type);
-CREATE INDEX idx_conversion_events_attributed_source ON conversion_events(attributed_source);
-CREATE INDEX idx_conversion_events_attributed_campaign ON conversion_events(attributed_campaign);
--- Visitor journey lookup
-CREATE INDEX idx_conversion_events_visitor_id ON conversion_events(visitor_id);
--- Booking linkage
-CREATE INDEX idx_conversion_events_booking_id ON conversion_events(booking_id);
-```
-
-### Modification: `bookings` table
-
-Add one nullable column so any booking can be joined directly to its attribution session without going through conversion_events.
-
-```typescript
-// In shared/schema.ts, inside the bookings pgTable definition — add:
-utmSessionId: uuid("utm_session_id").references(() => visitorSessions.id, { onDelete: "set null" }),
-```
-
-**Rationale for denormalization:** The admin dashboard needs attribution data per booking for the Conversions view. A FK on `bookings` means `SELECT bookings.*, visitor_sessions.*` works without a subquery through `conversion_events`. The conversion_events record for `booking_completed` captures the same data redundantly — this is intentional and eliminates JOIN complexity in reporting queries.
+Key invariants to preserve:
+- All DB queries go through `IStorage` — never raw SQL in routes
+- Migrations via Supabase CLI only (`supabase migration new` + `supabase db push`) — never `drizzle-kit push`
+- `shared/schema.ts` defines table + Drizzle type + Zod schema in one place
+- Fire-and-forget pattern for any call that must not block the booking response (attribution, GHL sync)
+- Admin pages use the existing sidebar layout and React Query patterns
+- All enum-like values are plain `text` columns (not `pgEnum`) — established by `ghlSyncStatus`, `status` on bookings, `channel` on notificationLogs
 
 ---
 
-## Client-Side Architecture
+## System Overview: v5.0 Changes
 
-### Session ID Strategy: localStorage UUID (recommended)
-
-Use `localStorage` with a UUID generated on first visit. This is the correct choice for this platform because:
-
-- **Booking journeys span multiple sessions.** A visitor may land Monday via a Google Ads click, return Wednesday organically, and book Thursday. `sessionStorage` would lose first-touch on the Wednesday return. `localStorage` preserves it.
-- **No cookies required.** Avoids GDPR cookie consent complexity for a non-PII identifier. The UUID is anonymous — it links to no personal data until a booking is completed (and at that point the booking already contains customer PII separately).
-- **Safari 7-day ITP caveat:** Safari clears `localStorage` after 7 days of inactivity. For a cleaning service booking cycle (typically 1-7 days from discovery to booking), this is acceptable. The first-touch row is already written to the server on first visit, so server-side data survives even if the client localStorage is cleared.
-
-**Key names:**
 ```
-skleanings_visitor_id   — UUID string, never expires
-skleanings_first_touch  — JSON snapshot of first UTM params (for client-side idempotency check)
-```
-
-### Where to Place the Hook: Inside `AnalyticsProvider` in `App.tsx`
-
-The `AnalyticsProvider` component in `client/src/App.tsx` (lines 77-101) already runs on every route, already has access to `useLocation`, and already handles GA4/GTM initialization. Adding `useUTMCapture()` inside this component is the correct mount point because:
-
-1. It fires on every page load, not just the first.
-2. It is inside `QueryClientProvider` (needed for the fire-and-forget fetch).
-3. It is outside admin routes — UTM capture only applies to customer-facing pages.
-
-The hook itself lives at `client/src/hooks/use-utm-capture.ts`.
-
-### Hook Logic
-
-```typescript
-// client/src/hooks/use-utm-capture.ts  (pseudocode — implementation detail)
-export function useUTMCapture() {
-  const [location] = useLocation();
-
-  useEffect(() => {
-    // 1. Generate or retrieve visitor UUID
-    let visitorId = localStorage.getItem('skleanings_visitor_id');
-    if (!visitorId) {
-      visitorId = crypto.randomUUID();
-      localStorage.setItem('skleanings_visitor_id', visitorId);
-    }
-
-    // 2. Read UTM params from current URL
-    const params = new URLSearchParams(window.location.search);
-    const utmSource   = params.get('utm_source');
-    const utmMedium   = params.get('utm_medium');
-    const utmCampaign = params.get('utm_campaign');
-    const utmTerm     = params.get('utm_term');
-    const utmContent  = params.get('utm_content');
-    const referrer    = document.referrer;
-    const landingPage = window.location.pathname + window.location.search;
-
-    // 3. Only fire if this visit has attribution signal
-    //    (has UTM params OR has a referrer OR is a new visitor)
-    const isNewVisitor = !localStorage.getItem('skleanings_first_touch');
-    const hasSignal = utmSource || referrer || isNewVisitor;
-    if (!hasSignal) return;
-
-    // 4. Persist first-touch idempotency marker client-side
-    if (isNewVisitor) {
-      localStorage.setItem('skleanings_first_touch', JSON.stringify({
-        source: utmSource, medium: utmMedium, campaign: utmCampaign,
-        landingPage, referrer, capturedAt: Date.now()
-      }));
-    }
-
-    // 5. Fire-and-forget to server — never await, never block render
-    fetch('/api/analytics/session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        visitorId, utmSource, utmMedium, utmCampaign,
-        utmTerm, utmContent, referrer, landingPage,
-        isNewVisitor,
-      }),
-    }).catch(() => { /* silent — analytics must never break UX */ });
-  }, [location]); // re-runs on every navigation but only fires when signal exists
-}
-```
-
-### Booking Flow Integration
-
-**File: `client/src/pages/BookingPage.tsx`** (modified)
-
-The booking form already submits a payload to `POST /api/bookings`. Add one field:
-
-```typescript
-// Before submitting, read visitorId:
-const visitorId = localStorage.getItem('skleanings_visitor_id') ?? undefined;
-
-// Include in the payload:
-const payload = { ...formData, visitorId };
-```
-
-No schema changes needed for the Zod form schema — `visitorId` is appended outside the form validation.
-
-**File: `client/src/pages/Confirmation.tsx`** (modified)
-
-After the `trackPurchase` call in the existing `useEffect` (line 43), fire the conversion event:
-
-```typescript
-if (visitorId && bookingId) {
-  fetch('/api/analytics/events', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      visitorId,
-      eventType: 'booking_completed',
-      bookingId,
-      bookingValue: totalPrice,
-      pageUrl: window.location.href,
-    }),
-  }).catch(() => {});
-}
++----------------------------------------------------------------------+
+|                          CLIENT (React 18)                           |
+|                                                                      |
+|  BookingPage.tsx (5-step flow)                                       |
+|  +-- [NEW] Step 2.5: DurationSelector component                      |
+|  |       renders when service has serviceDurations rows              |
+|  |       sets selectedDurationMinutes + selectedDurationPrice        |
+|  +-- Step 3: passes dynamic totalDurationMinutes to availability     |
+|                                                                      |
+|  Admin: ServicesSection.tsx                                          |
+|  +-- [NEW] ServiceDurationsEditor sub-section (add/edit/delete)      |
+|                                                                      |
+|  Admin: [NEW] EmailSettingsSection.tsx                               |
+|  +-- configure apiKey, fromAddress, enabled toggle                   |
+|                                                                      |
+|  Admin: [NEW] CalendarSyncHealthPanel.tsx                            |
+|  +-- pending/failed counts per target + Retry button                 |
++----------------------------------------------------------------------+
+                           | HTTP / React Query
++----------------------------------------------------------------------+
+|                        SERVER (Express)                              |
+|                                                                      |
+|  server/routes/catalog.ts                                            |
+|  +-- [MODIFIED] GET /api/services/:id includes durations[] in resp  |
+|                                                                      |
+|  server/routes/availability.ts                                       |
+|  +-- [UNCHANGED] totalDurationMinutes already a query param         |
+|      client sends chosen durationMinutes — no route change needed    |
+|                                                                      |
+|  server/routes/bookings.ts  (POST /)                                 |
+|  +-- [MODIFIED] after booking saved:                                 |
+|      - enqueue calendarSyncQueue rows instead of calling            |
+|        syncBookingToGhl() directly                                   |
+|      - call sendBookingConfirmationEmail() fire-and-forget           |
+|                                                                      |
+|  server/routes/[NEW] email-settings.ts                              |
+|  +-- GET/PUT /api/admin/email-settings                               |
+|                                                                      |
+|  server/routes/[NEW] calendar-sync.ts                               |
+|  +-- GET /api/admin/calendar-sync/health                            |
+|      POST /api/admin/calendar-sync/:jobId/retry                     |
+|                                                                      |
+|  server/lib/booking-ghl-sync.ts                                      |
+|  +-- [MODIFIED] extract pure executeSyncToGhl() for worker to call  |
+|                                                                      |
+|  server/lib/email.ts                                                 |
+|  +-- [MODIFIED] replace nodemailer with Resend SDK (same signature) |
+|                                                                      |
+|  server/lib/email-templates.ts                                       |
+|  +-- [MODIFIED] add 3 new booking email template functions          |
+|                                                                      |
+|  server/services/cron.ts                                             |
+|  +-- [MODIFIED] add 1-min calendar sync worker tick                 |
+|      add 24h-before email reminder scan (daily at 08:00 UTC)        |
+|                                                                      |
+|  server/services/[NEW] calendar-sync-worker.ts                      |
+|  +-- SELECT FOR UPDATE SKIP LOCKED on calendarSyncQueue             |
+|      processes pending rows, exponential backoff, marks status       |
++----------------------------------------------------------------------+
+                           | Drizzle ORM
++----------------------------------------------------------------------+
+|                       DATABASE (PostgreSQL)                          |
+|                                                                      |
+|  [EXISTING] serviceDurations  — already in schema.ts                |
+|             IStorage methods declared but bodies may be unimplemented|
+|             Supabase migration may or may not be applied yet         |
+|                                                                      |
+|  [NEW] emailSettings          — apiKey, fromAddress, enabled        |
+|  [NEW] calendarSyncQueue      — retry queue for GCal + GHL jobs     |
++----------------------------------------------------------------------+
 ```
 
 ---
 
-## Server-Side Architecture
+## Component-by-Component Integration Map
 
-### Route Registration
+### SEED-029: Multiple Durations per Service
 
-Add to `server/routes.ts`:
+**Schema status:** `serviceDurations` table is already defined in `shared/schema.ts` (lines 111-118) with `insertServiceDurationSchema` and `ServiceDuration` / `InsertServiceDuration` types exported. The `IStorage` interface already declares all four methods (`getServiceDurations`, `createServiceDuration`, `updateServiceDuration`, `deleteServiceDuration`). The Supabase migration may not be applied yet — verify before writing any implementation code.
 
-```typescript
-import analyticsRouter from "./routes/analytics";
-// ...
-app.use("/api/analytics", analyticsRouter);
-```
+**Files modified:**
 
-### New File: `server/routes/analytics.ts`
+| File | Change |
+|------|--------|
+| `shared/schema.ts` | No schema change needed — table and schemas already exist |
+| `supabase/migrations/` | New migration to `CREATE TABLE service_durations` if not yet applied |
+| `server/storage.ts` | Implement the 4 already-declared `IStorage` methods (interface stubs exist, `DatabaseStorage` implementations likely missing) |
+| `server/routes/catalog.ts` | `GET /api/services/:id` — join `serviceDurations` and include as `durations: ServiceDuration[]` in response |
+| `client/src/pages/BookingPage.tsx` | Add duration selector step between service selection and calendar; pass `selectedDurationMinutes` to availability query and `selectedDurationPrice` to price total |
+| `client/src/components/admin/ServicesSection.tsx` | Add "Available Durations" editor section (add/reorder/delete duration rows per service) |
 
-```
-POST /api/analytics/session    — public (no auth)
-POST /api/analytics/events     — public (no auth)
-GET  /api/analytics/overview   — requireAdmin
-GET  /api/analytics/campaigns  — requireAdmin
-GET  /api/analytics/sources    — requireAdmin
-GET  /api/analytics/conversions — requireAdmin
-GET  /api/analytics/journey/:visitorId — requireAdmin
-```
-
-The session and event endpoints are public because they are called from the customer-facing site before any admin session exists. Rate limiting should be applied to these two endpoints (use the existing `canCreateBooking` / rate-limit lib as a reference, or add IP-based throttling in the route handler).
-
-### Traffic Source Classification (server-side)
-
-Classification runs in `server/lib/traffic-classifier.ts` (new small utility). The server is authoritative for classification because it avoids shipping a classification library to the client bundle. Logic:
+**Data flow for booking with durations:**
 
 ```
-if utm_medium == 'email'                          → 'email'
-if utm_medium in ['cpc','ppc','paid','paidsearch'] → 'paid_search'
-if utm_medium in ['paid_social','paidsocial']      → 'paid_social'
-if utm_source matches SEARCH_ENGINES list          → 'organic_search'
-if utm_source matches SOCIAL_NETWORKS list         → 'organic_social'
-if referrer matches SEARCH_ENGINES list (no UTM)   → 'organic_search'
-if referrer matches SOCIAL_NETWORKS list (no UTM)  → 'organic_social'
-if referrer is non-empty and not self              → 'referral'
-if no referrer and no UTM                          → 'direct'
-default                                            → 'unknown'
+Customer selects service
+    -> BookingPage checks if service.durations.length > 0
+    -> [YES] show DurationSelector step
+              customer picks label (e.g. "4h — Medium house — $220")
+              state: selectedDurationMinutes = 240, selectedDurationPrice = 220
+    -> [NO]  use service.durationMinutes + service.price as before
+    -> Step 3: GET /api/availability?totalDurationMinutes=240&...
+    -> Step 5: POST /api/bookings { totalDurationMinutes: 240, totalPrice: "220.00" }
+               (totalDurationMinutes and totalPrice already exist on bookings table)
 ```
 
-Known search engines: google, bing, yahoo, duckduckgo, baidu, yandex, ecosia.
-Known social networks: facebook, instagram, twitter, x.com, linkedin, pinterest, tiktok, youtube, snapchat.
-
-### Upsert Logic in `server/storage/analytics.ts`
-
-`upsertVisitorSession(payload)`:
-
-```
-1. SELECT * FROM visitor_sessions WHERE id = payload.visitorId
-2. If not found:
-   → INSERT with first_* and last_* columns both set from payload
-   → Set traffic_source from classifier
-   → visit_count = 1
-3. If found:
-   → UPDATE last_* columns from payload (if payload has UTM signal)
-   → INCREMENT visit_count
-   → Keep first_* columns unchanged (never overwrite)
-4. Return the row
-```
-
-`linkBookingToAttribution(bookingId, visitorId)`:
-
-```
-1. UPDATE bookings SET utm_session_id = visitorId WHERE id = bookingId
-2. UPDATE visitor_sessions SET
-     converted_at = NOW() (if null),
-     total_bookings = total_bookings + 1
-   WHERE id = visitorId
-```
-
-`recordConversionEvent(payload)`:
-
-```
-1. Fetch visitor_sessions row for visitorId
-2. Build two conversion_event rows:
-   - one with attribution_model = 'first_touch' (first_* cols)
-   - one with attribution_model = 'last_touch'  (last_* cols)
-3. INSERT both rows
-4. If eventType == 'booking_completed': call linkBookingToAttribution()
-```
-
-Writing both first-touch and last-touch rows at conversion time means dashboard queries never need to join `visitor_sessions` — they simply filter `conversion_events` by `attribution_model`.
-
-### New File: `server/storage/analytics.ts`
-
-Follows the same pattern as `server/storage/bookings.ts`:
-- Named exports (not class methods)
-- Drizzle queries with `db.select()`, `db.insert()`, `db.update()`
-- Re-exported from `server/storage/index.ts`
+No new API endpoints needed. `totalDurationMinutes` is already a parameter on the availability route and a column on `bookings`. The duration selection collapses to `totalDurationMinutes` + `price` before submission — `cartItemSchema` does not need a new field.
 
 ---
 
-## Admin Dashboard Data Layer
+### SEED-019: Branded Transactional Email via Resend
 
-### API Endpoint Shapes
+**Current state:** `server/lib/email.ts` uses nodemailer with raw SMTP env vars. Templates in `server/lib/email-templates.ts` are plain HTML string functions (returns `{ subject, text, html }`). The `notificationLogs` table exists with a text `channel` column that already accepts arbitrary values. There is no `emailSettings` table yet.
 
-**GET `/api/analytics/overview?from=&to=`**
-Returns:
-```json
-{
-  "totalVisitors": 142,
-  "totalConversions": 18,
-  "conversionRate": 12.7,
-  "totalRevenue": 3240.00,
-  "topSource": "google / organic",
-  "topCampaign": "spring-cleaning-2026",
-  "topLandingPage": "/services",
-  "trendByDay": [{ "date": "2026-04-01", "visitors": 12, "conversions": 2 }]
-}
-```
+**Files modified:**
 
-**GET `/api/analytics/campaigns?from=&to=`**
-```json
-[{
-  "campaign": "spring-cleaning-2026",
-  "source": "google",
-  "medium": "cpc",
-  "visitors": 48,
-  "conversions": 7,
-  "conversionRate": 14.6,
-  "revenue": 1260.00,
-  "landingPages": ["/services", "/"]
-}]
-```
+| File | Change |
+|------|--------|
+| `shared/schema.ts` | Add `emailSettings` table (id, apiKey, fromAddress, enabled, createdAt, updatedAt) + insert schema + types |
+| `supabase/migrations/` | New migration: `CREATE TABLE email_settings` |
+| `server/storage.ts` | Add `getEmailSettings()`, `updateEmailSettings()` to IStorage + DatabaseStorage |
+| `server/lib/email.ts` | Replace nodemailer transport with Resend SDK. Keep same `sendEmail(to, subject, text, html)` signature so all callers (recurring booking manage-link, reminders) are unchanged. Add `getResendClient()` that reads from `emailSettings` table, falls back to `RESEND_API_KEY` env var for local dev. |
+| `server/lib/email-templates.ts` | Add `buildBookingConfirmationEmail()`, `build24hReminderEmail()`, `buildCancellationEmail()` functions. Keep existing `buildReminderEmail()` and `buildManageEmail()` unchanged. |
+| `server/routes/email-settings.ts` | New file: `GET /api/admin/email-settings`, `PUT /api/admin/email-settings` |
+| `server/routes/bookings.ts` | After `storage.createBooking()`: fire-and-forget `sendBookingConfirmationEmail(booking)` |
+| `server/routes/bookings.ts` | On status change to `cancelled`: fire-and-forget `sendCancellationEmail(booking)` |
+| `server/services/cron.ts` | Add daily cron at 08:00 UTC: scan bookings where `bookingDate = tomorrow` and status in confirmed/pending, send 24h reminder |
+| `server/index.ts` | Mount `email-settings` router |
+| `client/src/components/admin/EmailSettingsSection.tsx` | New file: API key input (masked), from address input, enabled toggle, test-send button |
 
-**GET `/api/analytics/sources?from=&to=`**
-```json
-[{
-  "source": "google",
-  "medium": "organic",
-  "trafficSource": "organic_search",
-  "visitors": 62,
-  "conversions": 9,
-  "conversionRate": 14.5,
-  "revenue": 1620.00,
-  "bestCampaign": "(none)"
-}]
-```
+**Resend vs nodemailer:** Resend requires only an API key — no SMTP host, port, or credentials. The key is stored in the `emailSettings` DB table (following the same pattern as `integrationSettings` for GHL). The `server/lib/email.ts` function signature stays identical so the existing manage-link and reminder callers in recurring bookings require zero changes.
 
-**GET `/api/analytics/conversions?from=&to=&type=&source=`**
-Returns paginated list of individual conversion events with full attribution context.
+**notificationLogs integration:** Email sends are logged to `notificationLogs` with `channel: 'email'`. The `trigger` field uses new values: `'booking_confirmed'`, `'appointment_reminder_24h'`, `'booking_cancelled'`. The `channel` column is `text` (not an enum), so no migration is needed to support the new channel value.
 
-**GET `/api/analytics/journey/:visitorId`**
-Returns ordered list of session touches and events for a single visitor.
-
-### Query Strategy
-
-All dashboard queries operate on `conversion_events` joined to `visitor_sessions` only when the visitor journey is needed. The heavy reporting queries (`overview`, `campaigns`, `sources`) use only `conversion_events.attributed_*` columns — no joins required. This is why the denormalized snapshot at event time pays off.
-
-Example Drizzle pattern for campaign performance:
-```typescript
-db.select({
-  campaign: conversionEvents.attributedCampaign,
-  source: conversionEvents.attributedSource,
-  conversions: count(),
-  revenue: sum(conversionEvents.bookingValue),
-})
-.from(conversionEvents)
-.where(
-  and(
-    gte(conversionEvents.occurredAt, fromDate),
-    lte(conversionEvents.occurredAt, toDate),
-    eq(conversionEvents.attributionModel, 'last_touch'),
-    eq(conversionEvents.eventType, 'booking_completed'),
-  )
-)
-.groupBy(conversionEvents.attributedCampaign, conversionEvents.attributedSource)
-```
-
-### Frontend Admin Section
-
-**New file: `client/src/components/admin/MarketingSection.tsx`**
-
-Follows the exact pattern of `DashboardSection.tsx` and `BookingsSection.tsx`:
-- Uses `useQuery` from React Query
-- Uses `authenticatedRequest` for admin-protected endpoints
-- Uses `Card`, `CardContent` from shadcn/ui
-- Uses `recharts` (already installed — `recharts 2.15.2`) for trend charts
-- Uses `Select` for date range and dimension filters
-- Tab-based sub-navigation: Overview | Campaigns | Sources | Conversions | Visitor Journey
-
-**Register in `client/src/pages/Admin.tsx`:**
-1. Add `{ id: 'marketing', title: 'Marketing', icon: TrendingUp }` to `menuItems` array
-2. Import `MarketingSection` component
-3. Add `case 'marketing':` to the section renderer
+**Template approach:** Keep templates in `server/lib/email-templates.ts` as plain TypeScript string functions. React Email JSX requires server-side JSX compilation setup that is not justified for three templates. The existing `buildReminderEmail()` and `buildManageEmail()` functions establish this pattern and work correctly. Migrate to React Email only if template count grows significantly.
 
 ---
 
-## Data Flow
+### SEED-002: Calendar Harmony Retry Queue
 
-### UTM Capture Flow
-
-```
-Visitor arrives at /?utm_source=google&utm_medium=cpc
-    ↓
-App.tsx AnalyticsProvider mounts → useUTMCapture() fires
-    ↓
-localStorage check: no visitor_id found
-    → generate UUID → store as skleanings_visitor_id
-    → store first_touch JSON locally (idempotency)
-    ↓
-POST /api/analytics/session  { visitorId, utmSource, utmMedium, ... }
-    ↓
-server/routes/analytics.ts → no auth required
-    ↓
-traffic-classifier.ts → classifies as 'paid_search'
-    ↓
-storage.upsertVisitorSession() → INSERT new row
-    ↓
-200 OK (client ignores response — fire and forget)
-```
-
-### Booking Conversion Flow
-
-```
-Customer completes booking form on BookingPage.tsx
-    ↓
-Form reads visitorId from localStorage
-    ↓
-POST /api/bookings  { ...formData, visitorId: "uuid-here" }
-    ↓
-server/routes/bookings.ts (existing handler — modified)
-    ↓
-storage.createBooking() — unchanged
-    ↓  (after booking is created, non-blocking)
-storage.linkBookingToAttribution(booking.id, visitorId)
-    → UPDATE bookings SET utm_session_id = visitorId
-    → UPDATE visitor_sessions SET total_bookings++, converted_at
-    ↓
-Redirect to /confirmation?...
-    ↓
-Confirmation.tsx mounts → fires POST /api/analytics/events
-    { visitorId, eventType: 'booking_completed', bookingId, bookingValue }
-    ↓
-storage.recordConversionEvent()
-    → INSERT two conversion_events rows (first_touch + last_touch)
-    ↓
-Admin dashboard queries conversion_events for reports
-```
-
-### Admin Dashboard Query Flow
-
-```
-Admin navigates to /admin/marketing
-    ↓
-MarketingSection.tsx mounts → useQuery(['/api/analytics/overview', filters])
-    ↓
-GET /api/analytics/overview?from=2026-04-01&to=2026-04-30
-    ↓
-requireAdmin middleware → session check
-    ↓
-storage.getMarketingOverview(from, to)
-    ↓
-Drizzle SELECT + GROUP BY on conversion_events table
-    (no JOIN to visitor_sessions — denormalized columns used)
-    ↓
-JSON response → recharts AreaChart renders trend line
-```
-
----
-
-## Build Order and Dependencies
-
-The following order is mandatory because each step depends on the previous.
-
-### Step 1: Database Schema (blocks everything)
+**Current state:** `syncBookingToGhl()` in `server/lib/booking-ghl-sync.ts` is called directly from the booking POST handler at line 226 of `server/routes/bookings.ts`. The result is logged but there is no retry. Google Calendar event creation happens inside staff availability helpers called at booking confirmation time. Neither sync path has durable retry.
 
 **Files modified/created:**
-- `shared/schema.ts` — add `visitorSessions` table, `conversionEvents` table, `utmSessionId` column to `bookings`
-- Supabase migration via CLI
 
-No code can reference these tables until the migration runs.
+| File | Change |
+|------|--------|
+| `shared/schema.ts` | Add `calendarSyncQueue` table (id, bookingId FK, target text, operation text, payload JSONB, status text, attempts int, lastAttemptAt timestamp, lastError text, scheduledFor timestamp, completedAt timestamp) + insert schema + types |
+| `supabase/migrations/` | New migration: `CREATE TABLE calendar_sync_queue` with indexes on `(status, scheduled_for)` and `(booking_id, target)` |
+| `server/storage.ts` | Add IStorage methods: `enqueueCalendarSync()`, `dequeueCalendarSyncJobs()` (SELECT FOR UPDATE SKIP LOCKED), `updateCalendarSyncJob()`, `getCalendarSyncHealth()`, `retryCalendarSyncJob()` |
+| `server/routes/bookings.ts` | Replace `await syncBookingToGhl(booking)` call with: `await storage.enqueueCalendarSync(booking.id, 'ghl_contact', 'create', payload)` + `enqueueCalendarSync(booking.id, 'ghl_appointment', 'create', payload)` + `enqueueCalendarSync(booking.id, 'google_calendar', 'create', payload)`. Same pattern for booking update and cancel paths. |
+| `server/lib/booking-ghl-sync.ts` | Extract pure `executeSyncToGhl(booking, settings)` function that the worker calls. Remove direct coupling to routes. |
+| `server/services/calendar-sync-worker.ts` | New file. `runCalendarSyncWorker()`: dequeue up to N pending jobs with `scheduledFor <= now()`, mark `in_progress`, execute sync, mark `success` or compute next retry with exponential backoff, mark `failed_permanent` after 6 attempts. |
+| `server/services/cron.ts` | Add 1-minute tick: `cron.schedule("* * * * *", runCalendarSyncWorker)` (non-serverless only). Add `POST /api/cron/calendar-sync` endpoint for GitHub Actions trigger in Vercel environment. |
+| `server/routes/calendar-sync.ts` | New file: `GET /api/admin/calendar-sync/health` (pending/failed counts per target), `POST /api/admin/calendar-sync/:jobId/retry` (reset to pending, scheduledFor = now()) |
+| `server/index.ts` | Mount `calendar-sync` router |
+| `client/src/components/admin/CalendarSyncHealthPanel.tsx` | New file: table of targets with pending/failed counts, Retry button per failed job, auto-refresh every 30s via React Query |
 
-### Step 2: Server Storage Layer
+**Worker design pattern:**
 
-**Files created:**
-- `server/storage/analytics.ts` — all Drizzle queries
-- `server/lib/traffic-classifier.ts` — source classification utility
-- `server/storage/index.ts` — add `import * as analytics from "./analytics"` and re-export
+```typescript
+// server/services/calendar-sync-worker.ts (sketch)
+const BACKOFF_MINUTES = [1, 5, 30, 120, 720, 1440]; // 6 attempts max
 
-Depends on: Step 1 (tables must exist for Drizzle to type-check).
+export async function runCalendarSyncWorker(): Promise<void> {
+  const jobs = await storage.dequeueCalendarSyncJobs(5); // SELECT FOR UPDATE SKIP LOCKED
+  for (const job of jobs) {
+    try {
+      await executeJob(job); // dispatches to google-calendar.ts or booking-ghl-sync.ts
+      await storage.updateCalendarSyncJob(job.id, {
+        status: 'success',
+        completedAt: new Date(),
+      });
+    } catch (err) {
+      const nextAttempt = job.attempts + 1;
+      const permanent = nextAttempt >= BACKOFF_MINUTES.length;
+      const backoff = BACKOFF_MINUTES[Math.min(job.attempts, BACKOFF_MINUTES.length - 1)];
+      await storage.updateCalendarSyncJob(job.id, {
+        status: permanent ? 'failed_permanent' : 'pending',
+        attempts: nextAttempt,
+        lastError: String(err),
+        scheduledFor: permanent ? null : new Date(Date.now() + backoff * 60_000),
+        lastAttemptAt: new Date(),
+      });
+    }
+  }
+}
+```
 
-### Step 3: Server Routes
+**Target enum values (text, not pgEnum):** `'google_calendar'`, `'ghl_contact'`, `'ghl_appointment'`, `'ghl_utm'`. Text column following existing precedent (`ghlSyncStatus`, booking `status`, notificationLogs `channel` are all plain text).
 
-**Files created:**
-- `server/routes/analytics.ts` — all endpoints
+**Priority ordering:** Process `google_calendar` jobs before `ghl_*` jobs for the same booking — GCal is the operational calendar that shows on staff phones; GHL is CRM. Simplest approach: `ORDER BY CASE WHEN target = 'google_calendar' THEN 0 ELSE 1 END, scheduled_for ASC` in the dequeue query.
 
-**Files modified:**
-- `server/routes.ts` — register analytics router
-- `server/routes/bookings.ts` — add `visitorId` handling after `createBooking()` call
-
-Depends on: Step 2 (storage functions must exist).
-
-### Step 4: Client UTM Capture Hook
-
-**Files created:**
-- `client/src/hooks/use-utm-capture.ts`
-
-**Files modified:**
-- `client/src/App.tsx` — call `useUTMCapture()` inside `AnalyticsProvider`
-
-Depends on: Step 3 (the hook fires POST /api/analytics/session).
-
-### Step 5: Booking Flow Integration
-
-**Files modified:**
-- `client/src/pages/BookingPage.tsx` — read `visitorId` from localStorage, append to POST body
-- `client/src/pages/Confirmation.tsx` — fire `booking_completed` conversion event
-
-Depends on: Step 4 (visitor UUID must be available in localStorage).
-
-### Step 6: Admin Dashboard UI
-
-**Files created:**
-- `client/src/components/admin/MarketingSection.tsx` (and sub-components)
-
-**Files modified:**
-- `client/src/pages/Admin.tsx` — add `marketing` to `menuItems`, register section component
-
-Depends on: Step 3 (API endpoints must respond) + Step 5 (data must be flowing in).
+**Payload JSONB:** Store enough data to re-execute the sync without re-fetching everything: `{ bookingId, customerName, customerEmail, customerPhone, customerAddress, bookingDate, startTime, endTime, staffMemberId, utmSessionId }`. Worker can re-fetch from DB if needed — payload is an optimization, not the authority.
 
 ---
 
-## Integration Points with Existing Code
+## Recommended Build Order
 
-| Existing File | Change | Scope |
-|---------------|--------|-------|
-| `shared/schema.ts` | Add 2 new tables + 1 column to `bookings` | Low risk — additive |
-| `server/routes.ts` | Add `app.use("/api/analytics", analyticsRouter)` | 1 line |
-| `server/routes/bookings.ts` | After `storage.createBooking()` call (~line 94), call `storage.linkBookingToAttribution()` non-blocking | Low risk — same pattern as GHL sync |
-| `server/storage/index.ts` | Add `import * as analytics` and spread into exported object | Pattern already established |
-| `client/src/App.tsx` | Add `useUTMCapture()` call inside `AnalyticsProvider` (line ~84) | 1 line inside existing component |
-| `client/src/pages/BookingPage.tsx` | Read `localStorage.getItem('skleanings_visitor_id')` and append to form submit payload | 2-3 lines |
-| `client/src/pages/Confirmation.tsx` | Fire analytics conversion event after `trackPurchase` (line ~43) | ~10 lines |
-| `client/src/pages/Admin.tsx` | Add `marketing` menu item to `menuItems` array + import + render case | ~5 lines |
+The three features have no cross-dependencies on each other, but each has internal step dependencies. Build order is driven by scope risk and independence.
+
+### Phase A: Multiple Durations (SEED-029) — Build First
+
+**Rationale:** Smallest scope. Schema already exists in `shared/schema.ts`. Does not touch `server/routes/bookings.ts` (the most complex file). Zero collision risk with the other two features. Delivers visible UX improvement immediately and de-risks the schema migration early.
+
+Steps:
+1. Verify `service_durations` migration status; create and apply Supabase migration if absent
+2. Implement `getServiceDurations`, `createServiceDuration`, `updateServiceDuration`, `deleteServiceDuration` in `DatabaseStorage` (interface stubs exist, bodies are likely missing)
+3. Modify `GET /api/services/:id` in `catalog.ts` to join and include `durations[]`
+4. Build `ServiceDurationsEditor` in admin `ServicesSection.tsx`
+5. Add duration selector step in `BookingPage.tsx`; wire `selectedDurationMinutes` to availability query and price total
+
+### Phase B: Branded Email via Resend (SEED-019) — Build Second
+
+**Rationale:** Standalone. The existing nodemailer scaffolding (`server/lib/email.ts`, `server/lib/email-templates.ts`) makes this a replacement + extension rather than greenfield. The 24h-reminder cron is independent of the sync worker cron. Should be done before SEED-002 so that if SEED-002 changes booking status flows, emails fire correctly from the start.
+
+Steps:
+1. Add `emailSettings` table to `shared/schema.ts` + Supabase migration
+2. Add `getEmailSettings()` / `updateEmailSettings()` to IStorage + DatabaseStorage
+3. Replace nodemailer in `server/lib/email.ts` with Resend SDK (keep same function signature)
+4. Add `buildBookingConfirmationEmail()`, `build24hReminderEmail()`, `buildCancellationEmail()` to `server/lib/email-templates.ts`
+5. Create `server/routes/email-settings.ts` (admin CRUD) and mount in `server/index.ts`
+6. Wire confirmation email fire-and-forget in `server/routes/bookings.ts` POST handler
+7. Wire cancellation email fire-and-forget in `server/routes/bookings.ts` on status change to cancelled
+8. Add daily 08:00 UTC cron for 24h-reminder scan in `server/services/cron.ts`
+9. Build `EmailSettingsSection.tsx` admin UI
+
+### Phase C: Calendar Harmony Retry Queue (SEED-002) — Build Last
+
+**Rationale:** Largest scope. Touches `server/routes/bookings.ts` (removing the direct GHL sync call) — do this only after Phase A and B are stable so the booking handler is not in flux during all three phases simultaneously. Building last means Phase A and B bookings already work; Phase C then hardens reliability without touching UX.
+
+Steps:
+1. Add `calendarSyncQueue` table to `shared/schema.ts` + Supabase migration (with compound indexes)
+2. Add IStorage methods for queue operations (`enqueue`, `dequeue` with SKIP LOCKED, `update`, `health`, `retry`)
+3. Build `server/services/calendar-sync-worker.ts` with the SELECT FOR UPDATE SKIP LOCKED pattern
+4. Create `server/routes/calendar-sync.ts` (health + retry endpoints) and mount in `server/index.ts`
+5. Refactor `server/lib/booking-ghl-sync.ts`: extract `executeSyncToGhl()` pure function used by worker
+6. Modify `server/routes/bookings.ts`: replace direct `syncBookingToGhl()` call with `enqueueCalendarSync()` calls for all three targets (google_calendar, ghl_contact, ghl_appointment)
+7. Wire booking update and cancel paths to enqueue update/delete operations
+8. Add 1-min worker tick in `server/services/cron.ts` + `POST /api/cron/calendar-sync` endpoint for Vercel
+9. Build `CalendarSyncHealthPanel.tsx` admin UI
 
 ---
 
-## Architectural Patterns
+## Data Flow Diagrams
 
-### Pattern 1: Fire-and-Forget for All Analytics Writes
+### Duration Selection Flow
 
-**What:** Every client-side analytics call uses `.catch(() => {})` and never awaits.
-**When to use:** All analytics endpoint calls from the customer frontend.
-**Trade-offs:** Analytics data may be occasionally missing for users with network issues, but the booking flow is never blocked or broken.
+```
+BookingPage Step 2 (service selected)
+    -> GET /api/services/:id  (includes durations[])
+    -> durations.length > 0?
+       [YES] -> Step 2.5: DurationSelector
+                  customer picks -> selectedDurationMinutes=240, selectedDurationPrice=220
+       [NO]  -> use service.durationMinutes, service.price
+    -> Step 3: GET /api/availability?totalDurationMinutes=240&...  (no route change)
+    -> Step 5: POST /api/bookings { totalDurationMinutes: 240, totalPrice: "220.00" }
+               (both fields already exist on bookings table)
+```
 
-### Pattern 2: Server-Side Classification, Client-Side Capture
+### Email Trigger Flow
 
-**What:** Client reads raw URL params and sends them as-is. Server runs the classification algorithm and writes the `traffic_source` label.
-**When to use:** Classification logic involves lists of known domains that would bloat the client bundle.
-**Trade-offs:** Server sees slightly delayed classification (one network hop after page load). Not a problem for reporting.
+```
+POST /api/bookings -> booking created
+    -> fire-and-forget: sendBookingConfirmationEmail(booking)
+        -> storage.getEmailSettings() -> Resend API
+        -> logNotification({ channel: 'email', trigger: 'booking_confirmed' })
 
-### Pattern 3: Dual-Row Conversion Events (first_touch + last_touch)
+Daily cron 08:00 UTC
+    -> scan bookings WHERE bookingDate = tomorrow AND status IN ('confirmed','pending')
+    -> for each: send24hReminderEmail(booking)
+        -> logNotification({ channel: 'email', trigger: 'appointment_reminder_24h' })
 
-**What:** When a conversion fires, two rows are inserted into `conversion_events` — one for first-touch attribution, one for last-touch.
-**When to use:** When both models need to appear in the same dashboard.
-**Trade-offs:** Doubles conversion_events write volume. For a cleaning company booking a few hundred bookings per month, this is completely acceptable. Avoids complex SQL CASE logic in every report query.
+PATCH /api/bookings/:id (status -> 'cancelled')
+    -> fire-and-forget: sendCancellationEmail(booking)
+        -> logNotification({ channel: 'email', trigger: 'booking_cancelled' })
+```
 
-### Pattern 4: Denormalized Attribution Snapshot at Event Time
+### Calendar Sync Queue Flow
 
-**What:** `conversion_events` stores `attributed_source`, `attributed_medium`, `attributed_campaign` directly, copied from the visitor session at the moment of conversion.
-**When to use:** Any system where reporting queries need to be fast and the source data (visitor session) can change over time.
-**Trade-offs:** Data duplication. If you want to retroactively change how a session was classified, it does not affect already-recorded conversion events. This is correct behavior for an attribution system.
+```
+POST /api/bookings -> booking created
+    -> storage.enqueueCalendarSync(bookingId, 'google_calendar', 'create', payload)
+    -> storage.enqueueCalendarSync(bookingId, 'ghl_contact', 'create', payload)
+    -> storage.enqueueCalendarSync(bookingId, 'ghl_appointment', 'create', payload)
+    -> response returned immediately (no sync latency in booking flow)
+
+Every 1 minute (node-cron in non-Vercel, or GitHub Actions -> POST /api/cron/calendar-sync)
+    -> calendar-sync-worker.runCalendarSyncWorker()
+        -> SELECT FOR UPDATE SKIP LOCKED WHERE status='pending' AND scheduledFor<=now()
+           ORDER BY CASE WHEN target='google_calendar' THEN 0 ELSE 1 END, scheduled_for
+        -> process up to 5 jobs
+           [google_calendar]  -> google-calendar.ts: createEvent()
+           [ghl_contact]      -> booking-ghl-sync.ts: executeSyncToGhl() contact step
+           [ghl_appointment]  -> booking-ghl-sync.ts: executeSyncToGhl() appointment step
+        -> success: status='success', completedAt=now()
+        -> fail:    status='pending', scheduledFor=now()+backoff (or 'failed_permanent' after 6)
+
+Admin -> GET /api/admin/calendar-sync/health
+    -> counts by (target, status) from calendarSyncQueue
+    -> POST /api/admin/calendar-sync/:jobId/retry -> reset status='pending', scheduledFor=now()
+```
+
+---
+
+## Files: New vs Modified Summary
+
+### New Files
+
+| File | Feature |
+|------|---------|
+| `server/routes/email-settings.ts` | SEED-019 |
+| `server/routes/calendar-sync.ts` | SEED-002 |
+| `server/services/calendar-sync-worker.ts` | SEED-002 |
+| `client/src/components/admin/EmailSettingsSection.tsx` | SEED-019 |
+| `client/src/components/admin/CalendarSyncHealthPanel.tsx` | SEED-002 |
+| `supabase/migrations/*_add_email_settings.sql` | SEED-019 |
+| `supabase/migrations/*_add_calendar_sync_queue.sql` | SEED-002 |
+| `supabase/migrations/*_add_service_durations.sql` | SEED-029 (if not yet applied) |
+
+### Modified Files
+
+| File | Feature | Change |
+|------|---------|--------|
+| `shared/schema.ts` | SEED-019, SEED-002 | Add emailSettings + calendarSyncQueue tables, schemas, types |
+| `server/storage.ts` | All three | Implement serviceDuration method bodies; add emailSettings + calendarSyncQueue methods |
+| `server/lib/email.ts` | SEED-019 | Replace nodemailer with Resend SDK (same function signature) |
+| `server/lib/email-templates.ts` | SEED-019 | Add 3 new template functions |
+| `server/lib/booking-ghl-sync.ts` | SEED-002 | Extract `executeSyncToGhl()` pure function; remove route coupling |
+| `server/routes/catalog.ts` | SEED-029 | Include durations[] in service GET response |
+| `server/routes/bookings.ts` | SEED-019, SEED-002 | Add email fire-and-forget; replace direct GHL sync with enqueue |
+| `server/services/cron.ts` | SEED-019, SEED-002 | Add 24h reminder scan + 1-min sync worker tick |
+| `client/src/pages/BookingPage.tsx` | SEED-029 | Add duration selector step |
+| `client/src/components/admin/ServicesSection.tsx` | SEED-029 | Add durations editor sub-section |
+| `server/index.ts` | SEED-019, SEED-002 | Mount new route modules |
 
 ---
 
 ## Anti-Patterns to Avoid
 
-### Anti-Pattern 1: Sending Attribution Data as Part of the Booking POST Body to Store it in Bookings
+### Anti-Pattern 1: Leaving the Direct syncBookingToGhl() Call Alongside the Queue
 
-**What people do:** Add `utm_source`, `utm_medium`, etc. as columns on the `bookings` table and populate them from the form.
-**Why it's wrong:** The bookings table is customer PII territory. Mixing attribution data there makes the schema messy, makes it impossible to track visits that did not convert, and prevents cross-booking attribution analysis per visitor.
-**Do this instead:** Foreign key (`utm_session_id`) on bookings pointing to `visitor_sessions`. Attribution data lives in its own table.
+**What people do:** Keep `syncBookingToGhl()` as a "fast path" fallback while also enqueueing.
+**Why it's wrong:** Creates duplicate sync — both immediate (failing silently) and queued. Race conditions on `ghlAppointmentId` writes. Two sources of truth for sync state.
+**Do this instead:** Remove the direct call entirely on the same commit that adds enqueue. The queue is the only sync path after SEED-002.
 
-### Anti-Pattern 2: Capturing UTMs on Every Page Navigation Without Deduplication
+### Anti-Pattern 2: Storing Resend API Key Only in Env Vars
 
-**What people do:** Fire a session upsert on every `useLocation` change regardless of whether there are any UTM params.
-**Why it's wrong:** It creates noise in visit_count, makes "last touch" meaningless (every internal navigation updates it), and generates unnecessary server load.
-**Do this instead:** Only fire when there is a UTM signal (`utm_source` present) OR a new external referrer OR the visitor is brand new. Internal navigations (same domain referrer, no UTMs) should be silently skipped.
+**What people do:** Skip the `emailSettings` table and read `RESEND_API_KEY` from env.
+**Why it's wrong:** White-label requirement — admin must be able to configure sending without a code deploy. Env-only also breaks the admin UI pattern established by `integrationSettings` (GHL) and `twilioSettings`.
+**Do this instead:** Store in `emailSettings` table. Fall back to `RESEND_API_KEY` env var for local dev only — the same graceful fallback pattern used by `server/lib/email.ts` with `EMAIL_HOST`.
 
-### Anti-Pattern 3: Making the Analytics Session POST Block the Booking Flow
+### Anti-Pattern 3: Using pgEnum for calendarSyncQueue Status or Target
 
-**What people do:** `await fetch('/api/analytics/session')` before letting the booking proceed.
-**Why it's wrong:** If the analytics endpoint is slow or fails, the customer cannot book. Analytics must never be a dependency of the core booking flow.
-**Do this instead:** All analytics calls are fire-and-forget. The `visitorId` is already in `localStorage` from the initial capture, so the booking POST can include it without waiting for any analytics response.
+**What people do:** Define `target` and `status` as pgEnum to enforce values at DB level.
+**Why it's wrong:** Adding a new target (e.g. a future integration) requires a DB migration just to add an enum value. The existing codebase uses plain text for all enum-like values (`ghlSyncStatus`, booking `status`, `channel` on notificationLogs).
+**Do this instead:** Text columns with TypeScript union types defined in `shared/schema.ts`. Pattern is established throughout the codebase.
 
-### Anti-Pattern 4: Relying on `sessionStorage` for the Visitor UUID
+### Anti-Pattern 4: Blocking the Booking Response on Email
 
-**What people do:** Use `sessionStorage` because it feels safer and auto-expires.
-**Why it's wrong:** A user who visits Monday and returns Thursday has lost their first-touch attribution. For a booking platform with multi-session journeys, `sessionStorage` makes first-touch analysis impossible.
-**Do this instead:** `localStorage` for the UUID (persists indefinitely). The server's `visitor_sessions` table is the authoritative record anyway — if `localStorage` clears (Safari ITP), the next visit creates a new UUID, which is acceptable.
+**What people do:** `await sendBookingConfirmationEmail(booking)` inline in the POST handler.
+**Why it's wrong:** Resend API latency (100-500ms) adds directly to booking response time. If Resend is down, bookings fail. The booking flow must never be blocked by secondary notifications.
+**Do this instead:** `void sendBookingConfirmationEmail(booking).catch(err => console.error('[Email]', err))` — fire-and-forget, same pattern as the existing Twilio and Telegram notifications in `server/routes/bookings.ts`.
+
+### Anti-Pattern 5: React Email JSX Templates
+
+**What people do:** Install `@react-email/components` and write templates as `.tsx` files compiled server-side.
+**Why it's wrong:** Requires server-side JSX rendering configuration in esbuild, adds a non-trivial build dependency, and is not justified for three templates. The existing `buildReminderEmail()` and `buildManageEmail()` functions in `server/lib/email-templates.ts` are plain TypeScript returning `{ subject, text, html }` and work correctly.
+**Do this instead:** Add the three new booking template functions to `server/lib/email-templates.ts` using the same plain HTML string pattern. Migrate to React Email only if template count grows to 10+.
+
+---
+
+## Integration Points
+
+### External Services
+
+| Service | Integration Pattern | Notes |
+|---------|---------------------|-------|
+| Resend | `resend` npm SDK + `emailSettings` DB singleton | Replaces nodemailer; keep `sendEmail()` function signature |
+| GoHighLevel | Existing `server/integrations/ghl.ts` | SEED-002 calls via worker, not directly from routes |
+| Google Calendar | Existing `server/lib/google-calendar.ts` | SEED-002 calls via worker for GCal event creation |
+| Supabase | `supabase migration new` + `supabase db push` | Never `drizzle-kit push` |
+
+### Internal Boundaries
+
+| Boundary | Communication | Notes |
+|----------|---------------|-------|
+| `routes/bookings.ts` -> `calendarSyncQueue` | `storage.enqueueCalendarSync()` | Replaces direct `syncBookingToGhl()` call |
+| `calendar-sync-worker` -> `booking-ghl-sync.ts` | Direct function call `executeSyncToGhl()` | Worker owns retry logic; sync lib owns HTTP calls |
+| `calendar-sync-worker` -> `google-calendar.ts` | Direct function call | Same pattern as above |
+| `routes/bookings.ts` -> `email-resend.ts` | Fire-and-forget async call | Same pattern as current Twilio/Telegram notifications |
+| Admin `CalendarSyncHealthPanel` -> `routes/calendar-sync.ts` | React Query GET + POST | Standard admin query pattern with 30s refetchInterval |
+| Admin `EmailSettingsSection` -> `routes/email-settings.ts` | React Query GET + useMutation PUT | Standard admin settings pattern matching twilioSettings |
 
 ---
 
@@ -705,24 +432,13 @@ Depends on: Step 3 (API endpoints must respond) + Step 5 (data must be flowing i
 
 | Scale | Architecture Adjustments |
 |-------|--------------------------|
-| 0-10k bookings/year | Current design is exactly right — monolith, single PostgreSQL, all in same DB |
-| 10k-100k visitors/month | Add index on `conversion_events(occurred_at, attributed_source)` as composite; consider partitioning `conversion_events` by month |
-| 100k+ visitors/month | Move analytics writes to a write queue (existing Node process or simple pg LISTEN/NOTIFY); dashboard queries may need materialized views for overview aggregates |
+| Current (single tenant, under 500 bookings/month) | All three features as described — monolith is correct |
+| 10 tenants (Xkedule SaaS) | `calendarSyncQueue` needs `tenantId` FK; `emailSettings` needs `tenantId`; worker runs once and processes all tenants |
+| 100+ tenants | Worker needs per-tenant concurrency limits; consider pg-boss for queue management instead of manual SELECT FOR UPDATE |
 
-At the expected volume for a single cleaning company (hundreds of bookings per month, thousands of visitors per month), the current design handles reporting queries in under 100ms with the indexes defined above.
-
----
-
-## Sources
-
-- PostHog first-touch/last-touch attribution tutorial: https://posthog.com/tutorials/first-last-touch-attribution
-- Umami analytics DB schema breakdown: https://memo.d.foundation/breakdown/umami
-- Persistent UTM tracking guide (localStorage rationale): https://fiveninestrategy.com/persistent-utm-tracking-guide/
-- Drizzle ORM aggregation docs: https://orm.drizzle.team/docs/select
-- Drizzle date grouping discussion: https://github.com/drizzle-team/drizzle-orm/discussions/2893
-- GA4 traffic classification algorithm: https://analyticsdetectives.com/blog/direct-traffic-in-ga4
-- UTM persistence best practices 2025: https://voxxycreativelab.com/utm-parameters-to-first-party-cookies/
+The SELECT FOR UPDATE SKIP LOCKED pattern is production-grade for this scale. pg-boss adds value only when queue depth regularly exceeds ~1000 rows or multi-worker fan-out is needed.
 
 ---
-*Architecture research for: First-party UTM tracking, Skleanings booking platform*
-*Researched: 2026-04-25*
+
+*Architecture research for: Skleanings v5.0 Booking Experience (SEED-029 + SEED-019 + SEED-002)*
+*Researched: 2026-05-11*

@@ -1,385 +1,359 @@
 # Pitfalls Research
 
-**Domain:** First-party UTM attribution added to an existing booking platform
-**Researched:** 2026-04-25
-**Confidence:** HIGH
+**Domain:** Booking Experience v5.0 — Multiple durations, branded email (Resend), Calendar Harmony retry queue
+**Researched:** 2026-05-11
+**Confidence:** HIGH (codebase read + official docs verified where noted; LOW confidence items flagged)
 
 ---
 
 ## Critical Pitfalls
 
-### Pitfall 1: UTM Data Lost on Stripe Redirect
+### Pitfall 1: pgBouncer Transaction Mode Breaks Advisory Locks — Use Row-Level Locking Only
 
 **What goes wrong:**
-The booking form submits `POST /api/payments/checkout`, which redirects the browser to `stripe.com/pay/...`. Any UTM data stored only in `localStorage` or `sessionStorage` is **not guaranteed to survive** the cross-origin redirect chain. On return (`/confirmation?session_id=...`), the UTM context that existed when the customer first visited is gone. The booking is recorded in the database with no source attribution.
+The SEED-002 worker spec mentions "pessimistic lock per (bookingId, target)" without specifying which PostgreSQL locking primitive. If the implementation reaches for `pg_advisory_lock()` or `pg_advisory_xact_lock()` — a natural choice for lightweight coordination — it will fail silently or deadlock under Supabase's pgBouncer/Supavisor transaction pooling.
+
+Session-level advisory locks (`pg_advisory_lock`) require a persistent session connection. pgBouncer in transaction mode assigns a server connection only for the duration of one transaction, then returns it to the pool. The lock acquired in transaction N is tied to that server session — by the time transaction N+1 runs from the same client, it is on a different server connection and the lock is gone. This causes two workers to both believe they hold a lock on the same job.
 
 **Why it happens:**
-The existing `Confirmation.tsx` calls `trackPurchase()` inside a `useEffect` that fires after cart items are cleared. The cart is the only context available at that point. There is no mechanism to carry attribution data through the Stripe round-trip. The same gap exists in `POST /api/bookings` (pay-on-site flow) — the route currently accepts no attribution fields.
+`server/db.ts` already sets `prepare: false` (required for pgBouncer transaction mode) and the connection is pooled. The project explicitly routes through Supabase's pooled endpoint in production. Developers who know about `FOR UPDATE SKIP LOCKED` sometimes add `pg_advisory_lock` alongside it as an "extra safety" measure — this breaks atomicity silently.
 
 **How to avoid:**
-Send the session/attribution ID in `POST /api/payments/checkout` and `POST /api/bookings` as a request body field (not a header). The server stores it alongside the booking row. When the Stripe webhook fires `checkout.session.completed`, the booking already has its attribution. This is more reliable than rebuilding attribution after redirect.
+Use `SELECT ... FOR UPDATE SKIP LOCKED` exclusively, inside a transaction, with the status column set atomically in the same statement. The pattern is:
 
-**Warning signs:**
-- Attribution dashboard shows "Direct" for most bookings even when paid campaigns are running
-- Stripe-flow bookings have null `utmSessionId` while pay-on-site bookings do not
-
-**Phase to address:**
-Phase 1 (UTM capture) and Phase 2 (conversion recording) must be designed together. The `bookings` and `payments/checkout` routes must accept an optional `attributionSessionId` in the same phase that creates the UTM session table.
-
----
-
-### Pitfall 2: Safari ITP Strips UTM Params on Same-Domain Redirects
-
-**What goes wrong:**
-Safari's Intelligent Tracking Prevention (ITP 2.x+) strips query parameters from cross-site navigations. Google Ads and Facebook Ads redirect through their own domains before landing on the site — Safari ITP treats the UTM params as tracking and may strip them from the final URL. The visitor lands on `/services?` with no params, gets classified as "Direct," and the paid campaign gets zero credit.
-
-**Why it happens:**
-The capture logic reads `window.location.search` on page load. If ITP has stripped the params before the JS executes, there is nothing to read. This is a browser-enforced privacy behavior, not a bug.
-
-**How to avoid:**
-1. Capture UTMs from `document.referrer` as a fallback — if params are missing but referrer is `google.com`, classify as Organic Search.
-2. Use Facebook's `_fbc` / `_fbp` cookies as a secondary signal for Facebook traffic (set before ITP strips URL params).
-3. Build traffic classification logic (Pitfall 3) as a required companion to raw UTM capture — not an afterthought.
-4. Do NOT use Google Click ID (`gclid`) storage as the sole attribution signal; treat it as supplementary.
-
-**Warning signs:**
-- Attribution data shows high "Direct" share despite known paid campaigns
-- Mobile Safari traffic heavily skewed toward Direct vs. desktop Chrome traffic from same campaigns
-
-**Phase to address:**
-Phase 1 (UTM capture) — the traffic classification fallback logic must be built in the same pass, not deferred to a later phase.
-
----
-
-### Pitfall 3: UTM Case Sensitivity Corrupts Reporting
-
-**What goes wrong:**
-`utm_source=Google`, `utm_source=google`, and `utm_source=GOOGLE` are stored as three separate values. The admin dashboard shows three rows where there should be one. Conversion rates look lower per row than they are. The business owner sees "Google" and "google" as different channels and gets confused.
-
-**Why it happens:**
-UTM parameters are set by ad platforms, email service providers, link shorteners, and humans — there is no enforced standard. Facebook often sends `utm_source=facebook`, but some campaigns are configured with `utm_source=Facebook`. Google Ads auto-tagging may differ from manually tagged links.
-
-**How to avoid:**
-Normalize all UTM values to lowercase before writing to the database. Apply normalization at the capture layer (the JS that reads URL params), not at query time. Normalization at query time (via `LOWER()` in SQL) is slower and creates index bypass issues.
-
-```
-// In UTM capture code:
-const normalize = (v: string | null) => v?.trim().toLowerCase() ?? null;
-const utmSource = normalize(params.get('utm_source'));
+```sql
+-- Worker picks one row
+UPDATE calendar_sync_queue
+SET status = 'in_progress', last_attempt_at = NOW()
+WHERE id = (
+  SELECT id FROM calendar_sync_queue
+  WHERE status = 'pending' AND scheduled_for <= NOW()
+  ORDER BY scheduled_for ASC
+  FOR UPDATE SKIP LOCKED
+  LIMIT 1
+)
+RETURNING *;
 ```
 
+This is safe under pgBouncer transaction mode because the entire read-then-update happens in one transaction, one server connection. If the worker crashes, the transaction is rolled back and the row reverts to `pending` automatically.
+
+If coordination beyond row locking is needed, use `pg_advisory_xact_lock()` (transaction-scoped, not session-scoped). Never use `pg_advisory_lock()` on a pooled connection.
+
 **Warning signs:**
-- Dashboard shows duplicate source rows for the same platform
-- Total conversion counts for a source look lower than expected
-- Campaign names appear with mixed casing in the database
+- Two admin observability entries for the same job showing `in_progress` simultaneously
+- Jobs stuck in `in_progress` forever after a worker crash (this means the UPDATE happened but COMMIT did not, which under a correctly implemented approach should auto-revert — if it doesn't, advisory locks are leaking)
+- Migration errors from Drizzle or Supabase CLI mentioning "advisory lock" failures (a completely separate pgBouncer advisory-lock incompatibility that affects schema migrations)
 
 **Phase to address:**
-Phase 1 (UTM capture) — normalization must happen at write time, enforced in the schema layer. Adding normalization later requires a data migration on existing rows.
+SEED-002 implementation phase (Calendar Harmony). The `calendarSyncQueue` schema design and worker implementation must both be reviewed. The schema migration itself must use `supabase db diff` + Supabase CLI — never `drizzle-kit push` — because Drizzle's push command acquires advisory locks that hang on pgBouncer.
 
 ---
 
-### Pitfall 4: Double Conversion Recording from Stripe Webhook + Frontend
+### Pitfall 2: `in_progress` Rows Orphaned Forever After Worker Crash
 
 **What goes wrong:**
-The system records a conversion in two places: (1) the frontend fires a conversion event when it sees `?session_id=...` on the Confirmation page, and (2) the Stripe webhook independently marks the booking as paid. If both paths also write a conversion event to the `conversionEvents` table, the same booking appears twice in the attribution dashboard. Conversion counts are inflated, conversion rate looks artificially high.
+If a worker selects a row, sets `status = 'in_progress'`, commits that UPDATE (ending the transaction), then crashes before completing the job and committing the final status update, the row stays `in_progress` indefinitely. No automatic mechanism reverts it to `pending`. Jobs that affect Google Calendar or GHL never retry, bookings stay unsynced, and the admin observability panel shows a growing `in_progress` count with no resolution.
 
 **Why it happens:**
-`Confirmation.tsx` already calls `trackPurchase()` which fires GA4/GTM events. It is natural to also add a database write there. The Stripe webhook handler (`POST /api/payments/webhook`) is also a natural write point. Both paths fire for Stripe-flow bookings.
+The two-phase approach ("mark in_progress, then process, then mark success/failed") requires two separate transactions. The first commit is permanent. If the process dies between commit-1 and commit-2, commit-1 is not rolled back.
+
+The seed spec uses an "optimistic single-transaction" description but is ambiguous. If someone interprets it as two transactions for performance reasons (e.g., holding a transaction open for the full duration of a GHL HTTP call is considered bad practice), they accidentally introduce this orphaning bug.
 
 **How to avoid:**
-The single authoritative write point for the `booking_completed` conversion event must be the **server side only** — specifically the Stripe webhook `checkout.session.completed` handler (for paid bookings) and the `POST /api/bookings` success path (for pay-on-site bookings). The frontend must not write conversion events directly. Frontend calls `trackPurchase` for GA4/GTM only, never for the first-party database.
+Keep the worker's processing entirely within one database transaction — mark `in_progress`, call the external API, mark `success/failed`, all in one `db.transaction()` block. The transaction stays open for the duration of the HTTP call. This is acceptable for single-minute cron runs; the GHL/GCal calls are fast (under 5 seconds in normal conditions). pgBouncer does not time out open transactions by default — only the server's `idle_in_transaction_session_timeout` can cut them, so set that to at least 30 seconds.
 
-Apply an idempotency key: use `booking.id` as the unique constraint on conversion events. A second write for the same `bookingId` with `event_type = 'booking_completed'` must be a no-op or upsert.
+Alternatively, if keeping the transaction open is not acceptable, add a `stale_in_progress_reaper`: a cron step that finds rows where `status = 'in_progress' AND last_attempt_at < NOW() - INTERVAL '10 minutes'` and resets them to `pending` with an incremented attempt count. Ship this reaper in the same phase as the worker, not as a follow-up.
 
 **Warning signs:**
-- Conversion count is twice the booking count in the database
-- Stripe-flow bookings appear twice in the Conversions view
-- `conversionEvents` table has `count(*) > bookings` for `booking_completed` type
+- `in_progress` counter grows after Vercel function timeouts or network errors
+- Admin retry panel shows "Retry now" button on jobs that are `in_progress`, not `failed_retryable`
+- `last_attempt_at` timestamp is old but status has not progressed
 
 **Phase to address:**
-Phase 2 (conversion recording) — the idempotency constraint belongs in the schema migration that creates the conversion events table, before any write logic is built.
+SEED-002 implementation phase. The worker transaction boundary design must be explicit in the plan. One of the two approaches (single-transaction or two-transaction + reaper) must be chosen and implemented in the same phase.
 
 ---
 
-### Pitfall 5: localStorage Cleared by User Breaks First-Touch Attribution
+### Pitfall 3: Duration Selector Breaks `totalDuration` in CartContext — Slots Show Wrong Availability
 
 **What goes wrong:**
-The visitor's first touch is stored in `localStorage` (e.g., `{utmSource: 'google', medium: 'cpc', ...}`). The visitor returns a week later after clearing their browser cache or history. `localStorage` is gone. The system creates a new session with no UTM params, classifies the visit as "Direct," and sets that as the new first touch. All previous attribution context is lost permanently.
+`CartContext.tsx` line 222 computes `totalDuration` as `item.durationMinutes * item.quantity`. The `durationMinutes` field is read directly from the `Service` object stored in the cart. When a customer selects a `serviceDuration` option (e.g., "4h — 3 bedrooms — $280"), the new duration (240 minutes) is stored as `selectedDurationId` in the cart item but `item.durationMinutes` still reflects the service's default duration from the catalog row.
+
+The `useAvailability` hook receives `totalDuration` to query `GET /api/availability?totalDurationMinutes=...`. If `totalDuration` is still the default (e.g., 120 minutes for a 2h service), the API returns slots sized for 2 hours even though the customer chose 4 hours. A customer who books the 4h slot but the system only blocks 2h will cause staff to be double-booked.
 
 **Why it happens:**
-`localStorage` is the default choice for lightweight persistence in React apps. It is developer-visible and has no expiration, which makes it feel like a reliable store. In practice, users clear it, private browsing does not share it, and iOS 16.4+ limits it to 7 days for cross-site scenarios.
+SEED-029 adds `selectedDurationId` to `AddToCartData` and `CartItem` but does not modify the `totalDuration` computation. The `Service` type's `durationMinutes` is the catalog default — it is immutable from the cart's perspective unless explicitly overridden on the cart item object. The disconnect is invisible in the UI because the date picker renders and accepts a slot; the error only manifests operationally.
 
 **How to avoid:**
-First-touch attribution must be **written to the database** on the first visit and then referenced by session ID on subsequent visits. `localStorage` is acceptable for storing the session ID and caching the session data, but the authoritative record is the server-side row. If the session ID is missing from `localStorage` on a return visit, treat it as a new session — accept the data loss — do not try to reconstruct.
+When a `serviceDuration` is selected, the cart item's effective `durationMinutes` must be overridden. Two correct approaches:
 
-Set the session ID in a `SameSite=Lax; Secure` cookie **and** in `localStorage`. The cookie survives some cache clears that would wipe `localStorage`.
+Option A — Override `durationMinutes` on the cart item at selection time (simplest): when `updateItem` is called with a `selectedDurationId`, also pass `service: { ...item, durationMinutes: selectedDuration.durationMinutes }` so `totalDuration` picks it up automatically via the spread in `CartContext.tsx` line 199.
+
+Option B — Change `totalDuration` computation to check `selectedDurationId` and resolve the duration from the `serviceDurations` data loaded alongside the cart: `item.selectedDurationId ? resolvedDuration : item.durationMinutes`.
+
+Option A is simpler and less error-prone. Choose it.
+
+Also update `getCartItemsForBooking` to include the resolved duration so the server-side booking creation uses the correct `totalDurationMinutes`.
 
 **Warning signs:**
-- First-touch and last-touch attribution diverge dramatically for the same campaign periods
-- High first-touch "Direct" even for known paid traffic months
+- Selecting a 4h option shows the same available slots as the 2h option
+- `totalDurationMinutes` in the booking API payload equals the catalog default, not the selected duration
+- Admin calendar shows a 2h event for what the customer believed was a 4h booking
 
 **Phase to address:**
-Phase 1 (UTM capture) — dual storage (cookie + localStorage for session ID; database for first-touch record) must be designed at the start, not added as a patch when data loss is noticed.
+SEED-029 implementation phase. Both the duration selector UI and the `CartContext` `totalDuration` computation must be updated atomically in the same plan. Write an integration test (or a manual test step) that confirms `totalDuration` equals the selected duration, not the catalog default.
 
 ---
 
-### Pitfall 6: Booking POST Failure Leaves Orphaned UTM Session With No Conversion
+### Pitfall 4: `BookingPage.tsx` Already at 39KB — Duration Selector Must Not Add Another Step
 
 **What goes wrong:**
-The client sends `POST /api/bookings` with an `attributionSessionId`. The booking fails (time slot conflict, Zod validation error, Stripe error). The client retries or the user corrects the form and submits again. The second submission succeeds. The conversion event correctly records. But depending on implementation, the first failed attempt may have created a partial record or incremented a counter, making the conversion data look wrong.
-
-A subtler version: the booking succeeds server-side but the client never receives the 200 response (network timeout). The user submits again. Now there are two bookings for the same customer, and two conversion events, but only one intended transaction.
+Adding a "Choose duration" step as a new `step` value (e.g., `step = 1.5` or a new `step = 2` pushing existing steps to 3-6) in `BookingPage.tsx` is the obvious implementation path but the file is already at 39KB with steps 2-5. Adding another step compounds the already-dangerous file size, increases the cognitive load of the step machine, and risks breaking the staff-count auto-skip logic (`useEffect` at line 72).
 
 **Why it happens:**
-`BookingPage.tsx` calls a mutation and shows a success/error toast. There is no idempotency token in the current `POST /api/bookings` payload. The server has no way to detect that two identical submissions are the same attempt.
+The seed spec says "show a duration selector before going to the calendar" which sounds like a separate step. The naive implementation adds a step in the existing state machine.
 
 **How to avoid:**
-Add an `idempotencyKey` field to the booking submission payload — a UUID generated client-side before the user clicks "Book Now," stored in component state. The server uses this as a unique constraint on booking creation attempts. Pair this with the idempotency constraint on conversion events (Pitfall 4). The attribution session link to the booking must use `ON CONFLICT DO NOTHING` semantics.
+Do not add a step. Instead, render the duration selector inline in the service cart review (step 2 or alongside the cart items before step 3). Duration is a property of a cart item — it belongs near the cart item row, not as a standalone booking flow step. Implementation path:
+- In the services catalog `ServiceCard` or `AddToCartModal`, show the duration options when the service has `serviceDurations`. Customer picks duration before adding to cart.
+- If the customer must change duration in the booking flow, add the selector inside the cart item row in step 2, not as a new step.
+
+This keeps `BookingPage.tsx` from growing further and avoids step-machine regressions.
 
 **Warning signs:**
-- Duplicate bookings in the database for the same customer within a short time window
-- Conversion count higher than expected for a campaign period
-- Admin sees duplicate booking entries from the same customer in quick succession
+- `BookingPage.tsx` grows past 45KB
+- The auto-skip `useEffect` for staff count stops working after step numbering changes
+- Customers can reach the calendar without having selected a duration, resulting in the default duration being used silently
 
 **Phase to address:**
-Phase 2 (conversion recording) — the idempotency key design must be specified before the booking POST mutation is modified to accept attribution fields.
+SEED-029 implementation phase. The plan must explicitly state "no new step added" and describe where the selector renders.
 
 ---
 
-### Pitfall 7: UTM Sessions Table Grows Unbounded
+### Pitfall 5: Resend `from` Address Blocked Until DNS Verifies — Emails Silently Drop at Launch
 
 **What goes wrong:**
-Every page load by every bot, crawler, health-check, and legitimate visitor creates a new UTM session row. After 12 months, the table has millions of rows. Reporting queries that scan the full table to compute "conversions by source" become slow. Vercel serverless functions start timing out on the dashboard's data queries. Supabase row counts look alarming.
+Resend requires a verified sending domain before it will deliver email from that domain. If the `from` address is `no-reply@skleanings.com` (or the tenant's domain) and the DNS records (DKIM CNAME, SPF TXT, optional MX) have not propagated, Resend returns a 403/422 error and the confirmation email is never sent. The Resend SDK throws or returns an error object — if the call site swallows errors (common for "fire-and-forget" notification patterns), customers receive no confirmation email with no indication anything failed.
+
+DNS propagation can take up to 72 hours. During this window — which includes the go-live day — every booking produces a silent failure.
 
 **Why it happens:**
-UTM session capture is the first time the codebase deliberately writes one row per visitor. There is no precedent in the existing schema for high-volume append tables. The pattern used for low-volume tables (bookings, contacts) does not scale automatically.
+Email sending is typically added in a non-blocking async call at the end of the booking creation handler, mirroring the existing `void` GHL/Twilio patterns. The developer tests with a personal Resend-verified domain during development but the production domain has not been through verification. The code ships; DNS records are added; the 72h window is not communicated to stakeholders.
 
 **How to avoid:**
-From day one:
-1. Add a `created_at` index on `utmSessions` and `conversionEvents` — all dashboard queries will filter by date range.
-2. Add a composite index on `(utm_source, utm_medium, created_at)` for the Campaign Performance and Source Performance views.
-3. Filter out obvious bots at capture time: check `navigator.webdriver`, `navigator.userAgent` patterns, and do not write a session if the request lacks a valid `User-Agent` header.
-4. Design all dashboard queries with a mandatory date range parameter — no query should scan without a date bound.
-5. Document a retention policy (e.g., delete UTM sessions older than 24 months) even if the cron job implementing it comes in a later phase.
+Three specific actions:
+1. Add domain verification as a prerequisite checklist item in the deployment plan for the email phase — it must be done 72h before go-live, not after.
+2. Log Resend errors explicitly (not just swallow them) and write to `notificationLogs` with `status = 'failed'` and `error = resendError.message`. This makes failures visible in the admin panel even when silent to the customer.
+3. Implement a fallback: if the Resend domain is not yet verified or the API key is absent, fall back to the existing Nodemailer SMTP path (`server/lib/email.ts` already exists). This ensures basic delivery continues during the DNS window.
+
+For Resend's DNS requirements specifically: two CNAME records for DKIM and one TXT record for SPF are required. The MX record is needed only for tracking replies. Some DNS providers (Cloudflare, Namecheap) auto-append the domain to record names — add a trailing period to CNAME values to prevent this. Verify with `dig TXT send.yourdomain.com` before go-live.
 
 **Warning signs:**
-- Dashboard queries taking >2s on the Supabase dashboard
-- `utmSessions` row count growing faster than the number of actual bookings
-- Bot-like session patterns (no referrer, landing page is `/`, no conversion, high volume)
+- Resend dashboard shows 0 sent emails but booking API logs show no errors (swallowed error)
+- `notificationLogs` has no email rows despite bookings being created
+- Resend dashboard "Domains" tab shows "Pending" or "Failed" status for the sending domain
 
 **Phase to address:**
-Phase 1 (schema design) — indexes and bot-filtering must be in the initial migration, not added after the table has grown.
+SEED-019 implementation phase. The plan must include: (a) DNS setup instructions, (b) 72h lead time requirement, (c) Resend error logging wired to `notificationLogs`, (d) fallback to Nodemailer if Resend is unconfigured.
 
 ---
 
-### Pitfall 8: Attribution Dashboard Shows Raw UTM Values to a Non-Technical Owner
+### Pitfall 6: React Email `render()` Called in a Browser Context Throws — Must Be Server-Only
 
 **What goes wrong:**
-The Campaign Performance view shows columns labeled "utm_source," "utm_medium," "utm_campaign." The business owner sees `utm_source = cpc` and does not know what "cpc" means. They see `utm_medium = email` and wonder if that is the same as "Email Marketing." The dashboard looks like a developer tool, not a business tool. The feature is built but not used.
+`@react-email/render` uses `react-dom/server`'s `renderToStaticMarkup` (or the newer async `renderToStaticNodeStream`) internally. In React Email v3+, `render()` is always async. If a developer imports and calls `render()` from a file that is bundled for the client side (e.g., placed in `client/src/` instead of `server/`), it throws at runtime because `react-dom/server` is not available in the browser.
+
+In this codebase, Vite bundles `client/src/` and esbuild bundles `server/`. A React Email template placed in `client/src/emails/` will be included in the Vite bundle and crash the browser.
 
 **Why it happens:**
-The raw UTM params are what is stored in the database. It is faster to query and display them directly. Mapping them to friendly names feels like cosmetic polish and gets deferred.
+The React Email documentation shows templates as `.tsx` files which look like React components — it is natural to put them in the `client/` directory. The mistake is invisible during development if the template is only imported in server code via a relative path that Vite does not traverse.
 
 **How to avoid:**
-The mapping is business logic, not cosmetics. Build a display layer from the start:
-- "Source" maps `google` → "Google," `facebook` → "Facebook," `ig` → "Instagram," unknown values → title-case the raw value
-- "Medium" maps `cpc` → "Paid Ad," `organic` → "Organic," `email` → "Email," `social` → "Social," `referral` → "Referral"
-- "Campaign" shows the raw `utm_campaign` value (owner set it, they recognize it) but with title-casing
-
-Build this mapping as a shared utility function so it is consistent across all dashboard views.
+- Place all React Email template files under `server/emails/` (or `server/lib/emails/`), never under `client/src/`.
+- Import `@react-email/render` only in server-side modules.
+- Add `"@react-email/render"` to the `external` list in the esbuild config if it is not already excluded from the Vite client bundle.
+- Use `renderAsync` in React Email v2 or `await render()` in v3+ (the sync `render()` was removed in v3 — check the installed version before writing templates).
 
 **Warning signs:**
-- Business owner asks "what does cpc mean?" during review
-- Dashboard screenshots include raw parameter strings in demo materials
+- Browser console error: `Module "react-dom/server" is not available in browser environment`
+- Vite bundle size grows unexpectedly after adding email templates
+- Email templates import but produce empty output (silent failure from a try/catch around the render call)
 
 **Phase to address:**
-Phase 3 (admin dashboard) — the friendly-name mapping must be part of the initial dashboard spec, not a polish pass after the feature ships.
+SEED-019 implementation phase. The plan must specify `server/emails/` as the canonical template location and include a note on the async render API version.
 
 ---
 
-### Pitfall 9: Empty Dashboard on Day One Damages Trust
+### Pitfall 7: Vercel Serverless Functions Cannot Run a Persistent Worker — node-cron Is a No-Op
 
 **What goes wrong:**
-The marketing attribution dashboard ships. The business owner opens it. Every chart shows "No data." Every table is empty. There are no historical bookings linked to UTM sessions because the session capture code was not running before this milestone. The feature looks broken. The business owner loses confidence in it immediately.
+The SEED-002 spec mentions "node-cron every 1min" as the worker trigger. `node-cron` schedules cron callbacks inside the running Node.js process. On Vercel, the Express server runs as a serverless function — the process is created for the duration of a single HTTP request and then destroyed. There is no persistent process for `node-cron` to schedule against. The `cron.schedule()` call executes, registers a timer, and then the process exits. The next invocation of the serverless function is a cold start with no memory of the previous schedule.
+
+The seed also mentions "GH Actions or node-cron" as alternatives. On Vercel, only the GH Actions path works.
 
 **Why it happens:**
-The existing 40+ bookings in the database have no `utmSessionId`. The dashboard only queries conversion events created after the new tables exist. Day-one data is structurally absent.
+The codebase currently uses `node-cron` for the recurring booking generator in development. The `server/index.ts` initializes it during startup. This works locally (long-running process) and in any always-on server environment, but Vercel's serverless runtime makes it a dead letter.
 
 **How to avoid:**
-1. Design an explicit empty state for the dashboard that says "Data collection started on [date]. Your first attributed booking will appear here after a customer visits through a tracked link." This is honest and not an error state.
-2. On the Conversions view, offer a one-time backfill toggle: "Import existing bookings without attribution as Direct/Unknown." This populates historical booking counts (minus UTM detail) so the overview metrics are not zero.
-3. The Overview page should show total bookings (all time) as a separate metric from "attributed bookings" so the owner can see real volume while attribution data builds up.
+Use GitHub Actions cron (already in use for the recurring booking generator) as the exclusive trigger for the calendar sync worker in production. Configure a workflow that:
+1. Runs every minute (`*/1 * * * *` — note: GitHub Actions minimum granularity is 1 minute but may lag up to 1 minute under high load)
+2. Makes an authenticated HTTP `POST` to `/api/internal/calendar-sync/run` with a shared secret header
+3. The Express route handler runs the worker and returns
+
+Keep `node-cron` as a local development convenience only, guarded by `if (!process.env.VERCEL)`.
+
+GitHub Actions cron can fire twice for the same minute under high load — the worker must be idempotent. `SELECT FOR UPDATE SKIP LOCKED` naturally provides this: the second invocation finds no unlocked pending rows and exits cleanly.
 
 **Warning signs:**
-- Business owner sends message asking "why is everything empty"
-- Feature is dismissed as broken before it has time to collect data
+- Calendar sync jobs accumulate in `pending` status and never transition
+- `console.log` from the worker never appears in Vercel function logs
+- GH Actions cron workflow is absent from `.github/workflows/`
 
 **Phase to address:**
-Phase 3 (admin dashboard) — empty states and historical context must be designed before the first UI component is built.
+SEED-002 implementation phase. The plan must include the GitHub Actions workflow file as a deliverable, not as a "follow-up task."
 
 ---
 
-### Pitfall 10: Storing IP Addresses Without a Privacy Policy Basis
+### Pitfall 8: Recurring Bookings Generated with Default `durationMinutes` After Duration Feature Ships
 
 **What goes wrong:**
-IP addresses are stored to help identify sessions or detect bots. In Europe, IP addresses are PII under GDPR. If a customer from Germany visits the site (realistic for a US cleaning company with expat clients), storing their IP without consent creates a compliance liability.
+`server/services/recurring-booking-generator.ts` line 79 reads `durationMinutes` from the service row directly: `const durationMinutes = service.durationMinutes`. After SEED-029 ships, a recurring subscription that was created when the customer chose a 4h duration (stored as `selectedDurationId` in the subscription snapshot) will generate future bookings with the service's catalog default duration — not the chosen 4h. Every recurring occurrence will be 2h shorter than expected.
 
 **Why it happens:**
-IP addresses are available in `req.ip` on every request and feel like "just a number." Developers store them for debugging without considering their legal status.
+The recurring booking generator was written before multiple durations existed. It does not know about `selectedDurationId` and has no path to resolve a `serviceDuration` row.
 
 **How to avoid:**
-Do not store raw IP addresses in the UTM sessions table. Use the IP to:
-1. Determine country/region at capture time (for filtering out non-US traffic if desired)
-2. Detect obvious bot patterns (datacenter IP ranges)
-
-Then discard the IP. Store the derived country code (`US`, `CA`, etc.) if useful for the dashboard, but not the IP itself. This is the approach taken by Plausible Analytics, which is GDPR-compliant by design.
-
-If bot detection requires IP inspection server-side, do it in the API route and do not persist the IP to any table.
+When SEED-029 ships, update the `recurringBookings` table to store the resolved `durationMinutes` at subscription creation time (not just `selectedDurationId`). Add a `durationMinutes` column to `recurringBookings` (defaulting to the service's catalog value for existing rows via migration). The generator reads this column instead of going to the service row. This is more robust because service catalog durations can be edited after subscription creation.
 
 **Warning signs:**
-- IP address column present in the UTM sessions schema migration
-- `req.ip` being logged to a database row
+- Admin calendar shows recurring occurrences shorter than the original booking
+- Customer complaints about cleaners arriving for fewer hours than they paid for
+- `totalDurationMinutes` on auto-generated bookings differs from the first occurrence
 
 **Phase to address:**
-Phase 1 (schema design) — the UTM sessions table migration must not include an IP column. If bot filtering requires IP inspection, it must be done in-memory in the route handler.
+SEED-029 phase must include updating the `recurringBookings` schema. If SEED-002 and SEED-029 ship in the same milestone, verify that the recurring booking generator update is explicitly in the SEED-029 plan.
 
 ---
 
 ## Technical Debt Patterns
 
-Shortcuts that seem reasonable but create long-term problems.
-
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Store UTM data only in localStorage | No backend work for capture | Lost on cache clear, no cross-device, first-touch unreliable | Never — defeats the purpose of first-party attribution |
-| Query dashboard without date indexes | Simpler schema migration | Slow queries after 6 months; may hit Supabase row limits | Never — add indexes in the initial migration |
-| Display raw utm_source/medium values | No mapping code needed | Dashboard incomprehensible to non-technical owner | Never for primary views; acceptable in raw data export |
-| Write conversion events from frontend only | Simpler client code | Double-counts, can be blocked by ad blockers, not authoritative | Never for primary conversion events |
-| Skip idempotency on conversion writes | Simpler insert logic | Duplicate conversions inflate metrics | Never — add unique constraint in schema migration |
-| Defer bot filtering to later | Faster MVP build | Corrupted early data is hard to clean retroactively | Acceptable only if traffic is <100 sessions/day |
+| Swallowing Resend errors with `void sendEmail(...)` | Mirrors existing GHL fire-and-forget pattern | Silent confirmation failures with no admin visibility | Never — always log to `notificationLogs` |
+| Using `node-cron` for the sync worker on Vercel | No GH Actions workflow to write | Worker never runs in production | Development-only; never in production |
+| Two-transaction worker (mark in_progress, then process separately) | Shorter open transactions | Orphaned `in_progress` rows on crash | Only if stale-row reaper ships in same phase |
+| Putting React Email templates in `shared/` or `client/` | Seems reusable | Vite bundles them, browser throws | Never — server-only |
+| Skipping `stale_in_progress_reaper` | Faster to ship | Jobs permanently stuck after any crash | Never — ship it with the worker |
+| Using service catalog `durationMinutes` in recurring generator | No schema change | Future bookings wrong duration after SEED-029 | Never — add column to `recurringBookings` |
 
 ---
 
 ## Integration Gotchas
 
-Common mistakes when connecting to external services or existing system parts.
-
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| Stripe Checkout redirect | Expecting UTM data to survive the stripe.com hop | Pass `attributionSessionId` in the booking POST body before redirect; read it from the booking row in the webhook handler |
-| Stripe webhook | Recording conversion in webhook AND in frontend | Webhook is sole write point for `booking_completed` on Stripe-flow bookings; frontend fires GA4 events only |
-| GoHighLevel sync | GHL contact creation already in `syncBookingToGhl`; UTM data should be sent as contact custom fields at the same time | Add UTM fields to the GHL contact upsert payload in the existing sync function, not in a separate API call |
-| GA4 / GTM (existing) | Duplicating UTM capture that GA4 already does | This system captures for the first-party database only; do not replicate GA4's session model — different purpose |
-| Drizzle schema | Adding UTM tables with raw SQL instead of schema.ts + Supabase CLI | Follow existing pattern: define tables in `shared/schema.ts`, generate migration with Supabase CLI per MEMORY.md |
+| Resend | Call `new Resend(apiKey).emails.send()` without checking response | Destructure `{ data, error }` from send(), log `error` to `notificationLogs` if set |
+| Resend domain | Add DNS records at root domain instead of send subdomain | Records go on `send.yourdomain.com`, not `yourdomain.com` |
+| Resend + Nodemailer | Remove Nodemailer when Resend ships | Keep Nodemailer as fallback for subscription reminders and unconfigured tenants |
+| Google Calendar sync in worker | Call GCal sync inline in the booking route (existing behavior) | Enqueue to `calendarSyncQueue`; worker handles retry |
+| GHL sync | Replace existing `booking-ghl-sync.ts` entirely | Wrap existing functions as the "consumer" called by the worker — do not rewrite |
+| pgBouncer + worker | Open transaction for SELECT, close, open new transaction for UPDATE | Do the SELECT FOR UPDATE and status UPDATE in one atomic statement in one transaction |
+| GitHub Actions cron | Assume exactly-once delivery | Design worker to be idempotent; duplicate runs must be harmless |
 
 ---
 
 ## Performance Traps
 
-Patterns that work at small scale but fail as usage grows.
-
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| No index on `utmSessions.created_at` | Dashboard queries scan full table | Add index in schema migration | ~50k rows / ~6 months of operation |
-| No composite index on `(utm_source, utm_medium, created_at)` | Source Performance query is a full-table aggregation | Add composite index in schema migration | ~10k rows |
-| Dashboard query fetches all rows then filters in JS | Works in dev (10 rows), slow in production | All filtering must be in SQL WHERE clauses with proper indexes | ~1k rows |
-| Storing one row per page view instead of one row per session | Exponential table growth; page-reload users counted multiple times | Session deduplication: check if session ID already exists before INSERT | Day 1 if session model is wrong |
-| No LIMIT on Visitor Journey query | Single visitor with many sessions returns enormous result set | Always paginate; cap session history to last 10 visits per visitor | Any visitor with >50 page views |
+| `getAvailabilityForDate` called N times for monthly calendar with new duration | Slow date picker for multi-duration services (30 calls × duration resolution) | Batch duration resolution before calling availability | At ~10 concurrent bookings; visible immediately |
+| `calendarSyncQueue` table grows unbounded without cleanup | Query slow-down for `pending` status scan | Add periodic hard-delete of `completedAt > 30 days` rows | At ~10K rows with no index on `(status, scheduled_for)` |
+| React Email `render()` called on every booking request without caching | Slow booking confirmation (30-100ms per render) | Cache rendered HTML per template type (LRU, or pre-render at startup) | At >10 concurrent bookings |
+| Monthly availability endpoint iterates all 31 days calling DB per day | Slow month picker for large calendars | Already handled with GHL fast-path; for staff-based path, batch the DB queries | At >5 staff members, already borderline |
 
 ---
 
 ## Security Mistakes
 
-Domain-specific security issues.
-
 | Mistake | Risk | Prevention |
 |---------|------|------------|
-| Storing raw IP addresses in UTM session table | GDPR PII liability for EU visitors | Do not persist IPs; derive country code at request time and discard IP |
-| No rate limit on `POST /api/utm-sessions` | Attacker floods table with fake sessions, corrupts attribution data | Apply same rate-limit pattern as bookings (`canCreateBooking` equivalent) |
-| Accepting arbitrary `attributionSessionId` from client without validation | Client can claim any session ID, linking bookings to fake sessions | Validate that session ID exists in the `utmSessions` table before accepting it on a booking; reject unknown IDs silently |
-| Admin dashboard API endpoints not behind `requireAdmin` | Attribution data exposed to public (reveals campaign names, landing pages, traffic volumes — competitive intelligence) | All `/api/marketing/*` routes must use `requireAdmin` middleware from the start |
-| UTM parameters used in ad URLs without encoding | Malicious `utm_campaign` values with SQL-special chars | Drizzle parameterized queries prevent injection; still normalize and trim values at capture |
+| Internal calendar sync trigger endpoint (`/api/internal/calendar-sync/run`) exposed without auth | Anyone can trigger unlimited GHL/GCal API calls, exhausting rate limits | Require `X-Internal-Secret` header matching a `INTERNAL_CRON_SECRET` env var; validate in middleware |
+| Resend API key stored in `companySettings` JSONB without encryption | DB read = API key exposure | Store in `integrationSettings` table (consistent with existing GHL/Twilio pattern); do not put in `companySettings` |
+| Email template renders unescaped customer data | XSS in email clients that render HTML | React Email components escape by default; never use `dangerouslySetInnerHTML` in templates |
+| Duration override not validated server-side | Customer sends `durationMinutes=1` in booking payload, blocks a slot that is too short | Server must resolve `durationMinutes` from `serviceDurations` by ID; never trust the client-supplied duration value |
 
 ---
 
 ## UX Pitfalls
 
-Common user experience mistakes specific to the non-technical admin audience.
-
 | Pitfall | User Impact | Better Approach |
 |---------|-------------|-----------------|
-| Showing "First Touch" and "Last Touch" without explanation | Owner does not know which to trust; ignores the feature | Always show both with a one-line tooltip: "First visit source" and "Most recent visit before booking" |
-| Showing conversion rate as 0.3% for a campaign with 3 visits and 0 conversions | Statistically meaningless but looks like failure | Add sample size warning: "Less than 30 visits — rate not meaningful yet" |
-| No date range filter defaulting to last 30 days | Owner opens dashboard, sees all-time data dominated by early direct traffic, concludes paid ads don't work | Default to last 30 days; make the date range prominent and easy to change |
-| "No data" empty state with no context | Owner thinks the feature is broken | Empty state must say when data collection started and what to expect |
-| Showing utm_campaign raw values like `spring_2026_fb_a` | Owner recognizes their own campaign names; this is fine | Show raw campaign names with title-casing but no mapping needed |
-| Visitor Journey view showing all sessions including bot sessions | Table cluttered with noise | Filter out sessions with no page interactions before displaying in the UI |
+| Duration selector appears as a booking step before the calendar | Adds friction; users don't understand why they're choosing before seeing dates | Show duration selector inline in the cart / service card before the booking flow starts |
+| Calendar shows "no available slots" because duration calculation was wrong | Customer abandons; thinks the business is unavailable | Test that selecting 4h duration correctly reduces available slots vs 2h on the same day |
+| Confirmation email sent with plain text fallback because Resend domain not verified | Professional appearance lost; email looks like spam | Verify domain before launch; Nodemailer fallback must also send HTML, not just text |
+| Admin sync health panel shows only counts, not which bookings are affected | Admin can't act — no way to identify which customer's calendar didn't sync | Each `failed_permanent` row must be linkable to the booking ID and customer name |
+| Duration change mid-cart (customer changes their mind) resets selected time slot | Confusing — customer must re-pick a time | After duration change, clear `selectedTime` and `selectedDate` so the calendar re-renders for the new duration |
 
 ---
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **UTM capture:** Captures all 6 params — verify `utm_content` and `utm_term` are captured, not just source/medium/campaign
-- [ ] **Case normalization:** All UTM values lowercased — verify by checking the database after clicking a link with `utm_source=Google`
-- [ ] **Stripe attribution:** Booking created via Stripe flow has non-null `attributionSessionId` in the bookings table — verify by checking DB row after a test Stripe checkout
-- [ ] **Pay-on-site attribution:** Booking created via direct form submit also has `attributionSessionId` — this path is separate from Stripe and must be verified independently
-- [ ] **First-touch preservation:** Returning visitor with a new UTM does not overwrite their first-touch record — verify by simulating two visits with different UTM params
-- [ ] **Bot filtering:** Sessions from automated health checks (Vercel uptime, monitoring tools) are not counted — verify by checking if `/api/health` or similar hits create session rows
-- [ ] **Idempotency:** Submitting the booking form twice (simulating double-click) does not create two conversion events — verify in the database
-- [ ] **Admin protection:** `/api/marketing/*` endpoints return 401 without admin session — verify with a curl request without auth
-- [ ] **Empty state:** Dashboard shows a useful message when there are zero sessions — verify by testing against a fresh database schema
-- [ ] **Date range filter:** All dashboard charts update when date range changes — verify that the filter actually changes the SQL query parameters, not just the UI display
+- [ ] **Duration selector:** Verify `totalDuration` in `useAvailability` hook equals the selected duration, not the catalog default — check the network request `totalDurationMinutes` param in DevTools
+- [ ] **Resend emails:** Check `notificationLogs` table for email rows after booking, not just "no error in console"
+- [ ] **Calendar Harmony worker:** Confirm jobs transition from `pending` → `success` in the DB after a real booking — do not rely only on logs
+- [ ] **Worker idempotency:** Trigger the GH Actions workflow manually twice in quick succession and confirm no duplicate GCal events are created
+- [ ] **Orphan reaper:** Kill the worker process mid-job (or simulate with a timeout) and confirm the row eventually reverts to `pending`
+- [ ] **Resend domain:** Check Resend dashboard "Domains" tab shows green "Verified" before go-live
+- [ ] **React Email templates:** Open rendered HTML in Gmail, Apple Mail, and Outlook (use Litmus or Email on Acid) — Tailwind grid/flex classes do not work in all clients
+- [ ] **Duration in recurring bookings:** Create a recurring subscription with a non-default duration, advance `nextBookingDate`, run the generator, and confirm the generated booking has the correct `totalDurationMinutes`
+- [ ] **Internal endpoint auth:** Attempt to call `/api/internal/calendar-sync/run` without the secret header and confirm 401
 
 ---
 
 ## Recovery Strategies
 
-When pitfalls occur despite prevention, how to recover.
-
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| UTM case not normalized — mixed-case data in DB | MEDIUM | Write a one-time migration SQL to `UPDATE utmSessions SET utm_source = lower(utm_source)` for all rows; add normalization to capture code going forward |
-| Double conversion events from frontend + webhook | MEDIUM | `DELETE FROM conversionEvents WHERE id NOT IN (SELECT MIN(id) FROM conversionEvents GROUP BY booking_id, event_type)` to deduplicate; add unique constraint |
-| IP addresses accidentally stored | MEDIUM | `ALTER TABLE utmSessions DROP COLUMN ip_address` via Supabase migration; review whether any backups include PII |
-| UTM sessions table has months of bot traffic | HIGH | Identify bot pattern (user agent, landing page, zero conversions); `DELETE FROM utmSessions WHERE ...` with specific criteria; rebuild aggregated metrics |
-| Stripe-flow bookings all have null attribution | HIGH | Cannot retroactively attribute bookings that completed before attribution capture was deployed; document cutoff date in the admin dashboard |
-| First-touch overwritten for existing visitors | HIGH | Cannot recover overwritten data; add database-level trigger to prevent first-touch updates going forward; accept data loss for the affected period |
+| pgBouncer advisory lock deadlock in worker | HIGH | Identify and kill blocked sessions in Supabase SQL editor; rewrite worker to use only row-level locking; re-run failed jobs |
+| Orphaned `in_progress` rows | LOW | Run SQL to reset: `UPDATE calendar_sync_queue SET status = 'pending' WHERE status = 'in_progress' AND last_attempt_at < NOW() - INTERVAL '1 hour'` |
+| Emails not sent due to Resend domain unverified | MEDIUM | Add DNS records, wait propagation, use "Retry now" on failed `notificationLogs` rows, or re-send manually via admin action |
+| Slots showing wrong availability due to duration bug | HIGH | Hotfix `CartContext.totalDuration` computation; cancel any double-booked appointments manually; notify affected customers |
+| GH Actions cron never triggers worker on Vercel | LOW | Add `workflow_dispatch` trigger to the cron workflow for manual runs; verify `VERCEL_URL` env var is set in Actions secrets |
+| React Email templates crash browser | MEDIUM | Move template files to `server/emails/`; rebuild; redeploy |
 
 ---
 
 ## Pitfall-to-Phase Mapping
 
-How roadmap phases should address these pitfalls.
-
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| UTM case not normalized | Phase 1: Schema + capture | Query DB after test visit with `utm_source=Google` — verify lowercase stored |
-| Safari ITP strips params | Phase 1: Capture + classification | Test on iOS Safari with a UTM link; verify referrer-based fallback fires |
-| localStorage cleared | Phase 1: Session persistence design | Simulate cache clear; verify new session created, first-touch in DB preserved from original |
-| IP stored as PII | Phase 1: Schema design | Review migration — no `ip_address` or `ip` column present |
-| UTM sessions table unbounded | Phase 1: Schema + indexes | `\d utmSessions` in Supabase — verify `created_at` index and composite index present |
-| Bot filtering absent | Phase 1: Capture route | Check `utmSessions` after Vercel health check fires — no row created |
-| Stripe attribution gap | Phase 2: Booking integration | Complete a Stripe test checkout; verify `attributionSessionId` on the booking row |
-| Double conversion from webhook + frontend | Phase 2: Conversion recording | Submit booking twice in test; verify single row in `conversionEvents` |
-| Booking POST retry creates duplicates | Phase 2: Booking integration | Simulate double-submit; verify idempotency key prevents duplicate booking |
-| Admin routes unprotected | Phase 2 or 3: API layer | `curl /api/marketing/overview` without auth — expect 401 |
-| Raw UTM values in dashboard | Phase 3: Dashboard design | Check every table/chart for "utm_source," "utm_medium," "cpc" text in UI |
-| Empty dashboard day one | Phase 3: Dashboard design | Open dashboard on fresh schema — verify useful empty state visible |
-| Percentage with small sample | Phase 3: Dashboard design | Test with 2 sessions, 1 conversion — verify sample size warning shown |
-| First-touch vs last-touch unexplained | Phase 3: Dashboard design | Check that both metrics have tooltip/label explaining the difference |
+| pgBouncer advisory lock incompatibility | SEED-002 schema + worker phase | SQL: confirm worker uses only `FOR UPDATE SKIP LOCKED`, no `pg_advisory_*` calls |
+| `in_progress` orphan rows | SEED-002 worker phase | Kill worker mid-run; confirm row reverts to `pending` within 10 minutes |
+| `totalDuration` uses catalog default not selected duration | SEED-029 duration selector phase | DevTools: confirm `totalDurationMinutes` param equals selected duration in API call |
+| `BookingPage.tsx` bloat from new step | SEED-029 duration selector phase | `wc -c client/src/pages/BookingPage.tsx` must not exceed 42KB |
+| Resend domain not verified at launch | SEED-019 email phase (pre-flight checklist) | Resend dashboard green; send test email from prod environment |
+| React Email render in browser | SEED-019 email phase | Template files are in `server/` only; `grep -r "@react-email/render" client/` returns nothing |
+| node-cron dead on Vercel | SEED-002 worker phase | Vercel function logs show no cron output; GH Actions logs show worker run |
+| Recurring bookings wrong duration after SEED-029 | SEED-029 phase (recurringBookings schema update) | Generator test with non-default duration produces correct `totalDurationMinutes` |
 
 ---
 
 ## Sources
 
-- Codebase analysis of `server/routes/payments.ts`, `server/routes/bookings.ts`, `client/src/pages/Confirmation.tsx`, `client/src/lib/analytics.ts` — direct inspection (HIGH confidence)
-- `.planning/PROJECT.md` milestone requirements and constraints (HIGH confidence)
-- `.planning/codebase/CONCERNS.md` — existing error handling gaps, session memory store, missing input validation (HIGH confidence)
-- Plausible Analytics open-source implementation — GDPR-by-design approach to avoiding IP storage (HIGH confidence)
-- Safari ITP documentation and webkit.org changelog — cross-site query param stripping behavior (HIGH confidence)
-- Facebook Attribution documentation — `_fbc`/`_fbp` cookie signals as ITP fallback (MEDIUM confidence — platform behavior can change)
-- Stripe Checkout documentation — metadata survival through redirect round-trip (HIGH confidence)
+- Supabase Docs: pgBouncer / Supavisor connection pooling — transaction mode incompatibilities with advisory locks (verified: [supabase.com/docs/guides/database/connecting-to-postgres](https://supabase.com/docs/guides/database/connecting-to-postgres))
+- PgBouncer GitHub Issue #102: Session advisory locks incompatible with transaction pooling ([github.com/pgbouncer/pgbouncer/issues/102](https://github.com/pgbouncer/pgbouncer/issues/102))
+- River Queue docs: pgBouncer + SELECT FOR UPDATE SKIP LOCKED worker coordination ([riverqueue.com/docs/pgbouncer](https://riverqueue.com/docs/pgbouncer))
+- SupaExplorer: SKIP LOCKED best practice for Supabase queue ([supaexplorer.com/best-practices/supabase-postgres/lock-skip-locked](https://supaexplorer.com/best-practices/supabase-postgres/lock-skip-locked/))
+- Resend Docs: Domain verification failure modes and DNS requirements ([resend.com/docs/knowledge-base/what-if-my-domain-is-not-verifying](https://resend.com/docs/knowledge-base/what-if-my-domain-is-not-verifying))
+- React Email changelog: `renderAsync` deprecated, `render()` is now async in v3+ ([react.email/docs/changelog](https://react.email/docs/changelog))
+- React Email GitHub Issue #977: `@react-email/render` requires `serverComponentsExternalPackages` in Next.js — confirms server-only constraint ([github.com/resend/react-email/issues/977](https://github.com/resend/react-email/issues/977))
+- Vercel docs: Serverless functions cannot run persistent processes; cron jobs must use Vercel Cron or external triggers ([vercel.com/docs/cron-jobs/manage-cron-jobs](https://vercel.com/docs/cron-jobs/manage-cron-jobs))
+- GitHub Actions runner Issue #764: Cron jobs can fire twice — idempotency required ([github.com/actions/runner/issues/764](https://github.com/actions/runner/issues/764))
+- Codebase: `client/src/context/CartContext.tsx` lines 222–225 — `totalDuration` computation (direct read)
+- Codebase: `server/services/recurring-booking-generator.ts` line 79 — `service.durationMinutes` direct read
+- Codebase: `server/db.ts` line 119 — `prepare: false` confirms pgBouncer transaction mode
 
 ---
-*Pitfalls research for: First-party UTM attribution on Skleanings booking platform*
-*Researched: 2026-04-25*
+
+*Pitfalls research for: v5.0 Booking Experience (SEED-002, SEED-019, SEED-029)*
+*Researched: 2026-05-11*

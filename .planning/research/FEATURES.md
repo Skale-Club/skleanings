@@ -1,161 +1,187 @@
 # Feature Research
 
-**Domain:** First-party UTM marketing attribution dashboard for a service booking business (cleaning company)
-**Researched:** 2026-04-25
-**Confidence:** HIGH (stack/architecture validated against Plausible docs and official sources; feature priorities drawn from multiple corroborating sources)
+**Domain:** Service booking platform — cleaning company (Booking Experience v5.0)
+**Researched:** 2026-05-11
+**Confidence:** HIGH (duration UX and email timing validated against Cal.com, Calendly, Apptoto, Booknetic official sources); MEDIUM (retry queue admin observability — synthesized from pg-boss, BullMQ, and practitioner sources)
 
 ---
 
-## Context: What This Dashboard Answers
+## Scope of This Research
 
-The non-technical business owner has three questions:
-1. Where are my visitors coming from?
-2. Which sources and campaigns are turning into actual bookings?
-3. Is my marketing spend going to the right places?
-
-Every feature below is evaluated against those three questions. If a feature does not help answer one of them plainly, it is an anti-feature.
+This file covers three features being added to an existing v4.0 platform. Each feature has its own table-stakes / differentiators / anti-features breakdown. The existing platform already has: custom booking questions per service, recurring subscriptions with 48h reminders (Nodemailer SMTP), staff availability, manual confirmation flow, GoHighLevel CRM integration (fire-and-forget), and Google Calendar sync (silent-fail).
 
 ---
 
-## Feature Landscape
+## Feature 1: Multiple Durations Per Service (SEED-029)
 
-### Table Stakes (Users Expect These)
-
-Features a business owner assumes exist in any attribution tool. Missing these makes the dashboard feel broken or untrustworthy.
+### Table Stakes
 
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| **Traffic source overview** — grouped totals by source (Google Organic, Google Ads, Facebook, Email, Direct, etc.) | Every analytics tool shows this; it is the baseline | LOW | Auto-classify via referrer + UTM medium. Display human labels ("Google Organic"), never raw parameter values ("google / organic"). |
-| **Booking conversion count per source** — how many completed bookings came from each source | Owners want to know which source produces real customers, not just clicks | MEDIUM | Requires joining `utm_sessions` with `bookings` table via session_id or visitor_id. This is the primary value of the whole system. |
-| **Conversion rate per source** — bookings ÷ visitors | Makes small-traffic sources comparable to high-traffic ones | LOW | Derived metric; no new data required. Show as percentage with tooltip explaining "visitors who became bookings". |
-| **Date range filter** — presets: Today, Last 7 Days, Last 30 Days, This Month, Last Month, Custom | Users apply mental models around weeks and months; lacking this makes data feel static | LOW | Default to Last 30 Days. Custom picker needed for campaign post-mortems. These exact presets are standard across GA4, Plausible, and Fathom. |
-| **Top landing pages by conversions** — which page they first visited before booking | Owners want to know which page is "doing the work" | LOW | Captured at session start. Aggregate and rank. Display as page path, not full URL. |
-| **Campaign performance table** — per UTM campaign: visitors, bookings, conversion rate | Any business running paid ads expects to see campaign-level data | MEDIUM | UTM campaigns only populated when utm_campaign param is present; gracefully show "No campaign tag" for untagged paid traffic. |
-| **Trend line for bookings over time** — daily or weekly bookings plotted as a line chart | Owners need to see if they are growing or declining | LOW | Simple time-series from conversion events table. Line chart is correct for trend data; bar chart works for comparison. |
-| **"Direct / Unknown" as a visible source category** — not hidden | If 20-40% of traffic shows as Direct, hiding it destroys trust in the numbers | LOW | Label as "Direct or Unknown" with a brief tooltip: "Visitors we couldn't trace to a specific source — may include typed-in URLs, bookmarks, or private browsing." |
-| **Summary KPI cards at top of Overview** — Visitors, Leads (phone/form), Bookings, Conversion Rate | Mental model from GA4 and every SaaS dashboard; absence feels amateurish | LOW | 4 cards. Use plain labels, not marketing jargon. "Bookings" not "Macro-conversions." |
-| **Filter by source or campaign across all views** — click a source to filter the whole page | Plausible and Fathom both implement this as a core interaction; expected by anyone who has used a modern analytics tool | MEDIUM | Global filter state; all charts and tables re-query based on active dimension filters. |
+| Duration selector appears before calendar | Cal.com and Calendly both surface duration before the time picker — the selected duration determines which slots are valid; showing slots before duration is logically wrong | LOW | Must appear at the step after service selection and before slot calendar in BookingPage.tsx |
+| Each duration has its own price | "4h clean" and "2h clean" at the same price would feel broken; customers inherently expect more time = more money | LOW | Already planned in `serviceDurations.price`; mirrors the existing `areaSizes` pattern on the platform |
+| Duration affects available time slots | A 4h service cannot be booked in a 2h slot; slot availability must be recomputed from the chosen duration | MEDIUM | `getAvailableSlots` must receive dynamic `durationMinutes` from the selected duration; existing multi-slot staff availability logic handles variable durations already |
+| Default duration pre-selected | If a customer arrives at the calendar without selecting a duration, a sensible default must already be active — no blank or broken state | LOW | Calendly defaults to the configured default duration; platform must mirror this; use the first (lowest-order) `serviceDuration` as default |
+| Duration label visible in booking summary | Confirmation step and order summary must show the chosen duration label alongside price — "Deep Clean 4h — $280" not just "Deep Clean" | LOW | Requires duration label stored at booking creation time on `bookingItems` |
 
-### Differentiators (Competitive Advantage)
-
-Features that separate a good implementation from a generic GA4 clone. These are what make a first-party system worth building.
+### Differentiators
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| **First-touch preserved alongside last-touch** — show both "where they came from originally" and "what source they visited before booking" | GA4 defaults to last-touch only. Showing both reveals whether your awareness campaigns (e.g. Facebook) are actually contributing to bookings that convert via Google. | HIGH | Requires storing first-touch at session-creation time and never overwriting it. Attribution join logic must present both. Label them in plain language: "How they first found you" and "What brought them back to book." |
-| **Booking revenue attributed to source** — dollar value of bookings per source, not just count | Moves the dashboard from traffic talk to money talk, which is what the business owner actually cares about | MEDIUM | `bookings.total_price` already exists in schema. Join to attribution data. Show "Revenue from Google Ads: $4,200" not just "12 bookings." |
-| **Visitor journey view** — a timeline for a single conversion event showing: first touch source → landing page → last touch source → conversion | Makes attribution concrete and verifiable; owners can check whether the data matches what they know about a real customer | HIGH | Not a full session-replay product. A simple list view: each row is one conversion event with attribution chain. Useful for validating data quality in early rollout. |
-| **UTM parameter coverage warning** — surface when a paid traffic source has high visitors but no UTM tags | Catches the most common data quality problem (running ads without UTM tags) before it corrupts reporting | LOW | Heuristic: referrer contains "google.com/aclk" or "facebook.com" but utm_source is null. Show a dismissible banner: "We noticed Google Ads traffic without campaign tags — you may be missing attribution data." |
-| **Micro-conversion tracking alongside bookings** — track phone clicks and form starts as leading indicators | Bookings take time; micro-conversions show marketing is working before the full booking cycle completes | MEDIUM | Already scoped in PROJECT.md. Requires client-side event on phone number anchor click and quote form submit. Store as separate conversion_type values. |
-| **Source-level comparison across periods** — "This month vs. last month" per source | Business owners naturally think in monthly cycles and want to know if a channel is growing or dying | MEDIUM | Date comparison is a common request. Show change as +/- % with color coding: green/red. Keep it simple: current period vs. previous period of equal length. |
-| **Plain-language labels throughout** — "Google Paid" not "google / cpc", "Email Campaign" not "email / newsletter" | GA4 exposes raw UTM values which confuse non-technical owners; auto-classification into friendly names is a real differentiator | LOW | Implement a classification map: utm_source + utm_medium combos → human-readable channel label. This is a data transform, not a UI change. |
+| Card-based selector (not dropdown) | Cards showing "Studio — 2h — $150 / 3BR — 4h — $280 / Large House — 8h — $480" communicate value and help customers self-select better than a dropdown listing "120min / 240min / 480min" | LOW | Calendly uses a dropdown (functional but cold); the platform already uses this card pattern for `areaSizes` — reuse it exactly; no new UI component needed |
+| Optional description text per duration | "Ideal for apartments up to 60m²" under the 2h card helps customers match their space without calling — reduces booking mistakes | LOW | Add optional `description` column to `serviceDurations` table; display under the price; admin can leave empty |
+| Duration label in email confirmation | "Your 4h Deep Clean is confirmed for Tuesday 3pm" reinforces the customer's choice post-booking | LOW | Natural output of storing duration label on `bookingItems`; feeds SEED-019 email templates |
 
-### Anti-Features (Commonly Requested, Often Problematic)
-
-Features that look reasonable on a spec sheet but actively harm the non-technical user experience or create scope traps.
+### Anti-Features
 
 | Feature | Why Requested | Why Problematic | Alternative |
 |---------|---------------|-----------------|-------------|
-| **Multi-touch attribution model selector** — "Choose: Linear, Time-Decay, Position-Based" | Sounds sophisticated; appears in enterprise tools | Non-technical owners cannot interpret the difference between linear and time-decay attribution. Presenting model options forces a decision they lack context to make, destroys confidence in the data, and doubles the query complexity. Plausible explicitly avoids this. | Expose first-touch and last-touch only. Label them plainly. Document the difference in a tooltip. |
-| **Real-time visitor tracking** — live visitor count updating every few seconds | GA4 has it; owners sometimes ask for it | For a cleaning company booking platform, real-time data has no operational value. Bookings are scheduled, not impulse decisions. Real-time requires websocket infrastructure and creates anxiety over normal low-traffic periods. | Show "Today" as a date preset. Refresh on page load. That is sufficient freshness for this use case. |
-| **Cohort analysis** — retention curves, repeat-visitor cohorts | Standard in growth tools | Cleaning company customers book infrequently (monthly or quarterly). Cohort analysis requires user-level identity across sessions, which this system explicitly avoids (no PII, cookie/session-only). Results would be misleading. | Show "return visitor" as a source label when a visitor returns and converts. That is the useful signal. |
-| **Attribution by device or browser** — "iPhone users convert 3x better than desktop" | Segmentation sounds useful | Adds dashboard complexity without actionable outcome for a local cleaning business. The business cannot change its channel mix based on device data. It creates noise that buries the source/campaign signal. | Keep device-level data in GA4. This first-party dashboard focuses on source and campaign only. |
-| **Raw UTM parameter tables** — expose utm_source, utm_medium, utm_campaign columns directly | Developers want to see the raw data | Raw UTM values confuse non-technical users ("what is cpc?"). A table of `google / cpc / spring-promo-2025` means nothing without context. | Classify into channel labels in all primary views. Offer a raw data export (CSV) for developers/agency access, but never surface raw params in the main dashboard. |
-| **Custom attribution windows** — "Set your lookback window to 7 / 14 / 30 / 90 days" | Enterprise analytics tools offer this | Requires the owner to understand what an attribution window is to make a meaningful choice. Default 30-day lookback covers the entire consideration cycle for a cleaning booking (which is typically 1-7 days). | Fixed 30-day attribution window for last-touch. Display this in a tooltip. |
-| **Heatmaps or session recordings** — showing where users click on the booking page | Sounds like "more attribution data" | This is a UX/conversion optimization tool, not attribution. It is a completely separate product surface with significant privacy implications (records customer input). Out of scope for a marketing attribution dashboard. | Use Hotjar or Microsoft Clarity for that purpose separately. |
+| Auto-suggest duration from a booking question answer | "Based on your 3-bedroom home, we recommend 4h" | Creates hard coupling between custom booking questions (SEED-027, already shipped) and duration selection; mapping rules have edge cases; changes to questions break the suggestion; maintenance cost disproportionate to value | Name durations descriptively enough ("3 Bedrooms — 4h") that customers self-select correctly without automation |
+| Customer types an arbitrary duration | Maximum flexibility | Scheduling chaos — slots, pricing, and staff planning all depend on predictable durations; any minute value breaks availability computation | Admin defines the allowed list; customer picks from it |
+| Changing duration after slot is selected | Convenience | Invalidates the slot (a 2h slot cannot accommodate 4h); requires resetting and re-rendering the calendar step | Force customer back to duration step when they change selection; re-selecting duration resets slot picker — make this explicit with a visible "Change" link on the summary |
+
+---
+
+## Feature 2: Branded Transactional Email via Resend (SEED-019)
+
+### Table Stakes
+
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| Immediate booking confirmation email (sent < 60s of booking) | Industry standard — every booking platform sends this; absence creates customer anxiety about whether the transaction went through | MEDIUM | Trigger on booking creation (or status change from `awaiting_approval` to `confirmed`); synchronous call or immediate enqueue |
+| 24h-before reminder email | Reduces no-shows by ~30% (industry data); customers expect it from any professional service business | MEDIUM | Cron job checking bookings where `scheduledFor` is between now+23h and now+25h; send once, mark as sent |
+| Cancellation notice (immediate) | When a booking is cancelled by admin or customer, they need written confirmation and clarity on refund status | LOW | Triggered on booking status change to `cancelled`; include original booking details and refund info |
+| Tenant brand in every email | Logo, company name, colors — white-label requirement; showing a competitor's brand in a tenant's email is a product failure | MEDIUM | Pull `companySettings.logoMain`, `companyName`, `primaryColor` at send time — never hardcode any brand value |
+| From address matching tenant domain | `no-reply@acme-cleaners.com` vs `no-reply@app.com` — professional credibility is materially different; DNS verification required | MEDIUM | Resend handles domain verification; expose `fromAddress` and `fromName` in admin email settings panel |
+| Required content in every email: date, time, address, service name, booking reference | Customer's first action after receiving the email is to verify these details; missing any of them is a UX failure | LOW | Map directly from `bookings` + `bookingItems` + `companySettings`; all fields already exist |
+
+### Differentiators
+
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| Duration label in confirmation body | "Your 4h Deep Clean is confirmed" is more meaningful than "Your service is confirmed" | LOW | Requires duration label stored on `bookingItems` at booking creation (feeds from SEED-029); design `bookingItems` to hold this now even if SEED-029 ships first |
+| Branded color in email header | Platform primary color (`#1C53A3` or tenant-configured) as a header accent bar or button color — visual consistency with booking site | LOW | React Email supports inline styles from variables; pull `companySettings.primaryColor`; fallback to `#1C53A3` if unset |
+| Add-to-calendar link (ICS or Google Calendar deep link) | One-click calendar save reduces missed appointments; customers expect it from professional services | MEDIUM | Generate ICS payload from booking data; serve as a `/api/bookings/:id/ics` endpoint; link in email; Google Calendar deep link is simpler but less universal |
+| Resend delivery webhook logged to `notificationLogs` | Platform already has `notificationLogs` for SMS/Telegram — email adds `channel: 'email'` row with delivery status | LOW | Resend sends webhooks on `delivered` / `bounced` / `complained`; store status; admin can see delivery receipts |
+
+### Anti-Features
+
+| Feature | Why Requested | Why Problematic | Alternative |
+|---------|---------------|-----------------|-------------|
+| Admin-editable email body (rich text / WYSIWYG editor) | "We want to customize the message" | Custom HTML in DB is a support nightmare; broken tags corrupt every send; template drift causes brand inconsistency; i18n becomes impossible when admins edit HTML directly | Admin controls from-address, logo, colors, company name, and optionally a short custom note field (plain text, max 200 chars) — template structure is maintained in code |
+| Marketing / promotional content inside transactional emails | "Add our spring promo in the confirmation" | Violates CAN-SPAM / GDPR distinction between transactional and commercial emails; can trigger spam filters and damage deliverability of all transactional mail | Separate marketing email campaign via dedicated send path with explicit consent; never piggyback on transactional sends |
+| SMS + email sent in the same transaction | "Send both at once" | Existing Twilio SMS is fire-and-forget; coupling SMS failure to email delivery means a Twilio outage blocks email | Keep channels independent; enqueue separately; each has its own failure mode |
+| 48h reminder for one-off bookings in addition to 24h | More reminders = fewer no-shows | Platform already sends 48h reminders for recurring subscriptions (RECUR-04); adding 48h for one-off bookings doubles cron complexity; customers with short-notice bookings (booked same-day) would receive both reminders within hours | 24h reminder for one-off bookings; 48h for recurring (already exists); different cadences for different booking types |
+| Email open / click tracking in MVP | Deliverability metrics sound important | Tracking pixels and link rewrites break in some email clients (Apple Mail Privacy Protection blocks pixel tracking); adds complexity without clear action | Resend dashboard shows delivery and bounce status — sufficient for v1; detailed analytics are v2 |
+
+---
+
+## Feature 3: Calendar Harmony Retry Queue (SEED-002)
+
+### Table Stakes
+
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| Sync failures are automatically retried | Any booking platform with external calendar sync is expected to be resilient to transient API errors; silent failure is worse than no sync at all | MEDIUM | Exponential backoff: 1min → 5min → 30min → 2h → 12h → 24h → `failed_permanent`; implemented via node-cron + `SELECT FOR UPDATE SKIP LOCKED` on `calendarSyncQueue` |
+| Admin can see sync status per booking | Admin must know "did this booking sync to Google Calendar and GHL?" — especially critical for the manual confirmation flow where timing matters operationally | LOW | Status badge on booking detail: Pending / Synced / Failed; one row per target (Google, GHL) |
+| Admin can manually retry a failed sync | When a token expires and is reconnected, admin must be able to force re-sync without recreating the booking | LOW | "Retry Sync" button on booking detail (or in sync health panel); sets status back to `pending`, resets `attempts`, `scheduledFor = now()` |
+| `failed_permanent` jobs surfaced clearly | Permanent failures must not be invisible; admin must know they require intervention | LOW | Red badge or count on admin nav or booking card; permanent failures require human action (token reconnect, etc.) |
+| Google Calendar sync runs before GHL sync | Google Calendar is operational (staff sees schedule on their phone); GHL is CRM (sales pipeline); operational failure is more urgent than sales pipeline failure | LOW | Worker processes Google jobs before GHL for the same `bookingId`; ordering enforced in query |
+
+### Differentiators
+
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| Connection health banner ("Reconnect Google Calendar") | When 10+ consecutive failures occur from the same target, surface a persistent admin banner — not just an obscure failed-job count | MEDIUM | Detect N consecutive failures from same tenant+target; set a `connectionHealth` flag; admin UI reads this flag and renders a dismissible banner with reconnect link |
+| Sync health dashboard panel | Gives admin visibility into queue state (pending / in_progress / success / failed / permanent counts by target) without writing SQL | MEDIUM | Simple aggregate counts by `status` and `target`; table of recent failures with error message and last attempt time; "Retry all failed" bulk action |
+| Idempotent sync (update not recreate) | If `ghlAppointmentId` or Google `eventId` already exists, update instead of creating a duplicate — prevents double-entries in external calendars | LOW | Check for existing IDs before create; use update/patch if ID exists; critical for reliability |
+| `SELECT FOR UPDATE SKIP LOCKED` worker | Deadlock-free, multi-worker-safe job pickup without Redis or external queue dependency | LOW | Leverages existing PostgreSQL — no new infrastructure; well-established pattern used by pg-boss, Solid Queue, and others |
+
+### Anti-Features
+
+| Feature | Why Requested | Why Problematic | Alternative |
+|---------|---------------|-----------------|-------------|
+| Real-time sync (sub-second, webhook-driven) | "We want calendar changes to appear instantly" | External webhooks from GHL/Google into the platform require public endpoints, signature verification, and replay protection — significant complexity; 1-min cron gives < 2min sync which is sufficient for cleaning bookings | Enqueue on booking write + 1-min cron = effectively real-time for this use case |
+| Full two-way sync (external changes reflected back in DB) | "If I edit in Google Calendar, update the booking" | Conflict resolution, last-writer-wins logic, field mapping from external calendar events back to booking schema — scope is 5x the current feature; creates circular update loops | One-way sync (internal → external) is correct for v1; external edits go through the admin panel |
+| pg-boss from day one | Feature-rich queue with retries, concurrency, DLQs built in | Adds a new dependency; for < 100 sync jobs/day, manual `SELECT FOR UPDATE SKIP LOCKED` in node-cron is simpler, transparent, already on-stack | Start with native PostgreSQL pattern; migrate to pg-boss only if throughput becomes a measurable bottleneck |
+| Per-job failure notification (email/SMS to admin) | "Alert me when a sync job fails" | At < 100 jobs/day, per-job alerts create noise; a token expiry causes 50 consecutive failures — admin receives 50 notifications | Admin health dashboard + connection health banner surface the signal; per-job notification is a v3 feature |
+| Separate worker process / microservice | "Better separation of concerns" | Two processes to deploy, monitor, and restart; for single-tenant at current scale, node-cron inside the Express process is battle-tested | Keep worker in same process; externalize only when scale genuinely requires it |
 
 ---
 
 ## Feature Dependencies
 
 ```
-Conversion Tracking (booking completed event)
-    └──requires──> UTM Session Capture (session_id tied to visitor)
-                       └──requires──> Session Identification (cookie/localStorage visitor_id)
+[Duration Selection (SEED-029)]
+    └──feeds──> [Branded Email (SEED-019)]
+                    (duration label enriches confirmation email body)
 
-Attribution Join (source → booking)
-    └──requires──> Conversion Tracking
-    └──requires──> UTM Session Capture
+[Duration Selection (SEED-029)]
+    └──requires──> [bookingItems schema update]
+                       (duration label + durationMinutes stored as snapshot at booking creation)
 
-Overview KPI Cards
-    └──requires──> Attribution Join
-    └──requires──> Conversion Tracking
+[Duration Selection (SEED-029)]
+    └──requires──> [getAvailableSlots route update]
+                       (must accept dynamic durationMinutes from chosen duration)
 
-Campaign Performance Table
-    └──requires──> UTM Session Capture (utm_campaign field populated)
-    └──enhances──> Overview KPI Cards (drill-down from top-level)
+[Branded Email (SEED-019)]
+    └──depends on──> [companySettings: logoMain, companyName, primaryColor]
+                         (already exists — no new schema required)
 
-Revenue Attribution
-    └──requires──> Attribution Join
-    └──requires──> bookings.total_price (already exists in schema)
+[Branded Email (SEED-019)]
+    └──coexists with──> [Existing 48h recurring reminder (RECUR-04)]
+                            (different trigger, different template, different cron — not the same code path)
 
-First-Touch vs Last-Touch Display
-    └──requires──> UTM Session Capture (first_touch stored at session creation, never overwritten)
-    └──requires──> Attribution Join
+[Calendar Harmony (SEED-002)]
+    └──replaces──> [Fire-and-forget GHL sync in routes.ts]
+    └──replaces──> [Silent-fail Google Calendar sync in server/lib/google-calendar/]
+    └──requires──> [calendarSyncQueue table — new schema]
 
-Visitor Journey View
-    └──requires──> Attribution Join
-    └──requires──> Conversion events table with session linkage
-
-Source Comparison (period-over-period)
-    └──requires──> Attribution Join
-    └──requires──> Date range filter
-
-Micro-Conversion Tracking (phone click, form start)
-    └──requires──> Client-side event instrumentation on booking flow pages
-    └──requires──> Conversion events table (same table as booking conversions, different type)
-
-UTM Coverage Warning Banner
-    └──requires──> UTM Session Capture
-    └──requires──> Referrer classification logic
-
-Visitor Journey View ──conflicts──> Cohort Analysis
-    (Journey = session-scoped; cohort = user-scoped across sessions — architecturally incompatible with no-PII model)
+[Calendar Harmony (SEED-002)]
+    └──feeds──> [Admin sync health panel]
+                    (aggregate queries over calendarSyncQueue by status + target)
 ```
 
 ### Dependency Notes
 
-- **Attribution Join requires UTM Session Capture:** Without storing session_id on both the session record and the booking record at checkout-completion time, there is no way to link a booking to its originating traffic source. This is the foundational dependency of the entire system.
-- **First-touch requires immutable storage:** The first-touch UTM data must be written once at session creation and never overwritten. A separate `last_touch_*` column set is updated on each new visit. Both columns live on the same session or visitor record.
-- **Revenue Attribution requires no new data capture:** `bookings.total_price` already exists. This feature is purely a JOIN and aggregation change — low risk, high value.
-- **Micro-conversions require client-side instrumentation:** Phone click tracking requires an `onClick` handler on the phone number link in the frontend. Quote form start requires a form-focus or first-input event. Neither requires backend changes beyond accepting the event payload.
+- **SEED-029 feeds SEED-019:** Duration label must be stored in `bookingItems` at booking creation so email templates can read it. Build SEED-029 first, or design `bookingItems` to accept a nullable `durationLabel` column from the start so SEED-019 can be built independently.
+- **SEED-029 requires slot recomputation:** `getAvailableSlots` must accept a `durationMinutes` parameter from the selected service duration. This is a breaking change to the availability endpoint signature — coordinate with any existing callers.
+- **SEED-002 is a replacement, not an addition:** The existing fire-and-forget GHL call in routes and the silent-fail Google Calendar call must be removed and replaced by `enqueueSync()`. This is a migration of existing behavior, not purely new code. Risk of regression if not tested against both create, update, and cancel booking flows.
+- **SEED-019 does NOT depend on SEED-002:** Emails are sent via Resend (HTTP), not via the calendar sync queue. Email failures are handled by Resend's own delivery retry — they are a different system. Do not route email through `calendarSyncQueue`.
 
 ---
 
 ## MVP Definition
 
-### Launch With (v1)
+### Launch With (v5.0 — all three seeds)
 
-Minimum viable — answers "where are my bookings coming from?" with confidence.
+- [ ] Duration cards in booking flow with label, price, durationMinutes — SEED-029
+- [ ] Default duration pre-selected (lowest order `serviceDuration`) — SEED-029
+- [ ] Duration stored as snapshot in `bookingItems` (label + durationMinutes) — SEED-029
+- [ ] Slot availability recomputed from selected duration — SEED-029
+- [ ] Admin service edit UI: "Available Durations" CRUD section — SEED-029
+- [ ] Booking confirmation email via Resend (immediate, branded, required content) — SEED-019
+- [ ] 24h-before reminder email via cron — SEED-019
+- [ ] Cancellation notice email triggered on status change — SEED-019
+- [ ] `emailSettings` table with apiKey, fromAddress, fromName, enabled — SEED-019
+- [ ] Admin email settings panel (configure from address, enable/disable) — SEED-019
+- [ ] `calendarSyncQueue` table + worker with exponential backoff — SEED-002
+- [ ] Enqueue on booking create / update / cancel (replaces fire-and-forget) — SEED-002
+- [ ] Admin sync health panel: counts by status, recent failures table, retry button — SEED-002
 
-- [ ] **UTM session capture** — store all 6 UTM params + referrer + landing page at session start, with first-touch preserved
-- [ ] **Auto-classification into friendly channel labels** — Google Organic, Google Ads, Facebook, Email, Direct/Unknown, etc.
-- [ ] **Booking completion event with session linkage** — store session_id on booking record at checkout
-- [ ] **Overview KPI cards** — Visitors, Bookings, Conversion Rate (from all sources)
-- [ ] **Source performance table** — visitors and bookings per source, with conversion rate
-- [ ] **Trend line** — bookings per day/week over selected date range
-- [ ] **Date range presets** — Last 7 Days (default for spotcheck), Last 30 Days (default for reporting), This Month, Last Month, Custom
-- [ ] **"Direct / Unknown" handled and explained** — not hidden; tooltip explains what it means
-- [ ] **Plain-language labels throughout** — no raw UTM values exposed in primary views
+### Add After Validation (v5.x)
 
-### Add After Validation (v1.x)
-
-Add once the core attribution data is confirmed accurate and trusted.
-
-- [ ] **Campaign performance table** — when business is running tagged campaigns and needs per-campaign breakdowns; trigger: owner asks "which campaign is working?"
-- [ ] **Revenue attribution per source** — show dollar value alongside booking count; trigger: owner wants to optimize spend allocation
-- [ ] **First-touch vs last-touch toggle** — expose both attribution models with plain-language labels; trigger: owner notices discrepancy between Google Ads data and dashboard
-- [ ] **Micro-conversion tracking** — phone clicks and quote form starts as leading indicators; trigger: low booking volume makes conversion count an unreliable metric alone
-- [ ] **Period comparison** — current vs. previous period; trigger: owner asks "is this month better than last month?"
-- [ ] **UTM coverage warning banner** — trigger: owner reports paid traffic not showing in dashboard
+- [ ] Add-to-calendar ICS link in confirmation email — add when customers ask
+- [ ] Duration description text on cards — add when admin requests descriptive labels
+- [ ] Connection health banner (reconnect warning) — add after first expired-token incident
+- [ ] Resend webhook → `notificationLogs` — add after email volume warrants tracking
 
 ### Future Consideration (v2+)
 
-Defer until v1.x is stable and generating trust in the data.
-
-- [ ] **Visitor journey view** — individual conversion timelines; deferred because it requires more complex session-stitching and is primarily a data-validation tool, not a decision tool
-- [ ] **Landing page performance view** — which pages start converting journeys; deferred because the source view covers 80% of the same insight
-- [ ] **Export to CSV** — raw data export for agency/developer access; not needed until an agency asks for it
+- [ ] Admin-configurable plain-text custom note in emails — low value, design carefully to avoid HTML injection
+- [ ] Per-job failure notification (email/SMS to admin) — alert fatigue risk at current scale
+- [ ] pg-boss migration — only if cron worker becomes a measured bottleneck
+- [ ] Two-way calendar sync — entirely different scope; validate one-way first
 
 ---
 
@@ -163,127 +189,55 @@ Defer until v1.x is stable and generating trust in the data.
 
 | Feature | User Value | Implementation Cost | Priority |
 |---------|------------|---------------------|----------|
-| UTM session capture (backend) | HIGH | MEDIUM | P1 |
-| Booking event with session linkage | HIGH | LOW | P1 |
-| Auto-classification to friendly labels | HIGH | LOW | P1 |
-| Overview KPI cards | HIGH | LOW | P1 |
-| Source performance table | HIGH | LOW | P1 |
-| Trend line chart | HIGH | LOW | P1 |
-| Date range presets | HIGH | LOW | P1 |
-| Direct/Unknown handling + tooltip | MEDIUM | LOW | P1 |
-| Campaign performance table | HIGH | MEDIUM | P2 |
-| Revenue attribution per source | HIGH | LOW | P2 |
-| First-touch vs last-touch display | MEDIUM | MEDIUM | P2 |
-| Micro-conversion tracking | MEDIUM | MEDIUM | P2 |
-| Period comparison (MoM) | MEDIUM | MEDIUM | P2 |
-| UTM coverage warning | MEDIUM | LOW | P2 |
-| Visitor journey view | LOW | HIGH | P3 |
-| Landing page performance view | MEDIUM | MEDIUM | P3 |
-| CSV export | LOW | LOW | P3 |
-
-**Priority key:**
-- P1: Must have for launch — the system has no value without these
-- P2: Should have — add in the phase immediately after data capture is working
-- P3: Nice to have — defer until business asks for it specifically
+| Duration cards with price (SEED-029) | HIGH | LOW | P1 |
+| Slot recompute from selected duration (SEED-029) | HIGH | MEDIUM | P1 |
+| Duration snapshot in bookingItems (SEED-029) | HIGH | LOW | P1 |
+| Admin service edit — durations CRUD (SEED-029) | HIGH | LOW | P1 |
+| Booking confirmation email (SEED-019) | HIGH | MEDIUM | P1 |
+| 24h reminder email (SEED-019) | HIGH | MEDIUM | P1 |
+| Cancellation notice email (SEED-019) | MEDIUM | LOW | P1 |
+| emailSettings table + admin panel (SEED-019) | HIGH | LOW | P1 |
+| Calendar sync retry queue + worker (SEED-002) | HIGH | MEDIUM | P1 |
+| Admin sync health panel (SEED-002) | MEDIUM | LOW | P1 |
+| Branded color in email header (SEED-019) | MEDIUM | LOW | P1 |
+| Connection health banner (SEED-002) | MEDIUM | MEDIUM | P2 |
+| Add-to-calendar ICS link (SEED-019) | MEDIUM | MEDIUM | P2 |
+| Duration description text on cards (SEED-029) | LOW | LOW | P2 |
+| Resend webhook → notificationLogs (SEED-019) | LOW | LOW | P2 |
 
 ---
 
 ## Competitor Feature Analysis
 
-| Feature | Plausible Analytics | Fathom Analytics | Our Approach |
-|---------|---------------------|------------------|--------------|
-| Source attribution | Shows source, medium, campaign tabs; filters by any goal | Shows referrers; no filtering by conversion source | Match Plausible's filtering model: click a source to filter the full page |
-| UTM campaign tracking | Full UTM parameter support; Campaigns tab groups by utm_campaign | Basic referrer only; no UTM-level breakdown | Full UTM support; group by campaign, show booking count per campaign |
-| First-touch attribution | Approximated via entry pages; no explicit first/last toggle | Not supported | Explicit first-touch storage; display alongside last-touch with plain labels |
-| Dark traffic / Direct | Displayed as "Direct / None"; attempts to recover Android app traffic | Displayed in referrers | Label as "Direct or Unknown" with explanatory tooltip |
-| Conversion tracking | Goals and funnels; filter sources by who completed a goal | Goal tracking with no source breakdown (limitation noted by users) | Native booking event; source-filtered conversion count is the core metric |
-| Revenue attribution | Not built-in (traffic only) | Not built-in | Built-in via booking total_price join — key differentiator |
-| Attribution model | Last-touch by default; entry-page approximation for first-touch | Last-touch only | First-touch + last-touch, both stored and both displayed |
-| Language for non-technical users | Very clean: "Sources", "Campaigns", "Goals" — no raw UTM values in primary UI | Very clean: minimal labels | Same approach: channel labels not raw parameters; "Bookings" not "Conversions" |
-| Date range presets | Today, Yesterday, Last 7D, Last 30D, Month to date, Last month, Last year, Custom | Last 24h, 7D, 30D, 6 months, Year, Custom | Today, Last 7 Days, Last 30 Days, This Month, Last Month, Custom |
-
----
-
-## Conversion Events for a Service Booking Business
-
-Primary and secondary conversion events ordered by business value. This informs what gets tracked and what gets featured in the Conversions view.
-
-| Event | Business Value | Funnel Stage | Implementation |
-|-------|---------------|--------------|----------------|
-| **Booking completed** | Highest — direct revenue | Bottom | Server-side: fires when booking status transitions to confirmed; capture session_id from cookie |
-| **Checkout started** — customer reached payment step | High — shows purchase intent | Mid-Bottom | Client-side event on payment page load |
-| **Quote requested / Contact form submitted** | Medium — warm lead | Mid | Client-side event on form submit |
-| **Phone number clicked** | Medium — intent signal; most local bookings for cleaning start with a call | Mid | Client-side onClick on tel: link |
-| **Service added to cart** | Low-Medium — early intent | Top-Mid | Client-side event on add-to-cart |
-
-For v1, implement: Booking completed + Phone click + Quote form submit. The rest are v1.x.
-
----
-
-## Attribution Model Presentation Guide (Non-Technical Language)
-
-The system captures both first-touch and last-touch. Display guidance for the non-technical owner audience:
-
-**Do NOT use:** "First-touch attribution", "Last-touch attribution", "Attribution model"
-**DO use:** These exact labels and explanations:
-
-- **"How they first found you"** — the source that brought the visitor to the site for the very first time. Use this to evaluate brand awareness campaigns and channels like Facebook or YouTube.
-- **"What brought them back to book"** — the source they came from on the visit where they completed the booking. Use this to evaluate bottom-of-funnel channels like Google Search.
-
-**For the overview**, show last-touch as the primary figure (it is the most actionable for ad spend decisions). Surface first-touch as a secondary label on the source row or in a tooltip.
-
-**For direct traffic**, use: "Direct or Unknown — visitors we couldn't trace to a specific source. Common causes: bookmarks, typed URLs, private browsing, or untagged links."
-
----
-
-## Empty States and Zero-Data Handling
-
-Every view must handle the state where no data exists yet. Each case requires specific copy, not a generic spinner.
-
-| State | When It Occurs | Recommended Treatment |
-|-------|---------------|----------------------|
-| **No sessions captured yet** | First 24-48h after deployment, before any visitors | Icon + "We haven't recorded any visitors yet. Once customers visit your site, their sources will appear here." No CTA needed. |
-| **No bookings in date range** | Short date range (Today, Yesterday) with no bookings | Show visitor count if > 0. "No bookings in this period — but [N] visitors stopped by. Change the date range or check back later." |
-| **No campaigns tagged** | utm_campaign is never populated | Campaign Performance table shows one row: "Untagged traffic — [N] bookings from visitors without campaign tags. Add UTM tags to your ads to see campaign-level data." Link to a simple guide. |
-| **Zero data for a specific source** | Selected source filter has no events | "No data for [Google Ads] in this period. Either no visitors came from this source, or campaign tags are missing." |
-| **No micro-conversions** | Phone click tracking not yet instrumented | Suppress micro-conversion section from Conversions view entirely until at least one event exists. Do not show an empty table. |
-| **Very first admin visit** | New deployment, nothing captured | Show a setup checklist card: "3 things to do to start tracking: 1. Visit your site to test the tracker 2. Add UTM tags to any active ads 3. Complete a test booking". |
-
----
-
-## Implementation Notes for Roadmap
-
-These notes are for the requirements writer and roadmapper.
-
-**Build order constraint:** UTM session capture (backend table + client-side script) must ship before any dashboard views. The dashboard has no data to show until capture is running. This forces a Phase 1 (capture) → Phase 2 (dashboard) split.
-
-**Existing booking flow dependency:** The booking checkout flow must be instrumented to pass session_id to the server at booking creation time. This is a change to the existing frontend checkout component and the existing bookings creation endpoint. It is low-risk (additive, non-breaking) but must be coordinated with the session capture work.
-
-**Drizzle schema additions needed:**
-- `utm_sessions` table: visitor_id (cookie), first_touch_* columns, last_touch_* columns, referrer, landing_page, created_at, last_seen_at
-- `conversion_events` table: visitor_id, session_id, conversion_type (enum: booking_completed, phone_click, form_submit, checkout_started), booking_id (nullable FK), occurred_at
-- `bookings` table: add `visitor_id` column (nullable, for attribution join)
-
-**Classification logic is stateless:** The auto-classification of UTM params + referrer → channel label is a pure function (no DB query needed). Implement as a shared utility in `server/lib/utm-classifier.ts` for reuse across routes and queries.
-
-**No new UI framework needed:** All dashboard views fit the existing shadcn/ui + Recharts (already used in admin) pattern. A trend line is a Recharts `<LineChart>`. A source table is a standard shadcn `<Table>`. KPI cards are existing card components.
+| Feature | Cal.com | Calendly | Our Approach |
+|---------|---------|---------|--------------|
+| Duration selector position | Before calendar (step 1 of booking) | Below event name, dropdown, before time picker | Cards before calendar — step 2 of BookingPage (after service selection, before slot picker) |
+| Duration UI pattern | Buttons / pills | Dropdown with clock icon | Selection cards with label + duration + price — reuse existing `areaSizes` card component |
+| Email provider | Pluggable (SMTP, SendGrid, etc.) | Managed (Calendly's own infra) | Resend with React Email templates; tenant provides from-address after DNS verification |
+| Transactional email branding | Workspace logo + name | Event-type colors | Full tenant brand: logo, name, primary color from `companySettings` |
+| Calendar sync failures | Visible in dashboard with reconnect prompt | Reconnect alert in integrations tab | Admin sync health panel + connection health banner; `failed_permanent` badge on booking detail |
+| Retry mechanism | Not publicly documented | Not publicly documented | `SELECT FOR UPDATE SKIP LOCKED` with exponential backoff in node-cron; no Redis required |
+| Sync priority | N/A | N/A | Google Calendar before GHL for same bookingId (operational > CRM urgency) |
 
 ---
 
 ## Sources
 
-- [Plausible Analytics — Attribution Modeling](https://plausible.io/blog/attribution-modeling) — HIGH confidence; official Plausible documentation
-- [Plausible Analytics — UTM Tracking and Dark Traffic](https://plausible.io/blog/utm-tracking-tags) — HIGH confidence; official Plausible documentation
-- [Plausible Analytics — Paid Campaigns and UTM Tags](https://plausible.io/docs/manual-link-tagging) — HIGH confidence; official Plausible documentation
-- [CallRail — First Touch vs Last Touch Attribution](https://www.callrail.com/blog/first-touch-vs-last-touch-attribution) — MEDIUM confidence; practitioner source
-- [LocaliQ — 2025 Home Services Search Ad Benchmarks](https://localiq.com/blog/home-services-search-advertising-benchmarks/) — MEDIUM confidence; industry benchmark data
-- [Brixon Group — 10 Critical UTM Parameter Mistakes 2026](https://brixongroup.com/en/the-10-critical-utm-parameter-mistakes-that-sabotage-your-marketing-tracking) — MEDIUM confidence; practitioner source
-- [Seer Interactive — Dark Traffic Explained](https://www.seerinteractive.com/insights/direct-traffic-is-dark-traffic-and-thats-ok) — MEDIUM confidence; practitioner source
-- [Dataslayer — Marketing Dashboard Best Practices 2025](https://www.dataslayer.ai/blog/marketing-dashboard-best-practices-2025) — MEDIUM confidence; practitioner source
-- [Eleken — Empty State UX](https://www.eleken.co/blog-posts/empty-state-ux) — MEDIUM confidence; UX practitioner source
-- [Usermaven — Fathom vs Plausible vs Usermaven](https://usermaven.com/blog/fathom-vs-plausible-vs-usermaven) — MEDIUM confidence; comparative analysis
+- [Cal.com — Multiple Durations docs](https://cal.com/docs/core-features/event-types/multiple-durations) — HIGH confidence; official Cal.com documentation
+- [Calendly — Multiple Durations help](https://calendly.com/help/how-to-set-up-multiple-durations-for-an-event-type) — HIGH confidence; official Calendly documentation
+- [Apptoto — Appointment Reminder Email Best Practices](https://www.apptoto.com/best-practices/email-appointment-reminders) — HIGH confidence; authoritative scheduling tool practitioner
+- [Booknetic — Appointment Confirmation Email Best Practices](https://www.booknetic.com/blog/appointment-confirmation-email-best-practices) — MEDIUM confidence; booking software practitioner
+- [Xola — Booking Confirmation Best Practices](https://www.xola.com/articles/booking-confirmation-best-practices-email-sms-and-timing-for-tour-operators/) — MEDIUM confidence; booking platform practitioner
+- [Moosend — Cancellation Email Best Practices](https://moosend.com/blog/cancellation-emails/) — MEDIUM confidence; email marketing practitioner
+- [React Email GitHub](https://github.com/resend/react-email) — HIGH confidence; official library
+- [Resend — React Email 5.0](https://resend.com/blog/react-email-5) — HIGH confidence; official Resend release notes
+- [Netdata — PostgreSQL FOR UPDATE SKIP LOCKED](https://www.netdata.cloud/academy/update-skip-locked/) — HIGH confidence; official technical documentation
+- [Inferable — Unreasonable Effectiveness of SKIP LOCKED](https://www.inferable.ai/blog/posts/postgres-skip-locked) — MEDIUM confidence; verified against official Postgres docs
+- [BullMQ — Retrying Failing Jobs](https://docs.bullmq.io/guide/retrying-failing-jobs) — HIGH confidence; official BullMQ documentation
+- [Queue-Based Exponential Backoff — DEV Community](https://dev.to/andreparis/queue-based-exponential-backoff-a-resilient-retry-pattern-for-distributed-systems-37f3) — MEDIUM confidence; practitioner source
+- [Background Job Observability — Last9](https://last9.io/blog/background-job-observability/) — MEDIUM confidence; practitioner source
 
 ---
 
-*Feature research for: UTM Attribution Dashboard — Skleanings v1.0 Marketing Attribution*
-*Researched: 2026-04-25*
+*Feature research for: Booking Experience v5.0 — Skleanings*
+*Researched: 2026-05-11*

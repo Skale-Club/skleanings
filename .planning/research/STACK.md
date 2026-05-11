@@ -1,195 +1,168 @@
 # Stack Research
 
-**Domain:** First-party UTM tracking and marketing attribution (Express + React + Drizzle + PostgreSQL)
-**Researched:** 2026-04-25
-**Confidence:** HIGH (no new packages needed beyond one optional addition; all core decisions verified against existing stack)
+**Domain:** Transactional email, reliable sync queues, flexible service catalog — additions to existing Express.js + React 18 + Drizzle ORM booking platform
+**Researched:** 2026-05-11
+**Confidence:** HIGH (all library versions verified via official releases and npm registry)
 
 ---
 
-## Summary Verdict
+## New Libraries Required
 
-**Zero new runtime dependencies required.** Every technical need for UTM capture, attribution modeling, and the analytics dashboard is already present in the existing stack. The only optional addition is `cookie-parser` to simplify reading the anonymous visitor cookie on the server — but even that can be replaced with raw `req.headers.cookie` parsing since Express does not include it natively.
+These are the ONLY net-new packages. The existing stack (Express, Drizzle, postgres.js, node-cron, nodemailer, React Query, shadcn/ui) is unchanged except where explicitly noted below.
 
----
+### Core Technologies (net-new)
 
-## Recommended Stack
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| `resend` | `^4.5.1` | HTTP API client for sending transactional email via Resend | Official SDK. Destructured `{ data, error }` response — never throws, matches the codebase fire-and-forget error handling style. Resend chosen in SEED-019; no reason to revisit. |
+| `react-email` | `^6.1.1` | JSX-based email template authoring and server-side rendering | v6 consolidates all components into one package. `Html`, `Body`, `Container`, `Button`, `Text`, `Heading`, `Img`, `Section`, `Preview` all imported from `react-email`. Replaces the deprecated `@react-email/components` umbrella. |
 
-### Core Technologies (all already installed)
+**Note on `resend` version:** Latest release is `6.12.3` (May 6, 2026). Versions 4.x through 6.x all expose the same `resend.emails.send()` API — no breaking changes on the send path. Pin `^4.5.1` for a minimal footprint (no svix webhook dependency). Pin `^6.12.3` if you want latest security patches. Either works; this document uses `^4.5.1` as the conservative default.
 
-| Technology | Version | Role in This Milestone | Why This (Not Something Else) |
-|------------|---------|------------------------|-------------------------------|
-| Express 4 | 4.21.2 | Visitor cookie endpoint, UTM session write API | Already the server; cookie injection via `res.cookie()` needs no library |
-| Drizzle ORM | 0.39.3 | `utm_sessions` and `conversion_events` table definitions, composite indexes | `index().using('btree', ...)` syntax supports composite indexes; BRIN syntax also available |
-| PostgreSQL (Supabase) | — | Persistent attribution store | Row-level queries on small-to-medium attribution tables; no time-series DB needed at this scale |
-| React Query (`@tanstack/react-query`) | 5.60.5 | Dashboard data fetching with stale-while-revalidate | Admin panel already uses this pattern exclusively |
-| recharts | 2.15.2 | Trend line/area charts in marketing dashboard | Already installed; `AreaChart`, `LineChart`, `ResponsiveContainer`, `XAxis`, `YAxis`, `Tooltip` cover all needed chart types |
-| date-fns | 3.6.0 | Date range formatting, relative labels (e.g., "Last 30 days") | Already installed; no moment.js needed |
-| Zod | 3.24.2 | API schema validation for UTM capture endpoint | Consistent with all other route validation in the codebase |
-| `crypto.randomUUID()` | Node.js built-in (v14.17+, running 20.x) | Anonymous visitor ID generation | Faster than the `uuid` npm package (350ns vs 1030ns); zero dependency; UUID v4 compatible |
-
-### Supporting Libraries
-
-| Library | Version | Purpose | When to Use |
-|---------|---------|---------|-------------|
-| `cookie-parser` | ~1.4.7 | Parse inbound `Cookie` header on Express routes to read the `_vid` anonymous visitor cookie | **Optional.** Add only if direct `req.cookies` access is preferred over parsing `req.headers.cookie` manually. Very small package (~1KB). |
-
-No other additions needed.
+**Note on `react-email` version:** Latest stable is `6.1.1` (May 6, 2026). `@react-email/components` is no longer maintained as of React Email v6 (May 2025) — components were merged into the main `react-email` package. Do not install `@react-email/components`.
 
 ---
 
-## UTM Capture Strategy
+### Libraries NOT Needed
 
-**Recommendation: dual-write — localStorage (first-touch persistence) + server-set HTTP cookie (ITP-safe last-touch)**
-
-### Why Not sessionStorage Alone
-sessionStorage is wiped when the tab closes. A user who opens a new tab loses attribution. Unusable for first-touch preservation.
-
-### Why Not localStorage Alone
-Safari Intelligent Tracking Prevention (ITP) expires all client-side storage (localStorage, sessionStorage, IndexedDB) after 7 days of site inactivity. A user who clicks a Google Ads link, then returns 10 days later on Safari is misidentified as direct traffic. For a cleaning service with long decision windows, this is a real attribution gap.
-
-### The Dual-Write Pattern
-
-**Step 1 — On page load (client-side, `useEffect`):**
-1. Parse `window.location.search` for UTM parameters + `document.referrer` + `window.location.pathname` (landing page).
-2. If UTM params are found:
-   - Write to `localStorage` under key `_utm_first` **only if that key does not already exist** (first-touch preservation).
-   - Always overwrite `localStorage` key `_utm_last` (last-touch update).
-3. Call `POST /api/analytics/session` with the captured UTM payload + the anonymous visitor ID read from the `_vid` cookie (if it exists).
-
-**Step 2 — Server-side (`POST /api/analytics/session`):**
-1. If no `_vid` cookie exists on the request: generate a UUID v4 via `crypto.randomUUID()` and return it as a server-set `Set-Cookie: _vid=<uuid>; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly=false` (must be readable by JS for the booking flow to attach it to conversion events).
-2. Server-set cookies survive Safari ITP (they are not JavaScript-set cookies). Max-Age of 1 year is appropriate for a residential service business where sales cycles can span months.
-3. Write the UTM session row to the `utm_sessions` table.
-
-**Why `HttpOnly=false` for `_vid`:**
-The booking flow (client-side) needs to read `_vid` to attach it to conversion events when the booking is submitted. `HttpOnly=true` would prevent this. The `_vid` value is a random UUID with no PII — it carries no meaningful value to an attacker.
-
-**Step 3 — On booking completion:**
-The booking form submission (`POST /api/bookings`) reads `_vid` from `document.cookie` and includes it in the payload. The server joins `_vid` to `utm_sessions` to resolve the attribution chain and writes to `conversion_events`.
+| Skip | Why |
+|------|-----|
+| `@react-email/components` | Deprecated as of React Email v6. All components (`Html`, `Body`, `Container`, `Button`, `Text`, `Heading`, etc.) now live in `react-email` directly. |
+| `pg-boss` | SEED-002 explicitly defers it: "simple worker with SELECT FOR UPDATE SKIP LOCKED in 1min cron is enough for initial volume." pg-boss (v12.18.2) adds its own schema, migrations, and a persistent manager process. Not justified at current queue depth. |
+| `bull` / `bullmq` | Requires Redis. This project has no Redis and no plans for it. |
+| Any additional cron library | `node-cron ^4.2.1` is already installed and running in `server/services/cron.ts`. The queue worker cron is added there using the same pattern. |
+| Nodemailer (removal) | Do NOT remove `nodemailer ^8.0.7`. It powers `server/lib/email.ts` which the v4.0 recurring subscription reminder service uses. The new Resend integration is a parallel addition in `server/lib/email-resend.ts`. Both coexist. |
 
 ---
 
-## PostgreSQL Indexing Strategy
+## Installation
 
-Marketing attribution queries fall into two patterns:
-
-**Pattern A — Aggregate reports (GROUP BY source, campaign, date range):**
-Most dashboard queries. Filter on `created_at` date range + group on `utm_source`, `utm_medium`, `utm_campaign`.
-
-**Pattern B — Lookup by visitor (JOIN path for visitor journey view):**
-Filter on `visitor_id` to reconstruct a single visitor's session history.
-
-### Recommended Indexes for `utm_sessions`
-
-```typescript
-// In shared/schema.ts — table definition
-export const utmSessions = pgTable("utm_sessions", {
-  id: serial("id").primaryKey(),
-  visitorId: text("visitor_id").notNull(),        // _vid cookie value
-  utmSource: text("utm_source"),
-  utmMedium: text("utm_medium"),
-  utmCampaign: text("utm_campaign"),
-  utmTerm: text("utm_term"),
-  utmContent: text("utm_content"),
-  utmId: text("utm_id"),
-  referrer: text("referrer"),
-  landingPage: text("landing_page"),
-  trafficType: text("traffic_type").notNull(),     // 'organic'|'paid'|'social'|'referral'|'direct'|'unknown'
-  isFirstTouch: boolean("is_first_touch").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => ({
-  // Pattern A: date-range + source/medium aggregations
-  createdAtSourceIdx: index("utm_sessions_created_source_idx")
-    .on(table.createdAt.desc(), table.utmSource, table.utmMedium),
-  // Pattern B: visitor journey lookups
-  visitorIdx: index("utm_sessions_visitor_idx")
-    .on(table.visitorId, table.createdAt.desc()),
-}));
+```bash
+# Net-new dependencies only — two packages
+npm install resend react-email
 ```
 
-```typescript
-// In shared/schema.ts — conversion_events table
-export const conversionEvents = pgTable("conversion_events", {
-  id: serial("id").primaryKey(),
-  visitorId: text("visitor_id").notNull(),
-  eventType: text("event_type").notNull(),         // 'booking_completed'|'form_submit'|'phone_click'|'quote_request'
-  bookingId: integer("booking_id").references(() => bookings.id),
-  utmSessionId: integer("utm_session_id").references(() => utmSessions.id),
-  attributedSource: text("attributed_source"),
-  attributedMedium: text("attributed_medium"),
-  attributedCampaign: text("attributed_campaign"),
-  attributedTouchModel: text("touch_model"),       // 'first_touch'|'last_touch'
-  metadata: jsonb("metadata"),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => ({
-  // Conversion funnel reports filtered by date range + event type
-  createdAtTypeIdx: index("conversion_events_created_type_idx")
-    .on(table.createdAt.desc(), table.eventType),
-  // Join back to visitor sessions
-  visitorIdx: index("conversion_events_visitor_idx")
-    .on(table.visitorId),
-}));
-```
-
-**Why BTREE over BRIN here:**
-BRIN becomes superior only above ~100K rows with purely insert-ordered data. A cleaning business UTM table will likely hold thousands to tens of thousands of rows, not millions. BTREE composite indexes give consistent fast responses on small-to-medium result sets (the typical dashboard query returning rows for one campaign over 30 days). Use BRIN if and when the table exceeds ~200K rows and query performance degrades.
-
-**Index column ordering rationale:**
-- `created_at DESC` first: most queries filter by date range; putting the highest-selectivity filter first reduces scanned rows.
-- `utm_source`, `utm_medium` second: GROUP BY columns after the range filter.
-- Visitor journey index is separate because its access pattern is completely different (point lookup by `visitor_id`).
+No dev dependencies needed for the new packages. React Email templates render server-side; the `react-email` package includes its own server renderer. The existing `react` and `react-dom` peer deps (React 18.3.1) satisfy `react-email` v6's requirements.
 
 ---
 
-## Recharts Assessment
+## Integration Points by Feature
 
-**recharts 2.15.2 is fully sufficient. Do not add another charting library.**
+### SEED-019 — Branded Email via Resend
 
-The following recharts components cover all required chart types for the marketing dashboard:
+**New module:** `server/lib/email-resend.ts`
 
-| Dashboard View | Chart Type | Recharts Component |
-|---------------|------------|--------------------|
-| Overview — visitor/conversion trend | Smooth area | `AreaChart` + `Area` with `type="monotone"` |
-| Campaign Performance — bar comparison | Grouped bar | `BarChart` + `Bar` |
-| Source Performance — distribution | Horizontal bar | `BarChart` + `Bar` with `layout="vertical"` |
-| Conversion rate over time | Line | `LineChart` + `Line` |
-
-All wrapped in `ResponsiveContainer width="100%" height={300}` following the existing pattern in the admin panel.
-
-recharts has TypeScript generics for `data` and `dataKey` props (added in 3.8.0), but 2.15.2 also has adequate TypeScript support. **Do not upgrade to recharts 3.x** for this milestone — it is a major version with breaking changes and is not installed.
-
----
-
-## Traffic Auto-Classification Logic
-
-No library needed. A pure TypeScript function resolves non-UTM traffic using referrer + UTM rules:
+Pattern: read API key and from-address from DB (`emailSettings` table) or env var fallback. Call `resend.emails.send({ from, to, subject, react: <Template /> })`. Return `{ data, error }` — log error, never throw (consistent with existing fire-and-forget analytics pattern).
 
 ```typescript
-function classifyTraffic(utmSource: string | null, utmMedium: string | null, referrer: string | null): TrafficType {
-  if (utmSource) {
-    if (utmMedium === 'cpc' || utmMedium === 'ppc' || utmMedium === 'paid') return 'paid';
-    if (['facebook','instagram','twitter','linkedin','pinterest','tiktok'].includes(utmSource.toLowerCase())) return 'social';
-    return 'referral';
-  }
-  if (!referrer) return 'direct';
-  const ref = referrer.toLowerCase();
-  if (ref.includes('google.') || ref.includes('bing.') || ref.includes('yahoo.') || ref.includes('duckduckgo.')) return 'organic';
-  if (ref.includes('facebook.') || ref.includes('instagram.') || ref.includes('twitter.') || ref.includes('linkedin.') || ref.includes('tiktok.')) return 'social';
-  return 'referral';
+import { Resend } from 'resend';
+import type { ReactElement } from 'react';
+
+export async function sendResendEmail(to: string, subject: string, jsx: ReactElement): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) { console.warn('[Resend] RESEND_API_KEY not set — skipping'); return; }
+  const resend = new Resend(apiKey);
+  const { error } = await resend.emails.send({
+    from: process.env.RESEND_FROM ?? 'no-reply@example.com',
+    to,
+    subject,
+    react: jsx,
+  });
+  if (error) console.error('[Resend] Send error:', error);
 }
 ```
 
+**New template files:** `server/emails/BookingConfirmation.tsx`, `server/emails/BookingReminder24h.tsx`, `server/emails/BookingCancellation.tsx`
+
+Import pattern for templates:
+
+```typescript
+import { Html, Body, Container, Heading, Text, Button, Preview } from 'react-email';
+```
+
+**New DB table:** `emailSettings` — mirrors `twilioSettings` pattern. Stores `resendApiKey`, `fromAddress`, `enabled`. Admin UI configures it. Env vars are the dev/fallback path.
+
+**New env vars:**
+- `RESEND_API_KEY` — Resend API key from resend.com dashboard
+- `RESEND_FROM` — verified sender address e.g. `"Skleanings <no-reply@skleanings.com>"`
+
+**Existing `notificationLogs` table** already tracks SMS/Telegram channels. Email is a new `channel` value — no new table needed for logging, just a new row type.
+
+**Existing nodemailer path is untouched.** The recurring subscription reminder service (`server/services/recurring-booking-reminder.ts` → `server/lib/email.ts`) continues to use nodemailer SMTP. SEED-019 templates go through `server/lib/email-resend.ts` (Resend SDK). The two email paths target different use cases and coexist cleanly.
+
 ---
 
-## Privacy / GDPR Considerations
+### SEED-002 — Calendar Harmony Retry Queue
 
-| Concern | Assessment | Recommendation |
-|---------|------------|----------------|
-| Is `_vid` a personal cookie under GDPR/PECR? | MEDIUM confidence — grey area. It is a random UUID with no PII. UK ICO guidance treats analytics cookies as non-essential, but first-party analytics for internal business use (not advertising) sits in a lower-risk category. | Treat as analytics cookie. Include in cookie policy. For EU/UK visitors, surface a minimal cookie notice. Do NOT gate UTM capture behind consent banner for v1.0 — the business is US-focused (cleaning company). Revisit if EU traffic becomes significant. |
-| localStorage — is it regulated? | localStorage falls under ePrivacy/PECR same as cookies. | Same notice as above. For the risk profile of a local cleaning business serving primarily US customers, this is acceptable. |
-| Safari ITP 7-day expiry | Server-set cookies survive ITP; localStorage does not. | The dual-write pattern described above handles this. First-touch localStorage may be lost for inactive Safari users after 7 days, but the server-set `_vid` survives to enable last-touch attribution. |
-| PII in UTM data | UTM parameters can contain PII if marketers embed email addresses in `utm_content` or `utm_term` (e.g., email campaign personalization). | Sanitize: strip any value matching an email pattern before writing to `utm_sessions`. Log a warning. |
-| Session data lifetime | Retaining attribution data indefinitely creates unnecessary risk. | Add a `cleanup_policy` note to the schema: purge `utm_sessions` rows where `created_at < NOW() - INTERVAL '2 years'` and no associated conversion event exists. Implement as a monthly cron job (node-cron is already installed). |
+**No new packages.** Pure schema + worker implementation using existing `postgres.js` and `node-cron`.
+
+**Raw SQL for queue pick-up** — use `db.execute(sql`...`)` from Drizzle, not the `.for("update", { skipLocked: true })` query builder method. That method has a known syntax bug (drizzle-team/drizzle-orm #3554 — generates `FOR UPDATE SKIP LOCKED` with incorrect spacing; fix merged but version is uncertain relative to project's `^0.39.3`). Raw SQL is explicit and correct:
+
+```typescript
+import { sql } from 'drizzle-orm';
+
+const rows = await db.execute(sql`
+  SELECT * FROM calendar_sync_queue
+  WHERE status = 'pending'
+    AND scheduled_for <= NOW()
+  ORDER BY scheduled_for ASC
+  LIMIT 10
+  FOR UPDATE SKIP LOCKED
+`);
+```
+
+**New DB table:** `calendarSyncQueue` per SEED-002 spec:
+- Columns: `id`, `bookingId` (FK → bookings), `target` (enum: `google_calendar | ghl_appointment | ghl_contact | ghl_utm`), `operation` (enum: `create | update | delete`), `payload` JSONB, `status` (enum: `pending | in_progress | success | failed_retryable | failed_permanent`), `attempts` int, `lastAttemptAt`, `lastError` text, `scheduledFor`, `completedAt`
+- Required index: `(status, scheduled_for)` — without this, the queue scan degrades to sequential scan as the table grows
+
+**Exponential backoff** — pure arithmetic, no library:
+
+| Attempt | Next `scheduledFor` offset |
+|---------|---------------------------|
+| 1 | +1 minute |
+| 2 | +5 minutes |
+| 3 | +30 minutes |
+| 4 | +2 hours |
+| 5 | +12 hours |
+| 6 | +24 hours → set `status = 'failed_permanent'` |
+
+**Cron registration** — add to existing `server/services/cron.ts` following the existing pattern:
+
+```typescript
+// Every 1 minute — calendar sync queue worker
+cron.schedule("* * * * *", async () => {
+  const { runCalendarSyncWorker } = await import("./calendar-sync-worker");
+  await runCalendarSyncWorker();
+});
+```
+
+**Serverless guard** — `server/services/cron.ts` already guards against Vercel with `if (isServerless) return`. The queue worker must follow the same pattern: no-op on Vercel, triggered instead via a new GitHub Actions workflow (`calendar-sync-cron.yml`) that POSTs to `/api/calendar-sync/cron/process` — same pattern as `recurring-bookings-cron.yml`. GitHub Actions minimum schedule is 5 minutes, so production on Vercel gets 5-minute resolution; persistent Node.js environments get 1-minute resolution.
+
+**New worker file:** `server/services/calendar-sync-worker.ts` — picks rows with the `FOR UPDATE SKIP LOCKED` query, marks `in_progress`, calls `server/lib/google-calendar.ts` (Google, priority 1) then `server/integrations/ghl.ts` (GHL, priority 2), updates row status on success or failure, computes next `scheduledFor` on retry.
+
+---
+
+### SEED-029 — Multiple Durations per Service
+
+**No new packages.** Schema + UI only:
+
+- **Schema:** New Drizzle table `serviceDurations` in `shared/schema.ts`: `id`, `serviceId` (FK → services), `label` text (e.g. "2h — Small apartment"), `durationMinutes` int, `price` numeric, `sortOrder` int
+- **Booking flow:** Duration selector in `client/src/pages/BookingPage.tsx` using existing shadcn/ui Button or Card components — same visual pattern as `areaSizes` for `area_based` services
+- **Availability query:** `server/routes/availability.ts` receives dynamic `durationMinutes` from the selected duration rather than reading from `services.durationMinutes`
+- **Admin UI:** "Available durations" section in `client/src/components/admin/ServicesSection.tsx` using `react-hook-form` + `useFieldArray` (already used in booking form — no new pattern)
+- **Fallback:** When a service has no `serviceDurations` rows, `services.durationMinutes` is used as-is — backward compatible with all existing services
+
+---
+
+## Alternatives Considered
+
+| Recommended | Alternative | When to Use Alternative |
+|-------------|-------------|-------------------------|
+| `resend` SDK | `nodemailer` via Resend's SMTP relay | Never — the native SDK is simpler, returns `{ data, error }` without throw, and gives access to delivery webhooks. SMTP relay is a generic fallback for mailers that don't have an API client. |
+| `react-email` v6 (unified `react-email` pkg) | `@react-email/components` v1.x | Never — `@react-email/components` is no longer maintained. Components merged into `react-email` v6. |
+| Raw SQL `FOR UPDATE SKIP LOCKED` | `pg-boss` v12 | Use pg-boss when queue depth exceeds ~10K jobs/day, or when you need priority queues, dead letter routing, or pub/sub fan-out. Not needed at current scale. |
+| Raw SQL `FOR UPDATE SKIP LOCKED` | `bullmq` | Only if Redis is already in the infrastructure. This project has no Redis. |
+| `node-cron` (already installed) | GitHub Actions for 1-minute queue | GitHub Actions minimum schedule is 5 minutes. The ideal queue polling interval is 1 minute. Use node-cron for persistent environments; GitHub Actions at 5-minute resolution is acceptable for Vercel. |
 
 ---
 
@@ -197,65 +170,38 @@ function classifyTraffic(utmSource: string | null, utmMedium: string | null, ref
 
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
-| Segment, Mixpanel, Amplitude SDKs | Third-party tracking SDKs violate the "first-party only" constraint in PROJECT.md and add significant bundle weight | Custom Express endpoints + Drizzle tables |
-| Google Tag Manager for UTM capture | Adds a third-party dependency, requires GTM container setup, and puts business data outside the app's database | `useEffect` hook on the client + `POST /api/analytics/session` |
-| `uuid` npm package | Already not installed; `crypto.randomUUID()` is built into Node.js 20.x and is 3x faster | `crypto.randomUUID()` |
-| recharts 3.x upgrade | Major version with breaking changes; 2.15.2 meets all dashboard charting needs | recharts 2.15.2 (already installed) |
-| Separate time-series database (InfluxDB, TimescaleDB) | Extreme overkill for a single cleaning business's UTM volume; adds infrastructure complexity | Standard PostgreSQL with composite BTREE indexes |
-| Redis for UTM session caching | No hot-path performance requirement; dashboard is admin-only, not customer-facing | Direct Drizzle queries with indexed tables |
-| `express-rate-limit` on the analytics endpoint | Not needed for v1.0; the UTM capture endpoint is called once per page load by real visitors | If spam becomes an issue, add later |
+| `@react-email/components` | Deprecated as of React Email v6 (May 2025). npm page says "no longer supported." | `react-email` — import `Html`, `Body`, `Container`, `Button`, `Text`, etc. directly from `react-email` |
+| `drizzle-orm` query builder `.for("update", { skipLocked: true })` | Known bug #3554 — generates malformed SQL for `SKIP LOCKED`. Fix was merged but the affected version range overlaps with the project's `^0.39.3` pin. | `db.execute(sql\`... FOR UPDATE SKIP LOCKED\`)` raw SQL |
+| `pg-boss` | Introduces its own migration schema, long-lived `PgBoss` instance, and infra surface area. SEED-002 explicitly defers it. | Raw `SELECT FOR UPDATE SKIP LOCKED` in `server/services/calendar-sync-worker.ts` |
+| Removing `nodemailer` | Breaks `server/lib/email.ts` and the v4.0 recurring subscription reminder emails. | Add Resend as a parallel module (`server/lib/email-resend.ts`). Do not touch the nodemailer path. |
+| GitHub Actions as the only queue trigger | Min 5-minute interval. Queue worker needs 1-minute polling in persistent envs. | `node-cron` inside Express for local/persistent environments; GitHub Actions as the Vercel trigger at 5-minute resolution. |
 
 ---
 
-## Installation
+## Version Compatibility
 
-```bash
-# Optional only — add if server-side cookie parsing convenience is needed
-npm install cookie-parser
-npm install -D @types/cookie-parser
-```
-
-All other capabilities use existing dependencies. No other `npm install` commands needed for this milestone.
-
----
-
-## Alternatives Considered
-
-| Recommended | Alternative | Why Not |
-|-------------|-------------|---------|
-| `crypto.randomUUID()` (built-in) | `uuid` npm package | Already not in the project; built-in is faster and has no version drift risk |
-| Dual-write (localStorage + server cookie) | localStorage only | Safari ITP kills 7-day+ attribution; server cookie survives ITP |
-| Dual-write (localStorage + server cookie) | Cookie only | Cookies require consent CMP infrastructure; localStorage is functionally equivalent and simpler for first-touch preservation |
-| BTREE composite indexes | BRIN indexes | BRIN only outperforms BTREE above ~100K rows; expected attribution volume is thousands to low tens of thousands for this business |
-| recharts (already installed) | Victory, Nivo, Chart.js | recharts is already in the bundle; adding a second charting library doubles charting bundle weight for no gain |
-
----
-
-## Version Compatibility Notes
-
-| Package | Version | Compatibility Note |
-|---------|---------|-------------------|
-| recharts | 2.15.2 | Compatible with React 18.3.x. Do not use 3.x API docs. |
-| drizzle-orm index API | 0.39.3 | Uses new index API (available since 0.31.0): `index().on().using()`. Old `uniqueIndex()` / `index()` shorthand still works but new API is preferred. |
-| date-fns | 3.6.0 | v3 API (named exports, no default export). Use `format`, `subDays`, `startOfDay`, `endOfDay`, `eachDayOfInterval` for dashboard date range helpers. |
-| `crypto.randomUUID()` | Node.js 20.x | Available since Node.js 14.17.0. No polyfill needed. |
+| Package | Version | Compatible With | Notes |
+|---------|---------|-----------------|-------|
+| `resend` | `^4.5.1` – `^6.12.3` | Node 18+, React 18 | `resend.emails.send({ react: <Component /> })` API is stable across all v4–v6. No breaking changes on the send path. |
+| `react-email` | `^6.1.1` | React 18 (peer dep), Node 18+ | React Email v6 lists React 19 as peer dep. React 18.3.1 (project's version) works in practice. If npm reports a peer dep conflict, add `--legacy-peer-deps`. Do not upgrade the project to React 19 for this milestone. |
+| `node-cron` | `^4.2.1` (already installed) | Node 18+ | v4 requires Node 18+. Project already runs Node 18+. No change needed. |
+| `postgres` | `^3.4.8` (already installed) | PostgreSQL 14+ (Supabase) | The `sql` tagged template from `drizzle-orm` generates parameterized queries compatible with `postgres.js`. For the raw `FOR UPDATE SKIP LOCKED` query, use `db.execute(sql`...`)` which routes through the existing connection pool. |
 
 ---
 
 ## Sources
 
-- UTM persistent tracking guide — https://fiveninestrategy.com/persistent-utm-tracking-guide/ (MEDIUM confidence; practical patterns verified against known Safari ITP behavior)
-- Safari ITP cookie survival via server-set cookies — https://stape.io/blog/safari-itp (MEDIUM confidence)
-- Safari ITP localStorage 7-day expiry — https://snowplow.io/blog/tracking-cookies-length (MEDIUM confidence)
-- GDPR analytics cookie consent (conservative interpretation) — https://www.auditzo.com/blog/gdpr-cookie-consent-rules-2025 (MEDIUM confidence)
-- UK Data (Use and Access) Act 2025 first-party analytics exemption — https://usercentrics.com/knowledge-hub/ico-pecr-cookie-guidance/ (MEDIUM confidence; exemption scope not yet settled)
-- PostgreSQL BRIN vs BTREE threshold — https://www.crunchydata.com/blog/postgres-indexing-when-does-brin-win (HIGH confidence; official Crunchy Data analysis)
-- Drizzle ORM index API — https://orm.drizzle.team/docs/indexes-constraints (HIGH confidence; official docs)
-- `crypto.randomUUID()` performance — https://dev.to/galkin/crypto-randomuuid-vs-uuid-v4-47i5 (MEDIUM confidence; benchmark article)
-- recharts latest release notes — https://github.com/recharts/recharts/releases (HIGH confidence; official GitHub)
-- Express `res.cookie` security best practices — https://web.dev/articles/first-party-cookie-recipes (HIGH confidence; Google web.dev)
+- `github.com/resend/resend-node/releases` — confirmed latest stable: `v6.12.3` (May 6, 2026). HIGH confidence.
+- `github.com/resend/react-email/releases` — confirmed latest stable: `react-email@6.1.1` (May 6, 2026). HIGH confidence.
+- `react.email/docs/integrations/resend` — confirmed import pattern `import { Html, Button } from 'react-email'` and `resend.emails.send({ react: <Component /> })`. HIGH confidence.
+- `resend.com/blog/react-email-6` — confirmed `@react-email/components` deprecated, all components consolidated into `react-email` v6. HIGH confidence.
+- `github.com/timgit/pg-boss` — confirmed latest: `v12.18.2` (May 2, 2026); Drizzle adapter exists. SEED-002 explicitly defers it. HIGH confidence.
+- `github.com/drizzle-team/drizzle-orm/issues/3554` — confirmed `SKIP LOCKED` query builder bug, closed with fix PR #3555. Exact fix version relative to `^0.39.3` unclear. MEDIUM confidence — raw SQL workaround is safe and explicit regardless.
+- `package.json` (project) — confirmed: `node-cron ^4.2.1`, `nodemailer ^8.0.7`, `pg ^8.16.3`, `postgres ^3.4.8` already installed. HIGH confidence.
+- `server/services/cron.ts` (project) — confirmed: isServerless guard + dynamic import pattern. The queue worker cron follows the same pattern. HIGH confidence.
+- `server/lib/email.ts` (project) — confirmed: nodemailer active for recurring subscription reminders. Must not be removed. HIGH confidence.
 
 ---
 
-*Stack research for: UTM Tracking & Marketing Attribution — Skleanings v1.0*
-*Researched: 2026-04-25*
+*Stack research for: v5.0 Booking Experience — Resend branded email (SEED-019), Calendar Harmony retry queue (SEED-002), multiple service durations (SEED-029)*
+*Researched: 2026-05-11*

@@ -1,4 +1,7 @@
-# Project Research Summary
+const fs = require('fs');
+const dest = 'c:/Users/Vanildo/Dev/skleanings/.planning/research/SUMMARY.md';
+
+const content = `# Project Research Summary
 
 **Project:** Skleanings v5.0 Booking Experience
 **Domain:** Service booking platform — cleaning company (transactional email, retry queue, multi-duration UX)
@@ -192,3 +195,7 @@ No phase requires /gsd:research-phase before planning. All technical unknowns ar
 ---
 *Research completed: 2026-05-11*
 *Ready for roadmap: yes*
+`;
+
+fs.writeFileSync(dest, content, 'utf-8');
+console.log('Written successfully, bytes:', fs.statSync(dest).size);
