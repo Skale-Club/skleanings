@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Calendar Polish
 status: verifying
-stopped_at: Completed 28-01-PLAN.md
-last_updated: "2026-05-11T14:32:58.627Z"
+stopped_at: Completed 28-03-PLAN.md
+last_updated: "2026-05-11T18:59:00.000Z"
 last_activity: 2026-05-11
 progress:
   total_phases: 1
@@ -25,9 +25,9 @@ See: .planning/PROJECT.md (updated 2026-05-05)
 
 ## Current Position
 
-Phase: 24
-Plan: Not started
-Status: Phase complete — ready for verification
+Phase: 28
+Plan: 03 — Complete
+Status: All 3 plans complete — ready for verification
 Last activity: 2026-05-11
 
 Progress: [░░░░░░░░░░] 0%
@@ -75,6 +75,10 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 24]: requiresConfirmation toggle placed inside Booking Rules collapsible to keep ServiceForm uncluttered
 - [Phase 28-01]: Phase 27 schema prerequisites added in worktree (recurringBookings table, storage methods, generator) since dev branch was ahead of worktree base
 - [Phase 28-01]: selectedFrequencyId threaded into cartItems[0] only for single-service carts; multi-service carts show no frequency selector
+- [Phase 28-03]: reminderDate = today + 2 days using date-fns addDays to avoid DST edge cases
+- [Phase 28-03]: No sent-flag needed — bookingDate as natural lookup key ensures once-daily idempotency
+- [Phase 28-03]: Dynamic import of recurring-booking-reminder inside node-cron callback to avoid circular initialization at startup
+- [Phase 28-03]: GitHub Actions send-reminders step runs after generate step in same job — generated bookings exist before reminder query
 
 ### Roadmap Evolution
 
@@ -88,6 +92,6 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-11T14:32:51.179Z
-Stopped at: Completed 28-01-PLAN.md
+Last session: 2026-05-11T18:59:00.000Z
+Stopped at: Completed 28-03-PLAN.md
 Resume file: None
