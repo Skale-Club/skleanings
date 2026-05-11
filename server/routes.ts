@@ -22,7 +22,7 @@ import paymentsRouter from "./routes/payments";
 import analyticsRouter from "./routes/analytics";
 import clientRouter from "./routes/client";
 import notificationLogsRouter from "./routes/notification-logs";
-import recurringBookingsRouter from "./routes/recurring-bookings";
+import recurringBookingsRouter, { adminRecurringRouter, publicRecurringRouter } from "./routes/recurring-bookings";
 
 export async function registerRoutes(server: Server, app: Express) {
   // Mount routers
@@ -79,4 +79,7 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // Recurring bookings routes (/api/recurring-bookings/cron/generate + future customer/admin routes)
   app.use("/api/recurring-bookings", recurringBookingsRouter);
+  // Phase 29: admin and public recurring subscription routes
+  app.use("/api/admin/recurring-bookings", adminRecurringRouter);
+  app.use("/api/subscriptions/manage", publicRecurringRouter);
 }

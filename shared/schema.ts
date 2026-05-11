@@ -217,6 +217,8 @@ export const recurringBookings = pgTable("recurring_bookings", {
   // a circular reference in Drizzle (bookings is defined after this table). The SQL migration
   // enforces the FK constraint at DB level. Use plain integer() only here.
   originBookingId: integer("origin_booking_id"),
+  // Phase 29 RECUR-05: permanent UUID token for customer self-serve manage link
+  manageToken: uuid("manage_token").notNull().default(sql`gen_random_uuid()`),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -227,9 +229,17 @@ export const insertRecurringBookingSchema = createInsertSchema(recurringBookings
   updatedAt: true,
   cancelledAt: true,
   pausedAt: true,
+  manageToken: true, // Phase 29 RECUR-05: DB-generated, never set by callers
 });
 export type RecurringBooking = typeof recurringBookings.$inferSelect;
 export type InsertRecurringBooking = z.infer<typeof insertRecurringBookingSchema>;
+
+// Phase 29 RECUR-04: joined type returned by getRecurringBookingsWithDetails()
+export interface RecurringBookingWithDetails extends RecurringBooking {
+  contactName: string | null;   // contacts.name, null when contactId is null
+  serviceName: string;          // services.name snapshot
+  customerEmail: string | null; // contacts.email for display
+}
 
 export const bookings = pgTable("bookings", {
   id: serial("id").primaryKey(),

@@ -108,7 +108,11 @@ import {
   recurringBookings,
   type RecurringBooking,
   type InsertRecurringBooking,
+  type RecurringBookingWithDetails,
   insertRecurringBookingSchema,
+  serviceBookingQuestions,
+  type ServiceBookingQuestion,
+  type InsertServiceBookingQuestion,
 } from "@shared/schema";
 import { eq, and, or, gte, lte, inArray, desc, asc, sql, ne, isNull, like } from "drizzle-orm";
 import { z } from "zod";
@@ -166,6 +170,12 @@ export interface IStorage {
   createServiceDuration(duration: InsertServiceDuration): Promise<ServiceDuration>;
   updateServiceDuration(id: number, data: Partial<InsertServiceDuration>): Promise<ServiceDuration>;
   deleteServiceDuration(id: number): Promise<void>;
+
+  // Service Booking Questions (Phase 26 QUEST-01, QUEST-02)
+  getServiceBookingQuestions(serviceId: number): Promise<ServiceBookingQuestion[]>;
+  createServiceBookingQuestion(data: InsertServiceBookingQuestion): Promise<ServiceBookingQuestion>;
+  updateServiceBookingQuestion(id: number, data: Partial<InsertServiceBookingQuestion>): Promise<ServiceBookingQuestion>;
+  deleteServiceBookingQuestion(id: number): Promise<void>;
 
   // Bookings
   createBooking(booking: InsertBooking & { totalPrice: string, totalDurationMinutes: number, endTime: string, bookingItemsData?: any[], userId?: string | null }): Promise<Booking>;
@@ -376,6 +386,12 @@ export interface IStorage {
   getRecurringBookings(statusFilter?: string): Promise<RecurringBooking[]>;
   getActiveRecurringBookingsDueForGeneration(asOfDate: string): Promise<RecurringBooking[]>;
   updateRecurringBooking(id: number, data: Partial<Pick<RecurringBooking, 'status' | 'nextBookingDate' | 'cancelledAt' | 'pausedAt' | 'updatedAt'>>): Promise<RecurringBooking>;
+
+  // Phase 29 RECUR-05: look up subscription by its manage_token UUID (public self-serve route)
+  getRecurringBookingByToken(token: string): Promise<RecurringBooking | undefined>;
+
+  // Phase 29 RECUR-04: admin panel — JOIN contacts + services to avoid N+1 secondary calls
+  getRecurringBookingsWithDetails(): Promise<RecurringBookingWithDetails[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -700,6 +716,33 @@ export class DatabaseStorage implements IStorage {
 
   async deleteServiceDuration(id: number): Promise<void> {
     await db.delete(serviceDurations).where(eq(serviceDurations.id, id));
+  }
+
+  async getServiceBookingQuestions(serviceId: number): Promise<ServiceBookingQuestion[]> {
+    return await db
+      .select()
+      .from(serviceBookingQuestions)
+      .where(eq(serviceBookingQuestions.serviceId, serviceId))
+      .orderBy(asc(serviceBookingQuestions.order), asc(serviceBookingQuestions.id));
+  }
+
+  async createServiceBookingQuestion(data: InsertServiceBookingQuestion): Promise<ServiceBookingQuestion> {
+    const [row] = await db.insert(serviceBookingQuestions).values(data).returning();
+    return row;
+  }
+
+  async updateServiceBookingQuestion(id: number, data: Partial<InsertServiceBookingQuestion>): Promise<ServiceBookingQuestion> {
+    const [updated] = await db
+      .update(serviceBookingQuestions)
+      .set(data)
+      .where(eq(serviceBookingQuestions.id, id))
+      .returning();
+    if (!updated) throw new Error(`ServiceBookingQuestion ${id} not found`);
+    return updated;
+  }
+
+  async deleteServiceBookingQuestion(id: number): Promise<void> {
+    await db.delete(serviceBookingQuestions).where(eq(serviceBookingQuestions.id, id));
   }
 
   async getService(id: number): Promise<Service | undefined> {
@@ -2021,6 +2064,52 @@ export class DatabaseStorage implements IStorage {
       .where(eq(recurringBookings.id, id))
       .returning();
     return row;
+  }
+
+  async getRecurringBookingByToken(token: string): Promise<RecurringBooking | undefined> {
+    const [row] = await db
+      .select()
+      .from(recurringBookings)
+      .where(eq(recurringBookings.manageToken, token));
+    return row;
+  }
+
+  async getRecurringBookingsWithDetails(): Promise<RecurringBookingWithDetails[]> {
+    const rows = await db
+      .select({
+        id: recurringBookings.id,
+        contactId: recurringBookings.contactId,
+        serviceId: recurringBookings.serviceId,
+        serviceFrequencyId: recurringBookings.serviceFrequencyId,
+        discountPercent: recurringBookings.discountPercent,
+        intervalDays: recurringBookings.intervalDays,
+        frequencyName: recurringBookings.frequencyName,
+        startDate: recurringBookings.startDate,
+        endDate: recurringBookings.endDate,
+        nextBookingDate: recurringBookings.nextBookingDate,
+        preferredStartTime: recurringBookings.preferredStartTime,
+        preferredStaffMemberId: recurringBookings.preferredStaffMemberId,
+        status: recurringBookings.status,
+        cancelledAt: recurringBookings.cancelledAt,
+        pausedAt: recurringBookings.pausedAt,
+        originBookingId: recurringBookings.originBookingId,
+        manageToken: recurringBookings.manageToken,
+        createdAt: recurringBookings.createdAt,
+        updatedAt: recurringBookings.updatedAt,
+        contactName: contacts.name,
+        serviceName: services.name,
+        customerEmail: contacts.email,
+      })
+      .from(recurringBookings)
+      .leftJoin(contacts, eq(recurringBookings.contactId, contacts.id))
+      .leftJoin(services, eq(recurringBookings.serviceId, services.id))
+      .orderBy(desc(recurringBookings.createdAt));
+    return rows.map((r) => ({
+      ...r,
+      contactName: r.contactName ?? null,
+      serviceName: r.serviceName ?? "Unknown Service",
+      customerEmail: r.customerEmail ?? null,
+    }));
   }
 }
 
