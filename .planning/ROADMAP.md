@@ -81,7 +81,7 @@ Full details: [milestones/v3.0-ROADMAP.md](milestones/v3.0-ROADMAP.md)
 **Plans**: 3 plans
 Plans:
 - [x] 25-01-PLAN.md — Schema + Migration (range_order column + shared/schema.ts update)
-- [ ] 25-02-PLAN.md — Backend: storage orderBy, route validation, slot algorithm multi-range loop
+- [x] 25-02-PLAN.md — Backend: storage orderBy, route validation, slot algorithm multi-range loop
 - [ ] 25-03-PLAN.md — Frontend: AvailabilityTab multi-range editor UI
 **UI hint**: yes
 
@@ -155,7 +155,7 @@ Plans:
 | 22. Date overrides for staff availability | standalone | 3/3 | Complete | 2026-05-11 |
 | 23. Multiple durations per service | standalone | 3/3 | Complete | 2026-05-11 |
 | 24. Manual confirmation flow per service | standalone | 3/3 | Complete | 2026-05-11 |
-| 25. Multiple Time Slots Per Day | v4.0 | 1/3 | In Progress|  |
+| 25. Multiple Time Slots Per Day | v4.0 | 2/3 | In Progress|  |
 | 26. Custom Booking Questions | v4.0 | 0/3 | Not started | — |
 | 27. Recurring Bookings — Schema & Cron Foundation | v4.0 | 0/3 | Not started | — |
 | 28. Recurring Bookings — Customer Flow & Notifications | v4.0 | 0/3 | Not started | — |

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Booking Intelligence
 status: executing
-stopped_at: Completed 25-01-PLAN.md
-last_updated: "2026-05-11T10:20:35.103Z"
+stopped_at: Completed 25-02-PLAN.md
+last_updated: "2026-05-11T10:25:35.531Z"
 last_activity: 2026-05-11
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-05-11)
 ## Current Position
 
 Phase: 25 (multiple-time-slots-per-day) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-05-11
 
@@ -78,6 +78,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 20]: Wave 3 key prop applied as precautionary escalation — Post-Wave-2 measurements not yet available; remount ensures CAL-FIX-02 view-switch staleness is addressed
 - [Phase 25-01]: range_order DEFAULT 0 means existing single-range rows remain valid with no data backfill
 - [Phase 25-01]: No UNIQUE constraint on (staff_member_id, day_of_week) confirmed — nothing to drop in migration
+- [Phase 25-multiple-time-slots-per-day]: rangeOrder added to shared/schema.ts in Plan 02 (Plan 01 only committed migration SQL)
+- [Phase 25-multiple-time-slots-per-day]: prefetchedBookings/prefetchedBusyTimes optional in SlotGenOptions — override branch needs no change
 
 ### Roadmap Evolution
 
@@ -93,6 +95,6 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-11T10:20:35.096Z
-Stopped at: Completed 25-01-PLAN.md
+Last session: 2026-05-11T10:25:35.519Z
+Stopped at: Completed 25-02-PLAN.md
 Resume file: None
