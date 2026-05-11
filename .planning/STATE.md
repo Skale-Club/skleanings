@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Calendar Polish
-status: executing
-stopped_at: Completed 21-03-PLAN.md
-last_updated: "2026-05-11T03:00:05.057Z"
+status: verifying
+stopped_at: Completed 21-02-PLAN.md
+last_updated: "2026-05-11T03:02:15.318Z"
 last_activity: 2026-05-11
 progress:
   total_phases: 1
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-05-05)
 
 Phase: 21 (per-service-booking-limits-buffer-time-minimum-notice-time-slot-interval) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-05-11
 
 Progress: [░░░░░░░░░░] 0%
@@ -58,6 +58,9 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 - [Phase 21]: timeSlotInterval is nullable (null = use durationMinutes) to avoid requiring a value on every existing service row
 - [Phase 21]: Booking Rules section uses plain useState toggle (no new shadcn dependency) and timeSlotInterval submits null when blank
+- [Phase 21]: Import BookingLimits/shiftHHMM into availability.ts from staff-availability.ts; no circular dependency
+- [Phase 21]: Limits loaded BEFORE staffId fast-path in getSlotsForServices so fast-path receives populated limits
+- [Phase 21]: getAvailabilityRange (month-view) left unchanged — month-view limits out of scope for phase 21
 
 ### Roadmap Evolution
 
@@ -71,6 +74,6 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-11T03:00:05.055Z
-Stopped at: Completed 21-03-PLAN.md
+Last session: 2026-05-11T03:02:15.315Z
+Stopped at: Completed 21-02-PLAN.md
 Resume file: None
