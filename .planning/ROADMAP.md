@@ -84,6 +84,7 @@ Full details: [milestones/v2.0-ROADMAP.md](milestones/v2.0-ROADMAP.md)
 | 21. Per-service booking limits | standalone | 3/3 | Complete    | 2026-05-11 |
 | 22. Date overrides for staff availability | standalone | 0/3 | Not started | — |
 | 23. Multiple durations per service | standalone | 0/3 | Not started | — |
+| 24. Manual confirmation flow per service | standalone | 0/3 | Not started | — |
 
 ---
 
@@ -132,12 +133,14 @@ Plans:
 ### Phase 24: Manual confirmation flow per service (SEED-030)
 
 **Goal:** Add requiresConfirmation boolean to services table. When true, bookings are created with awaiting_approval status. Admin sees approve/reject buttons. Customer receives "request received, pending confirmation" notification.
-**Requirements**: TBD
+**Requirements**: SEED-030-SCHEMA, SEED-030-BACKEND, SEED-030-UI
 **Depends on:** Phase 21
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 24 to break down)
+- [ ] 24-01-PLAN.md — Wave 1: Schema + Supabase migration (requiresConfirmation boolean on services)
+- [ ] 24-02-PLAN.md — Wave 2: Backend (booking creation status logic + approve/reject endpoints + awaiting_approval notifications)
+- [ ] 24-03-PLAN.md — Wave 3: Admin UI (BookingsSection approve/reject + ServiceForm toggle) + customer-facing awaiting message
 
 ### Phase 25: Multiple time slots per day (SEED-021)
 
