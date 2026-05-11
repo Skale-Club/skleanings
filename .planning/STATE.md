@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v3.0
-milestone_name: Calendar Polish
-status: verifying
-stopped_at: Completed 20-04-PLAN.md
-last_updated: "2026-05-11T09:43:59.409Z"
+milestone: v4.0
+milestone_name: Booking Intelligence
+status: planning
+stopped_at: Roadmap created — Phase 25 not started
+last_updated: "2026-05-11T00:00:00.000Z"
 last_activity: 2026-05-11
 progress:
-  total_phases: 1
-  completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
+  total_phases: 5
+  completed_phases: 0
+  total_plans: 15
+  completed_plans: 0
   percent: 0
 ---
 
@@ -18,16 +18,16 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-05-05)
+See: .planning/PROJECT.md (updated 2026-05-11)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 22 — date-overrides-staff-availability
+**Current focus:** Phase 25 — Multiple Time Slots Per Day (v4.0 first phase)
 
 ## Current Position
 
-Phase: 20
+Phase: 25
 Plan: Not started
-Status: Phase complete — ready for verification
+Status: Roadmap created — ready to plan Phase 25
 Last activity: 2026-05-11
 
 Progress: [░░░░░░░░░░] 0%
@@ -38,6 +38,8 @@ Progress: [░░░░░░░░░░] 0%
 |-----------|--------|-------|---------|
 | v1.0 Marketing Attribution | 10–14 (5 phases) | 15 | 2026-05-05 |
 | v2.0 White Label | 15–19 (5 phases) | 15 | 2026-05-05 |
+| v3.0 Calendar Polish | 20 (1 phase) | 4 | 2026-05-11 |
+| Standalone phases | 21–24 (4 phases) | 12 | 2026-05-11 |
 
 See: .planning/MILESTONES.md
 
@@ -49,6 +51,7 @@ See: .planning/MILESTONES.md
   - Drag-to-reassign with undo toast
   - GCal busy block not draggable
   - Customer per-staff availability badges on step 3
+- **Phase 20 UAT** — 4 CAL-FIX browser checks in `.planning/phases/20/20-HUMAN-UAT.md`
 
 ## Accumulated Context
 
@@ -64,7 +67,6 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 22-date-overrides-staff-availability]: uniqueIndex used for named compound unique index on staffAvailabilityOverrides(staffMemberId, date)
 - [Phase 22-date-overrides-staff-availability]: date column uses Drizzle date() type (YYYY-MM-DD string) for consistency with slot booking flow
 - [Phase 22-date-overrides-staff-availability]: POST override uses delete-then-insert upsert; override with isUnavailable=false and no times falls through to weekly schedule
-- [Phase 22-date-overrides-staff-availability]: _generateSlots extracted as private helper in staff-availability.ts; called from both override and weekly-schedule paths
 - [Phase 22-03]: Added missing Trash2 import from lucide-react alongside Loader2 (plan incorrectly stated it was pre-imported)
 - [Phase 22-03]: DateOverridesTab uses StaffAvailabilityOverride type from @shared/schema — no schema changes needed (type defined in plan 22-01)
 - [Phase 24-manual-confirmation-flow-per-service]: requiresConfirmation boolean added as NOT NULL default false — safe for existing rows with no backfill
@@ -78,15 +80,17 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 ### Roadmap Evolution
 
 - Phase 21 added: Per-service booking limits — buffer time, minimum notice, time-slot interval (SEED-026)
+- v4.0 milestone started: Phases 25–29 planned for Booking Intelligence features
 
 ### Blockers/Concerns
 
 - **MIGRATION PENDING** — `supabase/migrations/20260425000000_add_utm_tracking.sql` requires `POSTGRES_URL_NON_POOLING` (direct connection, port 5432). Get from Supabase Dashboard > Settings > Database.
 - **MIGRATION PENDING** — `supabase/migrations/20260428000000_add_white_label_columns.sql` also pending. Required for Phase 17 admin UI and Phase 18 address-gating features.
 - Phase 19 human UAT items pending browser verification (see above).
+- Phase 20 human UAT items pending browser verification (see above).
 
 ## Session Continuity
 
-Last session: 2026-05-11T09:18:41.589Z
-Stopped at: Completed 20-04-PLAN.md
+Last session: 2026-05-11T00:00:00.000Z
+Stopped at: Roadmap created for v4.0 — Phase 25 not started
 Resume file: None

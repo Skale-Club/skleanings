@@ -52,8 +52,8 @@
 | QUEST-02 | Phase 26 | Not started |
 | QUEST-03 | Phase 26 | Not started |
 | QUEST-04 | Phase 26 | Not started |
-| RECUR-01 | Phase 27 | Not started |
-| RECUR-02 | Phase 28 | Not started |
+| RECUR-01 | Phase 27 + Phase 28 | Not started |
+| RECUR-02 | Phase 27 | Not started |
 | RECUR-03 | Phase 28 | Not started |
 | RECUR-04 | Phase 29 | Not started |
 | RECUR-05 | Phase 29 | Not started |
