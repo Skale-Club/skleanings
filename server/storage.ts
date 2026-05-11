@@ -167,6 +167,7 @@ export interface IStorage {
 
   // Service Durations (Phase 23 SEED-029)
   getServiceDurations(serviceId: number): Promise<ServiceDuration[]>;
+  getServiceDuration(id: number): Promise<ServiceDuration | undefined>; // Phase 30 DUR-05
   createServiceDuration(duration: InsertServiceDuration): Promise<ServiceDuration>;
   updateServiceDuration(id: number, data: Partial<InsertServiceDuration>): Promise<ServiceDuration>;
   deleteServiceDuration(id: number): Promise<void>;
@@ -697,6 +698,11 @@ export class DatabaseStorage implements IStorage {
       .from(serviceDurations)
       .where(eq(serviceDurations.serviceId, serviceId))
       .orderBy(asc(serviceDurations.order), asc(serviceDurations.id));
+  }
+
+  async getServiceDuration(id: number): Promise<ServiceDuration | undefined> {
+    const [row] = await db.select().from(serviceDurations).where(eq(serviceDurations.id, id));
+    return row;
   }
 
   async createServiceDuration(duration: InsertServiceDuration): Promise<ServiceDuration> {
