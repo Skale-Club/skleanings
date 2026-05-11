@@ -109,6 +109,10 @@ import {
   contacts,
   type Contact,
   type InsertContact,
+  recurringBookings,
+  type RecurringBooking,
+  type InsertRecurringBooking,
+  insertRecurringBookingSchema,
 } from "@shared/schema";
 import { eq, and, or, gte, lte, inArray, desc, asc, sql, ne, isNull, like } from "drizzle-orm";
 import { z } from "zod";
@@ -374,6 +378,13 @@ export interface IStorage {
     limit?: number;
     offset?: number;
   }): Promise<NotificationLog[]>;
+
+  // Recurring Bookings (Phase 27 RECUR-01, RECUR-02)
+  createRecurringBooking(data: InsertRecurringBooking): Promise<RecurringBooking>;
+  getRecurringBooking(id: number): Promise<RecurringBooking | undefined>;
+  getRecurringBookings(statusFilter?: string): Promise<RecurringBooking[]>;
+  getActiveRecurringBookingsDueForGeneration(asOfDate: string): Promise<RecurringBooking[]>;
+  updateRecurringBooking(id: number, data: Partial<Pick<RecurringBooking, 'status' | 'nextBookingDate' | 'cancelledAt' | 'pausedAt' | 'updatedAt'>>): Promise<RecurringBooking>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1981,6 +1992,68 @@ export class DatabaseStorage implements IStorage {
 
   async getBookingsByDateRange(from: string, to: string): Promise<Booking[]> {
     return db.select().from(bookings).where(and(gte(bookings.bookingDate, from), lte(bookings.bookingDate, to))).orderBy(asc(bookings.bookingDate));
+  }
+
+  // Recurring Bookings (Phase 27 RECUR-01, RECUR-02)
+
+  async createRecurringBooking(data: InsertRecurringBooking): Promise<RecurringBooking> {
+    const [row] = await db.insert(recurringBookings).values(data).returning();
+    return row;
+  }
+
+  async getRecurringBooking(id: number): Promise<RecurringBooking | undefined> {
+    const [row] = await db
+      .select()
+      .from(recurringBookings)
+      .where(eq(recurringBookings.id, id))
+      .limit(1);
+    return row;
+  }
+
+  async getRecurringBookings(statusFilter?: string): Promise<RecurringBooking[]> {
+    if (statusFilter) {
+      return db
+        .select()
+        .from(recurringBookings)
+        .where(eq(recurringBookings.status, statusFilter))
+        .orderBy(desc(recurringBookings.createdAt));
+    }
+    return db
+      .select()
+      .from(recurringBookings)
+      .orderBy(desc(recurringBookings.createdAt));
+  }
+
+  async getActiveRecurringBookingsDueForGeneration(asOfDate: string): Promise<RecurringBooking[]> {
+    // Returns active subscriptions where next_booking_date <= asOfDate
+    // AND (end_date IS NULL OR end_date > next_booking_date)
+    // asOfDate format: YYYY-MM-DD
+    return db
+      .select()
+      .from(recurringBookings)
+      .where(
+        and(
+          eq(recurringBookings.status, "active"),
+          lte(recurringBookings.nextBookingDate, asOfDate),
+          or(
+            isNull(recurringBookings.endDate),
+            sql`${recurringBookings.endDate} > ${recurringBookings.nextBookingDate}`
+          )
+        )
+      )
+      .orderBy(asc(recurringBookings.nextBookingDate));
+  }
+
+  async updateRecurringBooking(
+    id: number,
+    data: Partial<Pick<RecurringBooking, 'status' | 'nextBookingDate' | 'cancelledAt' | 'pausedAt' | 'updatedAt'>>
+  ): Promise<RecurringBooking> {
+    const [row] = await db
+      .update(recurringBookings)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(recurringBookings.id, id))
+      .returning();
+    return row;
   }
 }
 

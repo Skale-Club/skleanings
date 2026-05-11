@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Calendar Polish
 status: verifying
-stopped_at: Completed 27-01-PLAN.md
-last_updated: "2026-05-11T13:21:40.751Z"
+stopped_at: Completed 27-02-PLAN.md
+last_updated: "2026-05-11T13:29:11.927Z"
 last_activity: 2026-05-11
 progress:
   total_phases: 1
@@ -73,8 +73,9 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 24]: Approve/Reject buttons placed in interactive variant only, visible solely when status === awaiting_approval
 - [Phase 24]: awaiting=true query param used for Confirmation routing — works across page reloads
 - [Phase 24]: requiresConfirmation toggle placed inside Booking Rules collapsible to keep ServiceForm uncluttered
-- [Phase 27]: originBookingId stored as plain integer() in Drizzle (no .references()) to avoid circular reference; SQL migration enforces FK at DB level
-- [Phase 27]: recurringBookings defined before bookings in schema.ts to satisfy Drizzle forward-reference constraint for bookings.recurringBookingId FK
+- [Phase 27]: 5 recurring-booking storage methods added to IStorage + DatabaseStorage: create, get, list(filter), getActiveDue(cron), update
+- [Phase 27]: getActiveRecurringBookingsDueForGeneration uses lte(nextBookingDate, asOfDate) AND (endDate IS NULL OR endDate > nextBookingDate)
+- [Phase 27]: updateRecurringBooking always stamps updatedAt: new Date() on every call
 
 ### Roadmap Evolution
 
@@ -88,6 +89,6 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-11T13:21:35.131Z
-Stopped at: Completed 27-01-PLAN.md
+Last session: 2026-05-11T13:29:06.087Z
+Stopped at: Completed 27-02-PLAN.md
 Resume file: None
