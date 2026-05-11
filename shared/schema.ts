@@ -103,6 +103,7 @@ export const serviceFrequencies = pgTable("service_frequencies", {
   name: text("name").notNull(), // e.g., "Weekly", "Every 15 days"
   discountPercent: numeric("discount_percent", { precision: 5, scale: 2 }).default("0"), // e.g., 15.00 for 15%
   order: integer("order").default(0),
+  intervalDays: integer("interval_days").notNull().default(7), // Phase 28 RECUR-01: days between bookings
 });
 
 // Service duration options (Phase 23 SEED-029)
@@ -115,6 +116,21 @@ export const serviceDurations = pgTable("service_durations", {
   price: numeric("price", { precision: 10, scale: 2 }).notNull(),
   order: integer("order").notNull().default(0),
 });
+
+// Service-specific intake questions shown during customer checkout (Phase 26 QUEST-01)
+export const serviceBookingQuestions = pgTable("service_booking_questions", {
+  id:        serial("id").primaryKey(),
+  serviceId: integer("service_id").references(() => services.id, { onDelete: "cascade" }).notNull(),
+  label:     text("label").notNull(),
+  type:      text("type").notNull().default("text"),  // 'text' | 'textarea' | 'select'
+  options:   jsonb("options").$type<string[]>(),
+  required:  boolean("required").notNull().default(false),
+  order:     integer("order").notNull().default(0),
+});
+
+export const insertServiceBookingQuestionSchema = createInsertSchema(serviceBookingQuestions).omit({ id: true });
+export type ServiceBookingQuestion = typeof serviceBookingQuestions.$inferSelect;
+export type InsertServiceBookingQuestion = z.infer<typeof insertServiceBookingQuestionSchema>;
 
 // Customer contacts — deduplicated across bookings by email (primary) or phone (fallback)
 export const contacts = pgTable("contacts", {
@@ -179,6 +195,42 @@ export type VisitorSession = typeof visitorSessions.$inferSelect;
 export const insertVisitorSessionSchema = createInsertSchema(visitorSessions);
 export type InsertVisitorSession = z.infer<typeof insertVisitorSessionSchema>;
 
+// Recurring subscription records — one row per customer recurring schedule (Phase 27 RECUR-01)
+// Must be defined before bookings because bookings.recurringBookingId references this table.
+export const recurringBookings = pgTable("recurring_bookings", {
+  id: serial("id").primaryKey(),
+  contactId: integer("contact_id").references(() => contacts.id, { onDelete: "set null" }),
+  serviceId: integer("service_id").references(() => services.id, { onDelete: "restrict" }).notNull(),
+  serviceFrequencyId: integer("service_frequency_id").references(() => serviceFrequencies.id, { onDelete: "restrict" }).notNull(),
+  discountPercent: numeric("discount_percent", { precision: 5, scale: 2 }).notNull().default("0"),
+  intervalDays: integer("interval_days").notNull(), // snapshot: 7 | 14 | 30
+  frequencyName: text("frequency_name").notNull(),  // snapshot of serviceFrequencies.name at creation
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date"),
+  nextBookingDate: date("next_booking_date").notNull(),
+  preferredStartTime: text("preferred_start_time").notNull(),
+  preferredStaffMemberId: integer("preferred_staff_member_id").references(() => staffMembers.id, { onDelete: "set null" }),
+  status: text("status").notNull().default("active"), // active | paused | cancelled
+  cancelledAt: timestamp("cancelled_at"),
+  pausedAt: timestamp("paused_at"),
+  // IMPORTANT: Do NOT add .references(() => bookings.id) to originBookingId — this would create
+  // a circular reference in Drizzle (bookings is defined after this table). The SQL migration
+  // enforces the FK constraint at DB level. Use plain integer() only here.
+  originBookingId: integer("origin_booking_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertRecurringBookingSchema = createInsertSchema(recurringBookings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  cancelledAt: true,
+  pausedAt: true,
+});
+export type RecurringBooking = typeof recurringBookings.$inferSelect;
+export type InsertRecurringBooking = z.infer<typeof insertRecurringBookingSchema>;
+
 export const bookings = pgTable("bookings", {
   id: serial("id").primaryKey(),
   customerName: text("customer_name").notNull(),
@@ -209,6 +261,8 @@ export const bookings = pgTable("bookings", {
   contactId: integer("contact_id").references(() => contacts.id, { onDelete: "set null" }),
   // UTM attribution FK (Phase 10 — nullable; populated by analytics hook)
   utmSessionId: uuid("utm_session_id").references(() => visitorSessions.id, { onDelete: "set null" }),
+  // Recurring subscription link — null for one-time bookings, set for cron-generated bookings (Phase 27)
+  recurringBookingId: integer("recurring_booking_id").references(() => recurringBookings.id, { onDelete: "set null" }),
 });
 
 // conversion_events: one row per tracked action (booking_completed, booking_started, chat_initiated).
@@ -412,6 +466,14 @@ export interface PriceBreakdown {
   finalPrice: number;
 }
 
+// Snapshot of one customer answer at booking time (Phase 26 QUEST-04)
+export interface QuestionAnswer {
+  questionId: number;
+  label: string;    // snapshot of question label — survives question deletion
+  type: string;     // snapshot of type
+  answer: string;   // always a string; select stores chosen option text
+}
+
 export const bookingItems = pgTable("booking_items", {
   id: serial("id").primaryKey(),
   bookingId: integer("booking_id").references(() => bookings.id).notNull(),
@@ -427,6 +489,7 @@ export const bookingItems = pgTable("booking_items", {
   selectedFrequency: jsonb("selected_frequency").$type<BookingItemFrequency>(), // Frequency selected
   customerNotes: text("customer_notes"), // Notes for custom_quote
   priceBreakdown: jsonb("price_breakdown").$type<PriceBreakdown>(), // Detailed price calculation
+  questionAnswers: jsonb("question_answers").$type<QuestionAnswer[]>(), // Customer answers to service-specific questions (Phase 26)
 });
 
 // === SCHEMAS ===
@@ -463,6 +526,14 @@ export const cartItemSchema = z.object({
   selectedFrequencyId: z.number().optional(),
   // For custom_quote
   customerNotes: z.string().optional(),
+  // Phase 26: customer answers to service-specific intake questions
+  // CRITICAL: must be in schema or Zod strips it silently before answers reach server
+  questionAnswers: z.array(z.object({
+    questionId: z.number(),
+    label: z.string(),
+    type: z.string(),
+    answer: z.string(),
+  })).optional(),
 });
 
 export type CartItemData = z.infer<typeof cartItemSchema>;
@@ -927,6 +998,7 @@ export const staffAvailability = pgTable("staff_availability", {
   startTime: text("start_time").notNull(), // HH:MM
   endTime: text("end_time").notNull(),     // HH:MM
   isAvailable: boolean("is_available").default(true).notNull(),
+  rangeOrder: integer("range_order").notNull().default(0), // position within day's ranges; 0 = first/only
 });
 
 // Optional Google Calendar OAuth tokens per staff member

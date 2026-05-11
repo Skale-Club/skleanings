@@ -31,7 +31,36 @@ export async function startCronJobs() {
       }
     });
 
-    console.log("Cron jobs scheduled: Blog generation check (hourly, frequency controlled by postsPerDay setting)", "CronService");
+    // Daily at 06:00 UTC: generate recurring bookings for due subscriptions
+    // Production trigger is GitHub Actions (.github/workflows/recurring-bookings-cron.yml)
+    cron.schedule("0 6 * * *", async () => {
+      try {
+        console.log("[CronService] Daily recurring booking generation...", new Date().toISOString());
+        const { runRecurringBookingGeneration } = await import("./recurring-booking-generator");
+        const result = await runRecurringBookingGeneration();
+        console.log(`[CronService] Recurring generation complete:`, result);
+      } catch (error) {
+        console.error("[CronService] Error in recurring booking generation:", error);
+      }
+    });
+
+    // Daily at 06:30 UTC: send 48h reminder emails for upcoming recurring bookings
+    // Production trigger is GitHub Actions (recurring-bookings-cron.yml — send-reminders step)
+    cron.schedule("30 6 * * *", async () => {
+      try {
+        console.log("[CronService] Daily recurring booking reminders...", new Date().toISOString());
+        const { runRecurringBookingReminders } = await import("./recurring-booking-reminder");
+        const result = await runRecurringBookingReminders();
+        console.log(`[CronService] Reminder run complete:`, result);
+      } catch (error) {
+        console.error("[CronService] Error in recurring booking reminders:", error);
+      }
+    });
+
+    console.log(
+      "[CronService] Cron jobs scheduled: Blog generation (hourly), Recurring bookings (daily 06:00 UTC), Recurring reminders (daily 06:30 UTC)",
+      "CronService"
+    );
   } catch (error) {
     console.warn("[CronService] node-cron not available. Blog scheduling requires GitHub Actions or persistent Node environment.", error);
   }

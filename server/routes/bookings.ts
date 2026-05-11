@@ -88,6 +88,7 @@ router.post('/', async (req, res) => {
                     selectedFrequency: calculated.selectedFrequency,
                     customerNotes: cartItem.customerNotes,
                     priceBreakdown: calculated.breakdown,
+                    questionAnswers: cartItem.questionAnswers,
                 });
             }
         }
@@ -133,6 +134,40 @@ router.post('/', async (req, res) => {
         } catch (contactErr) {
             // Non-blocking: contact linking failure never breaks booking creation
             console.error("Contact upsert error:", contactErr);
+        }
+
+        // Phase 28 RECUR-01: create recurring subscription if customer selected a frequency.
+        // Non-fatal: booking succeeds even if subscription creation fails.
+        const rawFrequencyId = validatedData.cartItems?.[0]?.selectedFrequencyId;
+        if (rawFrequencyId) {
+            try {
+                const frequency = await storage.getServiceFrequency(rawFrequencyId);
+                if (!frequency || !frequency.intervalDays) {
+                    console.warn(`[RecurringBooking] Frequency ${rawFrequencyId} missing or has no intervalDays — skipping subscription`);
+                } else {
+                    const { advanceDate } = await import("../lib/date-utils");
+                    const sub = await storage.createRecurringBooking({
+                        contactId: booking.contactId ?? null,
+                        serviceId: frequency.serviceId,
+                        serviceFrequencyId: frequency.id,
+                        discountPercent: frequency.discountPercent ?? "0",
+                        intervalDays: frequency.intervalDays,
+                        frequencyName: frequency.name,
+                        startDate: validatedData.bookingDate,
+                        nextBookingDate: advanceDate(validatedData.bookingDate, frequency.intervalDays),
+                        preferredStartTime: validatedData.startTime,
+                        preferredStaffMemberId: validatedData.staffMemberId ?? null,
+                        originBookingId: booking.id,
+                        status: "active",
+                    });
+                    // Link booking back to subscription
+                    await storage.updateBooking(booking.id, { recurringBookingId: sub.id } as any);
+                    console.log(`[RecurringBooking] Created subscription ${sub.id} for booking ${booking.id} (${frequency.name})`);
+                }
+            } catch (recurringErr) {
+                console.error("[RecurringBooking] Subscription creation error:", recurringErr);
+                // Do not throw — booking is already persisted successfully
+            }
         }
 
         // Attribution wiring — fire-and-forget (EVENTS-04: must never block the booking response)

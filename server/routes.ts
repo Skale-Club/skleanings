@@ -22,6 +22,7 @@ import paymentsRouter from "./routes/payments";
 import analyticsRouter from "./routes/analytics";
 import clientRouter from "./routes/client";
 import notificationLogsRouter from "./routes/notification-logs";
+import recurringBookingsRouter from "./routes/recurring-bookings";
 
 export async function registerRoutes(server: Server, app: Express) {
   // Mount routers
@@ -75,4 +76,7 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // Notification log routes (/api/conversations/:id/notifications + /api/admin/notification-logs)
   app.use("/api", notificationLogsRouter);
+
+  // Recurring bookings routes (/api/recurring-bookings/cron/generate + future customer/admin routes)
+  app.use("/api/recurring-bookings", recurringBookingsRouter);
 }

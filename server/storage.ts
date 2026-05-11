@@ -105,6 +105,10 @@ import {
   contacts,
   type Contact,
   type InsertContact,
+  recurringBookings,
+  type RecurringBooking,
+  type InsertRecurringBooking,
+  insertRecurringBookingSchema,
 } from "@shared/schema";
 import { eq, and, or, gte, lte, inArray, desc, asc, sql, ne, isNull, like } from "drizzle-orm";
 import { z } from "zod";
@@ -151,6 +155,7 @@ export interface IStorage {
 
   // Service Frequencies (for base_plus_addons pricing)
   getServiceFrequencies(serviceId: number): Promise<ServiceFrequency[]>;
+  getServiceFrequency(id: number): Promise<ServiceFrequency | undefined>;
   createServiceFrequency(frequency: InsertServiceFrequency): Promise<ServiceFrequency>;
   updateServiceFrequency(id: number, frequency: Partial<InsertServiceFrequency>): Promise<ServiceFrequency>;
   deleteServiceFrequency(id: number): Promise<void>;
@@ -364,6 +369,13 @@ export interface IStorage {
     limit?: number;
     offset?: number;
   }): Promise<NotificationLog[]>;
+
+  // Recurring Bookings (Phase 27 RECUR-01)
+  createRecurringBooking(data: InsertRecurringBooking): Promise<RecurringBooking>;
+  getRecurringBooking(id: number): Promise<RecurringBooking | undefined>;
+  getRecurringBookings(statusFilter?: string): Promise<RecurringBooking[]>;
+  getActiveRecurringBookingsDueForGeneration(asOfDate: string): Promise<RecurringBooking[]>;
+  updateRecurringBooking(id: number, data: Partial<Pick<RecurringBooking, 'status' | 'nextBookingDate' | 'cancelledAt' | 'pausedAt' | 'updatedAt'>>): Promise<RecurringBooking>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -622,6 +634,15 @@ export class DatabaseStorage implements IStorage {
       .from(serviceFrequencies)
       .where(eq(serviceFrequencies.serviceId, serviceId))
       .orderBy(asc(serviceFrequencies.order), asc(serviceFrequencies.id));
+  }
+
+  async getServiceFrequency(id: number): Promise<ServiceFrequency | undefined> {
+    const [freq] = await db
+      .select()
+      .from(serviceFrequencies)
+      .where(eq(serviceFrequencies.id, id))
+      .limit(1);
+    return freq;
   }
 
   async createServiceFrequency(frequency: InsertServiceFrequency): Promise<ServiceFrequency> {
@@ -1943,6 +1964,63 @@ export class DatabaseStorage implements IStorage {
 
   async getBookingsByDateRange(from: string, to: string): Promise<Booking[]> {
     return db.select().from(bookings).where(and(gte(bookings.bookingDate, from), lte(bookings.bookingDate, to))).orderBy(asc(bookings.bookingDate));
+  }
+
+  // === Recurring Bookings (Phase 27 RECUR-01) ===
+
+  async createRecurringBooking(data: InsertRecurringBooking): Promise<RecurringBooking> {
+    const validated = insertRecurringBookingSchema.parse(data);
+    const [row] = await db.insert(recurringBookings).values(validated).returning();
+    return row;
+  }
+
+  async getRecurringBooking(id: number): Promise<RecurringBooking | undefined> {
+    const [row] = await db
+      .select()
+      .from(recurringBookings)
+      .where(eq(recurringBookings.id, id))
+      .limit(1);
+    return row;
+  }
+
+  async getRecurringBookings(statusFilter?: string): Promise<RecurringBooking[]> {
+    if (statusFilter) {
+      return db
+        .select()
+        .from(recurringBookings)
+        .where(eq(recurringBookings.status, statusFilter))
+        .orderBy(desc(recurringBookings.createdAt));
+    }
+    return db.select().from(recurringBookings).orderBy(desc(recurringBookings.createdAt));
+  }
+
+  async getActiveRecurringBookingsDueForGeneration(asOfDate: string): Promise<RecurringBooking[]> {
+    return db
+      .select()
+      .from(recurringBookings)
+      .where(
+        and(
+          eq(recurringBookings.status, "active"),
+          lte(recurringBookings.nextBookingDate, asOfDate),
+          or(
+            isNull(recurringBookings.endDate),
+            // endDate > nextBookingDate prevents generating into the expired window
+            sql`${recurringBookings.endDate} > ${recurringBookings.nextBookingDate}`
+          )
+        )
+      );
+  }
+
+  async updateRecurringBooking(
+    id: number,
+    data: Partial<Pick<RecurringBooking, 'status' | 'nextBookingDate' | 'cancelledAt' | 'pausedAt' | 'updatedAt'>>
+  ): Promise<RecurringBooking> {
+    const [row] = await db
+      .update(recurringBookings)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(recurringBookings.id, id))
+      .returning();
+    return row;
   }
 }
 
