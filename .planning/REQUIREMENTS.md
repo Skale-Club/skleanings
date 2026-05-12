@@ -19,9 +19,9 @@
 
 ### Emails Transacionais com Marca (SEED-019)
 
-- [ ] **EMAIL-01**: Admin pode configurar API key do Resend, from address e ativar/desativar emails transacionais no painel admin
+- [x] **EMAIL-01**: Admin pode configurar API key do Resend, from address e ativar/desativar emails transacionais no painel admin
 - [ ] **EMAIL-02**: Cliente recebe email de confirmação de booking imediatamente após status confirmado, com detalhes do serviço, data, hora e endereço
-- [ ] **EMAIL-03**: Cliente recebe email de lembrete 24h antes do horário agendado via cron job
+- [x] **EMAIL-03**: Cliente recebe email de lembrete 24h antes do horário agendado via cron job
 - [ ] **EMAIL-04**: Cliente recebe email de cancelamento imediatamente quando booking é cancelado (por cliente ou admin)
 - [ ] **EMAIL-05**: Templates de email usam logo, nome da empresa e cores da marca vindos de companySettings
 

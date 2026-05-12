@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
+milestone: v5.0
+milestone_name: Booking Experience
 status: verifying
-stopped_at: Completed 31-01-PLAN.md
-last_updated: "2026-05-12T17:18:02.308Z"
+stopped_at: Completed 31-03-PLAN.md
+last_updated: "2026-05-12T17:29:39.539Z"
 last_activity: 2026-05-11
 progress:
-  total_phases: 22
-  completed_phases: 20
-  total_plans: 62
-  completed_plans: 63
+  total_phases: 3
+  completed_phases: 2
+  total_plans: 6
+  completed_plans: 6
   percent: 0
 ---
 
@@ -77,6 +77,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 29]: ManageSubscription route uses :token path param (not ?token= query param) to match /api/subscriptions/manage/:token
 - [Phase 31]: Migration numbered 000006 not 000007 — correct sequential next slot after 000005
 - [Phase 31]: sendResendEmail reads DB settings on every call for live config changes without restart
+- [Phase 31]: build24hReminderEmail() added in Plan 03 (not 02) because Plan 02 and 03 run in parallel Wave 2
 
 ### Roadmap Evolution
 
@@ -90,6 +91,6 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-12T17:17:50.124Z
-Stopped at: Completed 31-01-PLAN.md
+Last session: 2026-05-12T17:29:39.533Z
+Stopped at: Completed 31-03-PLAN.md
 Resume file: None

@@ -73,7 +73,7 @@ Full details: [milestones/v4.0-ROADMAP.md](milestones/v4.0-ROADMAP.md)
 ## Phases
 
 - [x] **Phase 30: Multiple Durations per Service** - Customers choose their preferred duration (e.g. 2h / 4h / 8h) when booking; admins configure duration options per service (completed 2026-05-11)
-- [ ] **Phase 31: Branded Transactional Email via Resend** - Customers receive on-brand confirmation, reminder, and cancellation emails; admins configure email credentials in the admin panel
+- [x] **Phase 31: Branded Transactional Email via Resend** - Customers receive on-brand confirmation, reminder, and cancellation emails; admins configure email credentials in the admin panel (completed 2026-05-12)
 - [ ] **Phase 32: Calendar Harmony Retry Queue** - Booking sync to Google Calendar and GoHighLevel uses a durable queue with exponential backoff; admins can monitor and retry failed jobs
 
 ## Phase Details
@@ -107,9 +107,9 @@ Plans:
   5. All email templates display the company logo, name, and brand colors sourced from companySettings
 **Plans**: 3 plans
 Plans:
-- [ ] 31-01-PLAN.md — Schema + migration + storage + Resend module (emailSettings table, sendResendEmail())
-- [ ] 31-02-PLAN.md — Email templates + booking trigger wiring (confirmation + cancellation fire-and-forget)
-- [ ] 31-03-PLAN.md — 24h reminder service + cron + GH Actions workflow + admin EmailTab UI
+- [x] 31-01-PLAN.md — Schema + migration + storage + Resend module (emailSettings table, sendResendEmail())
+- [x] 31-02-PLAN.md — Email templates + booking trigger wiring (confirmation + cancellation fire-and-forget)
+- [x] 31-03-PLAN.md — 24h reminder service + cron + GH Actions workflow + admin EmailTab UI
 **UI hint**: yes
 
 ### Phase 32: Calendar Harmony Retry Queue
@@ -137,7 +137,7 @@ Plans:
 | 20 | v3.0 | 4/4 | Complete | 2026-05-11 |
 | 21–29 | v4.0 | 27/27 | Complete | 2026-05-11 |
 | 30. Multiple Durations per Service | v5.0 | 3/3 | Complete    | 2026-05-11 |
-| 31. Branded Transactional Email via Resend | v5.0 | 0/3 | Not started | - |
+| 31. Branded Transactional Email via Resend | v5.0 | 3/3 | Complete   | 2026-05-12 |
 | 32. Calendar Harmony Retry Queue | v5.0 | 0/TBD | Not started | - |
 
 ---
