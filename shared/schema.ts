@@ -1124,3 +1124,41 @@ export const insertNotificationLogSchema = createInsertSchema(notificationLogs).
 
 export type NotificationLog = typeof notificationLogs.$inferSelect;
 export type InsertNotificationLog = z.infer<typeof insertNotificationLogSchema>;
+
+// === Calendar Sync Queue ===
+
+export const calendarSyncQueue = pgTable("calendar_sync_queue", {
+  id: serial("id").primaryKey(),
+  bookingId: integer("booking_id").references(() => bookings.id, { onDelete: "cascade" }).notNull(),
+  target: text("target").notNull(),       // 'ghl_contact' | 'ghl_appointment' | 'google_calendar'
+  operation: text("operation").notNull(), // 'create' | 'update' | 'cancel'
+  payload: jsonb("payload"),
+  status: text("status").notNull().default("pending"),
+  // 'pending' | 'in_progress' | 'success' | 'failed_retryable' | 'failed_permanent'
+  attempts: integer("attempts").notNull().default(0),
+  lastAttemptAt: timestamp("last_attempt_at"),
+  lastError: text("last_error"),
+  scheduledFor: timestamp("scheduled_for").defaultNow(),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  statusScheduledIdx: index("csq_status_scheduled_idx").on(table.status, table.scheduledFor),
+  bookingTargetIdx: index("csq_booking_target_idx").on(table.bookingId, table.target),
+}));
+
+export type CalendarSyncJob = typeof calendarSyncQueue.$inferSelect;
+export type InsertCalendarSyncJob = typeof calendarSyncQueue.$inferInsert;
+export const insertCalendarSyncJobSchema = createInsertSchema(calendarSyncQueue);
+
+export interface CalendarSyncHealth {
+  target: string;
+  pendingCount: number;
+  failedPermanentCount: number;
+  recentFailures: {
+    id: number;
+    bookingId: number;
+    lastError: string | null;
+    lastAttemptAt: Date | null;
+    attempts: number;
+  }[];
+}
