@@ -320,43 +320,45 @@ router.post('/', async (req, res) => {
             console.error("Booking Notification Error:", error);
         }
 
-        // Phase 31: Confirmation email via Resend
-        try {
-            const emailCfg = await storage.getEmailSettings();
-            if (emailCfg?.enabled && booking.customerEmail) {
-                const [companySettings, bookingItemsList] = await Promise.all([
-                    storage.getCompanySettings(),
-                    storage.getBookingItems(booking.id),
-                ]);
-                const primaryItem = bookingItemsList[0] as any; // Phase 30 fields (durationLabel, durationMinutes) may not be in type
-                const { buildBookingConfirmationEmail } = await import('../lib/email-templates');
-                const { sendResendEmail } = await import('../lib/email-resend');
-                const content = buildBookingConfirmationEmail({
-                    customerName: booking.customerName,
-                    bookingDate: booking.bookingDate,
-                    startTime: booking.startTime,
-                    serviceName: primaryItem?.serviceName ?? 'Cleaning Service',
-                    serviceAddress: booking.customerAddress ?? '',
-                    durationLabel: primaryItem?.durationLabel ?? null,
-                    durationMinutes: (booking as any).totalDurationMinutes ?? (primaryItem?.durationMinutes ?? 60),
-                    companyName: companySettings?.companyName ?? 'Your Cleaning Service',
-                    logoUrl: companySettings?.logoMain ?? '',
-                });
-                void sendResendEmail(
-                    booking.customerEmail,
-                    content.subject,
-                    content.html,
-                    content.text,
-                    booking.id,
-                    'booking_confirmed'
-                ).catch(err => console.error('[Email] Confirmation send error:', err));
-            }
-        } catch (emailErr) {
-            console.error('[Email] Confirmation setup error:', emailErr);
-        }
-
         const latestBooking = await storage.getBooking(booking.id);
         res.status(201).json(latestBooking || booking);
+
+        // Phase 31: Confirmation email via Resend (after response — non-blocking)
+        void (async () => {
+            try {
+                const emailCfg = await storage.getEmailSettings();
+                if (emailCfg?.enabled && booking.customerEmail) {
+                    const [companySettings, bookingItemsList] = await Promise.all([
+                        storage.getCompanySettings(),
+                        storage.getBookingItems(booking.id),
+                    ]);
+                    const primaryItem = bookingItemsList[0] as any;
+                    const { buildBookingConfirmationEmail } = await import('../lib/email-templates');
+                    const { sendResendEmail } = await import('../lib/email-resend');
+                    const content = buildBookingConfirmationEmail({
+                        customerName: booking.customerName,
+                        bookingDate: booking.bookingDate,
+                        startTime: booking.startTime,
+                        serviceName: primaryItem?.serviceName ?? 'Cleaning Service',
+                        serviceAddress: booking.customerAddress ?? '',
+                        durationLabel: primaryItem?.durationLabel ?? null,
+                        durationMinutes: (booking as any).totalDurationMinutes ?? (primaryItem?.durationMinutes ?? 60),
+                        companyName: companySettings?.companyName ?? 'Your Cleaning Service',
+                        logoUrl: companySettings?.logoMain ?? '',
+                    });
+                    await sendResendEmail(
+                        booking.customerEmail,
+                        content.subject,
+                        content.html,
+                        content.text,
+                        booking.id,
+                        'booking_confirmed'
+                    );
+                }
+            } catch (emailErr) {
+                console.error('[Email] Confirmation setup error:', emailErr);
+            }
+        })();
     } catch (err) {
         if (err instanceof z.ZodError) {
             return res.status(400).json({ message: 'Validation error', errors: err.errors });
