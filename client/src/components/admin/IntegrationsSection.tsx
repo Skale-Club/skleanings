@@ -1,15 +1,16 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Bot, CreditCard, Calendar, BarChart2, MessageSquare, Zap, Mail } from 'lucide-react';
+import { Bot, CreditCard, Calendar, BarChart2, MessageSquare, Zap, Mail, RefreshCw } from 'lucide-react';
 import { AITab } from './integrations/AITab';
 import { GHLTab } from './integrations/GHLTab';
 import { StripeTab } from './integrations/StripeTab';
 import { CalendarTab } from './integrations/CalendarTab';
+import { CalendarSyncTab } from './integrations/CalendarSyncTab';
 import { AnalyticsTab } from './integrations/AnalyticsTab';
 import { MessagingTab } from './integrations/MessagingTab';
 import { EmailTab } from './integrations/EmailTab';
 import { useSlugTab } from '@/hooks/use-slug-tab';
 
-const INTEGRATION_TABS = ['ai', 'ghl', 'stripe', 'calendar', 'analytics', 'messaging', 'email'] as const;
+const INTEGRATION_TABS = ['ai', 'ghl', 'stripe', 'calendar', 'calendar-sync', 'analytics', 'messaging', 'email'] as const;
 
 export function IntegrationsSection({ getAccessToken }: { getAccessToken: () => Promise<string | null> }) {
   const [activeTab, setActiveTab] = useSlugTab('/admin/integrations', 'ai', INTEGRATION_TABS);
@@ -35,6 +36,9 @@ export function IntegrationsSection({ getAccessToken }: { getAccessToken: () => 
           <TabsTrigger value="calendar" className="flex items-center gap-1.5">
             <Calendar className="w-3.5 h-3.5" /> Calendar
           </TabsTrigger>
+          <TabsTrigger value="calendar-sync" className="flex items-center gap-1.5">
+            <RefreshCw className="w-3.5 h-3.5" /> Calendar Sync
+          </TabsTrigger>
           <TabsTrigger value="analytics" className="flex items-center gap-1.5">
             <BarChart2 className="w-3.5 h-3.5" /> Analytics
           </TabsTrigger>
@@ -50,6 +54,7 @@ export function IntegrationsSection({ getAccessToken }: { getAccessToken: () => 
         <TabsContent value="ghl" className="mt-6"><GHLTab getAccessToken={getAccessToken} /></TabsContent>
         <TabsContent value="stripe" className="mt-6"><StripeTab getAccessToken={getAccessToken} /></TabsContent>
         <TabsContent value="calendar" className="mt-6"><CalendarTab getAccessToken={getAccessToken} /></TabsContent>
+        <TabsContent value="calendar-sync" className="mt-6"><CalendarSyncTab getAccessToken={getAccessToken} /></TabsContent>
         <TabsContent value="analytics" className="mt-6"><AnalyticsTab getAccessToken={getAccessToken} /></TabsContent>
         <TabsContent value="messaging" className="mt-6"><MessagingTab getAccessToken={getAccessToken} /></TabsContent>
         <TabsContent value="email" className="mt-6"><EmailTab getAccessToken={getAccessToken} /></TabsContent>
