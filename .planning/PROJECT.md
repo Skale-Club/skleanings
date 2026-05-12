@@ -51,6 +51,7 @@ Customers can discover, book, and pay for cleaning services online without calli
 - ✓ QUEST-01–04: Custom booking questions per service (text/textarea/select, required validation, answer snapshot) — Phase 26
 - ✓ RECUR-01–05: Recurring bookings — frequency selector, one-ahead cron generation, 48h email reminders, admin panel, customer self-serve pause/cancel — Phases 27–29
 - ✓ DUR-01–06: Multiple durations per service — admin CRUD, customer duration cards before calendar, slot availability uses selected duration, booking snapshot, recurring instances preserve chosen duration — Phase 30
+- ✓ EMAIL-01–05: Branded transactional email via Resend — emailSettings admin UI, confirmation/24h-reminder/cancellation templates, fire-and-forget triggers, GH Actions cron — Phase 31
 
 ### Active
 
@@ -122,4 +123,4 @@ This document evolves at phase transitions and milestone boundaries.
 - Calendar Harmony — retry queue para GCal + GHL com observabilidade no admin
 
 ---
-*Last updated: 2026-05-11 — Phase 30 complete (Multiple Durations per Service)*
+*Last updated: 2026-05-12 — Phase 31 complete (Branded Transactional Email via Resend)*
