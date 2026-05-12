@@ -116,6 +116,9 @@ import {
   serviceBookingQuestions,
   type ServiceBookingQuestion,
   type InsertServiceBookingQuestion,
+  calendarSyncQueue,
+  type CalendarSyncHealth,
+  type CalendarSyncJob,
 } from "@shared/schema";
 import { eq, and, or, gte, lte, inArray, desc, asc, sql, ne, isNull, like } from "drizzle-orm";
 import { z } from "zod";
@@ -400,6 +403,12 @@ export interface IStorage {
 
   // Phase 29 RECUR-04: admin panel — JOIN contacts + services to avoid N+1 secondary calls
   getRecurringBookingsWithDetails(): Promise<RecurringBookingWithDetails[]>;
+
+  // Calendar Sync Queue (Phase 32)
+  enqueueCalendarSync(bookingId: number, target: string, operation: string, payload?: object): Promise<void>;
+  getCalendarSyncHealth(): Promise<CalendarSyncHealth[]>;
+  retryCalendarSyncJob(jobId: number): Promise<void>;
+  listRecentSyncFailures(target?: string, limit?: number): Promise<CalendarSyncJob[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2143,6 +2152,92 @@ export class DatabaseStorage implements IStorage {
       serviceName: r.serviceName ?? "Unknown Service",
       customerEmail: r.customerEmail ?? null,
     }));
+  }
+
+  // === Calendar Sync Queue (Phase 32) ===
+
+  async enqueueCalendarSync(bookingId: number, target: string, operation: string, payload?: object): Promise<void> {
+    await db.insert(calendarSyncQueue).values({
+      bookingId,
+      target,
+      operation,
+      payload: payload ?? null,
+      status: 'pending',
+    });
+  }
+
+  async getCalendarSyncHealth(): Promise<CalendarSyncHealth[]> {
+    const targets = ['ghl_contact', 'ghl_appointment', 'google_calendar'];
+    const health: CalendarSyncHealth[] = [];
+
+    for (const target of targets) {
+      // Pending count
+      const pendingResult = await db.execute(sql`
+        SELECT COUNT(*)::int AS count
+        FROM calendar_sync_queue
+        WHERE target = ${target} AND status = 'pending'
+      `);
+      const pendingCount = (pendingResult[0] as any)?.count ?? 0;
+
+      // Failed permanent count (last 24h for SYNC-06 banner signal)
+      const failedResult = await db.execute(sql`
+        SELECT COUNT(*)::int AS count
+        FROM calendar_sync_queue
+        WHERE target = ${target}
+          AND status = 'failed_permanent'
+          AND created_at > NOW() - INTERVAL '24 hours'
+      `);
+      const failedPermanentCount = (failedResult[0] as any)?.count ?? 0;
+
+      // Recent failures (last 20 for admin table)
+      const failures = await db.execute(sql`
+        SELECT id, booking_id AS "bookingId", last_error AS "lastError",
+               last_attempt_at AS "lastAttemptAt", attempts
+        FROM calendar_sync_queue
+        WHERE target = ${target} AND status = 'failed_permanent'
+        ORDER BY last_attempt_at DESC NULLS LAST
+        LIMIT 20
+      `);
+
+      health.push({
+        target,
+        pendingCount,
+        failedPermanentCount,
+        recentFailures: Array.from(failures) as CalendarSyncHealth['recentFailures'],
+      });
+    }
+
+    return health;
+  }
+
+  async retryCalendarSyncJob(jobId: number): Promise<void> {
+    await db.execute(sql`
+      UPDATE calendar_sync_queue
+      SET status = 'pending',
+          scheduled_for = NOW(),
+          last_error = NULL
+      WHERE id = ${jobId}
+        AND status IN ('failed_permanent', 'failed_retryable')
+    `);
+  }
+
+  async listRecentSyncFailures(target?: string, limit = 50): Promise<CalendarSyncJob[]> {
+    if (target) {
+      const rows = await db.execute(sql`
+        SELECT * FROM calendar_sync_queue
+        WHERE target = ${target} AND status = 'failed_permanent'
+        ORDER BY last_attempt_at DESC NULLS LAST
+        LIMIT ${limit}
+      `);
+      return Array.from(rows) as CalendarSyncJob[];
+    }
+    const rows = await db.execute(sql`
+      SELECT * FROM calendar_sync_queue
+      WHERE status = 'failed_permanent'
+      ORDER BY last_attempt_at DESC NULLS LAST
+      LIMIT ${limit}
+    `);
+    return Array.from(rows) as CalendarSyncJob[];
   }
 }
 
