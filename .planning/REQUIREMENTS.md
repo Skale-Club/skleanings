@@ -10,8 +10,8 @@
 
 ### Múltiplas Durações por Serviço (SEED-029)
 
-- [ ] **DUR-01**: Admin pode configurar múltiplas durações para um serviço (label, duração em minutos, preço, ordem)
-- [ ] **DUR-02**: Admin pode adicionar, remover e reordenar durações na tela de editar serviço
+- [x] **DUR-01**: Admin pode configurar múltiplas durações para um serviço (label, duração em minutos, preço, ordem)
+- [x] **DUR-02**: Admin pode adicionar, remover e reordenar durações na tela de editar serviço
 - [x] **DUR-03**: Cliente vê cards de seleção de duração (label + tempo + preço) antes do calendário quando o serviço tem durações configuradas
 - [x] **DUR-04**: Slot de disponibilidade calculado usa a duração selecionada pelo cliente, não a duração padrão do serviço
 - [x] **DUR-05**: Duração e label selecionados ficam em snapshot no bookingItem no momento da criação do booking
