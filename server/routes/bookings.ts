@@ -303,6 +303,41 @@ router.post('/', async (req, res) => {
             console.error("Booking Notification Error:", error);
         }
 
+        // Phase 31: Confirmation email via Resend
+        try {
+            const emailCfg = await storage.getEmailSettings();
+            if (emailCfg?.enabled && booking.customerEmail) {
+                const [companySettings, bookingItemsList] = await Promise.all([
+                    storage.getCompanySettings(),
+                    storage.getBookingItems(booking.id),
+                ]);
+                const primaryItem = bookingItemsList[0] as any; // Phase 30 fields (durationLabel, durationMinutes) may not be in type
+                const { buildBookingConfirmationEmail } = await import('../lib/email-templates');
+                const { sendResendEmail } = await import('../lib/email-resend');
+                const content = buildBookingConfirmationEmail({
+                    customerName: booking.customerName,
+                    bookingDate: booking.bookingDate,
+                    startTime: booking.startTime,
+                    serviceName: primaryItem?.serviceName ?? 'Cleaning Service',
+                    serviceAddress: booking.customerAddress ?? '',
+                    durationLabel: primaryItem?.durationLabel ?? null,
+                    durationMinutes: (booking as any).totalDurationMinutes ?? (primaryItem?.durationMinutes ?? 60),
+                    companyName: companySettings?.companyName ?? 'Your Cleaning Service',
+                    logoUrl: companySettings?.logoMain ?? '',
+                });
+                void sendResendEmail(
+                    booking.customerEmail,
+                    content.subject,
+                    content.html,
+                    content.text,
+                    booking.id,
+                    'booking_confirmed'
+                ).catch(err => console.error('[Email] Confirmation send error:', err));
+            }
+        } catch (emailErr) {
+            console.error('[Email] Confirmation setup error:', emailErr);
+        }
+
         const latestBooking = await storage.getBooking(booking.id);
         res.status(201).json(latestBooking || booking);
     } catch (err) {
@@ -336,6 +371,40 @@ router.put('/:id(\\d+)/status', requireAdmin, async (req, res) => {
 
         const booking = await storage.updateBookingStatus(Number(req.params.id), status);
         res.json(booking);
+
+        // Phase 31: Cancellation email via Resend
+        if (status === 'cancelled' && booking?.customerEmail) {
+            try {
+                const emailCfg = await storage.getEmailSettings();
+                if (emailCfg?.enabled) {
+                    const [companySettings, bookingItemsList] = await Promise.all([
+                        storage.getCompanySettings(),
+                        storage.getBookingItems(booking.id),
+                    ]);
+                    const primaryItem = bookingItemsList[0];
+                    const { buildCancellationEmail } = await import('../lib/email-templates');
+                    const { sendResendEmail } = await import('../lib/email-resend');
+                    const content = buildCancellationEmail({
+                        customerName: booking.customerName,
+                        bookingDate: booking.bookingDate,
+                        startTime: booking.startTime,
+                        serviceName: primaryItem?.serviceName ?? 'Cleaning Service',
+                        companyName: companySettings?.companyName ?? 'Your Cleaning Service',
+                        logoUrl: companySettings?.logoMain ?? '',
+                    });
+                    void sendResendEmail(
+                        booking.customerEmail,
+                        content.subject,
+                        content.html,
+                        content.text,
+                        booking.id,
+                        'booking_cancelled'
+                    ).catch(err => console.error('[Email] Cancellation send error:', err));
+                }
+            } catch (emailErr) {
+                console.error('[Email] Cancellation setup error:', emailErr);
+            }
+        }
     } catch (err) {
         res.status(500).json({ message: (err as Error).message });
     }
@@ -365,6 +434,40 @@ router.put('/:id(\\d+)/reject', requireAdmin, async (req, res) => {
         }
         const booking = await storage.getBooking(id);
         res.json(booking);
+
+        // Phase 31: Cancellation email via Resend (reject always = cancelled)
+        if (booking?.customerEmail) {
+            try {
+                const emailCfg = await storage.getEmailSettings();
+                if (emailCfg?.enabled) {
+                    const [companySettings, bookingItemsList] = await Promise.all([
+                        storage.getCompanySettings(),
+                        storage.getBookingItems(id),
+                    ]);
+                    const primaryItem = bookingItemsList[0];
+                    const { buildCancellationEmail } = await import('../lib/email-templates');
+                    const { sendResendEmail } = await import('../lib/email-resend');
+                    const content = buildCancellationEmail({
+                        customerName: booking.customerName,
+                        bookingDate: booking.bookingDate,
+                        startTime: booking.startTime,
+                        serviceName: primaryItem?.serviceName ?? 'Cleaning Service',
+                        companyName: companySettings?.companyName ?? 'Your Cleaning Service',
+                        logoUrl: companySettings?.logoMain ?? '',
+                    });
+                    void sendResendEmail(
+                        booking.customerEmail,
+                        content.subject,
+                        content.html,
+                        content.text,
+                        booking.id,
+                        'booking_cancelled'
+                    ).catch(err => console.error('[Email] Cancellation send error:', err));
+                }
+            } catch (emailErr) {
+                console.error('[Email] Cancellation setup error:', emailErr);
+            }
+        }
     } catch (err) {
         res.status(500).json({ message: (err as Error).message });
     }
