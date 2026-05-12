@@ -57,8 +57,21 @@ export async function startCronJobs() {
       }
     });
 
+    // Daily at 08:00 UTC: send 24h reminder emails for next-day bookings
+    // Production trigger is GitHub Actions (.github/workflows/booking-email-reminders-cron.yml)
+    cron.schedule("0 8 * * *", async () => {
+      try {
+        console.log("[CronService] Daily 24h email reminders...", new Date().toISOString());
+        const { run24hEmailReminders } = await import("./booking-email-reminders");
+        const result = await run24hEmailReminders();
+        console.log(`[CronService] 24h email reminders complete:`, result);
+      } catch (error) {
+        console.error("[CronService] Error in 24h email reminders:", error);
+      }
+    });
+
     console.log(
-      "[CronService] Cron jobs scheduled: Blog generation (hourly), Recurring bookings (daily 06:00 UTC), Recurring reminders (daily 06:30 UTC)",
+      "[CronService] Cron jobs scheduled: Blog generation (hourly), Recurring bookings (daily 06:00 UTC), Recurring reminders (daily 06:30 UTC), Email reminders (daily 08:00 UTC)",
       "CronService"
     );
   } catch (error) {

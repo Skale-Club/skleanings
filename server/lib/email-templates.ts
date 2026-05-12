@@ -93,6 +93,93 @@ ${companyName}`;
 }
 
 // ============================================================
+// Phase 31 EMAIL-03: 24h appointment reminder email
+// ============================================================
+
+export interface Reminder24hEmailData {
+  customerName: string;
+  bookingDate: string;      // YYYY-MM-DD
+  startTime: string;        // HH:MM (24h)
+  serviceName: string;
+  serviceAddress: string;
+  durationLabel: string | null; // e.g. "2 Hours" — null = compute from durationMinutes
+  durationMinutes: number;      // fallback when durationLabel is null
+  companyName: string;
+  logoUrl: string;              // companySettings.logoMain (may be empty string)
+}
+
+/**
+ * Build a 24-hour appointment reminder email for any booking.
+ * Returns subject, plain-text body, and HTML body.
+ */
+export function build24hReminderEmail(data: Reminder24hEmailData): {
+  subject: string;
+  text: string;
+  html: string;
+} {
+  const { customerName, bookingDate, startTime, serviceName, serviceAddress, durationLabel, durationMinutes, companyName, logoUrl } = data;
+  const formattedDate = formatDate(bookingDate);
+  const formattedTime = formatTime12h(startTime);
+
+  // Compute a human-readable duration string
+  const durationStr = durationLabel
+    ? durationLabel
+    : durationMinutes >= 60
+    ? `${Math.floor(durationMinutes / 60)} hour${Math.floor(durationMinutes / 60) !== 1 ? 's' : ''}${durationMinutes % 60 ? ` ${durationMinutes % 60} min` : ''}`
+    : `${durationMinutes} minutes`;
+
+  const subject = `Reminder: Your cleaning appointment is tomorrow — ${serviceName}`;
+
+  const text = `Hi ${customerName},
+
+Just a reminder that your cleaning appointment is scheduled for tomorrow:
+
+  Date:     ${formattedDate}
+  Time:     ${formattedTime}
+  Duration: ${durationStr}
+  Service:  ${serviceName}${serviceAddress ? `\n  Address:  ${serviceAddress}` : ''}
+
+If you need to reschedule or have any questions, please contact us directly.
+
+See you tomorrow!
+${companyName}`;
+
+  const logoHtml = logoUrl
+    ? `<img src="${logoUrl}" alt="${companyName}" style="max-height:48px;max-width:180px;object-fit:contain;margin-bottom:20px;" />`
+    : '';
+
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><style>
+  body { font-family: Inter, Arial, sans-serif; color: #1e293b; margin: 0; padding: 0; }
+  .container { max-width: 520px; margin: 32px auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 12px; }
+  h2 { font-family: Outfit, sans-serif; color: #1C53A3; margin: 0 0 16px; }
+  .detail-row { display: flex; gap: 8px; margin: 8px 0; font-size: 15px; }
+  .label { font-weight: 600; color: #475569; min-width: 80px; }
+  .footer { margin-top: 28px; font-size: 13px; color: #94a3b8; }
+</style></head>
+<body>
+<div class="container">
+  ${logoHtml}
+  <h2>Your Appointment is Tomorrow</h2>
+  <p>Hi ${customerName},</p>
+  <p>Just a reminder that your cleaning is coming up:</p>
+  <div class="detail-row"><span class="label">Date</span><span>${formattedDate}</span></div>
+  <div class="detail-row"><span class="label">Time</span><span>${formattedTime}</span></div>
+  <div class="detail-row"><span class="label">Duration</span><span>${durationStr}</span></div>
+  <div class="detail-row"><span class="label">Service</span><span>${serviceName}</span></div>
+  ${serviceAddress ? `<div class="detail-row"><span class="label">Address</span><span>${serviceAddress}</span></div>` : ''}
+  <p style="margin-top:24px">If you need to reschedule or have any questions, please contact us directly.</p>
+  <p>See you tomorrow!</p>
+  <div class="footer">${companyName}</div>
+</div>
+</body>
+</html>`;
+
+  return { subject, text, html };
+}
+
+// ============================================================
 // Phase 29 RECUR-05: Self-serve subscription management email
 // ============================================================
 
