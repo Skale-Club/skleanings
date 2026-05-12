@@ -16,6 +16,7 @@ import {
   chatIntegrations,
   twilioSettings,
   telegramSettings,
+  emailSettings,
   conversations,
   conversationMessages,
   companySettings,
@@ -64,6 +65,8 @@ import {
   type InsertChatIntegrations,
   type InsertTwilioSettings,
   type InsertTelegramSettings,
+  type EmailSettings,
+  type InsertEmailSettings,
   type InsertConversation,
   type InsertConversationMessage,
   type InsertFaq,
@@ -275,6 +278,10 @@ export interface IStorage {
   saveTwilioSettings(settings: InsertTwilioSettings): Promise<TwilioSettings>;
   getTelegramSettings(): Promise<TelegramSettings | undefined>;
   saveTelegramSettings(settings: InsertTelegramSettings): Promise<TelegramSettings>;
+
+  // Email (Resend) Integration
+  getEmailSettings(): Promise<EmailSettings | undefined>;
+  saveEmailSettings(settings: InsertEmailSettings): Promise<EmailSettings>;
   updateConversation(id: string, updates: Partial<Conversation>): Promise<Conversation | undefined>;
   deleteConversation(id: string): Promise<void>;
   createConversation(conversation: InsertConversation): Promise<Conversation>;
@@ -1403,6 +1410,25 @@ export class DatabaseStorage implements IStorage {
     }
 
     const [created] = await db.insert(telegramSettings).values(settings).returning();
+    return created;
+  }
+
+  async getEmailSettings(): Promise<EmailSettings | undefined> {
+    const [settings] = await db.select().from(emailSettings).limit(1);
+    return settings;
+  }
+
+  async saveEmailSettings(settings: InsertEmailSettings): Promise<EmailSettings> {
+    const existing = await this.getEmailSettings();
+    if (existing) {
+      const [updated] = await db
+        .update(emailSettings)
+        .set({ ...settings, updatedAt: new Date() })
+        .where(eq(emailSettings.id, existing.id))
+        .returning();
+      return updated;
+    }
+    const [created] = await db.insert(emailSettings).values(settings).returning();
     return created;
   }
 
