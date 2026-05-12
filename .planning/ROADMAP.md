@@ -123,7 +123,11 @@ Plans:
   4. Admin can trigger a manual retry for failed jobs on a specific booking from the admin panel
   5. A banner appears in admin when 10 or more consecutive failures are detected for a target, prompting reconnection
   6. A GitHub Actions workflow fires the sync worker every 5 minutes, replacing node-cron (which is a no-op on Vercel serverless)
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 32-01-PLAN.md — Schema + migration + IStorage methods (calendarSyncQueue table, enqueueCalendarSync, getCalendarSyncHealth, retryCalendarSyncJob)
+- [ ] 32-02-PLAN.md — Worker + routes + bookings rewire + GH Actions (runCalendarSyncWorker, cron/run endpoint, replace syncBookingToGhl)
+- [ ] 32-03-PLAN.md — Admin UI: CalendarSyncTab with health panel, failure table, retry button, and banner
 **UI hint**: yes
 
 ---
@@ -138,7 +142,7 @@ Plans:
 | 21–29 | v4.0 | 27/27 | Complete | 2026-05-11 |
 | 30. Multiple Durations per Service | v5.0 | 3/3 | Complete    | 2026-05-11 |
 | 31. Branded Transactional Email via Resend | v5.0 | 3/3 | Complete    | 2026-05-12 |
-| 32. Calendar Harmony Retry Queue | v5.0 | 0/TBD | Not started | - |
+| 32. Calendar Harmony Retry Queue | v5.0 | 0/3 | Not started | - |
 
 ---
 
