@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v5.0
-milestone_name: Booking Experience
+milestone: v1.0
+milestone_name: milestone
 status: verifying
-stopped_at: Completed 30-03-PLAN.md
-last_updated: "2026-05-11T22:33:32.743Z"
+stopped_at: Completed 31-01-PLAN.md
+last_updated: "2026-05-12T17:18:02.308Z"
 last_activity: 2026-05-11
 progress:
-  total_phases: 3
-  completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
+  total_phases: 22
+  completed_phases: 20
+  total_plans: 62
+  completed_plans: 63
   percent: 0
 ---
 
@@ -18,14 +18,14 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-05-11)
+See: .planning/PROJECT.md (updated 2026-05-05)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 30 — Multiple Durations per Service
+**Current focus:** Phase 22 — date-overrides-staff-availability
 
 ## Current Position
 
-Phase: 31
+Phase: 29
 Plan: Not started
 Status: Phase complete — ready for verification
 Last activity: 2026-05-11
@@ -38,10 +38,17 @@ Progress: [░░░░░░░░░░] 0%
 |-----------|--------|-------|---------|
 | v1.0 Marketing Attribution | 10–14 (5 phases) | 15 | 2026-05-05 |
 | v2.0 White Label | 15–19 (5 phases) | 15 | 2026-05-05 |
-| v3.0 Calendar Polish | 20 (1 phase) | 4 | 2026-05-11 |
-| v4.0 Booking Intelligence | 21–29 (9 phases) | 27 | 2026-05-11 |
 
 See: .planning/MILESTONES.md
+
+## Pending Items
+
+- **Phase 19 UAT** — 5 human browser checks in `.planning/phases/19-receptionist-booking-flow-multi-staff-view/19-HUMAN-UAT.md`
+  - By Staff column layout
+  - Quick Book 30-second walk-in flow
+  - Drag-to-reassign with undo toast
+  - GCal busy block not draggable
+  - Customer per-staff availability badges on step 3
 
 ## Accumulated Context
 
@@ -49,31 +56,40 @@ See: .planning/MILESTONES.md
 
 All milestone decisions logged in PROJECT.md Key Decisions table.
 
-Recent decisions affecting current work:
+- [Phase 21]: timeSlotInterval is nullable (null = use durationMinutes) to avoid requiring a value on every existing service row
+- [Phase 21]: Booking Rules section uses plain useState toggle (no new shadcn dependency) and timeSlotInterval submits null when blank
+- [Phase 21]: Import BookingLimits/shiftHHMM into availability.ts from staff-availability.ts; no circular dependency
+- [Phase 21]: Limits loaded BEFORE staffId fast-path in getSlotsForServices so fast-path receives populated limits
+- [Phase 21]: getAvailabilityRange (month-view) left unchanged — month-view limits out of scope for phase 21
+- [Phase 22-date-overrides-staff-availability]: uniqueIndex used for named compound unique index on staffAvailabilityOverrides(staffMemberId, date)
+- [Phase 22-date-overrides-staff-availability]: date column uses Drizzle date() type (YYYY-MM-DD string) for consistency with slot booking flow
+- [Phase 22-date-overrides-staff-availability]: POST override uses delete-then-insert upsert; override with isUnavailable=false and no times falls through to weekly schedule
+- [Phase 22-date-overrides-staff-availability]: _generateSlots extracted as private helper in staff-availability.ts; called from both override and weekly-schedule paths
+- [Phase 22-03]: Added missing Trash2 import from lucide-react alongside Loader2 (plan incorrectly stated it was pre-imported)
+- [Phase 22-03]: DateOverridesTab uses StaffAvailabilityOverride type from @shared/schema — no schema changes needed (type defined in plan 22-01)
+- [Phase 24-manual-confirmation-flow-per-service]: requiresConfirmation boolean added as NOT NULL default false — safe for existing rows with no backfill
+- [Phase 24-manual-confirmation-flow-per-service]: status passed to createBooking via as-any type assertion — Zod omits status by design but DB default is overridable
+- [Phase 24-manual-confirmation-flow-per-service]: rejection reason logged server-side only — no notes column in bookings table; Plan 03 may add persistence
+- [Phase 24]: Approve/Reject buttons placed in interactive variant only, visible solely when status === awaiting_approval
+- [Phase 24]: awaiting=true query param used for Confirmation routing — works across page reloads
+- [Phase 24]: requiresConfirmation toggle placed inside Booking Rules collapsible to keep ServiceForm uncluttered
+- [Phase 29]: RecurringSubscriptionsPanel uses authenticatedRequest(method, url, token_string) — must call getAccessToken() before each request
+- [Phase 29]: ManageSubscription route uses :token path param (not ?token= query param) to match /api/subscriptions/manage/:token
+- [Phase 31]: Migration numbered 000006 not 000007 — correct sequential next slot after 000005
+- [Phase 31]: sendResendEmail reads DB settings on every call for live config changes without restart
 
-- [Research]: Do NOT use drizzle-orm query builder .for("update", { skipLocked: true }) — known bug #3554; use raw db.execute with FOR UPDATE SKIP LOCKED instead
-- [Research]: Do NOT install @react-email/components — deprecated since React Email v6; all components are now in react-email package directly
-- [Research]: Do NOT remove nodemailer — still powers v4.0 recurring subscription reminders; Resend is a parallel addition in server/lib/email-resend.ts
-- [Research]: react-email v6 peer dep conflict with React 18 — use --legacy-peer-deps; do not upgrade to React 19
-- [Research]: CartContext.totalDuration must use selected duration, not catalog default — override item.durationMinutes at selection time
-- [Research]: serviceDurations migration status uncertain — Phase 30 plan must begin with supabase db status check before implementation
-- [Phase 30-multiple-durations-per-service]: recurringBookings.durationMinutes is nullable (null = use catalog default) — safe fallback for pre-Phase-30 subscription rows
-- [Phase 30]: questionAnswers omitted from CartContext getCartItemsForBooking — CartItem type does not carry the field; server route already forwards it directly from cartItem
-- [Phase 30]: chosenDurationMinutes resolved from bookingItemsData[0].durationMinutes; sub.durationMinutes ?? service.durationMinutes in generator for backward-compat fallback
+### Roadmap Evolution
 
-### Pending Todos
-
-None yet.
+- Phase 21 added: Per-service booking limits — buffer time, minimum notice, time-slot interval (SEED-026)
 
 ### Blockers/Concerns
 
-- **MIGRATION STATUS UNKNOWN** — serviceDurations schema exists in shared/schema.ts but Supabase migration may not be applied. Phase 30 plan must verify with `supabase db status` before writing any implementation code.
-- **Phase 19 UAT pending** — 5 human browser checks in `.planning/phases/19-receptionist-booking-flow-multi-staff-view/19-HUMAN-UAT.md` (By Staff layout, QuickBook, drag-to-reassign, GCal busy guard, customer badges).
-- **Phase 31 DNS pre-flight** — Resend domain DNS records (DKIM CNAME, SPF TXT) need 72-hour propagation window before go-live. Must be in Phase 31 pre-flight checklist.
-- **Phase 32 GH Actions secret** — INTERNAL_CRON_SECRET must be added to both Vercel and GitHub Actions secrets before Phase 32 deployment. Must be in Phase 32 pre-flight checklist.
+- **MIGRATION PENDING** — `supabase/migrations/20260425000000_add_utm_tracking.sql` requires `POSTGRES_URL_NON_POOLING` (direct connection, port 5432). Get from Supabase Dashboard > Settings > Database.
+- **MIGRATION PENDING** — `supabase/migrations/20260428000000_add_white_label_columns.sql` also pending. Required for Phase 17 admin UI and Phase 18 address-gating features.
+- Phase 19 human UAT items pending browser verification (see above).
 
 ## Session Continuity
 
-Last session: 2026-05-11T22:28:52.973Z
-Stopped at: Completed 30-03-PLAN.md
+Last session: 2026-05-12T17:17:50.124Z
+Stopped at: Completed 31-01-PLAN.md
 Resume file: None
