@@ -74,7 +74,7 @@ Full details: [milestones/v4.0-ROADMAP.md](milestones/v4.0-ROADMAP.md)
 
 - [x] **Phase 30: Multiple Durations per Service** - Customers choose their preferred duration (e.g. 2h / 4h / 8h) when booking; admins configure duration options per service (completed 2026-05-11)
 - [x] **Phase 31: Branded Transactional Email via Resend** - Customers receive on-brand confirmation, reminder, and cancellation emails; admins configure email credentials in the admin panel (completed 2026-05-12)
-- [ ] **Phase 32: Calendar Harmony Retry Queue** - Booking sync to Google Calendar and GoHighLevel uses a durable queue with exponential backoff; admins can monitor and retry failed jobs
+- [x] **Phase 32: Calendar Harmony Retry Queue** - Booking sync to Google Calendar and GoHighLevel uses a durable queue with exponential backoff; admins can monitor and retry failed jobs (completed 2026-05-12)
 
 ## Phase Details
 
@@ -126,8 +126,8 @@ Plans:
 **Plans**: 3 plans
 Plans:
 - [x] 32-01-PLAN.md — Schema + migration + IStorage methods (calendarSyncQueue table, enqueueCalendarSync, getCalendarSyncHealth, retryCalendarSyncJob)
-- [ ] 32-02-PLAN.md — Worker + routes + bookings rewire + GH Actions (runCalendarSyncWorker, cron/run endpoint, replace syncBookingToGhl)
-- [ ] 32-03-PLAN.md — Admin UI: CalendarSyncTab with health panel, failure table, retry button, and banner
+- [x] 32-02-PLAN.md — Worker + routes + bookings rewire + GH Actions (runCalendarSyncWorker, cron/run endpoint, replace syncBookingToGhl)
+- [x] 32-03-PLAN.md — Admin UI: CalendarSyncTab with health panel, failure table, retry button, and banner
 **UI hint**: yes
 
 ---
@@ -142,7 +142,7 @@ Plans:
 | 21–29 | v4.0 | 27/27 | Complete | 2026-05-11 |
 | 30. Multiple Durations per Service | v5.0 | 3/3 | Complete    | 2026-05-11 |
 | 31. Branded Transactional Email via Resend | v5.0 | 3/3 | Complete    | 2026-05-12 |
-| 32. Calendar Harmony Retry Queue | v5.0 | 1/3 | In Progress|  |
+| 32. Calendar Harmony Retry Queue | v5.0 | 3/3 | Complete   | 2026-05-12 |
 
 ---
 

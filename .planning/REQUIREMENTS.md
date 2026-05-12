@@ -30,9 +30,9 @@
 - [x] **SYNC-01**: Criação, atualização e cancelamento de booking enfileiram jobs de sync para Google Calendar e GoHighLevel em vez de chamar as APIs diretamente
 - [x] **SYNC-02**: Worker processa a fila com SELECT FOR UPDATE SKIP LOCKED e backoff exponencial (1min → 5min → 30min → 2h → 24h → failed_permanent)
 - [x] **SYNC-03**: Jobs são processados em transação única (sem orphans in_progress) com stale-row reaper para rows presas > 10min
-- [ ] **SYNC-04**: Admin vê painel de observabilidade com contagem de jobs pending/failed por target (GCal, GHL) e tabela de falhas recentes com mensagem de erro
-- [ ] **SYNC-05**: Admin pode acionar retry manual de jobs falhos por booking individual
-- [ ] **SYNC-06**: Sistema detecta 10+ falhas consecutivas do mesmo target e exibe banner "Reconectar [GCal/GHL]" no admin
+- [x] **SYNC-04**: Admin vê painel de observabilidade com contagem de jobs pending/failed por target (GCal, GHL) e tabela de falhas recentes com mensagem de erro
+- [x] **SYNC-05**: Admin pode acionar retry manual de jobs falhos por booking individual
+- [x] **SYNC-06**: Sistema detecta 10+ falhas consecutivas do mesmo target e exibe banner "Reconectar [GCal/GHL]" no admin
 - [ ] **SYNC-07**: GitHub Actions workflow dispara o worker a cada 5 minutos (substitui node-cron — incompatível com Vercel serverless)
 
 ---
