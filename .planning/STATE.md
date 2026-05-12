@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v4.0
-milestone_name: Booking Intelligence
+milestone: v1.0
+milestone_name: milestone
 status: verifying
-stopped_at: Completed 29-03-PLAN.md
-last_updated: "2026-05-11T17:17:38.134Z"
+stopped_at: Completed 31-02-PLAN.md
+last_updated: "2026-05-12T17:29:36.126Z"
 last_activity: 2026-05-11
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 15
-  completed_plans: 15
+  total_phases: 21
+  completed_phases: 20
+  total_plans: 62
+  completed_plans: 62
   percent: 0
 ---
 
@@ -75,6 +75,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 24]: requiresConfirmation toggle placed inside Booking Rules collapsible to keep ServiceForm uncluttered
 - [Phase 29]: RecurringSubscriptionsPanel uses authenticatedRequest(method, url, token_string) — must call getAccessToken() before each request
 - [Phase 29]: ManageSubscription route uses :token path param (not ?token= query param) to match /api/subscriptions/manage/:token
+- [Phase 31]: primaryItem cast to any to access Phase 30 durationLabel/durationMinutes fields not yet in BookingItem type
 
 ### Roadmap Evolution
 
@@ -88,6 +89,6 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-11T16:50:04.394Z
-Stopped at: Completed 29-03-PLAN.md
+Last session: 2026-05-12T17:29:31.560Z
+Stopped at: Completed 31-02-PLAN.md
 Resume file: None
