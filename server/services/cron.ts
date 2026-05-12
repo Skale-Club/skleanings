@@ -70,8 +70,19 @@ export async function startCronJobs() {
       }
     });
 
+    // Every minute (local dev): run calendar sync worker
+    // Production trigger is GitHub Actions (.github/workflows/calendar-sync-cron.yml)
+    cron.schedule("* * * * *", async () => {
+      try {
+        const { runCalendarSyncWorker } = await import("./calendar-sync-worker");
+        await runCalendarSyncWorker();
+      } catch (error) {
+        console.error("[CronService] Calendar sync worker error:", error);
+      }
+    });
+
     console.log(
-      "[CronService] Cron jobs scheduled: Blog generation (hourly), Recurring bookings (daily 06:00 UTC), Recurring reminders (daily 06:30 UTC), Email reminders (daily 08:00 UTC)",
+      "[CronService] Cron jobs scheduled: Blog generation (hourly), Recurring bookings (daily 06:00 UTC), Recurring reminders (daily 06:30 UTC), Email reminders (daily 08:00 UTC), Calendar sync (every minute)",
       "CronService"
     );
   } catch (error) {

@@ -8,7 +8,6 @@ import { insertBookingSchema, insertBookingSchemaBase } from "@shared/schema";
 import { checkAvailability } from "../lib/availability";
 import { canCreateBooking, recordBookingCreation } from "../lib/rate-limit";
 import { acquireTimeSlotLock, releaseTimeSlotLock } from "../lib/time-slot-lock";
-import { syncBookingToGhl } from "../lib/booking-ghl-sync";
 import { sendBookingNotification, sendAwaitingApprovalNotification } from "../integrations/twilio";
 import { sendBookingNotification as sendTelegramBookingNotification, sendAwaitingApprovalNotification as sendTelegramAwaitingApprovalNotification } from "../integrations/telegram";
 import { calculateCartItemPrice } from "../lib/pricing";
@@ -239,11 +238,12 @@ router.post('/', async (req, res) => {
             console.error("Conversion event error:", convErr);
         }
 
-        // Sync to GHL if enabled (non-blocking for booking creation)
-        const ghlSync = await syncBookingToGhl(booking);
-        if (ghlSync.attempted && !ghlSync.synced) {
-            console.error("GHL Sync Error:", ghlSync.reason || "Unknown error");
-        }
+        // Phase 32: Enqueue sync jobs for GHL + GCal (durable retry queue)
+        void Promise.all([
+          storage.enqueueCalendarSync(booking.id, 'ghl_contact', 'create'),
+          storage.enqueueCalendarSync(booking.id, 'ghl_appointment', 'create'),
+          storage.enqueueCalendarSync(booking.id, 'google_calendar', 'create'),
+        ]).catch(err => console.error('[CalendarSync] Enqueue error on create:', err));
 
         // Send booking notifications (non-blocking)
         try {
@@ -423,6 +423,15 @@ router.put('/:id(\\d+)/status', requireAdmin, async (req, res) => {
             } catch (emailErr) {
                 console.error('[Email] Cancellation setup error:', emailErr);
             }
+        }
+
+        // Phase 32: Enqueue cancel sync jobs
+        if (status === 'cancelled' && booking) {
+          void Promise.all([
+            storage.enqueueCalendarSync(booking.id, 'ghl_contact', 'cancel'),
+            storage.enqueueCalendarSync(booking.id, 'ghl_appointment', 'cancel'),
+            storage.enqueueCalendarSync(booking.id, 'google_calendar', 'cancel'),
+          ]).catch(err => console.error('[CalendarSync] Enqueue error on cancel:', err));
         }
     } catch (err) {
         res.status(500).json({ message: (err as Error).message });

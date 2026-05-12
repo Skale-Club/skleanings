@@ -23,6 +23,7 @@ import analyticsRouter from "./routes/analytics";
 import clientRouter from "./routes/client";
 import notificationLogsRouter from "./routes/notification-logs";
 import recurringBookingsRouter, { adminRecurringRouter, publicRecurringRouter } from "./routes/recurring-bookings";
+import { calendarSyncRouter } from "./routes/calendar-sync";
 
 export async function registerRoutes(server: Server, app: Express) {
   // Mount routers
@@ -76,6 +77,9 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // Notification log routes (/api/conversations/:id/notifications + /api/admin/notification-logs)
   app.use("/api", notificationLogsRouter);
+
+  // Calendar sync routes (cron/run, health, retry) — Phase 32
+  app.use("/api/integrations/calendar-sync", calendarSyncRouter);
 
   // Recurring bookings routes (/api/recurring-bookings/cron/generate + future customer/admin routes)
   app.use("/api/recurring-bookings", recurringBookingsRouter);
