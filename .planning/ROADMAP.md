@@ -137,7 +137,7 @@ Plans:
 | 20 | v3.0 | 4/4 | Complete | 2026-05-11 |
 | 21–29 | v4.0 | 27/27 | Complete | 2026-05-11 |
 | 30. Multiple Durations per Service | v5.0 | 3/3 | Complete    | 2026-05-11 |
-| 31. Branded Transactional Email via Resend | v5.0 | 3/3 | Complete   | 2026-05-12 |
+| 31. Branded Transactional Email via Resend | v5.0 | 3/3 | Complete    | 2026-05-12 |
 | 32. Calendar Harmony Retry Queue | v5.0 | 0/TBD | Not started | - |
 
 ---
