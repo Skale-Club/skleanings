@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Booking Experience
-status: verifying
-stopped_at: Completed 31-03-PLAN.md
-last_updated: "2026-05-12T18:56:05.899Z"
+status: executing
+stopped_at: Completed 32-01-PLAN.md
+last_updated: "2026-05-12T22:58:00.981Z"
 last_activity: 2026-05-12
 progress:
   total_phases: 3
   completed_phases: 2
-  total_plans: 6
-  completed_plans: 6
+  total_plans: 9
+  completed_plans: 7
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-05)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 22 — date-overrides-staff-availability
+**Current focus:** Phase 32 — Calendar Harmony Retry Queue
 
 ## Current Position
 
-Phase: 32
-Plan: Not started
-Status: Phase complete — ready for verification
+Phase: 32 (Calendar Harmony Retry Queue) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
 Last activity: 2026-05-12
 
 Progress: [░░░░░░░░░░] 0%
@@ -78,6 +78,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 31]: Migration numbered 000006 not 000007 — correct sequential next slot after 000005
 - [Phase 31]: sendResendEmail reads DB settings on every call for live config changes without restart
 - [Phase 31]: build24hReminderEmail() added in Plan 03 (not 02) because Plan 02 and 03 run in parallel Wave 2
+- [Phase 32-calendar-harmony-retry-queue]: db.execute() returns RowList directly — use Array.from(result) not result.rows for raw SQL results in storage.ts
+- [Phase 32-calendar-harmony-retry-queue]: Migration applied via supabase db push (Supabase CLI), NOT drizzle-kit push — calendar_sync_queue table pending user action
 
 ### Roadmap Evolution
 
@@ -91,6 +93,6 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-12T17:29:39.533Z
-Stopped at: Completed 31-03-PLAN.md
+Last session: 2026-05-12T22:58:00.957Z
+Stopped at: Completed 32-01-PLAN.md
 Resume file: None
