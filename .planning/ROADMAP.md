@@ -105,7 +105,11 @@ Plans:
   3. Customer receives a reminder email approximately 24 hours before their scheduled appointment via cron job
   4. Customer receives a cancellation email immediately when their booking is cancelled by either party
   5. All email templates display the company logo, name, and brand colors sourced from companySettings
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 31-01-PLAN.md — Schema + migration + storage + Resend module (emailSettings table, sendResendEmail())
+- [ ] 31-02-PLAN.md — Email templates + booking trigger wiring (confirmation + cancellation fire-and-forget)
+- [ ] 31-03-PLAN.md — 24h reminder service + cron + GH Actions workflow + admin EmailTab UI
 **UI hint**: yes
 
 ### Phase 32: Calendar Harmony Retry Queue
@@ -133,7 +137,7 @@ Plans:
 | 20 | v3.0 | 4/4 | Complete | 2026-05-11 |
 | 21–29 | v4.0 | 27/27 | Complete | 2026-05-11 |
 | 30. Multiple Durations per Service | v5.0 | 3/3 | Complete    | 2026-05-11 |
-| 31. Branded Transactional Email via Resend | v5.0 | 0/TBD | Not started | - |
+| 31. Branded Transactional Email via Resend | v5.0 | 0/3 | Not started | - |
 | 32. Calendar Harmony Retry Queue | v5.0 | 0/TBD | Not started | - |
 
 ---
