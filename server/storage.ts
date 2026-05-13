@@ -423,26 +423,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUsers(): Promise<User[]> {
-    return await db.select().from(users);
+    return await db.select().from(users).where(eq(users.tenantId, this.tenantId));
   }
   async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
+    const [user] = await db.select().from(users).where(and(eq(users.tenantId, this.tenantId), eq(users.id, id)));
     return user;
   }
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
+    const [user] = await db.select().from(users).where(and(eq(users.tenantId, this.tenantId), eq(users.email, email)));
     return user;
   }
   async createUser(user: UpsertUser): Promise<User> {
-    const [newUser] = await db.insert(users).values(user).returning();
+    const [newUser] = await db.insert(users).values({ ...user, tenantId: this.tenantId }).returning();
     return newUser;
   }
   async updateUser(id: string, user: Partial<UpsertUser>): Promise<User> {
-    const [updated] = await db.update(users).set({ ...user, updatedAt: new Date() }).where(eq(users.id, id)).returning();
+    const [updated] = await db.update(users).set({ ...user, updatedAt: new Date() }).where(and(eq(users.tenantId, this.tenantId), eq(users.id, id))).returning();
     return updated;
   }
   async deleteUser(id: string): Promise<void> {
-    await db.delete(users).where(eq(users.id, id));
+    await db.delete(users).where(and(eq(users.tenantId, this.tenantId), eq(users.id, id)));
   }
 
   private chatSchemaEnsured = false;
@@ -546,16 +546,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCategories(): Promise<Category[]> {
-    return await db.select().from(categories).orderBy(categories.order);
+    return await db.select().from(categories).where(eq(categories.tenantId, this.tenantId)).orderBy(categories.order);
   }
 
   async getCategoryBySlug(slug: string): Promise<Category | undefined> {
-    const [category] = await db.select().from(categories).where(eq(categories.slug, slug));
+    const [category] = await db.select().from(categories).where(and(eq(categories.tenantId, this.tenantId), eq(categories.slug, slug)));
     return category;
   }
 
   async getServices(categoryId?: number, subcategoryId?: number, includeHidden: boolean = false, showOnLanding?: boolean): Promise<Service[]> {
-    const baseConditions = [eq(services.isArchived, false)];
+    const baseConditions = [
+      eq(services.tenantId, this.tenantId),
+      eq(services.isArchived, false),
+    ];
     if (!includeHidden) {
       baseConditions.push(eq(services.isHidden, false));
     }
@@ -586,41 +589,42 @@ export class DatabaseStorage implements IStorage {
 
   async getSubcategories(categoryId?: number): Promise<Subcategory[]> {
     if (categoryId) {
-      return await db.select().from(subcategories).where(eq(subcategories.categoryId, categoryId));
+      return await db.select().from(subcategories).where(and(eq(subcategories.tenantId, this.tenantId), eq(subcategories.categoryId, categoryId)));
     }
-    return await db.select().from(subcategories);
+    return await db.select().from(subcategories).where(eq(subcategories.tenantId, this.tenantId));
   }
 
   async createSubcategory(subcategory: InsertSubcategory): Promise<Subcategory> {
-    const [newSubcategory] = await db.insert(subcategories).values(subcategory).returning();
+    const [newSubcategory] = await db.insert(subcategories).values({ ...subcategory, tenantId: this.tenantId }).returning();
     return newSubcategory;
   }
 
   async updateSubcategory(id: number, subcategory: Partial<InsertSubcategory>): Promise<Subcategory> {
-    const [updated] = await db.update(subcategories).set(subcategory).where(eq(subcategories.id, id)).returning();
+    const [updated] = await db.update(subcategories).set(subcategory).where(and(eq(subcategories.tenantId, this.tenantId), eq(subcategories.id, id))).returning();
     return updated;
   }
 
   async deleteSubcategory(id: number): Promise<void> {
-    await db.delete(subcategories).where(eq(subcategories.id, id));
+    await db.delete(subcategories).where(and(eq(subcategories.tenantId, this.tenantId), eq(subcategories.id, id)));
   }
 
   async getServiceAddons(serviceId: number): Promise<Service[]> {
-    const addonRelations = await db.select().from(serviceAddons).where(eq(serviceAddons.serviceId, serviceId));
+    const addonRelations = await db.select().from(serviceAddons).where(and(eq(serviceAddons.tenantId, this.tenantId), eq(serviceAddons.serviceId, serviceId)));
     if (addonRelations.length === 0) return [];
 
     const addonIds = addonRelations.map(r => r.addonServiceId);
     return await db
       .select()
       .from(services)
-      .where(and(inArray(services.id, addonIds), eq(services.isArchived, false)));
+      .where(and(eq(services.tenantId, this.tenantId), inArray(services.id, addonIds), eq(services.isArchived, false)));
   }
 
   async setServiceAddons(serviceId: number, addonServiceIds: number[]): Promise<void> {
-    await db.delete(serviceAddons).where(eq(serviceAddons.serviceId, serviceId));
+    await db.delete(serviceAddons).where(and(eq(serviceAddons.tenantId, this.tenantId), eq(serviceAddons.serviceId, serviceId)));
 
     if (addonServiceIds.length > 0) {
       const values = addonServiceIds.map(addonId => ({
+        tenantId: this.tenantId,
         serviceId,
         addonServiceId: addonId
       }));
@@ -629,7 +633,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAddonRelationships(): Promise<ServiceAddon[]> {
-    return await db.select().from(serviceAddons);
+    return await db.select().from(serviceAddons).where(eq(serviceAddons.tenantId, this.tenantId));
   }
 
   // Service Options (for base_plus_addons pricing)
@@ -637,27 +641,27 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(serviceOptions)
-      .where(eq(serviceOptions.serviceId, serviceId))
+      .where(and(eq(serviceOptions.tenantId, this.tenantId), eq(serviceOptions.serviceId, serviceId)))
       .orderBy(asc(serviceOptions.order), asc(serviceOptions.id));
   }
 
   async createServiceOption(option: InsertServiceOption): Promise<ServiceOption> {
-    const [newOption] = await db.insert(serviceOptions).values(option).returning();
+    const [newOption] = await db.insert(serviceOptions).values({ ...option, tenantId: this.tenantId }).returning();
     return newOption;
   }
 
   async updateServiceOption(id: number, option: Partial<InsertServiceOption>): Promise<ServiceOption> {
-    const [updated] = await db.update(serviceOptions).set(option).where(eq(serviceOptions.id, id)).returning();
+    const [updated] = await db.update(serviceOptions).set(option).where(and(eq(serviceOptions.tenantId, this.tenantId), eq(serviceOptions.id, id))).returning();
     return updated;
   }
 
   async deleteServiceOption(id: number): Promise<void> {
-    await db.delete(serviceOptions).where(eq(serviceOptions.id, id));
+    await db.delete(serviceOptions).where(and(eq(serviceOptions.tenantId, this.tenantId), eq(serviceOptions.id, id)));
   }
 
   async setServiceOptions(serviceId: number, options: Omit<InsertServiceOption, 'serviceId'>[]): Promise<ServiceOption[]> {
     // Delete existing options
-    await db.delete(serviceOptions).where(eq(serviceOptions.serviceId, serviceId));
+    await db.delete(serviceOptions).where(and(eq(serviceOptions.tenantId, this.tenantId), eq(serviceOptions.serviceId, serviceId)));
 
     if (options.length === 0) return [];
 
@@ -665,6 +669,7 @@ export class DatabaseStorage implements IStorage {
     const values = options.map((opt, index) => ({
       ...opt,
       serviceId,
+      tenantId: this.tenantId,
       order: opt.order ?? index,
     }));
     return await db.insert(serviceOptions).values(values).returning();
@@ -675,7 +680,7 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(serviceFrequencies)
-      .where(eq(serviceFrequencies.serviceId, serviceId))
+      .where(and(eq(serviceFrequencies.tenantId, this.tenantId), eq(serviceFrequencies.serviceId, serviceId)))
       .orderBy(asc(serviceFrequencies.order), asc(serviceFrequencies.id));
   }
 
@@ -683,28 +688,28 @@ export class DatabaseStorage implements IStorage {
     const [freq] = await db
       .select()
       .from(serviceFrequencies)
-      .where(eq(serviceFrequencies.id, id))
+      .where(and(eq(serviceFrequencies.tenantId, this.tenantId), eq(serviceFrequencies.id, id)))
       .limit(1);
     return freq;
   }
 
   async createServiceFrequency(frequency: InsertServiceFrequency): Promise<ServiceFrequency> {
-    const [newFrequency] = await db.insert(serviceFrequencies).values(frequency).returning();
+    const [newFrequency] = await db.insert(serviceFrequencies).values({ ...frequency, tenantId: this.tenantId }).returning();
     return newFrequency;
   }
 
   async updateServiceFrequency(id: number, frequency: Partial<InsertServiceFrequency>): Promise<ServiceFrequency> {
-    const [updated] = await db.update(serviceFrequencies).set(frequency).where(eq(serviceFrequencies.id, id)).returning();
+    const [updated] = await db.update(serviceFrequencies).set(frequency).where(and(eq(serviceFrequencies.tenantId, this.tenantId), eq(serviceFrequencies.id, id))).returning();
     return updated;
   }
 
   async deleteServiceFrequency(id: number): Promise<void> {
-    await db.delete(serviceFrequencies).where(eq(serviceFrequencies.id, id));
+    await db.delete(serviceFrequencies).where(and(eq(serviceFrequencies.tenantId, this.tenantId), eq(serviceFrequencies.id, id)));
   }
 
   async setServiceFrequencies(serviceId: number, frequencies: Omit<InsertServiceFrequency, 'serviceId'>[]): Promise<ServiceFrequency[]> {
     // Delete existing frequencies
-    await db.delete(serviceFrequencies).where(eq(serviceFrequencies.serviceId, serviceId));
+    await db.delete(serviceFrequencies).where(and(eq(serviceFrequencies.tenantId, this.tenantId), eq(serviceFrequencies.serviceId, serviceId)));
 
     if (frequencies.length === 0) return [];
 
@@ -712,6 +717,7 @@ export class DatabaseStorage implements IStorage {
     const values = frequencies.map((freq, index) => ({
       ...freq,
       serviceId,
+      tenantId: this.tenantId,
       order: freq.order ?? index,
     }));
     return await db.insert(serviceFrequencies).values(values).returning();
@@ -722,17 +728,17 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(serviceDurations)
-      .where(eq(serviceDurations.serviceId, serviceId))
+      .where(and(eq(serviceDurations.tenantId, this.tenantId), eq(serviceDurations.serviceId, serviceId)))
       .orderBy(asc(serviceDurations.order), asc(serviceDurations.id));
   }
 
   async getServiceDuration(id: number): Promise<ServiceDuration | undefined> {
-    const [row] = await db.select().from(serviceDurations).where(eq(serviceDurations.id, id));
+    const [row] = await db.select().from(serviceDurations).where(and(eq(serviceDurations.tenantId, this.tenantId), eq(serviceDurations.id, id)));
     return row;
   }
 
   async createServiceDuration(duration: InsertServiceDuration): Promise<ServiceDuration> {
-    const [newDuration] = await db.insert(serviceDurations).values(duration).returning();
+    const [newDuration] = await db.insert(serviceDurations).values({ ...duration, tenantId: this.tenantId }).returning();
     return newDuration;
   }
 
@@ -740,26 +746,26 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db
       .update(serviceDurations)
       .set(data)
-      .where(eq(serviceDurations.id, id))
+      .where(and(eq(serviceDurations.tenantId, this.tenantId), eq(serviceDurations.id, id)))
       .returning();
     if (!updated) throw new Error(`ServiceDuration ${id} not found`);
     return updated;
   }
 
   async deleteServiceDuration(id: number): Promise<void> {
-    await db.delete(serviceDurations).where(eq(serviceDurations.id, id));
+    await db.delete(serviceDurations).where(and(eq(serviceDurations.tenantId, this.tenantId), eq(serviceDurations.id, id)));
   }
 
   async getServiceBookingQuestions(serviceId: number): Promise<ServiceBookingQuestion[]> {
     return await db
       .select()
       .from(serviceBookingQuestions)
-      .where(eq(serviceBookingQuestions.serviceId, serviceId))
+      .where(and(eq(serviceBookingQuestions.tenantId, this.tenantId), eq(serviceBookingQuestions.serviceId, serviceId)))
       .orderBy(asc(serviceBookingQuestions.order), asc(serviceBookingQuestions.id));
   }
 
   async createServiceBookingQuestion(data: InsertServiceBookingQuestion): Promise<ServiceBookingQuestion> {
-    const [row] = await db.insert(serviceBookingQuestions).values(data).returning();
+    const [row] = await db.insert(serviceBookingQuestions).values({ ...data, tenantId: this.tenantId }).returning();
     return row;
   }
 
@@ -767,21 +773,21 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db
       .update(serviceBookingQuestions)
       .set(data)
-      .where(eq(serviceBookingQuestions.id, id))
+      .where(and(eq(serviceBookingQuestions.tenantId, this.tenantId), eq(serviceBookingQuestions.id, id)))
       .returning();
     if (!updated) throw new Error(`ServiceBookingQuestion ${id} not found`);
     return updated;
   }
 
   async deleteServiceBookingQuestion(id: number): Promise<void> {
-    await db.delete(serviceBookingQuestions).where(eq(serviceBookingQuestions.id, id));
+    await db.delete(serviceBookingQuestions).where(and(eq(serviceBookingQuestions.tenantId, this.tenantId), eq(serviceBookingQuestions.id, id)));
   }
 
   async getService(id: number): Promise<Service | undefined> {
     const [service] = await db
       .select()
       .from(services)
-      .where(and(eq(services.id, id), eq(services.isArchived, false)));
+      .where(and(eq(services.tenantId, this.tenantId), eq(services.id, id), eq(services.isArchived, false)));
     return service;
   }
 
@@ -982,17 +988,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createCategory(category: InsertCategory): Promise<Category> {
-    const [newCategory] = await db.insert(categories).values(category).returning();
+    const [newCategory] = await db.insert(categories).values({ ...category, tenantId: this.tenantId }).returning();
     return newCategory;
   }
 
   async updateCategory(id: number, category: Partial<InsertCategory>): Promise<Category> {
-    const [updated] = await db.update(categories).set(category).where(eq(categories.id, id)).returning();
+    const [updated] = await db.update(categories).set(category).where(and(eq(categories.tenantId, this.tenantId), eq(categories.id, id))).returning();
     return updated;
   }
 
   async deleteCategory(id: number): Promise<void> {
-    await db.delete(categories).where(eq(categories.id, id));
+    await db.delete(categories).where(and(eq(categories.tenantId, this.tenantId), eq(categories.id, id)));
   }
 
   async createService(service: InsertService): Promise<Service> {
@@ -1000,33 +1006,34 @@ export class DatabaseStorage implements IStorage {
     if (nextOrder === undefined || nextOrder === null) {
       const [{ maxOrder }] = await db
         .select({ maxOrder: sql<number>`coalesce(max(${services.order}), 0)` })
-        .from(services);
+        .from(services)
+        .where(eq(services.tenantId, this.tenantId));
       nextOrder = Number(maxOrder ?? 0) + 1;
     }
-    const [newService] = await db.insert(services).values({ ...service, order: nextOrder }).returning();
+    const [newService] = await db.insert(services).values({ ...service, order: nextOrder, tenantId: this.tenantId }).returning();
     return newService;
   }
 
   async updateService(id: number, service: Partial<InsertService>): Promise<Service> {
-    const [updated] = await db.update(services).set(service).where(eq(services.id, id)).returning();
+    const [updated] = await db.update(services).set(service).where(and(eq(services.tenantId, this.tenantId), eq(services.id, id))).returning();
     return updated;
   }
 
   async deleteService(id: number): Promise<void> {
     await db.transaction(async (tx) => {
-      await tx.delete(serviceAddons).where(eq(serviceAddons.serviceId, id));
-      await tx.delete(serviceAddons).where(eq(serviceAddons.addonServiceId, id));
-      await tx.delete(serviceOptions).where(eq(serviceOptions.serviceId, id));
-      await tx.delete(serviceFrequencies).where(eq(serviceFrequencies.serviceId, id));
+      await tx.delete(serviceAddons).where(and(eq(serviceAddons.tenantId, this.tenantId), eq(serviceAddons.serviceId, id)));
+      await tx.delete(serviceAddons).where(and(eq(serviceAddons.tenantId, this.tenantId), eq(serviceAddons.addonServiceId, id)));
+      await tx.delete(serviceOptions).where(and(eq(serviceOptions.tenantId, this.tenantId), eq(serviceOptions.serviceId, id)));
+      await tx.delete(serviceFrequencies).where(and(eq(serviceFrequencies.tenantId, this.tenantId), eq(serviceFrequencies.serviceId, id)));
       await tx.delete(blogPostServices).where(eq(blogPostServices.serviceId, id));
-      await tx.update(services).set({ isArchived: true }).where(eq(services.id, id));
+      await tx.update(services).set({ isArchived: true }).where(and(eq(services.tenantId, this.tenantId), eq(services.id, id)));
     });
   }
 
   async reorderServices(order: { id: number; order: number }[]): Promise<void> {
     await db.transaction(async (tx) => {
       for (const item of order) {
-        await tx.update(services).set({ order: item.order }).where(eq(services.id, item.id));
+        await tx.update(services).set({ order: item.order }).where(and(eq(services.tenantId, this.tenantId), eq(services.id, item.id)));
       }
     });
   }
