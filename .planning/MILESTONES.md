@@ -1,5 +1,20 @@
 # Milestones
 
+## v5.0 Booking Experience (Shipped: 2026-05-13)
+
+**Phases completed:** 3 phases, 9 plans, 6 tasks
+
+**Key accomplishments:**
+
+- Multiple durations per service — selectedDurationId flows CartContext → Zod → booking route → durationLabel/durationMinutes snapshot in bookingItems; recurring generator uses snapshot with catalog fallback
+- emailSettings singleton table + Resend SDK + sendResendEmail() module with enabled flag check and notificationLogs logging
+- Three branded HTML email templates (confirmation, 24h reminder, cancellation) + fire-and-forget triggers on booking create/cancel/reject routes
+- 24h email reminder cron service (run24hEmailReminders) + admin EmailTab UI + GH Actions daily workflow
+- calendarSyncQueue table with atomic FOR UPDATE SKIP LOCKED dequeue, 6-attempt exponential backoff [1,5,30,120,720,1440 min], stale-row reaper
+- Admin CalendarSyncTab with per-target health cards, failure table, retry-per-job button, and 10+ failure reconnect banner; GH Actions calendar-sync cron every 5min
+
+---
+
 ## v4.0 Booking Intelligence (Shipped: 2026-05-11)
 
 **Phases completed:** 5 phases, 15 plans, 23 tasks

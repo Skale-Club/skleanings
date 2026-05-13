@@ -10,14 +10,15 @@ Customers can discover, book, and pay for cleaning services online without calli
 
 ## Current State
 
-**Four milestones shipped:**
+**Five milestones shipped:**
 
 - **v1.0 Marketing Attribution** — First-party UTM tracking, booking flow attribution, marketing dashboard, GoHighLevel CRM UTM sync, admin calendar create-booking-from-slot
 - **v2.0 White Label** — Hardcoded brand removed, DB-driven SEO/favicon/legal pages, receptionist multi-staff calendar view with drag-to-reassign and QuickBook walk-in flow
 - **v3.0 Calendar Polish** — RBC component identity stabilized, CSS alignment fix, calendar view-switch hygiene, manual confirmation flow per service
 - **v4.0 Booking Intelligence** — Multi-slot staff availability, custom booking questions per service, recurring subscriptions (weekly/biweekly/monthly) with 48h email reminders, admin subscription panel, customer self-serve pause/cancel via token link
+- **v5.0 Booking Experience** — Multiple durations per service, branded transactional email via Resend (confirmation/reminder/cancellation), Calendar Harmony retry queue with admin observability panel
 
-**Pending human UAT:** Phase 19 (5 items), Phase 20 (4 CAL-FIX items), Phases 25–29 (browser-only checks) — deferred to live session.
+**Pending human UAT:** Phase 19 (5 items), Phase 20 (4 CAL-FIX items), Phases 25–29 (browser-only checks), Phase 31 (4 Resend email delivery checks) — deferred to live session.
 
 ## Requirements
 
@@ -69,7 +70,7 @@ Customers can discover, book, and pay for cleaning services online without calli
 
 **Admin panel:** All admin views use the same sidebar navigation, card-based layout, and React Query patterns. New admin features must match existing UI conventions.
 
-**Codebase state:** Three milestones (Phases 1–20+, ~40+ plans) shipped. Server routes split into domain modules (`server/routes/`). Drizzle schema in `shared/schema.ts` with collocated types. Supabase CLI only for migrations — never drizzle-kit push.
+**Codebase state:** Five milestones (Phases 1–32, ~50+ plans) shipped. Server routes split into domain modules (`server/routes/`). Drizzle schema in `shared/schema.ts` with collocated types. Supabase CLI only for migrations — never drizzle-kit push. Two GH Actions workflows for serverless-safe crons (email reminders + calendar sync).
 
 **White-label status:** All "Skleanings" literals removed from frontend and server. Brand identity, SEO, favicon, and legal pages are fully configurable via admin. The platform can be redeployed for any tenant by updating `companySettings` in the DB.
 
@@ -95,6 +96,10 @@ Customers can discover, book, and pay for cleaning services online without calli
 | SEO injector token replacement uses function replacer | Prevents $ special patterns ($$, $&) from corrupting JSON-LD values | ✓ Shipped — replaceAll uses () => v replacer throughout |
 | DnDCalendar withDragAndDrop at module scope | DnD HOC must be outside any render function to avoid re-creation | ✓ Shipped — line 146 in AppointmentsCalendarSection.tsx |
 | QuickBookModal two-field minimal UI (name + service) | Walk-in flow goal is < 30 seconds — extra fields hidden under collapsible | ✓ Shipped — Collapsible "More options" with phone/email/address |
+| selectedDurationId override on cart item (not ID ref) | CartContext.totalDuration reads item.durationMinutes directly — must override the field at selection time, not store only an ID | ✓ Shipped Phase 30 — updateItem overrides durationMinutes; snapshot captured at booking creation |
+| Resend as parallel module (not nodemailer replacement) | nodemailer still powers recurring subscription reminders; adding a second transport avoids breaking existing flows | ✓ Shipped Phase 31 — server/lib/email-resend.ts coexists with server/lib/email.ts |
+| SELECT FOR UPDATE SKIP LOCKED via raw SQL (not Drizzle builder) | Drizzle query builder .for("update", { skipLocked: true }) has known bug #3554 that generates invalid SQL | ✓ Shipped Phase 32 — all queue dequeue uses db.execute(sql`...`) |
+| GCal worker graceful skip (no write implementation) | GCal OAuth scope is calendar.readonly — no createGCalEvent exists; shipping write out of scope avoids blocking the queue infrastructure | ✓ Shipped Phase 32 — google_calendar jobs marked success with log note; write deferred |
 
 ## Evolution
 
@@ -114,14 +119,11 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-## Current Milestone: v5.0 Booking Experience
+## Current Milestone: v6.0 (Planning next milestone)
 
-**Goal:** Melhorar a experiência de booking com durações flexíveis, comunicação transacional por email e sync confiável com calendários externos.
+### Active
 
-**Target features:**
-- Múltiplas durações por serviço (cliente escolhe 2h / 4h / 8h no mesmo serviço)
-- Emails transacionais com marca via Resend (confirmação, lembrete 24h, cancelamento)
-- Calendar Harmony — retry queue para GCal + GHL com observabilidade no admin
+(Planning next milestone)
 
 ---
-*Last updated: 2026-05-12 — Phase 32 complete (Calendar Harmony Retry Queue) — v5.0 Booking Experience shipped*
+*Last updated: 2026-05-13 — v5.0 Booking Experience archived*
