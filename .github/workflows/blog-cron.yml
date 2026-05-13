@@ -1,11 +1,9 @@
-name: Blog Autopost
+name: Blog Generation
 
 on:
   schedule:
-    # Run every hour to check if a new post should be generated
-    - cron: '0 * * * *'
+    - cron: '0 9 * * *'   # 09:00 UTC daily
   workflow_dispatch:
-    # Allow manual triggering from GitHub Actions UI
     inputs:
       reason:
         description: 'Reason for manual trigger'
@@ -15,15 +13,15 @@ on:
 jobs:
   generate:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Generate Blog Post
         env:
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          BLOG_CRON_TOKEN: ${{ secrets.BLOG_CRON_TOKEN }}
           APP_URL: ${{ vars.APP_URL }}
         run: |
-          if [ -z "$CRON_SECRET" ]; then
-            echo "ERROR: CRON_SECRET secret is not configured"
+          if [ -z "$BLOG_CRON_TOKEN" ]; then
+            echo "ERROR: BLOG_CRON_TOKEN secret is not configured"
             exit 1
           fi
           if [ -z "$APP_URL" ]; then
@@ -36,15 +34,14 @@ jobs:
 
           call_generate() {
             curl -L -s -w "\n%{http_code}" -X POST \
-              "${APP_URL}/api/blog/cron/generate" \
-              -H "Authorization: Bearer ${CRON_SECRET}" \
+              "${APP_URL}/api/blog/generate" \
+              -H "Authorization: Bearer ${BLOG_CRON_TOKEN}" \
               -H "Content-Type: application/json" \
               --max-time 120
           }
 
           echo "Triggering blog generation at $(date -u)"
           RESPONSE=$(call_generate)
-
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           BODY=$(echo "$RESPONSE" | sed '$d')
 
@@ -63,7 +60,6 @@ jobs:
             echo "Blog generation request succeeded"
           else
             echo "Blog generation request failed with HTTP $HTTP_CODE"
-            # Don't fail the workflow for expected skips
             STATUS=$(echo "$BODY" | grep -o '"status":"[^"]*"' | head -1)
             if echo "$STATUS" | grep -q '"skipped"'; then
               echo "Generation was skipped (expected behavior)"
