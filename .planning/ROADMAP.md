@@ -96,7 +96,9 @@ Full details: [milestones/v5.0-ROADMAP.md](milestones/v5.0-ROADMAP.md)
   3. Sending 21 rapid requests to `POST /api/chat/message` from the same IP yields a 429 on the 21st
   4. Normal traffic (under limit) receives 200 responses with no change in behavior
   5. Rate limiter config uses `standardHeaders: true` and `legacyHeaders: false` (no `X-RateLimit-*` legacy headers emitted)
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 33-01-PLAN.md — Fix express-rate-limit config and remove duplicate custom guards
 
 ### Phase 34: Component Split
 **Goal**: BookingPage and AppointmentsCalendarSection are maintainable files with focused sub-components and no regressions
@@ -132,7 +134,7 @@ Full details: [milestones/v5.0-ROADMAP.md](milestones/v5.0-ROADMAP.md)
 | 20 | v3.0 | 4/4 | Complete | 2026-05-11 |
 | 21–29 | v4.0 | 27/27 | Complete | 2026-05-11 |
 | 30–32 | v5.0 | 9/9 | Complete | 2026-05-13 |
-| 33 | v6.0 | 0/? | Not started | - |
+| 33 | v6.0 | 0/1 | Not started | - |
 | 34 | v6.0 | 0/? | Not started | - |
 | 35 | v6.0 | 0/? | Not started | - |
 
