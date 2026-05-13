@@ -23,6 +23,7 @@ import analyticsRouter from "./routes/analytics";
 import clientRouter from "./routes/client";
 import notificationLogsRouter from "./routes/notification-logs";
 import recurringBookingsRouter, { adminRecurringRouter, publicRecurringRouter } from "./routes/recurring-bookings";
+import { superAdminRouter } from "./routes/super-admin";
 import { calendarSyncRouter } from "./routes/calendar-sync";
 
 export async function registerRoutes(server: Server, app: Express) {
@@ -86,4 +87,7 @@ export async function registerRoutes(server: Server, app: Express) {
   // Phase 29: admin and public recurring subscription routes
   app.use("/api/admin/recurring-bookings", adminRecurringRouter);
   app.use("/api/subscriptions/manage", publicRecurringRouter);
+
+  // Phase 37: super-admin panel API
+  app.use("/api/super-admin", superAdminRouter);
 }
