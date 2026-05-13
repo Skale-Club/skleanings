@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v7.0
 milestone_name: Xkedule Foundation
-status: planning
-stopped_at: —
-last_updated: "2026-05-11T00:00:00.000Z"
-last_activity: 2026-05-11
+status: executing
+stopped_at: Completed 36-01-PLAN.md
+last_updated: "2026-05-13T18:15:52.104Z"
+last_activity: 2026-05-13
 progress:
   total_phases: 2
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 3
+  completed_plans: 1
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-13)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** v7.0 Xkedule Foundation — Phase 36 (Locale Settings)
+**Current focus:** Phase 36 — Locale Settings
 
 ## Current Position
 
-Phase: 36 (1 of 2)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-05-11
+Phase: 36 (Locale Settings) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-05-13
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -67,6 +67,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 35-02]: Migration uses DROP TABLE IF EXISTS — system_heartbeats may not exist in live DB since it was only in legacy Drizzle migrations, not Supabase CLI migrations
 - [Phase 34-component-split]: bookingFormSchema and BookingFormValues extracted to bookingSchema.ts as pure schema module preventing circular imports
 - [Phase 32]: db.execute() returns RowList directly — use Array.from(result) not result.rows for raw SQL results in storage.ts
+- [Phase 36-01]: Locale columns added after timeZone in companySettings pgTable following existing timeFormat/timeZone pattern
+- [Phase 36-01]: CompanySettingsSection default state updated with locale defaults (en/sunday/MM-DD-YYYY) to satisfy TypeScript strict check
 
 ### Roadmap Evolution
 
@@ -81,7 +83,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-13
-Stopped at: v7.0 roadmap created — phases 36 and 37 defined
+Last session: 2026-05-13T18:15:52.094Z
+Stopped at: Completed 36-01-PLAN.md
 Resume file: None
 Next: `/gsd:plan-phase 36`

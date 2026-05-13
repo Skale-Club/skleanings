@@ -19,10 +19,10 @@
 
 ### Locale Settings Admin (SEED-011)
 
-- [ ] **LOC-01**: Admin pode configurar `language` do tenant (opções: `en`, `pt-BR`) na seção General do Company Settings
+- [x] **LOC-01**: Admin pode configurar `language` do tenant (opções: `en`, `pt-BR`) na seção General do Company Settings
 - [ ] **LOC-02**: Admin pode configurar `startOfWeek` (opções: `sunday`, `monday`) — calendário admin reflete a configuração
 - [ ] **LOC-03**: Admin pode configurar `dateFormat` (opções: `MM/DD/YYYY`, `DD/MM/YYYY`, `YYYY-MM-DD`)
-- [ ] **LOC-04**: Configurações de locale persistidas em `companySettings` via migration Supabase
+- [x] **LOC-04**: Configurações de locale persistidas em `companySettings` via migration Supabase
 - [ ] **LOC-05**: Booking flow usa `language` e `dateFormat` do tenant para exibição de datas
 
 ---
