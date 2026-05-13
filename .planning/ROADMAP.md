@@ -199,7 +199,7 @@ Plans:
   4. `infra/README.md` documents the full Hetzner CX23 setup sequence: Node install, PM2, Caddy, Cloudflare DNS configuration
 **Plans**: 2 plans
 Plans:
-- [ ] 41-01-PLAN.md — Caddyfile (wildcard TLS + reverse proxy) + systemd app.service (MT-14, MT-15)
+- [x] 41-01-PLAN.md — Caddyfile (wildcard TLS + reverse proxy) + systemd app.service (MT-14, MT-15)
 - [ ] 41-02-PLAN.md — GitHub Actions deploy.yml (manual SSH deploy) + Hetzner setup README.md (MT-16, MT-17)
 
 ---
@@ -218,7 +218,7 @@ Plans:
 | 38 | v8.0 | 2/2 | Complete    | 2026-05-13 |
 | 39 | v8.0 | 3/3 | Complete    | 2026-05-13 |
 | 40 | v8.0 | 3/3 | Complete    | 2026-05-13 |
-| 41 | v8.0 | 0/2 | Not started | - |
+| 41 | v8.0 | 1/2 | In Progress|  |
 
 ---
 

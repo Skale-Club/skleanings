@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v8.0
 milestone_name: Multi-Tenant Architecture
 status: executing
-stopped_at: Completed 40-03-PLAN.md
-last_updated: "2026-05-13T23:06:28.109Z"
+stopped_at: Completed 41-infra-config-01-PLAN.md
+last_updated: "2026-05-13T23:22:22.864Z"
 last_activity: 2026-05-13
 progress:
   total_phases: 6
   completed_phases: 5
-  total_plans: 14
-  completed_plans: 14
+  total_plans: 16
+  completed_plans: 15
   percent: 0
 ---
 
@@ -21,12 +21,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-13)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 40 — Tenant Resolution Middleware
+**Current focus:** Phase 41 — Infra Config
 
 ## Current Position
 
-Phase: 41
-Plan: Not started
+Phase: 41 (Infra Config) — EXECUTING
+Plan: 2 of 2
 Status: Ready to execute
 Last activity: 2026-05-13
 
@@ -92,6 +92,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 39-03]: contacts.email UNIQUE constraint is global not per-tenant — deferred to Phase 40+ to add composite (tenant_id, email) unique index
 - [Phase 40]: Use req.hostname for LRU cache key to avoid port contamination; super-admin routes mounted before resolveTenantMiddleware for bypass
 - [Phase 40-03]: Chat module DI: setChatDependencies called in /chat/message handler wrapper so chatDeps.storage is tenant-scoped per request via res.locals.storage!
+- [Phase 41-infra-config]: DNS-01 via Cloudflare for wildcard TLS; direct Node systemd unit (Type=simple) over PM2 for CX23 simplicity
 
 ### Roadmap Evolution
 
@@ -108,7 +109,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-13T23:00:52.741Z
-Stopped at: Completed 40-03-PLAN.md
+Last session: 2026-05-13T23:22:22.859Z
+Stopped at: Completed 41-infra-config-01-PLAN.md
 Resume file: None
 Next: Phase 39 complete — ready for Phase 40 (Tenant Resolution Middleware)
