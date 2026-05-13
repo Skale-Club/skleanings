@@ -127,7 +127,7 @@ Plans:
   5. Super-admin can view and edit companySettings fields and see the last 50 server error log entries from within the panel
 **Plans**: 3 plans
 Plans:
-- [ ] 37-01-PLAN.md — Server foundation: session.d.ts TypeScript augmentation + error-log ring buffer + patchConsoleError() startup wire
+- [x] 37-01-PLAN.md — Server foundation: session.d.ts TypeScript augmentation + error-log ring buffer + patchConsoleError() startup wire
 - [ ] 37-02-PLAN.md — Super-admin API routes: login/logout/me, stats, health check, company-settings CRUD, error logs
 - [ ] 37-03-PLAN.md — Frontend: SuperAdmin.tsx standalone page (login + dashboard), useSuperAdmin hooks, App.tsx route isolation
 **UI hint**: yes
@@ -145,7 +145,7 @@ Plans:
 | 30–32 | v5.0 | 9/9 | Complete | 2026-05-13 |
 | 33–35 | v6.0 | 7/7 | Complete | 2026-05-13 |
 | 36 | v7.0 | 2/3 | Complete    | 2026-05-13 |
-| 37 | v7.0 | 0/? | Not started | - |
+| 37 | v7.0 | 1/3 | In Progress|  |
 
 ---
 
