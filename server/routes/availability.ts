@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { z } from "zod";
-import { storage } from "../storage";
 import { getAvailabilityForDate, getAvailabilityRange } from "../lib/availability";
 import { getStaffAvailableSlots, getSlotsForServices, getStaffUnionSlots } from "../lib/staff-availability";
 import { getGHLFreeSlots } from "../integrations/ghl";
@@ -23,6 +22,7 @@ const monthAvailabilityQuerySchema = z.object({
 });
 
 router.get("/api/availability", async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const { date, totalDurationMinutes, staffId, serviceIds } = availabilityQuerySchema.parse(req.query);
     const parsedServiceIds = serviceIds ? serviceIds.split(",").map(Number).filter(Boolean) : [];
@@ -53,14 +53,14 @@ router.get("/api/availability", async (req, res) => {
         }
       }
 
-      slots = await getAvailabilityForDate(date, totalDurationMinutes, useGhl, ghlSettings, {
+      slots = await getAvailabilityForDate(storage, date, totalDurationMinutes, useGhl, ghlSettings, {
         timeZone,
         requireGhl: false,
       }, limits);
     } else if (parsedServiceIds.length > 0 || staffId) {
-      slots = await getSlotsForServices(date, totalDurationMinutes, parsedServiceIds, staffId, { timeZone });
+      slots = await getSlotsForServices(storage, date, totalDurationMinutes, parsedServiceIds, staffId, { timeZone });
     } else {
-      slots = await getStaffUnionSlots(date, totalDurationMinutes, { timeZone });
+      slots = await getStaffUnionSlots(storage, date, totalDurationMinutes, { timeZone });
     }
 
     const response = slots.map((time) => ({ time, available: true }));
@@ -74,6 +74,7 @@ router.get("/api/availability", async (req, res) => {
 });
 
 router.get("/api/availability/month", async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const { year, month, totalDurationMinutes, staffId, serviceIds } = monthAvailabilityQuerySchema.parse(req.query);
     const parsedServiceIds = serviceIds ? serviceIds.split(",").map(Number).filter(Boolean) : [];
@@ -98,6 +99,7 @@ router.get("/api/availability/month", async (req, res) => {
     if (staffCount > 0) {
       for (const dateKey of Object.keys(monthMap)) {
         const slots = await getSlotsForServices(
+          storage,
           dateKey,
           totalDurationMinutes,
           parsedServiceIds,
@@ -154,7 +156,7 @@ router.get("/api/availability/month", async (req, res) => {
 
     // Fall back to local availability if GHL is not enabled or failed
     if (!ghlSuccess) {
-      const slotMap = await getAvailabilityRange(startDate, endDate, totalDurationMinutes, {
+      const slotMap = await getAvailabilityRange(storage, startDate, endDate, totalDurationMinutes, {
         useGhl: false,
         ghlSettings: null,
         requireGhl: false,

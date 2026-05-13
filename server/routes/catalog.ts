@@ -1,7 +1,6 @@
 
 import { Router } from "express";
 import { z } from "zod";
-import { storage } from "../storage";
 import { requireAdmin } from "../lib/auth";
 import { api } from "@shared/routes";
 import {
@@ -22,6 +21,7 @@ const router = Router();
 
 // Categories
 router.get(api.categories.list.path, async (req, res) => {
+    const storage = res.locals.storage!;
     if (process.env.VERCEL) {
         try {
             return res.json(await getFallbackCategories());
@@ -46,6 +46,7 @@ router.get(api.categories.list.path, async (req, res) => {
 });
 
 router.get(api.categories.get.path, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const category = await storage.getCategoryBySlug(req.params.slug);
         if (!category) return res.status(404).json({ message: "Category not found" });
@@ -58,6 +59,7 @@ router.get(api.categories.get.path, async (req, res) => {
 
 // Admin Category CRUD (protected routes)
 router.post('/api/categories', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const validatedData = insertCategorySchema.parse(req.body);
         const category = await storage.createCategory(validatedData);
@@ -71,6 +73,7 @@ router.post('/api/categories', requireAdmin, async (req, res) => {
 });
 
 router.put('/api/categories/reorder', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const orderData = z.array(z.object({
             id: z.number(),
@@ -91,6 +94,7 @@ router.put('/api/categories/reorder', requireAdmin, async (req, res) => {
 });
 
 router.put('/api/categories/:id', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const validatedData = insertCategorySchema.partial().parse(req.body);
         const category = await storage.updateCategory(Number(req.params.id), validatedData);
@@ -104,6 +108,7 @@ router.put('/api/categories/:id', requireAdmin, async (req, res) => {
 });
 
 router.delete('/api/categories/:id', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         await storage.deleteCategory(Number(req.params.id));
         res.json({ success: true });
@@ -114,6 +119,7 @@ router.delete('/api/categories/:id', requireAdmin, async (req, res) => {
 
 // Subcategories
 router.get('/api/subcategories', async (req, res) => {
+    const storage = res.locals.storage!;
     if (process.env.VERCEL) {
         try {
             const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
@@ -141,6 +147,7 @@ router.get('/api/subcategories', async (req, res) => {
 });
 
 router.post('/api/subcategories', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const validatedData = insertSubcategorySchema.parse(req.body);
         const subcategory = await storage.createSubcategory(validatedData);
@@ -154,6 +161,7 @@ router.post('/api/subcategories', requireAdmin, async (req, res) => {
 });
 
 router.put('/api/subcategories/:id', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const validatedData = insertSubcategorySchema.partial().parse(req.body);
         const subcategory = await storage.updateSubcategory(Number(req.params.id), validatedData);
@@ -167,6 +175,7 @@ router.put('/api/subcategories/:id', requireAdmin, async (req, res) => {
 });
 
 router.delete('/api/subcategories/:id', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         await storage.deleteSubcategory(Number(req.params.id));
         res.json({ success: true });
@@ -177,6 +186,7 @@ router.delete('/api/subcategories/:id', requireAdmin, async (req, res) => {
 
 // Services
 router.get(api.services.list.path, async (req, res) => {
+    const storage = res.locals.storage!;
     if (process.env.VERCEL) {
         try {
             const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
@@ -215,6 +225,7 @@ router.get(api.services.list.path, async (req, res) => {
 
 // Admin Service CRUD (protected routes)
 router.post('/api/services', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const validatedData = insertServiceSchema.parse(req.body);
         const service = await storage.createService(validatedData);
@@ -229,6 +240,7 @@ router.post('/api/services', requireAdmin, async (req, res) => {
 });
 
 router.put('/api/services/reorder', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const orderData = z.array(z.object({
             id: z.number(),
@@ -248,6 +260,7 @@ router.put('/api/services/reorder', requireAdmin, async (req, res) => {
 });
 
 router.get('/api/services/:id', async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const service = await storage.getService(Number(req.params.id));
         if (!service) return res.status(404).json({ message: "Service not found" });
@@ -262,6 +275,7 @@ router.get('/api/services/:id', async (req, res) => {
 });
 
 router.put('/api/services/:id', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const validatedData = insertServiceSchema.partial().parse(req.body);
         const service = await storage.updateService(Number(req.params.id), validatedData);
@@ -276,6 +290,7 @@ router.put('/api/services/:id', requireAdmin, async (req, res) => {
 });
 
 router.delete('/api/services/:id', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         await storage.deleteService(Number(req.params.id));
         invalidateChatCache('services');
@@ -287,6 +302,7 @@ router.delete('/api/services/:id', requireAdmin, async (req, res) => {
 
 // Service Addons
 router.get('/api/services/:id/addons', async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const addons = await storage.getServiceAddons(Number(req.params.id));
         res.json(addons);
@@ -297,6 +313,7 @@ router.get('/api/services/:id/addons', async (req, res) => {
 });
 
 router.put('/api/services/:id/addons', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const addonIds = z.array(z.number()).parse(req.body.addonIds);
         await storage.setServiceAddons(Number(req.params.id), addonIds);
@@ -310,6 +327,7 @@ router.put('/api/services/:id/addons', requireAdmin, async (req, res) => {
 });
 
 router.get('/api/service-addons', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const relationships = await storage.getAddonRelationships();
         res.json(relationships);
@@ -320,6 +338,7 @@ router.get('/api/service-addons', requireAdmin, async (req, res) => {
 
 // Service Options (for base_plus_addons pricing)
 router.get('/api/services/:id/options', async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const options = await storage.getServiceOptions(Number(req.params.id));
         res.json(options);
@@ -330,6 +349,7 @@ router.get('/api/services/:id/options', async (req, res) => {
 });
 
 router.put('/api/services/:id/options', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const optionsSchema = z.array(z.object({
             name: z.string().min(1),
@@ -350,6 +370,7 @@ router.put('/api/services/:id/options', requireAdmin, async (req, res) => {
 
 // Service Frequencies (for base_plus_addons pricing)
 router.get('/api/services/:id/frequencies', async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const frequencies = await storage.getServiceFrequencies(Number(req.params.id));
         res.json(frequencies);
@@ -360,6 +381,7 @@ router.get('/api/services/:id/frequencies', async (req, res) => {
 });
 
 router.put('/api/services/:id/frequencies', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const frequenciesSchema = z.array(z.object({
             name: z.string().min(1),
@@ -379,6 +401,7 @@ router.put('/api/services/:id/frequencies', requireAdmin, async (req, res) => {
 
 // Service Durations (Phase 23 SEED-029)
 router.get('/api/services/:id/durations', async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const durations = await storage.getServiceDurations(Number(req.params.id));
         res.json(durations);
@@ -389,6 +412,7 @@ router.get('/api/services/:id/durations', async (req, res) => {
 });
 
 router.post('/api/services/:id/durations', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const data = insertServiceDurationSchema.parse({
             ...req.body,
@@ -405,6 +429,7 @@ router.post('/api/services/:id/durations', requireAdmin, async (req, res) => {
 });
 
 router.patch('/api/services/:id/durations/:durationId', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const data = insertServiceDurationSchema.partial().parse(req.body);
         const duration = await storage.updateServiceDuration(Number(req.params.durationId), data);
@@ -418,6 +443,7 @@ router.patch('/api/services/:id/durations/:durationId', requireAdmin, async (req
 });
 
 router.delete('/api/services/:id/durations/:durationId', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         await storage.deleteServiceDuration(Number(req.params.durationId));
         res.json({ success: true });
@@ -429,6 +455,7 @@ router.delete('/api/services/:id/durations/:durationId', requireAdmin, async (re
 // --- Booking Questions sub-routes (Phase 26 QUEST-01, QUEST-02) ---
 
 router.get('/api/services/:id/questions', async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const questions = await storage.getServiceBookingQuestions(Number(req.params.id));
         res.json(questions);
@@ -439,6 +466,7 @@ router.get('/api/services/:id/questions', async (req, res) => {
 });
 
 router.post('/api/services/:id/questions', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const data = insertServiceBookingQuestionSchema.parse({
             ...req.body,
@@ -455,6 +483,7 @@ router.post('/api/services/:id/questions', requireAdmin, async (req, res) => {
 });
 
 router.patch('/api/services/:id/questions/:questionId', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const data = insertServiceBookingQuestionSchema.partial().parse(req.body);
         const question = await storage.updateServiceBookingQuestion(Number(req.params.questionId), data);
@@ -468,6 +497,7 @@ router.patch('/api/services/:id/questions/:questionId', requireAdmin, async (req
 });
 
 router.delete('/api/services/:id/questions/:questionId', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         await storage.deleteServiceBookingQuestion(Number(req.params.questionId));
         res.json({ success: true });

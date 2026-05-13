@@ -6,8 +6,9 @@ const router = Router();
 
 // Check admin session status - uses Supabase Auth
 router.get('/admin/session', async (req, res) => {
+    const storage = res.locals.storage!;
     try {
-        const user = await getAuthenticatedUser(req);
+        const user = await getAuthenticatedUser(req, storage);
         if (!user) {
             return res.json({ isAdmin: false });
         }

@@ -1,7 +1,6 @@
 
 import { Router } from "express";
 import { z } from "zod";
-import { storage } from "../storage";
 import { requireAdmin, requireAuth } from "../lib/auth";
 import { insertStaffMemberSchema } from "@shared/schema";
 import { getAuthUrl, exchangeCodeForTokens, getStaffBusyTimes } from "../lib/google-calendar";
@@ -16,7 +15,7 @@ const availabilityItemSchema = z.object({
   rangeOrder: z.number().int().min(0).default(0),
 });
 
-async function canManageStaffCalendar(req: any, staffId: number) {
+async function canManageStaffCalendar(req: any, staffId: number, storage: any) {
   const user = req.user;
   if (!user) return false;
   if (user.role === "admin") return true;
@@ -30,6 +29,7 @@ async function canManageStaffCalendar(req: any, staffId: number) {
 
 // GET /api/staff — list active staff members
 router.get("/", async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const includeInactive = req.query.includeInactive === "1" || req.query.includeInactive === "true";
     const members = await storage.getStaffMembers(includeInactive);
@@ -41,6 +41,7 @@ router.get("/", async (req, res) => {
 
 // GET /api/staff/calendar/all-statuses — all staff calendar connection state (must be before /:id)
 router.get("/calendar/all-statuses", requireAdmin, async (_req, res) => {
+  const storage = res.locals.storage!;
   try {
     const statuses = await storage.getAllCalendarStatuses();
     res.json(statuses);
@@ -51,6 +52,7 @@ router.get("/calendar/all-statuses", requireAdmin, async (_req, res) => {
 
 // GET /api/staff/count — count of active staff (must be before /:id)
 router.get("/count", async (_req, res) => {
+  const storage = res.locals.storage!;
   try {
     const count = await storage.getStaffCount();
     res.json({ count });
@@ -61,6 +63,7 @@ router.get("/count", async (_req, res) => {
 
 // GET /api/staff/me — returns the logged-in staff's own staffMember record (must be before /:id)
 router.get("/me", requireAuth, async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const user = (req as any).user;
     const member = await storage.getStaffMemberByUserId(user.id);
@@ -73,6 +76,7 @@ router.get("/me", requireAuth, async (req, res) => {
 
 // PATCH /api/staff/me — update own profile (name, phone, bio, avatar)
 router.patch("/me", requireAuth, async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const user = (req as any).user;
     const member = await storage.getStaffMemberByUserId(user.id);
@@ -93,6 +97,7 @@ router.patch("/me", requireAuth, async (req, res) => {
 
 // GET /api/staff/:id — get single staff member
 router.get("/:id", async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const member = await storage.getStaffMember(Number(req.params.id));
     if (!member) return res.status(404).json({ message: "Staff member not found" });
@@ -106,6 +111,7 @@ router.get("/:id", async (req, res) => {
 
 // POST /api/staff — create staff member
 router.post("/", requireAdmin, async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const data = insertStaffMemberSchema.parse(req.body);
     const member = await storage.createStaffMember(data);
@@ -120,6 +126,7 @@ router.post("/", requireAdmin, async (req, res) => {
 
 // PUT /api/staff/reorder — reorder staff (must be before /:id)
 router.put("/reorder", requireAdmin, async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const updates = z.array(z.object({ id: z.number(), order: z.number() })).parse(req.body.updates);
     await storage.reorderStaffMembers(updates);
@@ -134,6 +141,7 @@ router.put("/reorder", requireAdmin, async (req, res) => {
 
 // GET /api/staff/calendar/callback — OAuth callback (must be before /:id)
 router.get("/calendar/callback", async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const code = String(req.query.code || "");
     const state = String(req.query.state || "");
@@ -144,7 +152,7 @@ router.get("/calendar/callback", async (req, res) => {
       return res.status(400).send("Invalid OAuth callback parameters");
     }
 
-    await exchangeCodeForTokens(code, staffId);
+    await exchangeCodeForTokens(storage, code, staffId);
     await storage.clearCalendarNeedsReconnect(staffId);
     res.redirect(redirectTo === "staff" ? "/staff/settings" : "/admin/staff");
   } catch (err) {
@@ -154,6 +162,7 @@ router.get("/calendar/callback", async (req, res) => {
 
 // PUT /api/staff/:id — update staff member
 router.put("/:id", requireAdmin, async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const data = insertStaffMemberSchema.partial().parse(req.body);
     const member = await storage.updateStaffMember(Number(req.params.id), data);
@@ -168,6 +177,7 @@ router.put("/:id", requireAdmin, async (req, res) => {
 
 // DELETE /api/staff/:id — delete staff member
 router.delete("/:id", requireAdmin, async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     await storage.deleteStaffMember(Number(req.params.id));
     res.json({ success: true });
@@ -180,6 +190,7 @@ router.delete("/:id", requireAdmin, async (req, res) => {
 
 // GET /api/staff/:id/services — get services this staff member can perform
 router.get("/:id/services", async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const services = await storage.getServicesByStaffMember(Number(req.params.id));
     res.json(services);
@@ -190,6 +201,7 @@ router.get("/:id/services", async (req, res) => {
 
 // PUT /api/staff/:id/services — replace service abilities
 router.put("/:id/services", requireAdmin, async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const serviceIds = z.array(z.number()).parse(req.body.serviceIds);
     await storage.setStaffServiceAbilities(Number(req.params.id), serviceIds);
@@ -206,6 +218,7 @@ router.put("/:id/services", requireAdmin, async (req, res) => {
 
 // GET /api/staff/:id/availability — get weekly availability
 router.get("/:id/availability", async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const availability = await storage.getStaffAvailability(Number(req.params.id));
     res.json(availability);
@@ -216,6 +229,7 @@ router.get("/:id/availability", async (req, res) => {
 
 // PUT /api/staff/:id/availability — replace weekly availability
 router.put("/:id/availability", requireAdmin, async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const availability = z.array(availabilityItemSchema).parse(req.body);
 
@@ -257,6 +271,7 @@ const availabilityOverrideSchema = z.object({
 
 // GET /api/staff/:id/availability-overrides — list all overrides for a staff member
 router.get("/:id/availability-overrides", requireAdmin, async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const overrides = await storage.getStaffAvailabilityOverrides(Number(req.params.id));
     res.json(overrides);
@@ -267,6 +282,7 @@ router.get("/:id/availability-overrides", requireAdmin, async (req, res) => {
 
 // POST /api/staff/:id/availability-overrides — create or replace an override for a date
 router.post("/:id/availability-overrides", requireAdmin, async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const staffMemberId = Number(req.params.id);
     const body = availabilityOverrideSchema.parse(req.body);
@@ -294,6 +310,7 @@ router.post("/:id/availability-overrides", requireAdmin, async (req, res) => {
 
 // DELETE /api/staff/:id/availability-overrides/:overrideId — remove a specific override
 router.delete("/:id/availability-overrides/:overrideId", requireAdmin, async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     await storage.deleteStaffAvailabilityOverride(Number(req.params.overrideId));
     res.json({ success: true });
@@ -306,12 +323,13 @@ router.delete("/:id/availability-overrides/:overrideId", requireAdmin, async (re
 
 // GET /api/staff/:id/calendar/busy?date=YYYY-MM-DD — GCal busy times for a date (cached)
 router.get("/:id/calendar/busy", requireAdmin, async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const date = req.query.date;
     if (!date || typeof date !== 'string') {
       return res.status(400).json({ message: "date query param required (YYYY-MM-DD)" });
     }
-    const busyTimes = await getStaffBusyTimes(Number(req.params.id), date);
+    const busyTimes = await getStaffBusyTimes(Number(req.params.id), date, undefined, storage);
     res.json({ busyTimes });
   } catch (err) {
     res.json({ busyTimes: [] }); // fail gracefully — GCal overlay is best-effort
@@ -320,9 +338,10 @@ router.get("/:id/calendar/busy", requireAdmin, async (req, res) => {
 
 // GET /api/staff/:id/calendar/status — connection state
 router.get("/:id/calendar/status", requireAuth, async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const staffId = Number(req.params.id);
-    if (!(await canManageStaffCalendar(req, staffId))) {
+    if (!(await canManageStaffCalendar(req, staffId, storage))) {
       return res.status(403).json({ message: "Insufficient permissions" });
     }
 
@@ -336,9 +355,10 @@ router.get("/:id/calendar/status", requireAuth, async (req, res) => {
 
 // GET /api/staff/:id/calendar/connect — initiate OAuth flow
 router.get("/:id/calendar/connect", requireAuth, async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const staffId = Number(req.params.id);
-    if (!(await canManageStaffCalendar(req, staffId))) {
+    if (!(await canManageStaffCalendar(req, staffId, storage))) {
       return res.status(403).json({ message: "Insufficient permissions" });
     }
 
@@ -348,7 +368,7 @@ router.get("/:id/calendar/connect", requireAuth, async (req, res) => {
     }
     const user = (req as any).user;
     const redirectTo: "staff" | "admin" = user?.role === "staff" ? "staff" : "admin";
-    const url = await getAuthUrl(staffId, redirectTo);
+    const url = await getAuthUrl(storage, staffId, redirectTo);
     res.redirect(url);
   } catch (err) {
     res.status(500).json({ message: (err as Error).message });
@@ -357,9 +377,10 @@ router.get("/:id/calendar/connect", requireAuth, async (req, res) => {
 
 // DELETE /api/staff/:id/calendar — disconnect Google Calendar
 router.delete("/:id/calendar", requireAuth, async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const staffId = Number(req.params.id);
-    if (!(await canManageStaffCalendar(req, staffId))) {
+    if (!(await canManageStaffCalendar(req, staffId, storage))) {
       return res.status(403).json({ message: "Insufficient permissions" });
     }
 
@@ -372,9 +393,10 @@ router.delete("/:id/calendar", requireAuth, async (req, res) => {
 
 // POST /api/staff/:id/calendar/clear-reconnect — clear needsReconnect flag after re-auth
 router.post("/:id/calendar/clear-reconnect", requireAuth, async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const staffId = Number(req.params.id);
-    if (!(await canManageStaffCalendar(req, staffId))) {
+    if (!(await canManageStaffCalendar(req, staffId, storage))) {
       return res.status(403).json({ message: "Insufficient permissions" });
     }
 

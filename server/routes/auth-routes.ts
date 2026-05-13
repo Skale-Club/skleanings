@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { storage } from "../storage";
 import { requireAdmin, getAuthMe } from "../lib/auth";
 
 const router = Router();
@@ -7,6 +6,7 @@ const router = Router();
 router.get("/auth/me", getAuthMe);
 
 router.post("/register", async (req, res) => {
+    const storage = res.locals.storage!;
     // ... validation ...
     const newUser = await storage.createUser({ ...req.body, isAdmin: false });
     res.status(201).json(newUser);
@@ -14,6 +14,7 @@ router.post("/register", async (req, res) => {
 
 // GET /api/me — returns current user's role and linked staffMemberId
 router.get("/me", requireAdmin, async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const supabaseUser = (req as any).user;
     if (!supabaseUser?.email) {
@@ -31,7 +32,7 @@ router.get("/me", requireAdmin, async (req, res) => {
     }
 
     const allStaff = await storage.getStaffMembers(true);
-    const linked = allStaff.find(s => s.userId === dbUser.id);
+    const linked = allStaff.find((s: { userId?: string | null; id: number }) => s.userId === dbUser.id);
 
     return res.json({
       id: dbUser.id,

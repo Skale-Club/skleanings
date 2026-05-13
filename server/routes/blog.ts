@@ -1,7 +1,6 @@
 
 import { Router } from "express";
 import { z } from "zod";
-import { storage } from "../storage";
 import { ensureDatabaseReady } from "../db";
 import { requireAdmin } from "../lib/auth";
 import { insertBlogPostSchema, insertBlogSettingsSchema } from "@shared/schema";
@@ -45,6 +44,7 @@ async function withColdStartDbRetry<T>(operation: () => Promise<T>): Promise<T> 
 
 // Blog Settings Routes
 router.get('/settings', async (_req, res) => {
+    const storage = res.locals.storage!;
     try {
         const settings = await storage.getBlogSettings();
         res.json(settings || {
@@ -60,6 +60,7 @@ router.get('/settings', async (_req, res) => {
 });
 
 router.put('/settings', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const payload = insertBlogSettingsSchema.parse(req.body);
         const settings = await storage.upsertBlogSettings(payload);
@@ -74,6 +75,7 @@ router.put('/settings', requireAdmin, async (req, res) => {
 
 // Blog Posts (public GET returns only published, admin can see all)
 router.get("/", async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const status = req.query.status as string | undefined;
     const limit = req.query.limit ? Number(req.query.limit) : undefined;
@@ -99,6 +101,7 @@ router.get("/", async (req, res) => {
 });
 
 router.get('/count', async (req, res) => {
+    const storage = res.locals.storage!;
     if (process.env.VERCEL) {
         try {
             const posts = await getFallbackPublishedBlogPosts(1000, 0);
@@ -125,6 +128,7 @@ router.get('/count', async (req, res) => {
 });
 
 router.delete('/tags/:tag', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const rawTag = decodeURIComponent(req.params.tag || '').trim();
         if (!rawTag) {
@@ -136,10 +140,10 @@ router.delete('/tags/:tag', requireAdmin, async (req, res) => {
         for (const post of posts) {
             const tags = (post.tags || '')
                 .split(',')
-                .map(tag => tag.trim())
+                .map((tag: string) => tag.trim())
                 .filter(Boolean);
             if (!tags.length) continue;
-            const filtered = tags.filter(tag => tag.toLowerCase() !== target);
+            const filtered = tags.filter((tag: string) => tag.toLowerCase() !== target);
             if (filtered.length !== tags.length) {
                 await storage.updateBlogPost(post.id, { tags: filtered.join(',') });
                 updatedCount += 1;
@@ -152,6 +156,7 @@ router.delete('/tags/:tag', requireAdmin, async (req, res) => {
 });
 
 router.put('/tags/:tag', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const rawTag = decodeURIComponent(req.params.tag || '').trim();
         const nextTag = String(req.body?.name || '').trim();
@@ -166,7 +171,7 @@ router.put('/tags/:tag', requireAdmin, async (req, res) => {
         for (const post of posts) {
             const tags = (post.tags || '')
                 .split(',')
-                .map(tag => tag.trim())
+                .map((tag: string) => tag.trim())
                 .filter(Boolean);
             if (!tags.length) continue;
 
@@ -204,6 +209,7 @@ router.put('/tags/:tag', requireAdmin, async (req, res) => {
 
 // Admin: list all posts (including drafts)
 router.get("/admin/posts", requireAdmin, async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const status = req.query.status as string | undefined;
     const limit = req.query.limit ? Number(req.query.limit) : 100;
@@ -224,6 +230,7 @@ router.get("/admin/posts", requireAdmin, async (req, res) => {
 
 // Get single post by ID or slug - public only sees published posts
 router.get('/:idOrSlug', async (req, res) => {
+    const storage = res.locals.storage!;
     if (process.env.VERCEL) {
         try {
             const param = req.params.idOrSlug;
@@ -283,6 +290,7 @@ router.get('/:idOrSlug', async (req, res) => {
 });
 
 router.get('/:id/services', async (req, res) => {
+    const storage = res.locals.storage!;
     if (process.env.VERCEL) {
         try {
             return res.json(await getFallbackBlogPostServices(Number(req.params.id)));
@@ -308,6 +316,7 @@ router.get('/:id/services', async (req, res) => {
 
 // Get related posts - only published posts
 router.get('/:id/related', async (req, res) => {
+    const storage = res.locals.storage!;
     if (process.env.VERCEL) {
         try {
             const limit = req.query.limit ? Number(req.query.limit) : 4;
@@ -336,6 +345,7 @@ router.get('/:id/related', async (req, res) => {
 
 // Admin endpoint to get any post by ID (including drafts) for editing
 router.get('/admin/:id', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const post = await storage.getBlogPost(Number(req.params.id));
         if (!post) {
@@ -348,6 +358,7 @@ router.get('/admin/:id', requireAdmin, async (req, res) => {
 });
 
 router.post('/', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const validatedData = insertBlogPostSchema.parse(req.body);
         const post = await storage.createBlogPost(validatedData);
@@ -361,6 +372,7 @@ router.post('/', requireAdmin, async (req, res) => {
 });
 
 router.put('/:id', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const validatedData = insertBlogPostSchema.partial().parse(req.body);
         const post = await storage.updateBlogPost(Number(req.params.id), validatedData);
@@ -374,6 +386,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
 });
 
 router.delete('/:id', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         await storage.deleteBlogPost(Number(req.params.id));
         res.json({ success: true });
