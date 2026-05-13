@@ -1,48 +1,44 @@
-# Requirements — v6.0 Platform Quality
+# Requirements — v7.0 Xkedule Foundation
 
-**Milestone:** v6.0 Platform Quality
-**Goal:** Melhorar segurança, manutenibilidade e confiabilidade da plataforma sem adicionar features visíveis ao usuário final.
+**Milestone:** v7.0 Xkedule Foundation
+**Goal:** Criar infraestrutura de operação da plataforma (super-admin) e locale settings por tenant.
 **Status:** Active
 
 ---
 
 ## Milestone Requirements
 
-### Rate Limiting — Endpoints Públicos (SEED-003)
+### Super-Admin Panel (SEED-015)
 
-- [x] **RATE-01**: `POST /api/analytics/session` aceita no máximo 10 req/min por IP; excesso retorna 429 com header `Retry-After`
-- [x] **RATE-02**: `POST /api/analytics/events` aceita no máximo 10 req/min por IP; excesso retorna 429
-- [x] **RATE-03**: `POST /api/chat/message` aceita no máximo 20 req/min por IP; excesso retorna 429
-- [x] **RATE-04**: Rate limiter usa `express-rate-limit` em memória com `standardHeaders: true` e `legacyHeaders: false`
+- [ ] **SADM-01**: Rota `/superadmin` acessível apenas com credenciais super-admin (env vars `SUPER_ADMIN_EMAIL` + `SUPER_ADMIN_PASSWORD_HASH`) — retorna 403 para qualquer outra sessão
+- [ ] **SADM-02**: Painel super-admin exibe stats do tenant atual: total de bookings, total de clientes, total de serviços, número de staff, uptime da DB
+- [ ] **SADM-03**: Painel super-admin exibe health check da plataforma: DB conectada, migrações aplicadas (supabase migrations status), variáveis de ambiente obrigatórias presentes
+- [ ] **SADM-04**: Super-admin pode ver e editar companySettings do tenant atual (acesso de suporte sem precisar do login de admin do tenant)
+- [ ] **SADM-05**: Logs de erros recentes da aplicação (últimos 50 erros de server) visíveis no painel super-admin
+- [ ] **SADM-06**: Rotas `/api/super-admin/*` retornam 403 para requests sem cookie de sessão super-admin válido
 
-### Split de Componentes Gigantes (SEED-004)
+### Locale Settings Admin (SEED-011)
 
-- [x] **SPLIT-01**: `BookingPage.tsx` refatorado para orquestrador thin — cada step extraído para sub-componente dedicado (`StepStaffSelector`, `StepTimeSlot`, `StepCustomerDetails`, `StepPaymentMethod`, `StepConfirmation`)
-- [x] **SPLIT-02**: Estado compartilhado entre steps permanece no BookingPage pai (fluxo existente não se quebra)
-- [x] **SPLIT-03**: Guard `useRef` fire-once do `booking_started` (Phase 11) preservado após o split
-- [x] **SPLIT-04**: `AppointmentsCalendarSection.tsx` refatorado — `CreateBookingModal` e drag-to-reschedule extraídos em componentes separados
-- [ ] **SPLIT-05**: Fluxo completo de booking funciona após o split (sem regressões visíveis)
-
-### Blog Cron via GitHub Actions (SEED-009)
-
-- [x] **BLOG-01**: Workflow `.github/workflows/blog-cron.yml` dispara `POST /api/blog/generate` diariamente às 9h UTC com autenticação Bearer `BLOG_CRON_TOKEN`
-- [x] **BLOG-02**: Endpoint `POST /api/blog/generate` rejeita requests sem `Authorization: Bearer <BLOG_CRON_TOKEN>` com 401
-- [x] **BLOG-03**: Vercel Cron config de blog generation removida de `vercel.json`
-- [x] **BLOG-04**: Tabela `systemHeartbeats` removida (keep-alive era para Vercel — desnecessária com GH Actions)
+- [ ] **LOC-01**: Admin pode configurar `language` do tenant (opções: `en`, `pt-BR`) na seção General do Company Settings
+- [ ] **LOC-02**: Admin pode configurar `startOfWeek` (opções: `sunday`, `monday`) — calendário admin reflete a configuração
+- [ ] **LOC-03**: Admin pode configurar `dateFormat` (opções: `MM/DD/YYYY`, `DD/MM/YYYY`, `YYYY-MM-DD`)
+- [ ] **LOC-04**: Configurações de locale persistidas em `companySettings` via migration Supabase
+- [ ] **LOC-05**: Booking flow usa `language` e `dateFormat` do tenant para exibição de datas
 
 ---
 
 ## Future Requirements
 
-- Redis como backing store para rate limiter (sobrevive reinicializações)
-- Rate limiting por conversationId além de IP
-- Testes unitários nos sub-componentes extraídos (SEED-001)
+- Impersonation (acessar admin de qualquer tenant como suporte) — requer multi-tenant (SEED-013)
+- Lista de todos os tenants no super-admin — requer multi-tenant
+- Feature flags por plano (SEED-017) — requer planos e multi-tenant (SEED-013 + SEED-014)
+- Full i18n do booking flow (SEED-012 — cancelado)
 
 ## Out of Scope
 
-- Migração para Hetzner — SEED-009 prepara infra de cron, migração de servidor é SEED-013
-- Redis para rate limiter — memória suficiente para volume atual
-- Multi-tenant blog cron — escopo Xkedule futuro
+- Multi-tenant architecture (SEED-013) — milestone posterior
+- IP allowlist para super-admin — usar auth por credenciais por ora
+- Tradução de strings do booking flow — SEED-012 cancelado; locale é só para formatação
 
 ---
 
@@ -50,16 +46,5 @@
 
 | REQ-ID | Phase | Plan |
 |--------|-------|------|
-| RATE-01 | Phase 33 | — |
-| RATE-02 | Phase 33 | — |
-| RATE-03 | Phase 33 | — |
-| RATE-04 | Phase 33 | — |
-| SPLIT-01 | Phase 34 | — |
-| SPLIT-02 | Phase 34 | — |
-| SPLIT-03 | Phase 34 | — |
-| SPLIT-04 | Phase 34 | — |
-| SPLIT-05 | Phase 34 | — |
-| BLOG-01 | Phase 35 | — |
-| BLOG-02 | Phase 35 | — |
-| BLOG-03 | Phase 35 | — |
-| BLOG-04 | Phase 35 | — |
+| SADM-01–06 | — | — |
+| LOC-01–05 | — | — |
