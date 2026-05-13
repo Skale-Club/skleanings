@@ -10,7 +10,7 @@ Customers can discover, book, and pay for cleaning services online without calli
 
 ## Current State
 
-**Six milestones shipped:**
+**Seven milestones shipped:**
 
 - **v1.0 Marketing Attribution** — First-party UTM tracking, booking flow attribution, marketing dashboard, GoHighLevel CRM UTM sync, admin calendar create-booking-from-slot
 - **v2.0 White Label** — Hardcoded brand removed, DB-driven SEO/favicon/legal pages, receptionist multi-staff calendar view with drag-to-reassign and QuickBook walk-in flow
@@ -18,6 +18,7 @@ Customers can discover, book, and pay for cleaning services online without calli
 - **v4.0 Booking Intelligence** — Multi-slot staff availability, custom booking questions per service, recurring subscriptions (weekly/biweekly/monthly) with 48h email reminders, admin subscription panel, customer self-serve pause/cancel via token link
 - **v5.0 Booking Experience** — Multiple durations per service, branded transactional email via Resend (confirmation/reminder/cancellation), Calendar Harmony retry queue with admin observability panel
 - **v6.0 Platform Quality** — Rate limiting on public endpoints, BookingPage + AppointmentsCalendarSection split into focused sub-components, blog cron migrated from Vercel to GitHub Actions
+- **v7.0 Xkedule Foundation** — Locale settings (language/startOfWeek/dateFormat) per tenant, Super-admin panel at /superadmin with session auth, stats, health check, error logs
 
 **Pending human UAT:** Phase 19 (5 items), Phase 20 (4 CAL-FIX items), Phases 25–29 (browser-only checks), Phase 31 (4 Resend email delivery checks), Phase 34 (booking flow smoke test) — deferred to live session.
 **Pending human actions:** Phase 35 — `supabase db push` (drop system_heartbeats) + add `BLOG_CRON_TOKEN` to GitHub Secrets.
@@ -121,7 +122,7 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-## Current Milestone: v7.0 Xkedule Foundation
+## Current Milestone: v8.0 (Planning next milestone)
 
 **Goal:** Criar a infraestrutura de operação da plataforma (super-admin panel) e melhorar a configurabilidade por tenant (locale settings), preparando o terreno para multi-tenancy.
 
@@ -130,4 +131,4 @@ This document evolves at phase transitions and milestone boundaries.
 - Locale settings no admin: language, startOfWeek, date format — consumidos pelo booking flow e calendário (SEED-011)
 
 ---
-*Last updated: 2026-05-13 — v7.0 Xkedule Foundation started*
+*Last updated: 2026-05-13 — v7.0 Xkedule Foundation archived*

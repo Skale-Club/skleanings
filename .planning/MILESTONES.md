@@ -1,5 +1,16 @@
 # Milestones
 
+## v7.0 Xkedule Foundation (Shipped: 2026-05-13)
+
+**Phases completed:** 2 phases, 6 plans, 5 tasks
+
+**Key accomplishments:**
+
+- Locale settings (language, startOfWeek, dateFormat) added to companySettings — admin selects in General tab, dateFnsLocalizer moved to useMemo for reactive week-start, toDateFnsFormat() utility applies tenant format to BookingSummary date display
+- Super-admin panel at /superadmin — separate session namespace (req.session.superAdmin), bcrypt timing-safe login, error ring buffer (patchConsoleError), stats/health/settings/error-logs API + standalone React page isolated from Navbar/Footer/AuthContext
+
+---
+
 ## v6.0 Platform Quality (Shipped: 2026-05-13)
 
 **Phases completed:** 3 phases, 7 plans, 2 tasks
