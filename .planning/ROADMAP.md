@@ -79,7 +79,7 @@ Full details: [milestones/v5.0-ROADMAP.md](milestones/v5.0-ROADMAP.md)
 ### v6.0 Platform Quality (Phases 33–35)
 
 - [x] **Phase 33: Rate Limiting** - Add in-memory rate limiting to public analytics and chat endpoints (completed 2026-05-13)
-- [x] **Phase 34: Component Split** - Refactor BookingPage and AppointmentsCalendarSection into focused sub-components (completed 2026-05-13)
+- [x] **Phase 34: Component Split** - Refactor BookingPage and AppointmentsCalendarSection into focused sub-components (completed 2026-05-13)
 - [ ] **Phase 35: Blog Cron Migration** - Migrate blog generation cron from Vercel Cron to GitHub Actions with endpoint auth
 
 ---
@@ -125,7 +125,10 @@ Plans:
   2. `POST /api/blog/generate` called without `Authorization: Bearer <BLOG_CRON_TOKEN>` returns 401
   3. `vercel.json` contains no cron entry for blog generation
   4. The `systemHeartbeats` table and all references to it are removed from schema, migrations, storage, and routes
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 35-01-PLAN.md — Dual-auth on POST /generate + blog-cron.yml (replaces blog-autopost.yml)
+- [ ] 35-02-PLAN.md — Remove systemHeartbeats from schema + Supabase DROP TABLE migration
 
 ---
 
@@ -140,7 +143,7 @@ Plans:
 | 30–32 | v5.0 | 9/9 | Complete | 2026-05-13 |
 | 33 | v6.0 | 1/1 | Complete    | 2026-05-13 |
 | 34 | v6.0 | 3/4 | Complete    | 2026-05-13 |
-| 35 | v6.0 | 0/? | Not started | - |
+| 35 | v6.0 | 0/2 | Not started | - |
 
 ---
 
