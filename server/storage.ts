@@ -2022,7 +2022,7 @@ export class DatabaseStorage implements IStorage {
   // ─── Notification Logs ─────────────────────────────────────────────────────
 
   async createNotificationLog(entry: InsertNotificationLog): Promise<NotificationLog> {
-    const [row] = await db.insert(notificationLogs).values(entry).returning();
+    const [row] = await db.insert(notificationLogs).values({ ...entry, tenantId: this.tenantId }).returning();
     return row;
   }
 
@@ -2030,7 +2030,7 @@ export class DatabaseStorage implements IStorage {
     return db
       .select()
       .from(notificationLogs)
-      .where(eq(notificationLogs.conversationId, conversationId))
+      .where(and(eq(notificationLogs.tenantId, this.tenantId), eq(notificationLogs.conversationId, conversationId)))
       .orderBy(desc(notificationLogs.sentAt));
   }
 
@@ -2038,7 +2038,7 @@ export class DatabaseStorage implements IStorage {
     return db
       .select()
       .from(notificationLogs)
-      .where(eq(notificationLogs.bookingId, bookingId))
+      .where(and(eq(notificationLogs.tenantId, this.tenantId), eq(notificationLogs.bookingId, bookingId)))
       .orderBy(desc(notificationLogs.sentAt));
   }
 
@@ -2052,7 +2052,7 @@ export class DatabaseStorage implements IStorage {
     limit?: number;
     offset?: number;
   }): Promise<NotificationLog[]> {
-    const conditions = [];
+    const conditions: any[] = [eq(notificationLogs.tenantId, this.tenantId)];
     if (filters.channel) conditions.push(eq(notificationLogs.channel, filters.channel));
     if (filters.status) conditions.push(eq(notificationLogs.status, filters.status));
     if (filters.trigger) conditions.push(eq(notificationLogs.trigger, filters.trigger));
@@ -2063,39 +2063,54 @@ export class DatabaseStorage implements IStorage {
     return db
       .select()
       .from(notificationLogs)
-      .where(conditions.length ? and(...conditions) : undefined)
+      .where(and(...conditions))
       .orderBy(desc(notificationLogs.sentAt))
       .limit(filters.limit ?? 50)
       .offset(filters.offset ?? 0);
   }
 
   async getContact(id: number): Promise<Contact | undefined> {
-    const [contact] = await db.select().from(contacts).where(eq(contacts.id, id));
+    const [contact] = await db.select().from(contacts)
+      .where(and(eq(contacts.tenantId, this.tenantId), eq(contacts.id, id)));
     return contact;
   }
 
   async listContactsWithStats(search?: string, limit = 100): Promise<Contact[]> {
-    const query = db.select().from(contacts);
     if (search) {
-      return query.where(or(like(contacts.name, `%${search}%`), like(contacts.email ?? '', `%${search}%`), like(contacts.phone ?? '', `%${search}%`))).limit(limit).orderBy(desc(contacts.updatedAt));
+      return db.select().from(contacts)
+        .where(and(
+          eq(contacts.tenantId, this.tenantId),
+          or(like(contacts.name, `%${search}%`), like(contacts.email ?? '', `%${search}%`), like(contacts.phone ?? '', `%${search}%`))
+        ))
+        .limit(limit)
+        .orderBy(desc(contacts.updatedAt));
     }
-    return query.limit(limit).orderBy(desc(contacts.updatedAt));
+    return db.select().from(contacts)
+      .where(eq(contacts.tenantId, this.tenantId))
+      .limit(limit)
+      .orderBy(desc(contacts.updatedAt));
   }
 
   async upsertContact(data: Omit<InsertContact, 'updatedAt'>): Promise<Contact> {
     if (data.email) {
-      const [existing] = await db.select().from(contacts).where(eq(contacts.email, data.email));
+      const [existing] = await db.select().from(contacts)
+        .where(and(eq(contacts.tenantId, this.tenantId), eq(contacts.email, data.email)));
       if (existing) {
-        const [updated] = await db.update(contacts).set({ ...data, updatedAt: new Date() }).where(eq(contacts.id, existing.id)).returning();
+        const [updated] = await db.update(contacts)
+          .set({ ...data, updatedAt: new Date() })
+          .where(and(eq(contacts.tenantId, this.tenantId), eq(contacts.id, existing.id)))
+          .returning();
         return updated;
       }
     }
-    const [created] = await db.insert(contacts).values({ ...data, updatedAt: new Date() }).returning();
+    const [created] = await db.insert(contacts).values({ ...data, tenantId: this.tenantId, updatedAt: new Date() }).returning();
     return created;
   }
 
   async updateContact(id: number, data: Partial<InsertContact>): Promise<Contact> {
-    const [updated] = await db.update(contacts).set({ ...data, updatedAt: new Date() }).where(eq(contacts.id, id)).returning();
+    const [updated] = await db.update(contacts).set({ ...data, updatedAt: new Date() })
+      .where(and(eq(contacts.tenantId, this.tenantId), eq(contacts.id, id)))
+      .returning();
     return updated;
   }
 
@@ -2115,7 +2130,7 @@ export class DatabaseStorage implements IStorage {
 
   async createRecurringBooking(data: InsertRecurringBooking): Promise<RecurringBooking> {
     const validated = insertRecurringBookingSchema.parse(data);
-    const [row] = await db.insert(recurringBookings).values(validated).returning();
+    const [row] = await db.insert(recurringBookings).values({ ...validated, tenantId: this.tenantId }).returning();
     return row;
   }
 
@@ -2123,7 +2138,7 @@ export class DatabaseStorage implements IStorage {
     const [row] = await db
       .select()
       .from(recurringBookings)
-      .where(eq(recurringBookings.id, id))
+      .where(and(eq(recurringBookings.tenantId, this.tenantId), eq(recurringBookings.id, id)))
       .limit(1);
     return row;
   }
@@ -2133,10 +2148,12 @@ export class DatabaseStorage implements IStorage {
       return db
         .select()
         .from(recurringBookings)
-        .where(eq(recurringBookings.status, statusFilter))
+        .where(and(eq(recurringBookings.tenantId, this.tenantId), eq(recurringBookings.status, statusFilter)))
         .orderBy(desc(recurringBookings.createdAt));
     }
-    return db.select().from(recurringBookings).orderBy(desc(recurringBookings.createdAt));
+    return db.select().from(recurringBookings)
+      .where(eq(recurringBookings.tenantId, this.tenantId))
+      .orderBy(desc(recurringBookings.createdAt));
   }
 
   async getActiveRecurringBookingsDueForGeneration(asOfDate: string): Promise<RecurringBooking[]> {
@@ -2145,6 +2162,7 @@ export class DatabaseStorage implements IStorage {
       .from(recurringBookings)
       .where(
         and(
+          eq(recurringBookings.tenantId, this.tenantId),
           eq(recurringBookings.status, "active"),
           lte(recurringBookings.nextBookingDate, asOfDate),
           or(
@@ -2163,7 +2181,7 @@ export class DatabaseStorage implements IStorage {
     const [row] = await db
       .update(recurringBookings)
       .set({ ...data, updatedAt: new Date() })
-      .where(eq(recurringBookings.id, id))
+      .where(and(eq(recurringBookings.tenantId, this.tenantId), eq(recurringBookings.id, id)))
       .returning();
     return row;
   }
@@ -2172,7 +2190,7 @@ export class DatabaseStorage implements IStorage {
     const [row] = await db
       .select()
       .from(recurringBookings)
-      .where(eq(recurringBookings.manageToken, token));
+      .where(and(eq(recurringBookings.tenantId, this.tenantId), eq(recurringBookings.manageToken, token)));
     return row;
   }
 
@@ -2207,6 +2225,7 @@ export class DatabaseStorage implements IStorage {
       .from(recurringBookings)
       .leftJoin(contacts, eq(recurringBookings.contactId, contacts.id))
       .leftJoin(services, eq(recurringBookings.serviceId, services.id))
+      .where(eq(recurringBookings.tenantId, this.tenantId))
       .orderBy(desc(recurringBookings.createdAt));
     return rows.map((r) => ({
       ...r,
@@ -2220,6 +2239,7 @@ export class DatabaseStorage implements IStorage {
 
   async enqueueCalendarSync(bookingId: number, target: string, operation: string, payload?: object): Promise<void> {
     await db.insert(calendarSyncQueue).values({
+      tenantId: this.tenantId,
       bookingId,
       target,
       operation,
@@ -2238,6 +2258,7 @@ export class DatabaseStorage implements IStorage {
         SELECT COUNT(*)::int AS count
         FROM calendar_sync_queue
         WHERE target = ${target} AND status = 'pending'
+          AND tenant_id = ${this.tenantId}
       `);
       const pendingCount = (pendingResult[0] as any)?.count ?? 0;
 
@@ -2248,6 +2269,7 @@ export class DatabaseStorage implements IStorage {
         WHERE target = ${target}
           AND status = 'failed_permanent'
           AND created_at > NOW() - INTERVAL '24 hours'
+          AND tenant_id = ${this.tenantId}
       `);
       const failedPermanentCount = (failedResult[0] as any)?.count ?? 0;
 
@@ -2257,6 +2279,7 @@ export class DatabaseStorage implements IStorage {
                last_attempt_at AS "lastAttemptAt", attempts
         FROM calendar_sync_queue
         WHERE target = ${target} AND status = 'failed_permanent'
+          AND tenant_id = ${this.tenantId}
         ORDER BY last_attempt_at DESC NULLS LAST
         LIMIT 20
       `);
@@ -2280,6 +2303,7 @@ export class DatabaseStorage implements IStorage {
           last_error = NULL
       WHERE id = ${jobId}
         AND status IN ('failed_permanent', 'failed_retryable')
+        AND tenant_id = ${this.tenantId}
     `);
   }
 
@@ -2288,6 +2312,7 @@ export class DatabaseStorage implements IStorage {
       const rows = await db.execute(sql`
         SELECT * FROM calendar_sync_queue
         WHERE target = ${target} AND status = 'failed_permanent'
+          AND tenant_id = ${this.tenantId}
         ORDER BY last_attempt_at DESC NULLS LAST
         LIMIT ${limit}
       `);
@@ -2296,6 +2321,7 @@ export class DatabaseStorage implements IStorage {
     const rows = await db.execute(sql`
       SELECT * FROM calendar_sync_queue
       WHERE status = 'failed_permanent'
+        AND tenant_id = ${this.tenantId}
       ORDER BY last_attempt_at DESC NULLS LAST
       LIMIT ${limit}
     `);
