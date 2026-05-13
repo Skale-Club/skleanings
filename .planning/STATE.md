@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v8.0
 milestone_name: Multi-Tenant Architecture
 status: executing
-stopped_at: Completed 40-01-PLAN.md
-last_updated: "2026-05-13T21:20:42.584Z"
+stopped_at: Completed 40-03-PLAN.md
+last_updated: "2026-05-13T23:00:52.748Z"
 last_activity: 2026-05-13
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 14
-  completed_plans: 12
+  completed_plans: 14
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-05-13)
 ## Current Position
 
 Phase: 40 (Tenant Resolution Middleware) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-05-13
 
@@ -91,6 +91,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 39-03]: Raw SQL calendar sync methods use AND tenant_id = ${this.tenantId} in template literals — db.execute(sql`...`) bypasses Drizzle query builder
 - [Phase 39-03]: contacts.email UNIQUE constraint is global not per-tenant — deferred to Phase 40+ to add composite (tenant_id, email) unique index
 - [Phase 40]: Use req.hostname for LRU cache key to avoid port contamination; super-admin routes mounted before resolveTenantMiddleware for bypass
+- [Phase 40-03]: Chat module DI: setChatDependencies called in /chat/message handler wrapper so chatDeps.storage is tenant-scoped per request via res.locals.storage!
 
 ### Roadmap Evolution
 
@@ -107,7 +108,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-13T21:20:42.577Z
-Stopped at: Completed 40-01-PLAN.md
+Last session: 2026-05-13T23:00:52.741Z
+Stopped at: Completed 40-03-PLAN.md
 Resume file: None
 Next: Phase 39 complete — ready for Phase 40 (Tenant Resolution Middleware)

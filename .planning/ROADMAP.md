@@ -103,7 +103,7 @@ Full details: [milestones/v7.0-ROADMAP.md](milestones/v7.0-ROADMAP.md)
 
 - [x] **Phase 38: Schema Foundation** — tenants, domains, userTenants tables + tenantId column on all 40 business tables + Skleanings seeded as tenant 1 (completed 2026-05-13)
 - [x] **Phase 39: Storage Refactor** — DatabaseStorage.forTenant(id) pattern with all queries filtered by tenantId and backward-compatible singleton (completed 2026-05-13)
-- [ ] **Phase 40: Tenant Resolution Middleware** — resolveTenantMiddleware with LRU cache, requireTenantMiddleware, all business routes use res.locals.storage
+- [x] **Phase 40: Tenant Resolution Middleware** — resolveTenantMiddleware with LRU cache, requireTenantMiddleware, all business routes use res.locals.storage (completed 2026-05-13)
 - [ ] **Phase 41: Infra Config** — Caddyfile, systemd app.service, manual deploy.yml workflow, and Hetzner setup README
 
 ---
@@ -185,8 +185,8 @@ Plans:
 **Plans**: 3 plans
 Plans:
 - [x] 40-01-PLAN.md — lru-cache install + locals.d.ts TypeScript augmentation + resolveTenantMiddleware + routes.ts ordering
-- [ ] 40-02-PLAN.md — Lib files refactor: 11 server/lib/ files receive IStorage parameter (remove global singleton import)
-- [ ] 40-03-PLAN.md — Route files migration: 24 business route files read storage from res.locals.storage + human smoke test checkpoint
+- [x] 40-02-PLAN.md — Lib files refactor: 11 server/lib/ files receive IStorage parameter (remove global singleton import)
+- [x] 40-03-PLAN.md — Route files migration: 24 business route files read storage from res.locals.storage + human smoke test checkpoint
 
 ### Phase 41: Infra Config
 **Goal**: All configuration files needed to deploy the multi-tenant platform on a Hetzner CX23 server are committed to the repository — operators can follow the README to stand up a production server without guesswork
@@ -214,7 +214,7 @@ Plans:
 | 36–37 | v7.0 | 6/6 | Complete | 2026-05-13 |
 | 38 | v8.0 | 2/2 | Complete    | 2026-05-13 |
 | 39 | v8.0 | 3/3 | Complete    | 2026-05-13 |
-| 40 | v8.0 | 1/3 | In Progress|  |
+| 40 | v8.0 | 3/3 | Complete   | 2026-05-13 |
 | 41 | v8.0 | 0/TBD | Not started | - |
 
 ---
