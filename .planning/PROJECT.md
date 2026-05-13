@@ -73,7 +73,7 @@ Customers can discover, book, and pay for cleaning services online without calli
 
 **Admin panel:** All admin views use the same sidebar navigation, card-based layout, and React Query patterns. New admin features must match existing UI conventions.
 
-**Codebase state:** Six milestones (Phases 1–35, ~57+ plans) shipped. Server routes split into domain modules (`server/routes/`). Drizzle schema in `shared/schema.ts` with collocated types. Supabase CLI only for migrations — never drizzle-kit push. Three GH Actions cron workflows (email reminders, calendar sync, blog generation). BookingPage and AppointmentsCalendarSection split into focused sub-components in `client/src/pages/booking/` and `client/src/components/admin/calendar/`.
+**Codebase state:** Seven milestones (Phases 1–37, ~63+ plans) shipped. v8.0 Multi-Tenant Architecture in progress (Phase 39 complete). `server/storage.ts` refactored to `DatabaseStorage.forTenant(tenantId)` pattern — all 220+ business queries scoped by tenantId. Singleton `export const storage = DatabaseStorage.forTenant(1)` preserves backward compat. Server routes split into domain modules (`server/routes/`). Drizzle schema in `shared/schema.ts` with collocated types. Supabase CLI only for migrations — never drizzle-kit push. Three GH Actions cron workflows (email reminders, calendar sync, blog generation). BookingPage and AppointmentsCalendarSection split into focused sub-components in `client/src/pages/booking/` and `client/src/components/admin/calendar/`.
 
 **White-label status:** All "Skleanings" literals removed from frontend and server. Brand identity, SEO, favicon, and legal pages are fully configurable via admin. The platform can be redeployed for any tenant by updating `companySettings` in the DB.
 
