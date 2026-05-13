@@ -92,7 +92,7 @@ Full details: [milestones/v6.0-ROADMAP.md](milestones/v6.0-ROADMAP.md)
 
 ## v7.0 Xkedule Foundation (Phases 36–37)
 
-- [ ] **Phase 36: Locale Settings** — Add language, startOfWeek, dateFormat to companySettings; admin UI + booking flow consumption
+- [x] **Phase 36: Locale Settings** — Add language, startOfWeek, dateFormat to companySettings; admin UI + booking flow consumption (completed 2026-05-13)
 - [ ] **Phase 37: Super-Admin Panel** — Dedicated /superadmin route with session auth, stats, health check, companySettings access, error logs
 
 ---
@@ -140,7 +140,7 @@ Plans:
 | 21–29 | v4.0 | 27/27 | Complete | 2026-05-11 |
 | 30–32 | v5.0 | 9/9 | Complete | 2026-05-13 |
 | 33–35 | v6.0 | 7/7 | Complete | 2026-05-13 |
-| 36 | v7.0 | 2/3 | In Progress|  |
+| 36 | v7.0 | 2/3 | Complete    | 2026-05-13 |
 | 37 | v7.0 | 0/? | Not started | - |
 
 ---
