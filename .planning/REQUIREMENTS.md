@@ -50,6 +50,16 @@
 
 | REQ-ID | Phase | Plan |
 |--------|-------|------|
-| RATE-01–04 | — | — |
-| SPLIT-01–05 | — | — |
-| BLOG-01–04 | — | — |
+| RATE-01 | Phase 33 | — |
+| RATE-02 | Phase 33 | — |
+| RATE-03 | Phase 33 | — |
+| RATE-04 | Phase 33 | — |
+| SPLIT-01 | Phase 34 | — |
+| SPLIT-02 | Phase 34 | — |
+| SPLIT-03 | Phase 34 | — |
+| SPLIT-04 | Phase 34 | — |
+| SPLIT-05 | Phase 34 | — |
+| BLOG-01 | Phase 35 | — |
+| BLOG-02 | Phase 35 | — |
+| BLOG-03 | Phase 35 | — |
+| BLOG-04 | Phase 35 | — |

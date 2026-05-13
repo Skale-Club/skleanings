@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Platform Quality
-status: planning
+status: roadmapped
 stopped_at: —
 last_updated: "2026-05-13T00:00:00.000Z"
 last_activity: 2026-05-13
 progress:
-  total_phases: 0
+  total_phases: 3
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -18,17 +18,17 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-05-05)
+See: .planning/PROJECT.md (updated 2026-05-13)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** v6.0 Platform Quality — defining requirements
+**Current focus:** v6.0 Platform Quality — roadmap created, ready for phase planning
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 33 (Rate Limiting) — not started
 Plan: —
-Status: Defining requirements
-Last activity: 2026-05-13 — Milestone v6.0 started
+Status: Roadmapped — awaiting `/gsd:plan-phase 33`
+Last activity: 2026-05-13 — Roadmap created for v6.0
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -38,8 +38,19 @@ Progress: [░░░░░░░░░░] 0%
 |-----------|--------|-------|---------|
 | v1.0 Marketing Attribution | 10–14 (5 phases) | 15 | 2026-05-05 |
 | v2.0 White Label | 15–19 (5 phases) | 15 | 2026-05-05 |
+| v3.0 Calendar Polish | 20 (1 phase) | 4 | 2026-05-11 |
+| v4.0 Booking Intelligence | 21–29 (9 phases) | 27 | 2026-05-11 |
+| v5.0 Booking Experience | 30–32 (3 phases) | 9 | 2026-05-13 |
 
 See: .planning/MILESTONES.md
+
+## v6.0 Phases
+
+| Phase | Name | Requirements | Status |
+|-------|------|--------------|--------|
+| 33 | Rate Limiting | RATE-01–04 | Not started |
+| 34 | Component Split | SPLIT-01–05 | Not started |
+| 35 | Blog Cron Migration | BLOG-01–04 | Not started |
 
 ## Pending Items
 
@@ -85,15 +96,18 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 ### Roadmap Evolution
 
 - Phase 21 added: Per-service booking limits — buffer time, minimum notice, time-slot interval (SEED-026)
+- v6.0 phases 33–35 derived from SEED-003 (rate limiting), SEED-004 (component split), SEED-009 (blog cron migration)
 
 ### Blockers/Concerns
 
 - **MIGRATION PENDING** — `supabase/migrations/20260425000000_add_utm_tracking.sql` requires `POSTGRES_URL_NON_POOLING` (direct connection, port 5432). Get from Supabase Dashboard > Settings > Database.
 - **MIGRATION PENDING** — `supabase/migrations/20260428000000_add_white_label_columns.sql` also pending. Required for Phase 17 admin UI and Phase 18 address-gating features.
 - Phase 19 human UAT items pending browser verification (see above).
+- Phase 35 requires `BLOG_CRON_TOKEN` secret added to GitHub repository secrets before the workflow can authenticate.
 
 ## Session Continuity
 
-Last session: 2026-05-12T23:43:04.556Z
-Stopped at: Completed 32-03-PLAN.md
+Last session: 2026-05-13
+Stopped at: v6.0 roadmap created
 Resume file: None
+Next: `/gsd:plan-phase 33`
