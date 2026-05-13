@@ -1,4 +1,4 @@
-import { storage } from "../storage";
+import type { IStorage } from "../storage";
 import { getStaffBusyTimes } from "./google-calendar";
 
 export interface BookingLimits {
@@ -18,6 +18,7 @@ export function shiftHHMM(hhmm: string, minutes: number): string {
 }
 
 interface SlotGenOptions {
+  storage: IStorage;
   date: string;
   durationMinutes: number;
   limits?: BookingLimits;
@@ -25,7 +26,7 @@ interface SlotGenOptions {
   dayStartMins: number;
   dayEndMins: number;
   staffMemberId: number;
-  prefetchedBookings?: Awaited<ReturnType<typeof storage.getBookingsByDateAndStaff>>;
+  prefetchedBookings?: Awaited<ReturnType<IStorage["getBookingsByDateAndStaff"]>>;
   prefetchedBusyTimes?: Array<{ start: string; end: string }>;
 }
 
@@ -34,7 +35,7 @@ interface SlotGenOptions {
  * Checks booking conflicts, Google Calendar conflicts, minimum notice, and buffer times.
  */
 async function _generateSlots(opts: SlotGenOptions): Promise<string[]> {
-  const { date, durationMinutes, limits, options, dayStartMins, dayEndMins, staffMemberId,
+  const { storage, date, durationMinutes, limits, options, dayStartMins, dayEndMins, staffMemberId,
           prefetchedBookings, prefetchedBusyTimes } = opts;
 
   const existingBookings = prefetchedBookings
@@ -104,6 +105,7 @@ async function _generateSlots(opts: SlotGenOptions): Promise<string[]> {
  * If no availability record exists for that day of week, returns [].
  */
 export async function getStaffAvailableSlots(
+  storage: IStorage,
   staffMemberId: number,
   date: string,
   durationMinutes: number,
@@ -123,7 +125,7 @@ export async function getStaffAvailableSlots(
       const dayStartMins = startHr * 60 + startMn;
       const dayEndMins = endHr * 60 + endMn;
       return _generateSlots({
-        date, durationMinutes, limits, options,
+        storage, date, durationMinutes, limits, options,
         dayStartMins, dayEndMins, staffMemberId,
       });
     }
@@ -148,7 +150,7 @@ export async function getStaffAvailableSlots(
     const [startHr, startMn] = record.startTime.split(":").map(Number);
     const [endHr, endMn] = record.endTime.split(":").map(Number);
     const rangeSlots = await _generateSlots({
-      date, durationMinutes, limits, options,
+      storage, date, durationMinutes, limits, options,
       dayStartMins: startHr * 60 + startMn,
       dayEndMins: endHr * 60 + endMn,
       staffMemberId,
@@ -175,6 +177,7 @@ function getTodayStrForStaff(tzNow: Date): string {
  * Used when staff exist but no specific staffId or serviceIds are requested.
  */
 export async function getStaffUnionSlots(
+  storage: IStorage,
   date: string,
   durationMinutes: number,
   options?: { timeZone?: string }
@@ -183,7 +186,7 @@ export async function getStaffUnionSlots(
   if (activeStaff.length === 0) return [];
 
   const slotSets = await Promise.all(
-    activeStaff.map((s) => getStaffAvailableSlots(s.id, date, durationMinutes, options))
+    activeStaff.map((s) => getStaffAvailableSlots(storage, s.id, date, durationMinutes, options))
   );
 
   const union = new Set<string>();
@@ -199,6 +202,7 @@ export async function getStaffUnionSlots(
  * Rule: if a staff member has no service abilities configured → they can do all services.
  */
 export async function getSlotsForServices(
+  storage: IStorage,
   date: string,
   durationMinutes: number,
   serviceIds: number[],
@@ -206,8 +210,8 @@ export async function getSlotsForServices(
   options?: { timeZone?: string }
 ): Promise<string[]> {
   if (serviceIds.length === 0) {
-    if (staffId) return getStaffAvailableSlots(staffId, date, durationMinutes, options);
-    return getStaffUnionSlots(date, durationMinutes, options);
+    if (staffId) return getStaffAvailableSlots(storage, staffId, date, durationMinutes, options);
+    return getStaffUnionSlots(storage, date, durationMinutes, options);
   }
 
   // STEP 1: Load booking limits from primary service — MUST be before if (staffId) fast-path
@@ -226,7 +230,7 @@ export async function getSlotsForServices(
 
   // STEP 2: Fast-path when a specific staffId is already known — now limits is defined
   if (staffId) {
-    return getStaffAvailableSlots(staffId, date, durationMinutes, options, limits);
+    return getStaffAvailableSlots(storage, staffId, date, durationMinutes, options, limits);
   }
 
   // STEP 3: Union path — iterate all staff
@@ -243,7 +247,7 @@ export async function getSlotsForServices(
   // Compute available slots per staff member (with limits)
   const staffSlots = new Map<number, Set<string>>();
   for (const staff of activeStaff) {
-    const slots = await getStaffAvailableSlots(staff.id, date, durationMinutes, options, limits);
+    const slots = await getStaffAvailableSlots(storage, staff.id, date, durationMinutes, options, limits);
     staffSlots.set(staff.id, new Set(slots));
   }
 

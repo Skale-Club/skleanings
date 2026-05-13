@@ -1,5 +1,5 @@
 import type { Booking } from "@shared/schema";
-import { storage } from "../storage";
+import type { IStorage } from "../storage";
 import {
   createGHLAppointment,
   getOrCreateGHLContact,
@@ -18,6 +18,7 @@ export interface BookingGhlSyncResult {
 }
 
 export async function syncBookingToGhl(
+  storage: IStorage,
   booking: Booking,
   serviceSummary?: string,
 ): Promise<BookingGhlSyncResult> {
