@@ -310,6 +310,32 @@ export function seoInjectPlugin(): Plugin {
 
       result = replaceJsonLd(result, buildLocalBusinessJsonLd(seoData));
 
+      // Final pass: replace remaining {{TOKEN}} literals that the tag-based regex
+      // replacements above couldn't cover. These tokens stay literal otherwise and
+      // leak into the rendered page (the OG/TWITTER image blocks are standalone
+      // placeholders with no <meta> tag for the regex to match; TWITTER_SITE/CREATOR
+      // and FAVICON_URL only get rewritten conditionally and stay literal when the
+      // corresponding DB field is null).
+      const ogImageAlt = `${seoData.ogSiteName || seoData.companyName || DEFAULT_SEO.ogSiteName} logo`;
+      const ogImageBlock = seoData.ogImage
+        ? `<meta property="og:image" content="${escapeHtml(seoData.ogImage)}" />\n    <meta property="og:image:alt" content="${escapeHtml(ogImageAlt)}" />`
+        : '';
+      const twitterImageBlock = seoData.ogImage
+        ? `<meta name="twitter:image" content="${escapeHtml(seoData.ogImage)}" />\n    <meta name="twitter:image:alt" content="${escapeHtml(ogImageAlt)}" />`
+        : '';
+      const faviconUrl = seoData.logoIcon || '/favicon.png';
+
+      const finalTokens: Record<string, string> = {
+        '{{OG_IMAGE_BLOCK}}': ogImageBlock,
+        '{{TWITTER_IMAGE_BLOCK}}': twitterImageBlock,
+        '{{TWITTER_SITE}}': escapeHtml(seoData.twitterSite || ''),
+        '{{TWITTER_CREATOR}}': escapeHtml(seoData.twitterCreator || ''),
+        '{{FAVICON_URL}}': escapeHtml(faviconUrl),
+      };
+      for (const [token, value] of Object.entries(finalTokens)) {
+        result = result.replaceAll(token, () => value);
+      }
+
       return result;
     },
   };
