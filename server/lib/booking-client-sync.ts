@@ -27,7 +27,7 @@ async function notifyAdminTelegram(storage: IStorage, message: string): Promise<
     try {
         const telegramSettings = await storage.getTelegramSettings();
         if (!telegramSettings?.enabled || !telegramSettings.botToken || !telegramSettings.chatIds?.length) return;
-        await sendMessageToAll(telegramSettings, message);
+        await sendMessageToAll(storage, telegramSettings, message);
     } catch (err) {
         console.error("[ClientSync] Telegram notification failed:", err);
     }

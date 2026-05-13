@@ -37,7 +37,7 @@ async function executeJob(job: Record<string, unknown>): Promise<void> {
     }
 
     if (operation === 'create' || operation === 'update') {
-      const result = await syncBookingToGhl(booking);
+      const result = await syncBookingToGhl(storage, booking);
       if (result.attempted && !result.synced) {
         throw new Error(result.reason ?? 'GHL sync returned attempted=true but synced=false');
       }

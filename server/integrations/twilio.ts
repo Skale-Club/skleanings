@@ -1,4 +1,5 @@
 import type { TwilioSettings } from "@shared/schema";
+import type { IStorage } from "../storage";
 import {
   type BookingNotificationPayload,
   buildBookingNotification,
@@ -9,6 +10,7 @@ import {
 import { logNotification } from "../lib/notification-logger";
 
 export async function sendNewChatNotification(
+  storage: IStorage,
   twilioSettings: TwilioSettings,
   conversationId: string,
   pageUrl?: string,
@@ -36,7 +38,7 @@ export async function sendNewChatNotification(
           from: twilioSettings.fromPhoneNumber,
           to: phoneNumber,
         });
-        await logNotification({
+        await logNotification(storage, {
           channel: "sms",
           trigger: "new_chat",
           recipient: phoneNumber,
@@ -46,7 +48,7 @@ export async function sendNewChatNotification(
           conversationId,
         });
       } catch (err: any) {
-        await logNotification({
+        await logNotification(storage, {
           channel: "sms",
           trigger: "new_chat",
           recipient: phoneNumber,
@@ -67,6 +69,7 @@ export async function sendNewChatNotification(
 }
 
 export async function sendCalendarDisconnectNotification(
+  storage: IStorage,
   staffName: string,
   twilioSettings: TwilioSettings
 ): Promise<{ success: boolean; message?: string }> {
@@ -86,7 +89,7 @@ export async function sendCalendarDisconnectNotification(
           from: twilioSettings.fromPhoneNumber,
           to: phoneNumber,
         });
-        await logNotification({
+        await logNotification(storage, {
           channel: "sms",
           trigger: "calendar_disconnect",
           recipient: phoneNumber,
@@ -95,7 +98,7 @@ export async function sendCalendarDisconnectNotification(
           providerMessageId: result.sid,
         });
       } catch (err: any) {
-        await logNotification({
+        await logNotification(storage, {
           channel: "sms",
           trigger: "calendar_disconnect",
           recipient: phoneNumber,
@@ -115,6 +118,7 @@ export async function sendCalendarDisconnectNotification(
 }
 
 export async function sendBookingNotification(
+  storage: IStorage,
   booking: BookingNotificationPayload,
   serviceNames: string[],
   twilioSettings: TwilioSettings,
@@ -139,7 +143,7 @@ export async function sendBookingNotification(
           from: twilioSettings.fromPhoneNumber,
           to: phoneNumber,
         });
-        await logNotification({
+        await logNotification(storage, {
           channel: "sms",
           trigger: "new_booking",
           recipient: phoneNumber,
@@ -149,7 +153,7 @@ export async function sendBookingNotification(
           bookingId,
         });
       } catch (err: any) {
-        await logNotification({
+        await logNotification(storage, {
           channel: "sms",
           trigger: "new_booking",
           recipient: phoneNumber,
@@ -170,6 +174,7 @@ export async function sendBookingNotification(
 }
 
 export async function sendAwaitingApprovalNotification(
+  storage: IStorage,
   booking: BookingNotificationPayload,
   serviceNames: string[],
   twilioSettings: TwilioSettings,
@@ -194,7 +199,7 @@ export async function sendAwaitingApprovalNotification(
           from: twilioSettings.fromPhoneNumber,
           to: phoneNumber,
         });
-        await logNotification({
+        await logNotification(storage, {
           channel: "sms",
           trigger: "booking_awaiting_approval",
           recipient: phoneNumber,
@@ -204,7 +209,7 @@ export async function sendAwaitingApprovalNotification(
           bookingId,
         });
       } catch (err: any) {
-        await logNotification({
+        await logNotification(storage, {
           channel: "sms",
           trigger: "booking_awaiting_approval",
           recipient: phoneNumber,

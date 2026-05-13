@@ -51,7 +51,7 @@ export async function setupVite(server: Server, app: Express) {
       );
       const page = await vite.transformIndexHtml(url, template);
       // Phase 16: server-side SEO meta injection (must run AFTER transformIndexHtml — Pitfall 1)
-      const settings = await getCachedSettings();
+      const settings = await getCachedSettings(res.locals.storage!);
       const injected = injectSeoMeta(page, settings, {
         protocol: req.protocol,
         host: req.get("host") || "",

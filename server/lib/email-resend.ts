@@ -5,9 +5,9 @@
  * Non-throwing: logs errors to notificationLogs and returns silently.
  */
 import { Resend } from 'resend';
-import { storage } from '../storage';
+import type { IStorage } from '../storage';
 
-async function getResendClient(): Promise<{ client: Resend; from: string } | null> {
+async function getResendClient(storage: IStorage): Promise<{ client: Resend; from: string } | null> {
   const settings = await storage.getEmailSettings();
   const apiKey = settings?.resendApiKey || process.env.RESEND_API_KEY;
   const from = settings?.fromAddress || process.env.RESEND_FROM || '';
@@ -36,6 +36,7 @@ async function getResendClient(): Promise<{ client: Resend; from: string } | nul
  * @param trigger   Trigger name: 'booking_confirmed' | 'appointment_reminder_24h' | 'booking_cancelled' | 'test_send'
  */
 export async function sendResendEmail(
+  storage: IStorage,
   to: string,
   subject: string,
   html: string,
@@ -65,7 +66,7 @@ export async function sendResendEmail(
     return;
   }
 
-  const ctx = await getResendClient();
+  const ctx = await getResendClient(storage);
   if (!ctx) {
     try {
       await storage.createNotificationLog({

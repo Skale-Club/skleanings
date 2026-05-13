@@ -44,7 +44,7 @@ export async function syncBookingToGhl(
       address: booking.customerAddress,
     });
 
-    await logNotification({
+    await logNotification(storage, {
       channel: "ghl",
       trigger: "new_booking",
       recipient: booking.customerEmail || booking.customerPhone,

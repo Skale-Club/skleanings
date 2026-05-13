@@ -1,4 +1,5 @@
 import type { TelegramSettings } from "@shared/schema";
+import type { IStorage } from "../storage";
 import {
   type BookingNotificationPayload,
   buildBookingNotification,
@@ -103,6 +104,7 @@ export async function sendTelegramMessage(
 }
 
 export async function sendMessageToAll(
+  storage: IStorage,
   settings: TelegramSettings,
   text: string,
   parseMode: "HTML" | "MarkdownV2" = "HTML",
@@ -122,7 +124,7 @@ export async function sendMessageToAll(
   for (const chatId of chatIds) {
     const result = await sendTelegramMessage(settings.botToken as string, chatId, text, parseMode);
     if (logContext) {
-      await logNotification({
+      await logNotification(storage, {
         channel: "telegram",
         trigger: logContext.trigger,
         recipient: chatId,
@@ -149,6 +151,7 @@ export async function sendMessageToAll(
 }
 
 export async function sendNewChatNotification(
+  storage: IStorage,
   settings: TelegramSettings,
   conversationId: string,
   pageUrl?: string,
@@ -162,10 +165,11 @@ export async function sendNewChatNotification(
     buildNewChatNotification(conversationId, pageUrl, companyName)
   );
 
-  return sendMessageToAll(settings, message, "HTML", { trigger: "new_chat", conversationId });
+  return sendMessageToAll(storage, settings, message, "HTML", { trigger: "new_chat", conversationId });
 }
 
 export async function sendBookingNotification(
+  storage: IStorage,
   booking: BookingNotificationPayload,
   serviceNames: string[],
   settings: TelegramSettings,
@@ -180,10 +184,11 @@ export async function sendBookingNotification(
     buildBookingNotification(booking, serviceNames, companyName)
   );
 
-  return sendMessageToAll(settings, message, "HTML", { trigger: "new_booking", bookingId });
+  return sendMessageToAll(storage, settings, message, "HTML", { trigger: "new_booking", bookingId });
 }
 
 export async function sendAwaitingApprovalNotification(
+  storage: IStorage,
   booking: BookingNotificationPayload,
   serviceNames: string[],
   settings: TelegramSettings,
@@ -198,10 +203,11 @@ export async function sendAwaitingApprovalNotification(
     buildAwaitingApprovalNotification(booking, serviceNames, companyName)
   );
 
-  return sendMessageToAll(settings, message, "HTML", { trigger: "booking_awaiting_approval", bookingId });
+  return sendMessageToAll(storage, settings, message, "HTML", { trigger: "booking_awaiting_approval", bookingId });
 }
 
 export async function sendTelegramTestMessage(
+  storage: IStorage,
   settings: TelegramSettings,
   companyName?: string
 ): Promise<{ success: boolean; message?: string }> {
@@ -222,5 +228,5 @@ export async function sendTelegramTestMessage(
     `<b>Company:</b> ${escapedCompanyName}`,
   ].join("\n");
 
-  return sendMessageToAll(forcedSettings, message, "HTML");
+  return sendMessageToAll(storage, forcedSettings, message, "HTML");
 }

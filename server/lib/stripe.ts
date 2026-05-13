@@ -1,11 +1,11 @@
 import Stripe from "stripe";
-import { storage } from "../storage";
+import type { IStorage } from "../storage";
 
 /**
  * Returns a Stripe client initialized with the connected account's access_token.
  * Used for creating charges on behalf of the connected Stripe account.
  */
-async function getStripeClient(): Promise<Stripe> {
+async function getStripeClient(storage: IStorage): Promise<Stripe> {
   const creds = await storage.getIntegrationSettings("stripe");
   if (!creds?.apiKey) {
     throw new Error("Stripe not connected. Connect your Stripe account in Admin → Integrations.");
@@ -82,9 +82,10 @@ export interface CheckoutSessionParams {
 }
 
 export async function createCheckoutSession(
+  storage: IStorage,
   params: CheckoutSessionParams
 ): Promise<Stripe.Checkout.Session> {
-  const stripe = await getStripeClient();
+  const stripe = await getStripeClient(storage);
   return stripe.checkout.sessions.create({
     payment_method_types: ["card"],
     mode: "payment",
@@ -104,13 +105,15 @@ export async function createCheckoutSession(
 }
 
 export async function retrieveCheckoutSession(
+  storage: IStorage,
   sessionId: string
 ): Promise<Stripe.Checkout.Session> {
-  const stripe = await getStripeClient();
+  const stripe = await getStripeClient(storage);
   return stripe.checkout.sessions.retrieve(sessionId);
 }
 
 export async function verifyWebhookEvent(
+  storage: IStorage,
   rawBody: Buffer,
   signature: string
 ): Promise<Stripe.Event> {

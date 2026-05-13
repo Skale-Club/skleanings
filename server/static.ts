@@ -48,7 +48,7 @@ export function serveStatic(app: Express) {
     try {
       const indexPath = path.resolve(distPath!, "index.html");
       const template = await fs.promises.readFile(indexPath, "utf-8");
-      const settings = await getCachedSettings();
+      const settings = await getCachedSettings(res.locals.storage!);
       const injected = injectSeoMeta(template, settings, {
         protocol: req.protocol,
         host: req.get("host") || "",

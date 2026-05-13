@@ -69,6 +69,7 @@ export async function run24hEmailReminders(): Promise<ReminderRunResult> {
       });
 
       await sendResendEmail(
+        storage,
         row.customer_email,
         content.subject,
         content.html,

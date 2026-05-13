@@ -1,9 +1,9 @@
-import { storage } from "../storage";
+import type { IStorage } from "../storage";
 import type { InsertNotificationLog } from "@shared/schema";
 
 const MAX_PREVIEW_LENGTH = 5000;
 
-export async function logNotification(entry: InsertNotificationLog): Promise<void> {
+export async function logNotification(storage: IStorage, entry: InsertNotificationLog): Promise<void> {
   try {
     const safeEntry: InsertNotificationLog = {
       ...entry,

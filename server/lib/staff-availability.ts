@@ -43,7 +43,7 @@ async function _generateSlots(opts: SlotGenOptions): Promise<string[]> {
 
   // Google Calendar busy times (optional — returns [] if no calendar connected)
   const busyTimes = prefetchedBusyTimes
-    ?? await getStaffBusyTimes(staffMemberId, date, options?.timeZone);
+    ?? await getStaffBusyTimes(staffMemberId, date, options?.timeZone, storage);
 
   const timeZone = options?.timeZone || "America/New_York";
   const now = new Date();
@@ -142,7 +142,7 @@ export async function getStaffAvailableSlots(
   // Hoist DB calls outside the range loop — one fetch per date+staff, not one per range
   const [prefetchedBookings, prefetchedBusyTimes] = await Promise.all([
     storage.getBookingsByDateAndStaff(date, staffMemberId),
-    getStaffBusyTimes(staffMemberId, date, options?.timeZone),
+    getStaffBusyTimes(staffMemberId, date, options?.timeZone, storage),
   ]);
 
   const allSlots = new Set<string>();

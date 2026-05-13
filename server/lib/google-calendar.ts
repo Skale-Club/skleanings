@@ -1,5 +1,5 @@
 import { OAuth2Client } from "google-auth-library";
-import { storage } from "../storage";
+import type { IStorage } from "../storage";
 import { sendCalendarDisconnectNotification } from "../integrations/twilio";
 
 // In-memory cache for GCal busy times — 10-minute TTL
@@ -15,7 +15,7 @@ export function clearBusyTimesCache(staffMemberId: number, date: string): void {
   busyTimesCache.delete(`${staffMemberId}:${date}`);
 }
 
-async function createOAuth2Client(): Promise<OAuth2Client> {
+async function createOAuth2Client(storage: IStorage): Promise<OAuth2Client> {
   const creds = await storage.getIntegrationSettings("google-calendar");
   if (!creds?.apiKey || !creds?.locationId) {
     throw new Error("Google Calendar credentials not configured. Set Client ID and Client Secret in Admin → Integrations.");
@@ -24,8 +24,8 @@ async function createOAuth2Client(): Promise<OAuth2Client> {
   return new OAuth2Client(creds.apiKey, creds.locationId, redirectUri);
 }
 
-export async function getAuthUrl(staffId: number, redirectTo: "staff" | "admin" = "admin"): Promise<string> {
-  const client = await createOAuth2Client();
+export async function getAuthUrl(storage: IStorage, staffId: number, redirectTo: "staff" | "admin" = "admin"): Promise<string> {
+  const client = await createOAuth2Client(storage);
   return client.generateAuthUrl({
     access_type: "offline",
     prompt: "consent", // force refresh_token on every connect
@@ -35,10 +35,11 @@ export async function getAuthUrl(staffId: number, redirectTo: "staff" | "admin" 
 }
 
 export async function exchangeCodeForTokens(
+  storage: IStorage,
   code: string,
   staffId: number
 ): Promise<void> {
-  const client = await createOAuth2Client();
+  const client = await createOAuth2Client(storage);
   const { tokens } = await client.getToken(code);
 
   if (!tokens.access_token || !tokens.refresh_token) {
@@ -62,7 +63,7 @@ export async function exchangeCodeForTokens(
  * Get a valid access token for a staff member, refreshing if expired.
  * Returns null if the staff member has no connected calendar.
  */
-export async function getValidAccessToken(staffMemberId: number): Promise<string | null> {
+export async function getValidAccessToken(storage: IStorage, staffMemberId: number): Promise<string | null> {
   const record = await storage.getStaffGoogleCalendar(staffMemberId);
   if (!record) return null;
 
@@ -76,7 +77,7 @@ export async function getValidAccessToken(staffMemberId: number): Promise<string
 
   // Refresh token
   try {
-    const client = await createOAuth2Client();
+    const client = await createOAuth2Client(storage);
     client.setCredentials({ refresh_token: record.refreshToken });
     const { credentials } = await client.refreshAccessToken();
 
@@ -106,7 +107,7 @@ export async function getValidAccessToken(staffMemberId: number): Promise<string
           const member = await storage.getStaffMember(staffMemberId);
           if (member) {
             const staffName = `${member.firstName} ${member.lastName}`;
-            await sendCalendarDisconnectNotification(staffName, twilioSettings);
+            await sendCalendarDisconnectNotification(storage, staffName, twilioSettings);
           }
         }
       }
@@ -125,8 +126,10 @@ export async function getValidAccessToken(staffMemberId: number): Promise<string
 export async function getStaffBusyTimes(
   staffMemberId: number,
   date: string,
-  timeZone: string = "America/New_York"
+  timeZone: string = "America/New_York",
+  storage?: IStorage
 ): Promise<{ start: string; end: string }[]> {
+  if (!storage) return [];
   try {
     // Check cache first
     const cacheKey = `${staffMemberId}:${date}`;
@@ -135,7 +138,7 @@ export async function getStaffBusyTimes(
       return cached.data;
     }
 
-    const accessToken = await getValidAccessToken(staffMemberId);
+    const accessToken = await getValidAccessToken(storage, staffMemberId);
     if (!accessToken) return [];
 
     const record = await storage.getStaffGoogleCalendar(staffMemberId);
