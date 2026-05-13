@@ -1,0 +1,180 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
+// =============================================================================
+// Types
+// =============================================================================
+
+interface SuperAdminAuthResponse {
+  authenticated: boolean;
+}
+
+interface SuperAdminStats {
+  totalBookings: number;
+  totalContacts: number;
+  totalServices: number;
+  totalStaff: number;
+  serverUptimeSeconds: number;
+}
+
+interface SuperAdminHealth {
+  dbConnected: boolean;
+  migrationCount: number;
+  envErrors: string[];
+  envWarnings: string[];
+}
+
+interface ErrorEntry {
+  timestamp: string;
+  message: string;
+  stack?: string;
+}
+
+interface CompanySettingsPartial {
+  companyName?: string;
+  companyEmail?: string;
+  companyPhone?: string;
+  companyAddress?: string;
+  [key: string]: unknown;
+}
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
+async function superAdminFetch<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, {
+    credentials: "include",
+    ...init,
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    let message = res.statusText || "Request failed";
+    try {
+      const data = text ? JSON.parse(text) : null;
+      if (data?.message) message = data.message;
+    } catch {
+      if (text) message = text;
+    }
+    const err = new Error(message);
+    (err as any).status = res.status;
+    throw err;
+  }
+  return res.json() as Promise<T>;
+}
+
+// =============================================================================
+// useSuperAdminAuth — GET /api/super-admin/me
+// =============================================================================
+
+export function useSuperAdminAuth() {
+  return useQuery<SuperAdminAuthResponse>({
+    queryKey: ["/api/super-admin/me"],
+    queryFn: () => superAdminFetch<SuperAdminAuthResponse>("/api/super-admin/me"),
+    retry: false,
+    staleTime: 1000 * 30, // 30 seconds
+  });
+}
+
+// =============================================================================
+// useSuperAdminLogin — POST /api/super-admin/login
+// =============================================================================
+
+export function useSuperAdminLogin() {
+  const queryClient = useQueryClient();
+  return useMutation<{ ok: boolean }, Error, { email: string; password: string }>({
+    mutationFn: ({ email, password }) =>
+      superAdminFetch<{ ok: boolean }>("/api/super-admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/me"] });
+    },
+  });
+}
+
+// =============================================================================
+// useSuperAdminLogout — POST /api/super-admin/logout
+// =============================================================================
+
+export function useSuperAdminLogout() {
+  const queryClient = useQueryClient();
+  return useMutation<{ ok: boolean }, Error, void>({
+    mutationFn: () =>
+      superAdminFetch<{ ok: boolean }>("/api/super-admin/logout", {
+        method: "POST",
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/me"] });
+    },
+  });
+}
+
+// =============================================================================
+// useSuperAdminStats — GET /api/super-admin/stats
+// =============================================================================
+
+export function useSuperAdminStats(enabled: boolean) {
+  return useQuery<SuperAdminStats>({
+    queryKey: ["/api/super-admin/stats"],
+    queryFn: () => superAdminFetch<SuperAdminStats>("/api/super-admin/stats"),
+    enabled,
+    retry: false,
+  });
+}
+
+// =============================================================================
+// useSuperAdminHealth — GET /api/super-admin/health
+// =============================================================================
+
+export function useSuperAdminHealth(enabled: boolean) {
+  return useQuery<SuperAdminHealth>({
+    queryKey: ["/api/super-admin/health"],
+    queryFn: () => superAdminFetch<SuperAdminHealth>("/api/super-admin/health"),
+    enabled,
+    retry: false,
+  });
+}
+
+// =============================================================================
+// useSuperAdminErrorLogs — GET /api/super-admin/error-logs
+// =============================================================================
+
+export function useSuperAdminErrorLogs(enabled: boolean) {
+  return useQuery<ErrorEntry[]>({
+    queryKey: ["/api/super-admin/error-logs"],
+    queryFn: () => superAdminFetch<ErrorEntry[]>("/api/super-admin/error-logs"),
+    enabled,
+    retry: false,
+  });
+}
+
+// =============================================================================
+// useSuperAdminSettings — GET + PATCH /api/super-admin/company-settings
+// =============================================================================
+
+export function useSuperAdminSettings(enabled: boolean) {
+  const queryClient = useQueryClient();
+
+  const query = useQuery<CompanySettingsPartial>({
+    queryKey: ["/api/super-admin/company-settings"],
+    queryFn: () => superAdminFetch<CompanySettingsPartial>("/api/super-admin/company-settings"),
+    enabled,
+    retry: false,
+  });
+
+  const mutation = useMutation<CompanySettingsPartial, Error, CompanySettingsPartial>({
+    mutationFn: (data) =>
+      superAdminFetch<CompanySettingsPartial>("/api/super-admin/company-settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/company-settings"] });
+    },
+  });
+
+  return { query, mutation };
+}
