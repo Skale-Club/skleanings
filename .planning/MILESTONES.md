@@ -1,5 +1,17 @@
 # Milestones
 
+## v6.0 Platform Quality (Shipped: 2026-05-13)
+
+**Phases completed:** 3 phases, 7 plans, 2 tasks
+
+**Key accomplishments:**
+
+- express-rate-limit corrected on 3 public endpoints (analytics/session, analytics/events, chat/message) — max values fixed (10/10/20) and standardHeaders enabled for Retry-After on 429
+- BookingPage.tsx (948→~120 lines) and AppointmentsCalendarSection.tsx (~49KB→thin shell) split into focused sub-components: StepStaffSelector, StepTimeSlot, StepCustomerDetails, StepPaymentMethod, BookingSummary, CreateBookingModal, useDragToReschedule
+- blog-autopost.yml (hourly) replaced by blog-cron.yml (daily 09:00 UTC) with BLOG_CRON_TOKEN bearer auth; systemHeartbeats table removed from schema and Supabase migration queued
+
+---
+
 ## v5.0 Booking Experience (Shipped: 2026-05-13)
 
 **Phases completed:** 3 phases, 9 plans, 6 tasks

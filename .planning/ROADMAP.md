@@ -7,7 +7,7 @@
 - ✅ **v3.0 Calendar Polish** — Phase 20 (shipped 2026-05-11)
 - ✅ **v4.0 Booking Intelligence** — Phases 21–29 (shipped 2026-05-11)
 - ✅ **v5.0 Booking Experience** — Phases 30–32 (shipped 2026-05-13)
-- [ ] **v6.0 Platform Quality** — Phases 33–35 (active)
+- ✅ **v6.0 Platform Quality** — Phases 33–35 (shipped 2026-05-13)
 
 ---
 
@@ -76,59 +76,16 @@ Full details: [milestones/v5.0-ROADMAP.md](milestones/v5.0-ROADMAP.md)
 
 </details>
 
-### v6.0 Platform Quality (Phases 33–35)
+<details>
+<summary>✅ v6.0 Platform Quality (Phases 33–35) — SHIPPED 2026-05-13</summary>
 
-- [x] **Phase 33: Rate Limiting** - Add in-memory rate limiting to public analytics and chat endpoints (completed 2026-05-13)
-- [x] **Phase 34: Component Split** - Refactor BookingPage and AppointmentsCalendarSection into focused sub-components (completed 2026-05-13)
-- [x] **Phase 35: Blog Cron Migration** - Migrate blog generation cron from Vercel Cron to GitHub Actions with endpoint auth (completed 2026-05-13)
+- [x] Phase 33: Rate Limiting (1/1 plans) — completed 2026-05-13
+- [x] Phase 34: Component Split (4/4 plans) — completed 2026-05-13
+- [x] Phase 35: Blog Cron Migration (2/2 plans) — completed 2026-05-13
 
----
+Full details: [milestones/v6.0-ROADMAP.md](milestones/v6.0-ROADMAP.md)
 
-## Phase Details
-
-### Phase 33: Rate Limiting
-**Goal**: Public endpoints are protected against abuse and excessive request volume
-**Depends on**: Nothing (server-side only change, no phase dependencies within v6.0)
-**Requirements**: RATE-01, RATE-02, RATE-03, RATE-04
-**Success Criteria** (what must be TRUE):
-  1. Sending 11 rapid requests to `POST /api/analytics/session` from the same IP yields a 429 response on the 11th with a `Retry-After` header
-  2. Sending 11 rapid requests to `POST /api/analytics/events` from the same IP yields a 429 response on the 11th
-  3. Sending 21 rapid requests to `POST /api/chat/message` from the same IP yields a 429 on the 21st
-  4. Normal traffic (under limit) receives 200 responses with no change in behavior
-  5. Rate limiter config uses `standardHeaders: true` and `legacyHeaders: false` (no `X-RateLimit-*` legacy headers emitted)
-**Plans**: 1 plan
-Plans:
-- [x] 33-01-PLAN.md — Fix express-rate-limit config and remove duplicate custom guards
-
-### Phase 34: Component Split
-**Goal**: BookingPage and AppointmentsCalendarSection are maintainable files with focused sub-components and no regressions
-**Depends on**: Nothing (independent refactor)
-**Requirements**: SPLIT-01, SPLIT-02, SPLIT-03, SPLIT-04, SPLIT-05
-**Success Criteria** (what must be TRUE):
-  1. Customer can complete a full booking (staff selection through confirmation) without any regression in behavior or UI
-  2. `BookingPage.tsx` contains only orchestration logic; each step lives in its own file (`StepStaffSelector`, `StepTimeSlot`, `StepCustomerDetails`, `StepPaymentMethod`)
-  3. The `booking_started` analytics event fires exactly once per booking flow regardless of re-renders (useRef fire-once guard preserved)
-  4. Admin calendar displays correctly with `CreateBookingModal` and drag-to-reschedule operating as separate extracted components
-**Plans**: 4 plans
-Plans:
-- [x] 34-01-PLAN.md — bookingSchema.ts + BookingSummary.tsx (schema/type foundation)
-- [x] 34-02-PLAN.md — Four step components: StepStaffSelector, StepTimeSlot, StepCustomerDetails, StepPaymentMethod
-- [x] 34-03-PLAN.md — CreateBookingModal.tsx + useDragToReschedule.ts (admin calendar split)
-- [ ] 34-04-PLAN.md — Wire sub-components into BookingPage and AppointmentsCalendarSection orchestrators
-
-### Phase 35: Blog Cron Migration
-**Goal**: Blog generation runs reliably via GitHub Actions; Vercel Cron config and the systemHeartbeats table are fully removed
-**Depends on**: Nothing (infrastructure change, independent of Phases 33–34)
-**Requirements**: BLOG-01, BLOG-02, BLOG-03, BLOG-04
-**Success Criteria** (what must be TRUE):
-  1. `.github/workflows/blog-cron.yml` exists and triggers `POST /api/blog/generate` daily at 09:00 UTC with a valid Bearer token
-  2. `POST /api/blog/generate` called without `Authorization: Bearer <BLOG_CRON_TOKEN>` returns 401
-  3. `vercel.json` contains no cron entry for blog generation
-  4. The `systemHeartbeats` table and all references to it are removed from schema, migrations, storage, and routes
-**Plans**: 2 plans
-Plans:
-- [x] 35-01-PLAN.md — Dual-auth on POST /generate + blog-cron.yml (replaces blog-autopost.yml)
-- [x] 35-02-PLAN.md — Remove systemHeartbeats from schema + Supabase DROP TABLE migration
+</details>
 
 ---
 
@@ -141,9 +98,7 @@ Plans:
 | 20 | v3.0 | 4/4 | Complete | 2026-05-11 |
 | 21–29 | v4.0 | 27/27 | Complete | 2026-05-11 |
 | 30–32 | v5.0 | 9/9 | Complete | 2026-05-13 |
-| 33 | v6.0 | 1/1 | Complete    | 2026-05-13 |
-| 34 | v6.0 | 3/4 | Complete    | 2026-05-13 |
-| 35 | v6.0 | 2/2 | Complete    | 2026-05-13 |
+| 33–35 | v6.0 | 7/7 | Complete | 2026-05-13 |
 
 ---
 

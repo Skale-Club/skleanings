@@ -10,15 +10,17 @@ Customers can discover, book, and pay for cleaning services online without calli
 
 ## Current State
 
-**Five milestones shipped:**
+**Six milestones shipped:**
 
 - **v1.0 Marketing Attribution** — First-party UTM tracking, booking flow attribution, marketing dashboard, GoHighLevel CRM UTM sync, admin calendar create-booking-from-slot
 - **v2.0 White Label** — Hardcoded brand removed, DB-driven SEO/favicon/legal pages, receptionist multi-staff calendar view with drag-to-reassign and QuickBook walk-in flow
 - **v3.0 Calendar Polish** — RBC component identity stabilized, CSS alignment fix, calendar view-switch hygiene, manual confirmation flow per service
 - **v4.0 Booking Intelligence** — Multi-slot staff availability, custom booking questions per service, recurring subscriptions (weekly/biweekly/monthly) with 48h email reminders, admin subscription panel, customer self-serve pause/cancel via token link
 - **v5.0 Booking Experience** — Multiple durations per service, branded transactional email via Resend (confirmation/reminder/cancellation), Calendar Harmony retry queue with admin observability panel
+- **v6.0 Platform Quality** — Rate limiting on public endpoints, BookingPage + AppointmentsCalendarSection split into focused sub-components, blog cron migrated from Vercel to GitHub Actions
 
-**Pending human UAT:** Phase 19 (5 items), Phase 20 (4 CAL-FIX items), Phases 25–29 (browser-only checks), Phase 31 (4 Resend email delivery checks) — deferred to live session.
+**Pending human UAT:** Phase 19 (5 items), Phase 20 (4 CAL-FIX items), Phases 25–29 (browser-only checks), Phase 31 (4 Resend email delivery checks), Phase 34 (booking flow smoke test) — deferred to live session.
+**Pending human actions:** Phase 35 — `supabase db push` (drop system_heartbeats) + add `BLOG_CRON_TOKEN` to GitHub Secrets.
 
 ## Requirements
 
@@ -70,7 +72,7 @@ Customers can discover, book, and pay for cleaning services online without calli
 
 **Admin panel:** All admin views use the same sidebar navigation, card-based layout, and React Query patterns. New admin features must match existing UI conventions.
 
-**Codebase state:** Five milestones (Phases 1–32, ~50+ plans) shipped. Server routes split into domain modules (`server/routes/`). Drizzle schema in `shared/schema.ts` with collocated types. Supabase CLI only for migrations — never drizzle-kit push. Two GH Actions workflows for serverless-safe crons (email reminders + calendar sync).
+**Codebase state:** Six milestones (Phases 1–35, ~57+ plans) shipped. Server routes split into domain modules (`server/routes/`). Drizzle schema in `shared/schema.ts` with collocated types. Supabase CLI only for migrations — never drizzle-kit push. Three GH Actions cron workflows (email reminders, calendar sync, blog generation). BookingPage and AppointmentsCalendarSection split into focused sub-components in `client/src/pages/booking/` and `client/src/components/admin/calendar/`.
 
 **White-label status:** All "Skleanings" literals removed from frontend and server. Brand identity, SEO, favicon, and legal pages are fully configurable via admin. The platform can be redeployed for any tenant by updating `companySettings` in the DB.
 
@@ -119,14 +121,11 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-## Current Milestone: v6.0 Platform Quality
+## Current Milestone: v7.0 (Planning next milestone)
 
-**Goal:** Melhorar segurança, manutenibilidade e confiabilidade da plataforma sem adicionar features visíveis ao usuário final.
+### Active
 
-**Target features:**
-- Rate limiting nos endpoints públicos de analytics e chat (SEED-003)
-- Split dos componentes gigantes BookingPage (39KB) e AppointmentsCalendarSection (49KB) em sub-componentes focados (SEED-004)
-- Blog generation cron migrado de Vercel Cron para GitHub Actions (SEED-009)
+(Planning next milestone)
 
 ---
-*Last updated: 2026-05-13 — v6.0 Platform Quality started*
+*Last updated: 2026-05-13 — v6.0 Platform Quality archived*
