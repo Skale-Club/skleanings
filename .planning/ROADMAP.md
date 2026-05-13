@@ -101,7 +101,7 @@ Full details: [milestones/v7.0-ROADMAP.md](milestones/v7.0-ROADMAP.md)
 
 ### v8.0 Multi-Tenant Architecture (Phases 38–41)
 
-- [ ] **Phase 38: Schema Foundation** — tenants, domains, userTenants tables + tenantId column on all 38 business tables + Skleanings seeded as tenant 1
+- [ ] **Phase 38: Schema Foundation** — tenants, domains, userTenants tables + tenantId column on all 40 business tables + Skleanings seeded as tenant 1
 - [ ] **Phase 39: Storage Refactor** — DatabaseStorage.forTenant(id) pattern with all queries filtered by tenantId and backward-compatible singleton
 - [ ] **Phase 40: Tenant Resolution Middleware** — resolveTenantMiddleware with LRU cache, requireTenantMiddleware, all business routes use res.locals.storage
 - [ ] **Phase 41: Infra Config** — Caddyfile, systemd app.service, manual deploy.yml workflow, and Hetzner setup README
@@ -150,10 +150,13 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. Querying the `tenants` table returns at least one row: id=1, name="Skleanings", slug="skleanings", status="active"
   2. Querying the `domains` table returns at least one row for tenant 1 with hostname="localhost" and isPrimary=true
-  3. All 38 business tables (bookings, services, categories, companySettings, etc.) have a tenant_id column with DEFAULT 1, and every pre-existing row has tenant_id=1
+  3. All 40 business tables (bookings, services, categories, companySettings, etc.) have a tenant_id column with DEFAULT 1, and every pre-existing row has tenant_id=1
   4. The migration is idempotent — running it twice does not produce errors or duplicate data
   5. The `userTenants` table exists with a composite PK on (userId, tenantId) and a role text column
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 38-01-PLAN.md — DDL migration (tenants/domains/user_tenants tables + tenant_id on 40 business tables) + seed migration + supabase db push
+- [ ] 38-02-PLAN.md — Drizzle schema.ts: add tenants/domains/userTenants table declarations + tenantId field on all 40 business tables
 
 ### Phase 39: Storage Refactor
 **Goal**: DatabaseStorage supports per-tenant data isolation — every business query is automatically scoped to a tenantId, and the existing singleton is preserved as a tenant-1 alias so no existing code breaks
@@ -201,7 +204,7 @@ Plans:
 | 30–32 | v5.0 | 9/9 | Complete | 2026-05-13 |
 | 33–35 | v6.0 | 7/7 | Complete | 2026-05-13 |
 | 36–37 | v7.0 | 6/6 | Complete | 2026-05-13 |
-| 38 | v8.0 | 0/TBD | Not started | - |
+| 38 | v8.0 | 0/2 | Not started | - |
 | 39 | v8.0 | 0/TBD | Not started | - |
 | 40 | v8.0 | 0/TBD | Not started | - |
 | 41 | v8.0 | 0/TBD | Not started | - |
