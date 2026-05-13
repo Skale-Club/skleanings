@@ -56,6 +56,9 @@ export interface CompanySettingsData {
   homepageContent: HomepageContent | null;
   timeFormat: string | null;
   timeZone: string | null;
+  language: string | null;
+  startOfWeek: string | null;
+  dateFormat: string | null;
   businessHours: BusinessHours | null;
   minimumBookingValue: string | null;
   faviconUrl: string | null;

@@ -765,6 +765,9 @@ export const companySettings = pgTable("company_settings", {
   ctaText: text("cta_text").default('Book Now'),
   timeFormat: text("time_format").default('12h'), // '12h' or '24h'
   timeZone: text("time_zone").default('America/New_York'),
+  language: text("language").default('en'),           // 'en' | 'pt-BR'
+  startOfWeek: text("start_of_week").default('sunday'), // 'sunday' | 'monday'
+  dateFormat: text("date_format").default('MM/DD/YYYY'), // 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD'
   businessHours: jsonb("business_hours"), // Day-by-day business hours
   minimumBookingValue: numeric("minimum_booking_value", { precision: 10, scale: 2 }).default('0'), // Minimum cart value required
   seoTitle: text("seo_title").default(''),
