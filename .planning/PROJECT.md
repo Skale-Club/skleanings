@@ -119,11 +119,14 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-## Current Milestone: v6.0 (Planning next milestone)
+## Current Milestone: v6.0 Platform Quality
 
-### Active
+**Goal:** Melhorar segurança, manutenibilidade e confiabilidade da plataforma sem adicionar features visíveis ao usuário final.
 
-(Planning next milestone)
+**Target features:**
+- Rate limiting nos endpoints públicos de analytics e chat (SEED-003)
+- Split dos componentes gigantes BookingPage (39KB) e AppointmentsCalendarSection (49KB) em sub-componentes focados (SEED-004)
+- Blog generation cron migrado de Vercel Cron para GitHub Actions (SEED-009)
 
 ---
-*Last updated: 2026-05-13 — v5.0 Booking Experience archived*
+*Last updated: 2026-05-13 — v6.0 Platform Quality started*

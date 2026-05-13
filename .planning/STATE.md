@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v5.0
-milestone_name: Booking Experience
-status: executing
-stopped_at: Completed 32-03-PLAN.md
-last_updated: "2026-05-13T02:53:13.429Z"
+milestone: v6.0
+milestone_name: Platform Quality
+status: planning
+stopped_at: —
+last_updated: "2026-05-13T00:00:00.000Z"
 last_activity: 2026-05-13
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 9
-  completed_plans: 9
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-05)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 32 — Calendar Harmony Retry Queue
+**Current focus:** v6.0 Platform Quality — defining requirements
 
 ## Current Position
 
-Phase: 32
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-05-13
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-05-13 — Milestone v6.0 started
 
 Progress: [░░░░░░░░░░] 0%
 
