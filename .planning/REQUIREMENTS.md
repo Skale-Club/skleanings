@@ -28,7 +28,7 @@
 - [x] **BLOG-01**: Workflow `.github/workflows/blog-cron.yml` dispara `POST /api/blog/generate` diariamente às 9h UTC com autenticação Bearer `BLOG_CRON_TOKEN`
 - [x] **BLOG-02**: Endpoint `POST /api/blog/generate` rejeita requests sem `Authorization: Bearer <BLOG_CRON_TOKEN>` com 401
 - [x] **BLOG-03**: Vercel Cron config de blog generation removida de `vercel.json`
-- [ ] **BLOG-04**: Tabela `systemHeartbeats` removida (keep-alive era para Vercel — desnecessária com GH Actions)
+- [x] **BLOG-04**: Tabela `systemHeartbeats` removida (keep-alive era para Vercel — desnecessária com GH Actions)
 
 ---
 

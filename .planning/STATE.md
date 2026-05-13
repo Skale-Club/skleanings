@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Platform Quality
-status: executing
-stopped_at: Completed 35-01-PLAN.md
-last_updated: "2026-05-13T16:29:28.667Z"
+status: verifying
+stopped_at: Completed 35-02-PLAN.md
+last_updated: "2026-05-13T17:28:33.385Z"
 last_activity: 2026-05-13
 progress:
   total_phases: 3
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 7
-  completed_plans: 6
+  completed_plans: 7
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-05-13)
 
 Phase: 35 (Blog Cron Migration) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-05-13
 
 Progress: [░░░░░░░░░░] 0%
@@ -99,6 +99,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 34-component-split]: formatTime helper duplicated locally in StepTimeSlot to avoid circular imports into BookingPage
 - [Phase 34-component-split]: UseFormReturn<BookingFormValues> passed as prop to step components — no useForm calls in children (pitfall 2 avoidance)
 - [Phase 35-01]: Dual-auth pattern on /api/blog/generate: BLOG_CRON_TOKEN bearer checked first; invalid bearer returns 401 without leaking to admin session path
+- [Phase 35-02]: Migration uses DROP TABLE IF EXISTS — system_heartbeats may not exist in live DB since it was only in legacy Drizzle migrations, not Supabase CLI migrations
 
 ### Roadmap Evolution
 
@@ -114,7 +115,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-13T16:29:28.653Z
-Stopped at: Completed 35-01-PLAN.md
+Last session: 2026-05-13T17:28:33.369Z
+Stopped at: Completed 35-02-PLAN.md
 Resume file: None
 Next: `/gsd:plan-phase 33`
