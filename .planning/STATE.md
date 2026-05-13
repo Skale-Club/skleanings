@@ -70,6 +70,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 36-01]: Locale columns added after timeZone in companySettings pgTable following existing timeFormat/timeZone pattern
 - [Phase 36-01]: CompanySettingsSection default state updated with locale defaults (en/sunday/MM-DD-YYYY) to satisfy TypeScript strict check
 - [Phase 36-locale-settings]: Locale selects grouped under a labeled 'Locale' section heading within the existing General tab card — no new tab required
+- [Phase 36-03]: Move dateFnsLocalizer into useMemo so weekStartsOn is reactive to companySettings changes without page reload
 
 ### Roadmap Evolution
 
@@ -84,7 +85,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-13T18:18:59.744Z
-Stopped at: Completed 36-02-PLAN.md
+Last session: 2026-05-13T18:23:53Z
+Stopped at: Completed 36-03-PLAN.md
 Resume file: None
 Next: `/gsd:plan-phase 36`
