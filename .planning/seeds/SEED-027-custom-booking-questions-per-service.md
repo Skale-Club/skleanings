@@ -1,6 +1,6 @@
 ---
 id: SEED-027
-status: dormant
+status: shipped
 planted: 2026-05-10
 planted_during: v3.0 / Phase 20 (calendar-timeline-structure-audit)
 trigger_when: when admin needs service-specific information before confirming the booking
