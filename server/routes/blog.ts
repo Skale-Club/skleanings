@@ -221,43 +221,6 @@ router.get("/admin/posts", requireAdmin, async (req, res) => {
   }
 });
 
-// Cron endpoint for GitHub Actions scheduling
-router.post("/cron/generate", async (req, res) => {
-  try {
-    const cronSecret = process.env.CRON_SECRET;
-    const authHeader = req.headers.authorization;
-    const providedSecret = authHeader?.replace("Bearer ", "") || req.body?.secret;
-
-    if (!cronSecret) {
-      console.warn("[blog/cron] CRON_SECRET not configured. Rejecting request.");
-      return res.status(500).json({ message: "Cron not configured" });
-    }
-
-    if (providedSecret !== cronSecret) {
-      console.warn("[blog/cron] Invalid cron secret provided.");
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
-    const { BlogGenerator } = await import("../services/blog-generator");
-    await ensureDatabaseReady();
-    const result = await withColdStartDbRetry(() =>
-      BlogGenerator.startDailyPostGeneration({ manual: false })
-    );
-
-    if (result.skipped) {
-      return res.json({ status: "skipped", reason: result.reason });
-    }
-
-    if (result.success) {
-      return res.json({ status: "generated", postId: result.post?.id, jobId: result.job?.id });
-    }
-
-    return res.status(500).json({ status: "failed", error: result.error });
-  } catch (error: any) {
-    console.error("[blog/cron] Generation failed:", error);
-    res.status(500).json({ message: error.message || "Generation failed" });
-  }
-});
 
 // Get single post by ID or slug - public only sees published posts
 router.get('/:idOrSlug', async (req, res) => {
@@ -419,33 +382,56 @@ router.delete('/:id', requireAdmin, async (req, res) => {
     }
 });
 
-// Manual trigger for blog generation (Admin only)
-router.post("/generate", requireAdmin, async (req, res) => {
-  try {
-    const { manual = true, autoPublish = false } = req.body || {};
-    const result = await withColdStartDbRetry(() =>
-      BlogGenerator.startDailyPostGeneration({ manual, autoPublish })
-    );
+// Manual/cron trigger for blog generation
+// Dual-auth: BLOG_CRON_TOKEN bearer (GitHub Actions) OR admin session (UI)
+router.post("/generate", async (req, res) => {
+  const cronToken = process.env.BLOG_CRON_TOKEN;
+  const authHeader = req.headers.authorization;
+  const providedToken = authHeader?.replace("Bearer ", "");
 
-    if (result.skipped) {
-      return res.json({ status: "skipped", reason: result.reason });
+  // Cron token path — allows GitHub Actions to call this endpoint
+  if (cronToken && providedToken === cronToken) {
+    try {
+      await ensureDatabaseReady();
+      const result = await withColdStartDbRetry(() =>
+        BlogGenerator.startDailyPostGeneration({ manual: false })
+      );
+      if (result.skipped) return res.json({ status: "skipped", reason: result.reason });
+      if (result.success) return res.json({ status: "generated", postId: result.post?.id });
+      return res.status(500).json({ status: "failed", error: result.error });
+    } catch (error: any) {
+      console.error("[blog/cron] Generation failed:", error);
+      return res.status(500).json({ message: error.message || "Generation failed" });
     }
+  }
 
-    if (result.success) {
-      return res.json({
+  // Reject a bearer token that doesn't match (avoids leaking to admin session path)
+  if (providedToken && providedToken.length > 0) {
+    console.warn("[blog] Invalid BLOG_CRON_TOKEN provided.");
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  // Admin session path — existing UI-triggered generation
+  return requireAdmin(req, res, async () => {
+    try {
+      const { manual = true, autoPublish = false } = req.body || {};
+      const result = await withColdStartDbRetry(() =>
+        BlogGenerator.startDailyPostGeneration({ manual, autoPublish })
+      );
+      if (result.skipped) return res.json({ status: "skipped", reason: result.reason });
+      if (result.success) return res.json({
         status: "generated",
         post: result.post,
         message: autoPublish
           ? "Post generated and published"
           : "Post generated as draft. Review and publish from the blog admin.",
       });
+      return res.status(500).json({ status: "failed", error: result.error });
+    } catch (error: any) {
+      console.error("[blog] Generation failed:", error);
+      return res.status(500).json({ message: error.message || "Generation failed" });
     }
-
-    return res.status(500).json({ status: "failed", error: result.error });
-  } catch (error: any) {
-    console.error("[blog] Generation failed:", error);
-    res.status(500).json({ message: error.message || "Generation failed" });
-  }
+  });
 });
 
 export default router;
