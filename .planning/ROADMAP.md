@@ -182,7 +182,11 @@ Plans:
   3. All business route handlers access `res.locals.storage` instead of importing the global `storage` singleton — the singleton import is absent from business routes
   4. Requests to `/api/super-admin/*` are not subject to tenant resolution and operate on the global DB directly
   5. `res.locals.tenant` is populated with the resolved tenant object on every successfully resolved request
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 40-01-PLAN.md — lru-cache install + locals.d.ts TypeScript augmentation + resolveTenantMiddleware + routes.ts ordering
+- [ ] 40-02-PLAN.md — Lib files refactor: 11 server/lib/ files receive IStorage parameter (remove global singleton import)
+- [ ] 40-03-PLAN.md — Route files migration: 24 business route files read storage from res.locals.storage + human smoke test checkpoint
 
 ### Phase 41: Infra Config
 **Goal**: All configuration files needed to deploy the multi-tenant platform on a Hetzner CX23 server are committed to the repository — operators can follow the README to stand up a production server without guesswork
@@ -210,7 +214,7 @@ Plans:
 | 36–37 | v7.0 | 6/6 | Complete | 2026-05-13 |
 | 38 | v8.0 | 2/2 | Complete    | 2026-05-13 |
 | 39 | v8.0 | 3/3 | Complete    | 2026-05-13 |
-| 40 | v8.0 | 0/TBD | Not started | - |
+| 40 | v8.0 | 0/3 | Not started | - |
 | 41 | v8.0 | 0/TBD | Not started | - |
 
 ---
