@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v8.0
 milestone_name: Multi-Tenant Architecture
-status: executing
-stopped_at: Completed 41-infra-config-01-PLAN.md
-last_updated: "2026-05-13T23:22:22.864Z"
+status: verifying
+stopped_at: Completed 41-02-PLAN.md
+last_updated: "2026-05-13T23:23:16.610Z"
 last_activity: 2026-05-13
 progress:
   total_phases: 6
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 16
-  completed_plans: 15
+  completed_plans: 16
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-05-13)
 
 Phase: 41 (Infra Config) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-05-13
 
 Progress: [░░░░░░░░░░] 0%
@@ -93,6 +93,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 40]: Use req.hostname for LRU cache key to avoid port contamination; super-admin routes mounted before resolveTenantMiddleware for bypass
 - [Phase 40-03]: Chat module DI: setChatDependencies called in /chat/message handler wrapper so chatDeps.storage is tenant-scoped per request via res.locals.storage!
 - [Phase 41-infra-config]: DNS-01 via Cloudflare for wildcard TLS; direct Node systemd unit (Type=simple) over PM2 for CX23 simplicity
+- [Phase 41]: deploy.yml uses workflow_dispatch only (no push trigger) per MT-16 — prevents accidental production deploys
+- [Phase 41]: infra/README.md documents NodeSource apt install for Node.js (not nvm) — systemd ExecStart requires absolute /usr/bin/node path
 
 ### Roadmap Evolution
 
@@ -109,7 +111,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-13T23:22:22.859Z
-Stopped at: Completed 41-infra-config-01-PLAN.md
+Last session: 2026-05-13T23:23:16.605Z
+Stopped at: Completed 41-02-PLAN.md
 Resume file: None
 Next: Phase 39 complete — ready for Phase 40 (Tenant Resolution Middleware)

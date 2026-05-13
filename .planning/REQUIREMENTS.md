@@ -34,8 +34,8 @@
 
 - [x] **MT-14**: `infra/Caddyfile` criado com reverse proxy multi-tenant (wildcard `*.xkedule.com` + domínios customizados por tenant)
 - [x] **MT-15**: `infra/app.service` criado (systemd unit para PM2 ou Node direto no Hetzner)
-- [ ] **MT-16**: `.github/workflows/deploy.yml` criado com SSH deploy para Hetzner VM (não ativo — trigger manual)
-- [ ] **MT-17**: `infra/README.md` com instruções de setup do servidor Hetzner CX23 (Node install, PM2, Caddy, Cloudflare DNS)
+- [x] **MT-16**: `.github/workflows/deploy.yml` criado com SSH deploy para Hetzner VM (não ativo — trigger manual)
+- [x] **MT-17**: `infra/README.md` com instruções de setup do servidor Hetzner CX23 (Node install, PM2, Caddy, Cloudflare DNS)
 
 ---
 
@@ -74,5 +74,5 @@
 | MT-13 | Phase 40 | Complete |
 | MT-14 | Phase 41 | Complete |
 | MT-15 | Phase 41 | Complete |
-| MT-16 | Phase 41 | Pending |
-| MT-17 | Phase 41 | Pending |
+| MT-16 | Phase 41 | Complete |
+| MT-17 | Phase 41 | Complete |
