@@ -113,7 +113,7 @@ Plans:
 Plans:
 - [x] 34-01-PLAN.md — bookingSchema.ts + BookingSummary.tsx (schema/type foundation)
 - [ ] 34-02-PLAN.md — Four step components: StepStaffSelector, StepTimeSlot, StepCustomerDetails, StepPaymentMethod
-- [ ] 34-03-PLAN.md — CreateBookingModal.tsx + useDragToReschedule.ts (admin calendar split)
+- [x] 34-03-PLAN.md — CreateBookingModal.tsx + useDragToReschedule.ts (admin calendar split)
 - [ ] 34-04-PLAN.md — Wire sub-components into BookingPage and AppointmentsCalendarSection orchestrators
 
 ### Phase 35: Blog Cron Migration
@@ -139,7 +139,7 @@ Plans:
 | 21–29 | v4.0 | 27/27 | Complete | 2026-05-11 |
 | 30–32 | v5.0 | 9/9 | Complete | 2026-05-13 |
 | 33 | v6.0 | 1/1 | Complete    | 2026-05-13 |
-| 34 | v6.0 | 1/4 | In Progress|  |
+| 34 | v6.0 | 2/4 | In Progress|  |
 | 35 | v6.0 | 0/? | Not started | - |
 
 ---

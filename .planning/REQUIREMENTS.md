@@ -20,7 +20,7 @@
 - [x] **SPLIT-01**: `BookingPage.tsx` refatorado para orquestrador thin — cada step extraído para sub-componente dedicado (`StepStaffSelector`, `StepTimeSlot`, `StepCustomerDetails`, `StepPaymentMethod`, `StepConfirmation`)
 - [x] **SPLIT-02**: Estado compartilhado entre steps permanece no BookingPage pai (fluxo existente não se quebra)
 - [x] **SPLIT-03**: Guard `useRef` fire-once do `booking_started` (Phase 11) preservado após o split
-- [ ] **SPLIT-04**: `AppointmentsCalendarSection.tsx` refatorado — `CreateBookingModal` e drag-to-reschedule extraídos em componentes separados
+- [x] **SPLIT-04**: `AppointmentsCalendarSection.tsx` refatorado — `CreateBookingModal` e drag-to-reschedule extraídos em componentes separados
 - [ ] **SPLIT-05**: Fluxo completo de booking funciona após o split (sem regressões visíveis)
 
 ### Blog Cron via GitHub Actions (SEED-009)
