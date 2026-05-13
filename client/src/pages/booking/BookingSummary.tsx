@@ -18,9 +18,9 @@ interface CartItemDisplay {
   quantity: number;
   calculatedPrice: number;
   areaSize?: string;
-  areaValue?: string;
+  areaValue?: number;
   selectedOptions?: Array<{ name: string; quantity: number }>;
-  selectedFrequency?: { name: string; discountPercent: number };
+  selectedFrequency?: { name: string; discountPercent: number } | null;
   customerNotes?: string;
 }
 
