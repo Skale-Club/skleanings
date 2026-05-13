@@ -406,6 +406,7 @@ export default function BookingPage() {
               minimumBookingValue={minimumBookingValue}
               adjustmentAmount={adjustmentAmount}
               timeFormat={timeFormat}
+              dateFormat={dateFormat}
               frequencies={frequencies}
               selectedFrequencyId={selectedFrequencyId}
               onSelectFrequency={setSelectedFrequencyId}
