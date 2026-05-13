@@ -41,7 +41,9 @@ export function serveStatic(app: Express) {
     immutable: true,
   }));
 
-  app.use(express.static(distPath));
+  // index: false so GET / falls through to the SEO-injecting catch-all below.
+  // Otherwise express.static would serve raw index.html with unreplaced {{TOKENS}}.
+  app.use(express.static(distPath, { index: false }));
 
   // Phase 16: catch-all serves dynamically-injected HTML (no longer raw sendFile).
   app.use("*", async (req, res) => {
