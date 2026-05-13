@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v7.0
-milestone_name: Xkedule Foundation
-status: executing
-stopped_at: Completed 37-02-PLAN.md
-last_updated: "2026-05-13T19:18:04.244Z"
+milestone: v8.0
+milestone_name: Multi-Tenant Architecture
+status: planning
+stopped_at: —
+last_updated: "2026-05-13T00:00:00.000Z"
 last_activity: 2026-05-13
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 6
-  completed_plans: 6
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
   percent: 0
 ---
 

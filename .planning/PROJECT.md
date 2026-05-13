@@ -122,7 +122,10 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-## Current Milestone: v8.0 (Planning next milestone)
+## Current Milestone: v8.0 Multi-Tenant Architecture
+
+**Goal:** Transformar Skleanings em plataforma SaaS multi-tenant — isolamento completo de dados por tenantId, resolução de tenant por hostname, infra config para Hetzner.
+
 
 **Goal:** Criar a infraestrutura de operação da plataforma (super-admin panel) e melhorar a configurabilidade por tenant (locale settings), preparando o terreno para multi-tenancy.
 
@@ -131,4 +134,4 @@ This document evolves at phase transitions and milestone boundaries.
 - Locale settings no admin: language, startOfWeek, date format — consumidos pelo booking flow e calendário (SEED-011)
 
 ---
-*Last updated: 2026-05-13 — v7.0 Xkedule Foundation archived*
+*Last updated: 2026-05-13 — v8.0 Multi-Tenant Architecture started*
