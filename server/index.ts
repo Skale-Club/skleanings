@@ -43,16 +43,16 @@ app.use(express.urlencoded({ extended: false }));
 // Rate limiting for public endpoints — in-memory store, no Redis needed at current scale
 const analyticsLimiter = rateLimit({
   windowMs: 60_000,
-  max: 20,
-  standardHeaders: false,
+  max: 10,
+  standardHeaders: true,
   legacyHeaders: false,
   handler: (_req, res) => res.status(429).json({ message: "Too many requests, please try again later." }),
 });
 
 const chatLimiter = rateLimit({
   windowMs: 60_000,
-  max: 30,
-  standardHeaders: false,
+  max: 20,
+  standardHeaders: true,
   legacyHeaders: false,
   handler: (_req, res) => res.status(429).json({ message: "Too many requests, please try again later." }),
 });
