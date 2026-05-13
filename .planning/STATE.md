@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v8.0
 milestone_name: Multi-Tenant Architecture
 status: executing
-stopped_at: Completed 38-01-PLAN.md
-last_updated: "2026-05-13T19:43:27.785Z"
+stopped_at: Completed 38-02-PLAN.md
+last_updated: "2026-05-13T19:55:38.678Z"
 last_activity: 2026-05-13
 progress:
   total_phases: 6
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 8
-  completed_plans: 7
+  completed_plans: 8
   percent: 0
 ---
 
@@ -82,6 +82,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 38-01]: Business table tenant_id FKs omit ON DELETE (default RESTRICT); registry table FKs use ON DELETE CASCADE
 - [Phase 38-01]: sessions table intentionally excluded from tenant_id scope (infra table, not tenant data)
 - [Phase 38-01]: setval() in seed migration advances serial sequence past id=1 to prevent future auto-increment unique constraint violation
+- [Phase 38-schema-foundation]: Drizzle forward references allow users.tenantId to reference tenants before its declaration — no file reordering needed
+- [Phase 38-schema-foundation]: Custom select projections must explicitly list tenantId to satisfy TypeScript inferred types from schema
 
 ### Roadmap Evolution
 
@@ -98,7 +100,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-13T19:43:27.779Z
-Stopped at: Completed 38-01-PLAN.md
+Last session: 2026-05-13T19:55:38.671Z
+Stopped at: Completed 38-02-PLAN.md
 Resume file: None
 Next: `/gsd:plan-phase 38`

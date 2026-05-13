@@ -101,7 +101,7 @@ Full details: [milestones/v7.0-ROADMAP.md](milestones/v7.0-ROADMAP.md)
 
 ### v8.0 Multi-Tenant Architecture (Phases 38–41)
 
-- [ ] **Phase 38: Schema Foundation** — tenants, domains, userTenants tables + tenantId column on all 40 business tables + Skleanings seeded as tenant 1
+- [x] **Phase 38: Schema Foundation** — tenants, domains, userTenants tables + tenantId column on all 40 business tables + Skleanings seeded as tenant 1 (completed 2026-05-13)
 - [ ] **Phase 39: Storage Refactor** — DatabaseStorage.forTenant(id) pattern with all queries filtered by tenantId and backward-compatible singleton
 - [ ] **Phase 40: Tenant Resolution Middleware** — resolveTenantMiddleware with LRU cache, requireTenantMiddleware, all business routes use res.locals.storage
 - [ ] **Phase 41: Infra Config** — Caddyfile, systemd app.service, manual deploy.yml workflow, and Hetzner setup README
@@ -156,7 +156,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [x] 38-01-PLAN.md — DDL migration (tenants/domains/user_tenants tables + tenant_id on 40 business tables) + seed migration + supabase db push
-- [ ] 38-02-PLAN.md — Drizzle schema.ts: add tenants/domains/userTenants table declarations + tenantId field on all 40 business tables
+- [x] 38-02-PLAN.md — Drizzle schema.ts: add tenants/domains/userTenants table declarations + tenantId field on all 40 business tables
 
 ### Phase 39: Storage Refactor
 **Goal**: DatabaseStorage supports per-tenant data isolation — every business query is automatically scoped to a tenantId, and the existing singleton is preserved as a tenant-1 alias so no existing code breaks
@@ -204,7 +204,7 @@ Plans:
 | 30–32 | v5.0 | 9/9 | Complete | 2026-05-13 |
 | 33–35 | v6.0 | 7/7 | Complete | 2026-05-13 |
 | 36–37 | v7.0 | 6/6 | Complete | 2026-05-13 |
-| 38 | v8.0 | 1/2 | In Progress|  |
+| 38 | v8.0 | 2/2 | Complete   | 2026-05-13 |
 | 39 | v8.0 | 0/TBD | Not started | - |
 | 40 | v8.0 | 0/TBD | Not started | - |
 | 41 | v8.0 | 0/TBD | Not started | - |
