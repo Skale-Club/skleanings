@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { createClient } from "@supabase/supabase-js";
 import { createRemoteJWKSet, decodeProtectedHeader, jwtVerify } from "jose";
 import { ensureDatabaseReady } from "../db";
-import { storage } from "../storage";
+import type { IStorage } from "../storage";
 import {
   createFallbackUser,
   getFallbackUserByEmail,
@@ -39,7 +39,7 @@ type MinimalSupabaseUser = {
   user_metadata?: Record<string, unknown>;
 };
 
-type AuthenticatedAppUser = Awaited<ReturnType<typeof storage.getUser>>;
+type AuthenticatedAppUser = Awaited<ReturnType<IStorage["getUser"]>>;
 
 let supabaseJwks: ReturnType<typeof createRemoteJWKSet> | null = null;
 
@@ -136,7 +136,7 @@ async function getSupabaseUserFromToken(token: string): Promise<MinimalSupabaseU
   return verifySupabaseJwtLocally(token);
 }
 
-async function findAppUser(supabaseUser: MinimalSupabaseUser) {
+async function findAppUser(supabaseUser: MinimalSupabaseUser, storage: IStorage) {
   try {
     let dbUser = await storage.getUser(supabaseUser.id);
     if (!dbUser) {
@@ -164,7 +164,7 @@ async function findAppUser(supabaseUser: MinimalSupabaseUser) {
   return null;
 }
 
-async function provisionAppUser(supabaseUser: MinimalSupabaseUser) {
+async function provisionAppUser(supabaseUser: MinimalSupabaseUser, storage: IStorage) {
   const adminEmail = process.env.ADMIN_EMAIL;
   const isAdmin = !!(adminEmail && supabaseUser.email.toLowerCase() === adminEmail.toLowerCase());
   const profile = buildFallbackProfile(supabaseUser);
@@ -195,7 +195,7 @@ async function provisionAppUser(supabaseUser: MinimalSupabaseUser) {
   } as NonNullable<AuthenticatedAppUser>;
 }
 
-export async function getAuthenticatedUser(req: Request) {
+export async function getAuthenticatedUser(req: Request, storage: IStorage) {
   const authHeader = req.headers.authorization;
   const queryToken = req.query?.token as string | undefined;
   const rawToken = authHeader?.startsWith("Bearer ")
@@ -216,10 +216,10 @@ export async function getAuthenticatedUser(req: Request) {
   }
 
   const email = supabaseUser.email;
-  let dbUser = await findAppUser(supabaseUser);
+  let dbUser = await findAppUser(supabaseUser, storage);
 
   if (!dbUser) {
-    dbUser = await provisionAppUser(supabaseUser);
+    dbUser = await provisionAppUser(supabaseUser, storage);
     console.log(`[Auth] Auto-provisioned user profile for ${email}`);
   } else if (dbUser.id !== supabaseUser.id) {
     console.warn(
@@ -233,13 +233,15 @@ export async function getAuthenticatedUser(req: Request) {
 }
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
-  const user = await getAuthenticatedUser(req);
+  const storage = res.locals.storage!;
+  const user = await getAuthenticatedUser(req, storage);
   if (!user) return res.status(401).json({ message: "Authentication required" });
   next();
 }
 
 export async function requireUser(req: Request, res: Response, next: NextFunction) {
-  const user = await getAuthenticatedUser(req);
+  const storage = res.locals.storage!;
+  const user = await getAuthenticatedUser(req, storage);
   if (!user) return res.status(401).json({ message: "Authentication required" });
   if (user.role !== "admin" && user.role !== "user") {
     return res.status(403).json({ message: "Insufficient permissions" });
@@ -248,7 +250,8 @@ export async function requireUser(req: Request, res: Response, next: NextFunctio
 }
 
 export async function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  const user = await getAuthenticatedUser(req);
+  const storage = res.locals.storage!;
+  const user = await getAuthenticatedUser(req, storage);
   if (!user) return res.status(401).json({ message: "Authentication required" });
   if (user.role !== "admin") {
     return res.status(403).json({ message: "Admin access required" });
@@ -257,7 +260,8 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
 }
 
 export async function requireClient(req: Request, res: Response, next: NextFunction) {
-  const user = await getAuthenticatedUser(req);
+  const storage = res.locals.storage!;
+  const user = await getAuthenticatedUser(req, storage);
   if (!user) return res.status(401).json({ message: "Authentication required" });
   if (user.role !== "client") {
     return res.status(403).json({ message: "Client access required" });
@@ -266,7 +270,8 @@ export async function requireClient(req: Request, res: Response, next: NextFunct
 }
 
 export async function getAuthMe(req: Request, res: Response) {
-  const user = await getAuthenticatedUser(req);
+  const storage = res.locals.storage!;
+  const user = await getAuthenticatedUser(req, storage);
   if (!user) return res.status(401).json({ message: "Not authenticated" });
   res.json({
     id: user.id,
@@ -291,6 +296,7 @@ export async function requireStaff(req: Request, res: Response, next: NextFuncti
         if (error || !user) {
             return res.status(401).json({ message: 'Authentication required' });
         }
+        const storage = res.locals.storage!;
         const dbUser = await storage.getUserByEmail(user.email!);
         if (!dbUser || !['admin', 'staff'].includes(dbUser.role)) {
             return res.status(403).json({ message: 'Staff access required' });
