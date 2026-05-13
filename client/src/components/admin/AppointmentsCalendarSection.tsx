@@ -13,7 +13,7 @@ import {
   startOfMonth,
   startOfWeek,
 } from 'date-fns';
-import { enUS } from 'date-fns/locale';
+import { enUS, ptBR } from 'date-fns/locale';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import {
@@ -43,14 +43,6 @@ import { QuickBookModal } from './QuickBookModal';
 import { CreateBookingModal } from './calendar/CreateBookingModal';
 import { useDragToReschedule } from './calendar/useDragToReschedule';
 
-
-const localizer = dateFnsLocalizer({
-  format,
-  parse,
-  startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 0 }),
-  getDay,
-  locales: { 'en-US': enUS },
-});
 
 const STAFF_COLORS = [
   '#2563EB',
@@ -336,6 +328,20 @@ export function AppointmentsCalendarSection({
   } | null>(null);
   const [gcalBusy, setGcalBusy] = useState<CalendarEvent[]>([]);
 
+  const { settings: companySettings } = useCompanySettings();
+  const weekStartsOn = (companySettings?.startOfWeek === 'monday' ? 1 : 0) as 0 | 1;
+
+  const localizer = useMemo(
+    () => dateFnsLocalizer({
+      format,
+      parse,
+      startOfWeek: () => startOfWeek(new Date(), { weekStartsOn }),
+      getDay,
+      locales: { 'en-US': enUS, 'pt-BR': ptBR },
+    }),
+    [weekStartsOn],
+  );
+
   const { from, to } = useMemo(() => {
     let start: Date;
     let end: Date;
@@ -344,8 +350,8 @@ export function AppointmentsCalendarSection({
       start = startOfMonth(currentDate);
       end = endOfMonth(currentDate);
     } else if (currentView === Views.WEEK) {
-      start = startOfWeek(currentDate, { weekStartsOn: 0 });
-      end = endOfWeek(currentDate, { weekStartsOn: 0 });
+      start = startOfWeek(currentDate, { weekStartsOn });
+      end = endOfWeek(currentDate, { weekStartsOn });
     } else {
       start = currentDate;
       end = currentDate;
@@ -355,7 +361,7 @@ export function AppointmentsCalendarSection({
       from: format(start, 'yyyy-MM-dd'),
       to: format(end, 'yyyy-MM-dd'),
     };
-  }, [currentDate, currentView]);
+  }, [currentDate, currentView, weekStartsOn]);
 
   const { data: bookings = [] } = useQuery<Booking[]>({
     queryKey: ['/api/bookings', 'range', from, to],
@@ -495,7 +501,6 @@ export function AppointmentsCalendarSection({
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { settings: companySettings } = useCompanySettings();
   const showAddressField =
     companySettings?.serviceDeliveryModel == null ||
     companySettings.serviceDeliveryModel === 'at-customer' ||
@@ -772,6 +777,7 @@ export function AppointmentsCalendarSection({
             draggableAccessor={((event: CalendarEvent) => !event.isGcalBusy) as any}
             onEventDrop={handleEventDrop as any}
             className="appointments-calendar"
+            culture={companySettings?.language === 'pt-BR' ? 'pt-BR' : 'en-US'}
             localizer={localizer}
             events={allEvents}
             defaultView={DEFAULT_CALENDAR_VIEW}
