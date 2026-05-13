@@ -1,5 +1,21 @@
 # Milestones
 
+## v8.0 Multi-Tenant Architecture (Shipped: 2026-05-13)
+
+**Phases completed:** 4 phases (38–41), 10 plans, all complete
+**Files changed:** 81 files, +5969 / -457 lines
+
+**Key accomplishments:**
+
+- Multi-tenant schema: tenants, domains, user_tenants registry tables + tenant_id INTEGER NOT NULL DEFAULT 1 on all 40 business tables via idempotent Supabase CLI migration; Skleanings seeded as tenant id=1
+- Drizzle schema updated with tenants/domains/userTenants declarations and tenantId field on all 40 business tables — full TypeScript type coverage for multi-tenant queries
+- `DatabaseStorage.forTenant(tenantId)` static factory pattern — 220 `this.tenantId` references across all 23 method groups; `export const storage = DatabaseStorage.forTenant(1)` singleton preserves zero route breakage
+- `server/middleware/tenant.ts` with LRU cache (500 entries, 5-min TTL) resolves hostname → tenant → scoped storage instance; unknown hostnames return 404; super-admin routes bypass entirely
+- All 11 `server/lib/` files refactored to accept `IStorage` as explicit parameter; all 24 business route files migrated from global `import { storage }` to `res.locals.storage`
+- `infra/` directory: Caddyfile (wildcard `*.xkedule.com` TLS via xcaddy cloudflare plugin), app.service (systemd, Restart=always), deploy.yml (workflow_dispatch SSH to Hetzner), README.md (8-step CX23 setup guide)
+
+---
+
 ## v7.0 Xkedule Foundation (Shipped: 2026-05-13)
 
 **Phases completed:** 2 phases, 6 plans, 5 tasks
