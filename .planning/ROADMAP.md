@@ -204,7 +204,7 @@ Plans:
 | 30–32 | v5.0 | 9/9 | Complete | 2026-05-13 |
 | 33–35 | v6.0 | 7/7 | Complete | 2026-05-13 |
 | 36–37 | v7.0 | 6/6 | Complete | 2026-05-13 |
-| 38 | v8.0 | 2/2 | Complete   | 2026-05-13 |
+| 38 | v8.0 | 2/2 | Complete    | 2026-05-13 |
 | 39 | v8.0 | 0/TBD | Not started | - |
 | 40 | v8.0 | 0/TBD | Not started | - |
 | 41 | v8.0 | 0/TBD | Not started | - |
