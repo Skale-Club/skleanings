@@ -412,6 +412,16 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  private readonly tenantId: number;
+
+  private constructor(tenantId: number) {
+    this.tenantId = tenantId;
+  }
+
+  static forTenant(tenantId: number): DatabaseStorage {
+    return new DatabaseStorage(tenantId);
+  }
+
   async getUsers(): Promise<User[]> {
     return await db.select().from(users);
   }
@@ -2243,4 +2253,4 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage = DatabaseStorage.forTenant(1);
