@@ -10,6 +10,7 @@ import session from "express-session";
 import MemoryStore from "memorystore";
 import { storage } from "./storage";
 import { assertRuntimeEnv } from "./lib/runtime-env";
+import { patchConsoleError } from "./lib/error-log";
 
 if (process.env.NODE_ENV === "production") {
   process.noDeprecation = true;
@@ -119,6 +120,7 @@ app.use((req, res, next) => {
   // Schema migrations should be done via `npm run db:push` during deployment
   // await storage.initializeRuntimeState();
   await initializeSeedData();
+  patchConsoleError();
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
