@@ -1,0 +1,35 @@
+# TRIGGER: Manual only (workflow_dispatch). This workflow NEVER runs automatically on push.
+# Required GitHub Secrets: HETZNER_SSH_KEY, HETZNER_HOST, HETZNER_USER
+# See infra/README.md for full server setup instructions
+
+name: Deploy to Hetzner
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for this deployment'
+        required: false
+        default: 'Manual deploy'
+
+jobs:
+  deploy:
+    name: SSH Deploy to Hetzner CX23
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_USER }}
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          port: 22
+          script: |
+            set -e
+            cd /var/www/skleanings
+            git pull origin main
+            npm ci
+            npm run build
+            sudo systemctl restart skleanings
+            echo "Deploy complete at $(date -u)"
