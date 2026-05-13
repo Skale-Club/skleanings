@@ -23,7 +23,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout cron runner
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Generate Recurring Bookings
         env:
