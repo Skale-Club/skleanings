@@ -25,10 +25,16 @@ import notificationLogsRouter from "./routes/notification-logs";
 import recurringBookingsRouter, { adminRecurringRouter, publicRecurringRouter } from "./routes/recurring-bookings";
 import { superAdminRouter } from "./routes/super-admin";
 import { calendarSyncRouter } from "./routes/calendar-sync";
+import { resolveTenantMiddleware } from "./middleware/tenant";
 
 export async function registerRoutes(server: Server, app: Express) {
-  // Mount routers
-  // Mount routers
+  // 1. Super-admin — bypasses tenant resolution (MT-13)
+  app.use("/api/super-admin", superAdminRouter);
+
+  // 2. Tenant resolution — applies to all routes below
+  app.use(resolveTenantMiddleware);
+
+  // 3. Business routers
   // Auth routes (e.g. /api/admin/session) - mounted at /api to match client expectations
   app.use("/api", authRouter);
   app.use("/api", authRoutes);
@@ -88,6 +94,4 @@ export async function registerRoutes(server: Server, app: Express) {
   app.use("/api/admin/recurring-bookings", adminRecurringRouter);
   app.use("/api/subscriptions/manage", publicRecurringRouter);
 
-  // Phase 37: super-admin panel API
-  app.use("/api/super-admin", superAdminRouter);
 }
