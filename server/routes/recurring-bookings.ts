@@ -8,6 +8,11 @@ import { runRecurringBookingGeneration } from "../services/recurring-booking-gen
 import { runRecurringBookingReminders } from "../services/recurring-booking-reminder";
 import { requireAdmin } from "../lib/auth";
 import { storage } from "../storage";
+import {
+  getBearerOrBodySecret,
+  isMissingDatabaseRelation,
+  sendCronSchemaNotReady,
+} from "../lib/cron-utils";
 
 // ── Cron router (existing, mounted at /api/recurring-bookings) ──────────────
 const router = Router();
@@ -19,9 +24,7 @@ const router = Router();
  */
 router.post("/cron/generate", async (req, res) => {
   const cronSecret = process.env.CRON_SECRET;
-  const provided =
-    req.headers.authorization?.replace("Bearer ", "").trim() ??
-    (req.body as { secret?: string })?.secret;
+  const provided = getBearerOrBodySecret(req);
 
   if (!cronSecret || provided !== cronSecret) {
     return res.status(401).json({ message: "Unauthorized" });
@@ -33,6 +36,10 @@ router.post("/cron/generate", async (req, res) => {
     return res.json(result);
   } catch (err) {
     console.error("[RecurringRoute] Unhandled error in cron/generate:", err);
+    if (isMissingDatabaseRelation(err)) {
+      return sendCronSchemaNotReady(res, "recurring-booking-generation", err);
+    }
+
     return res.status(500).json({
       message: "Internal server error",
       error: err instanceof Error ? err.message : String(err),
@@ -47,9 +54,7 @@ router.post("/cron/generate", async (req, res) => {
  */
 router.post("/cron/send-reminders", async (req, res) => {
   const cronSecret = process.env.CRON_SECRET;
-  const provided =
-    req.headers.authorization?.replace("Bearer ", "").trim() ??
-    (req.body as { secret?: string })?.secret;
+  const provided = getBearerOrBodySecret(req);
 
   if (!cronSecret || provided !== cronSecret) {
     return res.status(401).json({ message: "Unauthorized" });
@@ -61,6 +66,10 @@ router.post("/cron/send-reminders", async (req, res) => {
     return res.json(result);
   } catch (err) {
     console.error("[RecurringRoute] Unhandled error in cron/send-reminders:", err);
+    if (isMissingDatabaseRelation(err)) {
+      return sendCronSchemaNotReady(res, "recurring-booking-reminders", err);
+    }
+
     return res.status(500).json({
       message: "Internal server error",
       error: err instanceof Error ? err.message : String(err),

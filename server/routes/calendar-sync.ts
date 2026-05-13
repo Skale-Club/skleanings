@@ -10,6 +10,11 @@ import { Router } from "express";
 import { requireAdmin } from "../lib/auth";
 import { storage } from "../storage";
 import { runCalendarSyncWorker } from "../services/calendar-sync-worker";
+import {
+  getBearerOrBodySecret,
+  isMissingDatabaseRelation,
+  sendCronSchemaNotReady,
+} from "../lib/cron-utils";
 
 export const calendarSyncRouter = Router();
 
@@ -19,9 +24,7 @@ export const calendarSyncRouter = Router();
  */
 calendarSyncRouter.post("/cron/run", async (req, res) => {
   const cronSecret = process.env.CRON_SECRET;
-  const provided =
-    req.headers.authorization?.replace("Bearer ", "").trim() ??
-    (req.body as { secret?: string })?.secret;
+  const provided = getBearerOrBodySecret(req);
 
   if (!cronSecret || provided !== cronSecret) {
     return res.status(401).json({ message: "Unauthorized" });
@@ -32,6 +35,10 @@ calendarSyncRouter.post("/cron/run", async (req, res) => {
     return res.json({ success: true, ...result });
   } catch (err) {
     console.error("[CalendarSyncRoute] Worker error:", err);
+    if (isMissingDatabaseRelation(err)) {
+      return sendCronSchemaNotReady(res, "calendar-sync", err);
+    }
+
     return res.status(500).json({
       success: false,
       error: err instanceof Error ? err.message : String(err),

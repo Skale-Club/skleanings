@@ -10,55 +10,25 @@ on:
         required: false
         default: 'Manual trigger'
 
+permissions:
+  contents: read
+
+concurrency:
+  group: booking-email-reminders
+  cancel-in-progress: false
+
 jobs:
   send-reminders:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: Checkout cron runner
+        uses: actions/checkout@v4
+
       - name: Send 24h Email Reminders
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           APP_URL: ${{ vars.APP_URL }}
-        run: |
-          if [ -z "$CRON_SECRET" ]; then
-            echo "ERROR: CRON_SECRET secret is not configured"
-            exit 1
-          fi
-          if [ -z "$APP_URL" ]; then
-            echo "ERROR: APP_URL variable is not configured"
-            exit 1
-          fi
-
-          APP_URL="${APP_URL%/}"
-          echo "Using APP_URL: $APP_URL"
-
-          call_reminders() {
-            curl -L -s -w "\n%{http_code}" -X POST \
-              "${APP_URL}/api/integrations/email/cron/send-reminders" \
-              -H "Authorization: Bearer ${CRON_SECRET}" \
-              -H "Content-Type: application/json" \
-              --max-time 60
-          }
-
-          echo "Triggering 24h email reminders at $(date -u)"
-          RESPONSE=$(call_reminders)
-
-          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-          BODY=$(echo "$RESPONSE" | sed '$d')
-
-          if [ "$HTTP_CODE" -ge 500 ]; then
-            echo "Received HTTP $HTTP_CODE. Retrying once after 10s..."
-            sleep 10
-            RESPONSE=$(call_reminders)
-            HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-            BODY=$(echo "$RESPONSE" | sed '$d')
-          fi
-
-          echo "Response: $BODY"
-          echo "HTTP Status: $HTTP_CODE"
-
-          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
-            echo "Email reminder cron failed with HTTP $HTTP_CODE"
-            exit 1
-          fi
-          echo "24h email reminders completed successfully"
+          CRON_MAX_ATTEMPTS: "3"
+          CRON_TIMEOUT_MS: "60000"
+        run: node scripts/call-cron-endpoint.mjs "Booking Email Reminders" "/api/integrations/email/cron/send-reminders"

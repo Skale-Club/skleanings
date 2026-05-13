@@ -7,6 +7,11 @@ import thumbtackRouter from "./integrations/thumbtack";
 import googleCalendarRouter from "./integrations/google-calendar";
 import stripeRouter from "./integrations/stripe";
 import resendRouter from "./integrations/resend";
+import {
+  getBearerOrBodySecret,
+  isMissingDatabaseRelation,
+  sendCronSchemaNotReady,
+} from "../lib/cron-utils";
 
 const router = Router();
 
@@ -23,7 +28,7 @@ router.use(resendRouter);
 // Production trigger: GitHub Actions booking-email-reminders-cron.yml
 // Protected by CRON_SECRET header (Authorization: Bearer <secret>)
 router.post('/email/cron/send-reminders', async (req, res) => {
-  const secret = req.headers['authorization']?.replace('Bearer ', '');
+  const secret = getBearerOrBodySecret(req);
   if (!secret || secret !== process.env.CRON_SECRET) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
@@ -33,6 +38,10 @@ router.post('/email/cron/send-reminders', async (req, res) => {
     res.json({ success: true, ...result });
   } catch (err) {
     console.error('[EmailCron] Error:', err);
+    if (isMissingDatabaseRelation(err)) {
+      return sendCronSchemaNotReady(res, "booking-email-reminders", err);
+    }
+
     res.status(500).json({ success: false, message: (err as Error).message });
   }
 });
