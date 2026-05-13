@@ -38,6 +38,17 @@ CREATE TABLE IF NOT EXISTS user_tenants (
 CREATE INDEX IF NOT EXISTS user_tenants_tenant_id_idx ON user_tenants (tenant_id);
 CREATE INDEX IF NOT EXISTS user_tenants_user_id_idx   ON user_tenants (user_id);
 
+-- 3b. Seed Skleanings as tenant id=1 BEFORE adding FK columns (DEFAULT 1 requires row to exist).
+INSERT INTO tenants (id, name, slug, status)
+VALUES (1, 'Skleanings', 'skleanings', 'active')
+ON CONFLICT (id) DO NOTHING;
+-- Advance serial sequence past id=1 to prevent future auto-increment collision.
+SELECT setval('tenants_id_seq', 1, true);
+
+INSERT INTO domains (tenant_id, hostname, is_primary)
+VALUES (1, 'localhost', true)
+ON CONFLICT (hostname) DO NOTHING;
+
 -- 4. Add tenant_id to all 40 business tables (idempotent via ADD COLUMN IF NOT EXISTS).
 -- tenants table must already exist (created above) so FK references are valid.
 -- The DO $$ block checks table existence before ALTER to tolerate schema drift.
