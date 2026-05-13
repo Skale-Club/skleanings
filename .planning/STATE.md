@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v7.0
 milestone_name: Xkedule Foundation
 status: executing
-stopped_at: Completed 36-01-PLAN.md
-last_updated: "2026-05-13T18:15:52.104Z"
+stopped_at: Completed 36-02-PLAN.md
+last_updated: "2026-05-13T18:18:59.752Z"
 last_activity: 2026-05-13
 progress:
   total_phases: 2
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-05-13)
 ## Current Position
 
 Phase: 36 (Locale Settings) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-05-13
 
@@ -69,6 +69,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 32]: db.execute() returns RowList directly — use Array.from(result) not result.rows for raw SQL results in storage.ts
 - [Phase 36-01]: Locale columns added after timeZone in companySettings pgTable following existing timeFormat/timeZone pattern
 - [Phase 36-01]: CompanySettingsSection default state updated with locale defaults (en/sunday/MM-DD-YYYY) to satisfy TypeScript strict check
+- [Phase 36-locale-settings]: Locale selects grouped under a labeled 'Locale' section heading within the existing General tab card — no new tab required
 
 ### Roadmap Evolution
 
@@ -83,7 +84,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-13T18:15:52.094Z
-Stopped at: Completed 36-01-PLAN.md
+Last session: 2026-05-13T18:18:59.744Z
+Stopped at: Completed 36-02-PLAN.md
 Resume file: None
 Next: `/gsd:plan-phase 36`
