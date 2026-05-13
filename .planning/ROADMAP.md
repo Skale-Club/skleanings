@@ -102,7 +102,7 @@ Full details: [milestones/v7.0-ROADMAP.md](milestones/v7.0-ROADMAP.md)
 ### v8.0 Multi-Tenant Architecture (Phases 38–41)
 
 - [x] **Phase 38: Schema Foundation** — tenants, domains, userTenants tables + tenantId column on all 40 business tables + Skleanings seeded as tenant 1 (completed 2026-05-13)
-- [ ] **Phase 39: Storage Refactor** — DatabaseStorage.forTenant(id) pattern with all queries filtered by tenantId and backward-compatible singleton
+- [x] **Phase 39: Storage Refactor** — DatabaseStorage.forTenant(id) pattern with all queries filtered by tenantId and backward-compatible singleton (completed 2026-05-13)
 - [ ] **Phase 40: Tenant Resolution Middleware** — resolveTenantMiddleware with LRU cache, requireTenantMiddleware, all business routes use res.locals.storage
 - [ ] **Phase 41: Infra Config** — Caddyfile, systemd app.service, manual deploy.yml workflow, and Hetzner setup README
 
@@ -170,7 +170,7 @@ Plans:
 Plans:
 - [x] 39-01-PLAN.md — Class factory pattern: private tenantId field, static forTenant(), updated singleton export
 - [x] 39-02-PLAN.md — Core method groups: Users, Categories, Services, Bookings, Company Settings, FAQs, Service Areas, Integration Settings
-- [ ] 39-03-PLAN.md — Remaining groups: Chat, Blog, Staff, Contacts, Notifications, Recurring Bookings, raw SQL Calendar Sync
+- [x] 39-03-PLAN.md — Remaining groups: Chat, Blog, Staff, Contacts, Notifications, Recurring Bookings, raw SQL Calendar Sync
 
 ### Phase 40: Tenant Resolution Middleware
 **Goal**: Every incoming HTTP request is resolved to a tenant before reaching business route handlers — unknown hostnames are rejected, known hostnames are resolved via LRU cache, and business routes use the tenant-scoped storage instance from res.locals
@@ -209,7 +209,7 @@ Plans:
 | 33–35 | v6.0 | 7/7 | Complete | 2026-05-13 |
 | 36–37 | v7.0 | 6/6 | Complete | 2026-05-13 |
 | 38 | v8.0 | 2/2 | Complete    | 2026-05-13 |
-| 39 | v8.0 | 2/3 | In Progress|  |
+| 39 | v8.0 | 3/3 | Complete | 2026-05-13 |
 | 40 | v8.0 | 0/TBD | Not started | - |
 | 41 | v8.0 | 0/TBD | Not started | - |
 
