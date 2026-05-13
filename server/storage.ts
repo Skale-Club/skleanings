@@ -1134,44 +1134,48 @@ export class DatabaseStorage implements IStorage {
 
   // Blog Settings
   async getBlogSettings(): Promise<BlogSettings | undefined> {
-    const [settings] = await db.select().from(blogSettings);
+    const [settings] = await db.select().from(blogSettings)
+      .where(eq(blogSettings.tenantId, this.tenantId));
     return settings;
   }
 
   async upsertBlogSettings(settings: InsertBlogSettings): Promise<BlogSettings> {
     const existing = await this.getBlogSettings();
     if (existing) {
-      const [updated] = await db.update(blogSettings).set({ ...settings, updatedAt: new Date() }).where(eq(blogSettings.id, existing.id)).returning();
+      const [updated] = await db.update(blogSettings).set({ ...settings, updatedAt: new Date() }).where(and(eq(blogSettings.tenantId, this.tenantId), eq(blogSettings.id, existing.id))).returning();
       return updated;
     } else {
-      const [created] = await db.insert(blogSettings).values(settings).returning();
+      const [created] = await db.insert(blogSettings).values({ ...settings, tenantId: this.tenantId }).returning();
       return created;
     }
   }
 
   // Blog Generation Jobs
   async getBlogGenerationJobs(status?: string, limit: number = 50, offset: number = 0): Promise<BlogGenerationJob[]> {
-    let query = db.select().from(blogGenerationJobs).orderBy(desc(blogGenerationJobs.createdAt));
-    if (status) {
-      query = query.where(eq(blogGenerationJobs.status, status)) as any;
-    }
-    return await query.limit(limit).offset(offset);
+    const conditions: any[] = [eq(blogGenerationJobs.tenantId, this.tenantId)];
+    if (status) conditions.push(eq(blogGenerationJobs.status, status));
+    return await db.select().from(blogGenerationJobs)
+      .where(and(...conditions))
+      .orderBy(desc(blogGenerationJobs.createdAt))
+      .limit(limit)
+      .offset(offset);
   }
 
   async getBlogGenerationJob(id: number): Promise<BlogGenerationJob | undefined> {
-    const [job] = await db.select().from(blogGenerationJobs).where(eq(blogGenerationJobs.id, id));
+    const [job] = await db.select().from(blogGenerationJobs)
+      .where(and(eq(blogGenerationJobs.tenantId, this.tenantId), eq(blogGenerationJobs.id, id)));
     return job;
   }
 
   async createBlogGenerationJob(job: InsertBlogGenerationJob): Promise<BlogGenerationJob> {
-    const [created] = await db.insert(blogGenerationJobs).values(job).returning();
+    const [created] = await db.insert(blogGenerationJobs).values({ ...job, tenantId: this.tenantId }).returning();
     return created;
   }
 
   async updateBlogGenerationJob(id: number, updates: Partial<InsertBlogGenerationJob>): Promise<BlogGenerationJob> {
     const [updated] = await db.update(blogGenerationJobs)
       .set({ ...updates, updatedAt: new Date() })
-      .where(eq(blogGenerationJobs.id, id))
+      .where(and(eq(blogGenerationJobs.tenantId, this.tenantId), eq(blogGenerationJobs.id, id)))
       .returning();
     if (!updated) throw new Error('Blog generation job not found');
     return updated;
@@ -1179,21 +1183,21 @@ export class DatabaseStorage implements IStorage {
 
   async acquireBlogGenerationLock(jobId: number, lockedBy: string, ttlMs: number = 300000): Promise<boolean> {
     const now = new Date();
-    const expiresAt = new Date(now.getTime() + ttlMs);
 
-    // Clean up expired locks first
+    // Clean up expired locks first (scoped to tenant)
     await db.update(blogGenerationJobs)
       .set({ lockedAt: null, lockedBy: null })
       .where(
         and(
+          eq(blogGenerationJobs.tenantId, this.tenantId),
           eq(blogGenerationJobs.lockedBy, lockedBy),
           lte(blogGenerationJobs.lockedAt, new Date(Date.now() - ttlMs))
         )
       );
 
-    // Try to acquire lock on this specific job
+    // Try to acquire lock on this specific job (scoped to tenant)
     const [existing] = await db.select().from(blogGenerationJobs)
-      .where(eq(blogGenerationJobs.id, jobId))
+      .where(and(eq(blogGenerationJobs.tenantId, this.tenantId), eq(blogGenerationJobs.id, jobId)))
       .limit(1);
 
     if (!existing) return false;
@@ -1205,7 +1209,7 @@ export class DatabaseStorage implements IStorage {
     // Acquire the lock
     const [updated] = await db.update(blogGenerationJobs)
       .set({ lockedAt: now, lockedBy, status: 'running', startedAt: now })
-      .where(eq(blogGenerationJobs.id, jobId))
+      .where(and(eq(blogGenerationJobs.tenantId, this.tenantId), eq(blogGenerationJobs.id, jobId)))
       .returning();
 
     return !!updated;
@@ -1216,6 +1220,7 @@ export class DatabaseStorage implements IStorage {
       .set({ lockedAt: null, lockedBy: null })
       .where(
         and(
+          eq(blogGenerationJobs.tenantId, this.tenantId),
           eq(blogGenerationJobs.id, jobId),
           eq(blogGenerationJobs.lockedBy, lockedBy)
         )
@@ -1325,12 +1330,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getChatSettings(): Promise<ChatSettings> {
-    const [settings] = await db.select().from(chatSettings).limit(1);
+    const [settings] = await db.select().from(chatSettings)
+      .where(eq(chatSettings.tenantId, this.tenantId))
+      .limit(1);
     if (settings) return settings;
 
     // No settings found - create default row (singleton pattern)
     try {
-      const [created] = await db.insert(chatSettings).values({}).returning();
+      const [created] = await db.insert(chatSettings).values({ tenantId: this.tenantId }).returning();
       if (!created) {
         throw new Error("Failed to create default chat settings");
       }
@@ -1339,7 +1346,9 @@ export class DatabaseStorage implements IStorage {
     } catch (insertErr: any) {
       // If insert fails due to existing row (race condition), try to fetch again
       if (insertErr.message?.includes("duplicate") || insertErr.code === '23505') {
-        const [settings] = await db.select().from(chatSettings).limit(1);
+        const [settings] = await db.select().from(chatSettings)
+          .where(eq(chatSettings.tenantId, this.tenantId))
+          .limit(1);
         if (settings) return settings;
       }
       throw insertErr;
@@ -1351,7 +1360,7 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db
       .update(chatSettings)
       .set({ ...settings, updatedAt: new Date() })
-      .where(eq(chatSettings.id, existing.id))
+      .where(and(eq(chatSettings.tenantId, this.tenantId), eq(chatSettings.id, existing.id)))
       .returning();
     return updated;
   }
@@ -1361,7 +1370,7 @@ export class DatabaseStorage implements IStorage {
     const [integration] = await db
       .select()
       .from(chatIntegrations)
-      .where(eq(chatIntegrations.provider, normalizedProvider))
+      .where(and(eq(chatIntegrations.tenantId, this.tenantId), eq(chatIntegrations.provider, normalizedProvider)))
       .orderBy(desc(chatIntegrations.updatedAt), desc(chatIntegrations.id))
       .limit(1);
     return integration;
@@ -1378,11 +1387,11 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date(),
       };
 
-      // Update by provider to keep legacy duplicate rows consistent.
+      // Update by tenant + provider to keep legacy duplicate rows consistent.
       await db
         .update(chatIntegrations)
         .set(payload)
-        .where(eq(chatIntegrations.provider, provider));
+        .where(and(eq(chatIntegrations.tenantId, this.tenantId), eq(chatIntegrations.provider, provider)));
 
       const updated = await this.getChatIntegration(provider);
       if (!updated) {
@@ -1393,13 +1402,15 @@ export class DatabaseStorage implements IStorage {
 
     const [created] = await db
       .insert(chatIntegrations)
-      .values({ ...settings, provider })
+      .values({ ...settings, provider, tenantId: this.tenantId })
       .returning();
     return created;
   }
 
   async getTwilioSettings(): Promise<TwilioSettings | undefined> {
-    const [settings] = await db.select().from(twilioSettings).limit(1);
+    const [settings] = await db.select().from(twilioSettings)
+      .where(eq(twilioSettings.tenantId, this.tenantId))
+      .limit(1);
     return settings;
   }
 
@@ -1414,17 +1425,19 @@ export class DatabaseStorage implements IStorage {
       const [updated] = await db
         .update(twilioSettings)
         .set(payload)
-        .where(eq(twilioSettings.id, existing.id))
+        .where(and(eq(twilioSettings.tenantId, this.tenantId), eq(twilioSettings.id, existing.id)))
         .returning();
       return updated;
     }
 
-    const [created] = await db.insert(twilioSettings).values(settings).returning();
+    const [created] = await db.insert(twilioSettings).values({ ...settings, tenantId: this.tenantId }).returning();
     return created;
   }
 
   async getTelegramSettings(): Promise<TelegramSettings | undefined> {
-    const [settings] = await db.select().from(telegramSettings).limit(1);
+    const [settings] = await db.select().from(telegramSettings)
+      .where(eq(telegramSettings.tenantId, this.tenantId))
+      .limit(1);
     return settings;
   }
 
@@ -1439,17 +1452,19 @@ export class DatabaseStorage implements IStorage {
       const [updated] = await db
         .update(telegramSettings)
         .set(payload)
-        .where(eq(telegramSettings.id, existing.id))
+        .where(and(eq(telegramSettings.tenantId, this.tenantId), eq(telegramSettings.id, existing.id)))
         .returning();
       return updated;
     }
 
-    const [created] = await db.insert(telegramSettings).values(settings).returning();
+    const [created] = await db.insert(telegramSettings).values({ ...settings, tenantId: this.tenantId }).returning();
     return created;
   }
 
   async getEmailSettings(): Promise<EmailSettings | undefined> {
-    const [settings] = await db.select().from(emailSettings).limit(1);
+    const [settings] = await db.select().from(emailSettings)
+      .where(eq(emailSettings.tenantId, this.tenantId))
+      .limit(1);
     return settings;
   }
 
@@ -1459,11 +1474,11 @@ export class DatabaseStorage implements IStorage {
       const [updated] = await db
         .update(emailSettings)
         .set({ ...settings, updatedAt: new Date() })
-        .where(eq(emailSettings.id, existing.id))
+        .where(and(eq(emailSettings.tenantId, this.tenantId), eq(emailSettings.id, existing.id)))
         .returning();
       return updated;
     }
-    const [created] = await db.insert(emailSettings).values(settings).returning();
+    const [created] = await db.insert(emailSettings).values({ ...settings, tenantId: this.tenantId }).returning();
     return created;
   }
 
@@ -1497,11 +1512,13 @@ export class DatabaseStorage implements IStorage {
         memory: conversations.memory,
       })
       .from(conversations)
+      .where(eq(conversations.tenantId, this.tenantId))
       .orderBy(desc(sql`COALESCE(${conversations.lastMessageAt}, ${conversations.createdAt})`));
   }
 
   async getConversation(id: string): Promise<Conversation | undefined> {
-    const [conversation] = await db.select().from(conversations).where(eq(conversations.id, id));
+    const [conversation] = await db.select().from(conversations)
+      .where(and(eq(conversations.tenantId, this.tenantId), eq(conversations.id, id)));
     return conversation;
   }
 
@@ -1509,23 +1526,23 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db
       .update(conversations)
       .set({ ...updates, updatedAt: new Date() })
-      .where(eq(conversations.id, id))
+      .where(and(eq(conversations.tenantId, this.tenantId), eq(conversations.id, id)))
       .returning();
     return updated;
   }
 
   async deleteConversation(id: string): Promise<void> {
-    await db.delete(conversationMessages).where(eq(conversationMessages.conversationId, id));
-    await db.delete(conversations).where(eq(conversations.id, id));
+    await db.delete(conversationMessages).where(and(eq(conversationMessages.tenantId, this.tenantId), eq(conversationMessages.conversationId, id)));
+    await db.delete(conversations).where(and(eq(conversations.tenantId, this.tenantId), eq(conversations.id, id)));
   }
 
   async createConversation(conversation: InsertConversation): Promise<Conversation> {
-    const [created] = await db.insert(conversations).values(conversation).returning();
+    const [created] = await db.insert(conversations).values({ ...conversation, tenantId: this.tenantId }).returning();
     return created;
   }
 
   async addConversationMessage(message: InsertConversationMessage): Promise<ConversationMessage> {
-    const [created] = await db.insert(conversationMessages).values(message).returning();
+    const [created] = await db.insert(conversationMessages).values({ ...message, tenantId: this.tenantId }).returning();
 
     // Update parent conversation's lastMessage and lastMessageAt
     await this.updateConversation(message.conversationId, {
@@ -1540,14 +1557,17 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(conversationMessages)
-      .where(eq(conversationMessages.conversationId, conversationId))
+      .where(and(eq(conversationMessages.tenantId, this.tenantId), eq(conversationMessages.conversationId, conversationId)))
       .orderBy(asc(conversationMessages.createdAt));
   }
 
   async findOpenConversationByContact(phone?: string, email?: string, excludeId?: string): Promise<Conversation | undefined> {
     if (!phone && !email) return undefined;
 
-    const conditions: any[] = [eq(conversations.status, 'open')];
+    const conditions: any[] = [
+      eq(conversations.tenantId, this.tenantId),
+      eq(conversations.status, 'open'),
+    ];
 
     const contactConditions: any[] = [];
     if (phone) contactConditions.push(eq(conversations.visitorPhone, phone));
@@ -1569,10 +1589,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getBlogPosts(status?: string, limit?: number, offset: number = 0): Promise<BlogPost[]> {
-    let query = db.select().from(blogPosts).orderBy(desc(blogPosts.createdAt));
-    if (status) {
-      query = query.where(eq(blogPosts.status, status)) as any;
-    }
+    const conditions: any[] = [eq(blogPosts.tenantId, this.tenantId)];
+    if (status) conditions.push(eq(blogPosts.status, status));
+    let query = db.select().from(blogPosts).where(and(...conditions)).orderBy(desc(blogPosts.createdAt));
     if (limit) {
       return await query.limit(limit).offset(offset);
     }
@@ -1580,19 +1599,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getBlogPost(id: number): Promise<BlogPost | undefined> {
-    const [post] = await db.select().from(blogPosts).where(eq(blogPosts.id, id));
+    const [post] = await db.select().from(blogPosts)
+      .where(and(eq(blogPosts.tenantId, this.tenantId), eq(blogPosts.id, id)));
     return post;
   }
 
   async getBlogPostBySlug(slug: string): Promise<BlogPost | undefined> {
-    const [post] = await db.select().from(blogPosts).where(eq(blogPosts.slug, slug));
+    const [post] = await db.select().from(blogPosts)
+      .where(and(eq(blogPosts.tenantId, this.tenantId), eq(blogPosts.slug, slug)));
     return post;
   }
 
   async getPublishedBlogPosts(limit: number = 10, offset: number = 0): Promise<BlogPost[]> {
     return await db.select()
       .from(blogPosts)
-      .where(eq(blogPosts.status, 'published'))
+      .where(and(eq(blogPosts.tenantId, this.tenantId), eq(blogPosts.status, 'published')))
       .orderBy(desc(blogPosts.publishedAt))
       .limit(limit)
       .offset(offset);
@@ -1602,6 +1623,7 @@ export class DatabaseStorage implements IStorage {
     return await db.select()
       .from(blogPosts)
       .where(and(
+        eq(blogPosts.tenantId, this.tenantId),
         eq(blogPosts.status, 'published'),
         ne(blogPosts.id, postId)
       ))
@@ -1611,7 +1633,7 @@ export class DatabaseStorage implements IStorage {
 
   async createBlogPost(post: InsertBlogPost): Promise<BlogPost> {
     const { serviceIds, ...postData } = post;
-    const [newPost] = await db.insert(blogPosts).values(postData).returning();
+    const [newPost] = await db.insert(blogPosts).values({ ...postData, tenantId: this.tenantId }).returning();
 
     if (serviceIds && serviceIds.length > 0) {
       await this.setBlogPostServices(newPost.id, serviceIds);
@@ -1624,7 +1646,7 @@ export class DatabaseStorage implements IStorage {
     const { serviceIds, ...postData } = post;
     const [updated] = await db.update(blogPosts)
       .set({ ...postData, updatedAt: new Date() })
-      .where(eq(blogPosts.id, id))
+      .where(and(eq(blogPosts.tenantId, this.tenantId), eq(blogPosts.id, id)))
       .returning();
 
     if (serviceIds !== undefined) {
@@ -1635,23 +1657,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteBlogPost(id: number): Promise<void> {
-    await db.delete(blogPostServices).where(eq(blogPostServices.blogPostId, id));
-    await db.delete(blogPosts).where(eq(blogPosts.id, id));
+    await db.delete(blogPostServices).where(and(eq(blogPostServices.tenantId, this.tenantId), eq(blogPostServices.blogPostId, id)));
+    await db.delete(blogPosts).where(and(eq(blogPosts.tenantId, this.tenantId), eq(blogPosts.id, id)));
   }
 
   async getBlogPostServices(postId: number): Promise<Service[]> {
-    const relations = await db.select().from(blogPostServices).where(eq(blogPostServices.blogPostId, postId));
+    const relations = await db.select().from(blogPostServices)
+      .where(and(eq(blogPostServices.tenantId, this.tenantId), eq(blogPostServices.blogPostId, postId)));
     if (relations.length === 0) return [];
 
     const serviceIds = relations.map(r => r.serviceId);
-    return await db.select().from(services).where(inArray(services.id, serviceIds));
+    return await db.select().from(services).where(and(eq(services.tenantId, this.tenantId), inArray(services.id, serviceIds)));
   }
 
   async setBlogPostServices(postId: number, serviceIds: number[]): Promise<void> {
-    await db.delete(blogPostServices).where(eq(blogPostServices.blogPostId, postId));
+    await db.delete(blogPostServices).where(and(eq(blogPostServices.tenantId, this.tenantId), eq(blogPostServices.blogPostId, postId)));
 
     if (serviceIds.length > 0) {
       const values = serviceIds.map(serviceId => ({
+        tenantId: this.tenantId,
         blogPostId: postId,
         serviceId
       }));
@@ -1662,7 +1686,7 @@ export class DatabaseStorage implements IStorage {
   async countPublishedBlogPosts(): Promise<number> {
     const result = await db.select({ count: sql<number>`count(*)` })
       .from(blogPosts)
-      .where(eq(blogPosts.status, 'published'));
+      .where(and(eq(blogPosts.tenantId, this.tenantId), eq(blogPosts.status, 'published')));
     return Number(result[0]?.count || 0);
   }
 
@@ -1672,18 +1696,20 @@ export class DatabaseStorage implements IStorage {
     const now = new Date();
     const expiresAt = new Date(now.getTime() + ttlMs);
 
-    // First, clean up any expired locks for this slot
+    // First, clean up any expired locks for this slot (scoped to tenant)
     await db.delete(timeSlotLocks).where(
       and(
+        eq(timeSlotLocks.tenantId, this.tenantId),
         eq(timeSlotLocks.bookingDate, bookingDate),
         eq(timeSlotLocks.startTime, startTime),
         lte(timeSlotLocks.expiresAt, now)
       )
     );
 
-    // Check if there's an active lock by another conversation
+    // Check if there's an active lock by another conversation (scoped to tenant)
     const [existingLock] = await db.select().from(timeSlotLocks).where(
       and(
+        eq(timeSlotLocks.tenantId, this.tenantId),
         eq(timeSlotLocks.bookingDate, bookingDate),
         eq(timeSlotLocks.startTime, startTime),
         gte(timeSlotLocks.expiresAt, now)
@@ -1695,7 +1721,7 @@ export class DatabaseStorage implements IStorage {
       if (existingLock.conversationId === conversationId) {
         await db.update(timeSlotLocks)
           .set({ expiresAt, lockedAt: now })
-          .where(eq(timeSlotLocks.id, existingLock.id));
+          .where(and(eq(timeSlotLocks.tenantId, this.tenantId), eq(timeSlotLocks.id, existingLock.id)));
         return true;
       }
       // Another conversation holds the lock
@@ -1705,6 +1731,7 @@ export class DatabaseStorage implements IStorage {
     // No active lock, create one
     try {
       await db.insert(timeSlotLocks).values({
+        tenantId: this.tenantId,
         bookingDate,
         startTime,
         conversationId,
@@ -1723,6 +1750,7 @@ export class DatabaseStorage implements IStorage {
   async releaseTimeSlotLock(bookingDate: string, startTime: string, conversationId: string): Promise<void> {
     await db.delete(timeSlotLocks).where(
       and(
+        eq(timeSlotLocks.tenantId, this.tenantId),
         eq(timeSlotLocks.bookingDate, bookingDate),
         eq(timeSlotLocks.startTime, startTime),
         eq(timeSlotLocks.conversationId, conversationId)
@@ -1733,7 +1761,7 @@ export class DatabaseStorage implements IStorage {
   async cleanExpiredTimeSlotLocks(): Promise<number> {
     const now = new Date();
     const result = await db.delete(timeSlotLocks)
-      .where(lte(timeSlotLocks.expiresAt, now))
+      .where(and(eq(timeSlotLocks.tenantId, this.tenantId), lte(timeSlotLocks.expiresAt, now)))
       .returning();
     return result.length;
   }
@@ -1758,54 +1786,59 @@ export class DatabaseStorage implements IStorage {
   async getStaffMembers(includeInactive = false): Promise<StaffMember[]> {
     if (!includeInactive) {
       return await db.select().from(staffMembers)
-        .where(eq(staffMembers.isActive, true))
+        .where(and(eq(staffMembers.tenantId, this.tenantId), eq(staffMembers.isActive, true)))
         .orderBy(asc(staffMembers.order));
     }
-    return await db.select().from(staffMembers).orderBy(asc(staffMembers.order));
+    return await db.select().from(staffMembers)
+      .where(eq(staffMembers.tenantId, this.tenantId))
+      .orderBy(asc(staffMembers.order));
   }
 
   async getStaffMember(id: number): Promise<StaffMember | undefined> {
-    const [member] = await db.select().from(staffMembers).where(eq(staffMembers.id, id));
+    const [member] = await db.select().from(staffMembers)
+      .where(and(eq(staffMembers.tenantId, this.tenantId), eq(staffMembers.id, id)));
     return member;
   }
 
   async getStaffMemberByUserId(userId: string): Promise<StaffMember | undefined> {
-    const [member] = await db.select().from(staffMembers).where(eq(staffMembers.userId, userId));
+    const [member] = await db.select().from(staffMembers)
+      .where(and(eq(staffMembers.tenantId, this.tenantId), eq(staffMembers.userId, userId)));
     return member;
   }
 
   async linkStaffMemberToUser(staffId: number, userId: string): Promise<void> {
-    await db.update(staffMembers).set({ userId }).where(eq(staffMembers.id, staffId));
+    await db.update(staffMembers).set({ userId })
+      .where(and(eq(staffMembers.tenantId, this.tenantId), eq(staffMembers.id, staffId)));
   }
 
   async getStaffCount(): Promise<number> {
     const [row] = await db.select({ count: sql<number>`count(*)::int` })
       .from(staffMembers)
-      .where(eq(staffMembers.isActive, true));
+      .where(and(eq(staffMembers.tenantId, this.tenantId), eq(staffMembers.isActive, true)));
     return row?.count ?? 0;
   }
 
   async createStaffMember(staff: InsertStaffMember): Promise<StaffMember> {
-    const [created] = await db.insert(staffMembers).values(staff).returning();
+    const [created] = await db.insert(staffMembers).values({ ...staff, tenantId: this.tenantId }).returning();
     return created;
   }
 
   async updateStaffMember(id: number, staff: Partial<InsertStaffMember>): Promise<StaffMember> {
     const [updated] = await db.update(staffMembers)
       .set({ ...staff, updatedAt: new Date() })
-      .where(eq(staffMembers.id, id))
+      .where(and(eq(staffMembers.tenantId, this.tenantId), eq(staffMembers.id, id)))
       .returning();
     return updated;
   }
 
   async deleteStaffMember(id: number): Promise<void> {
-    await db.delete(staffMembers).where(eq(staffMembers.id, id));
+    await db.delete(staffMembers).where(and(eq(staffMembers.tenantId, this.tenantId), eq(staffMembers.id, id)));
   }
 
   async reorderStaffMembers(updates: { id: number; order: number }[]): Promise<void> {
     await Promise.all(
       updates.map(({ id, order }) =>
-        db.update(staffMembers).set({ order }).where(eq(staffMembers.id, id))
+        db.update(staffMembers).set({ order }).where(and(eq(staffMembers.tenantId, this.tenantId), eq(staffMembers.id, id)))
       )
     );
   }
@@ -1818,6 +1851,7 @@ export class DatabaseStorage implements IStorage {
       .from(staffMembers)
       .innerJoin(staffServiceAbilities, eq(staffServiceAbilities.staffMemberId, staffMembers.id))
       .where(and(
+        eq(staffServiceAbilities.tenantId, this.tenantId),
         eq(staffServiceAbilities.serviceId, serviceId),
         eq(staffMembers.isActive, true)
       ))
@@ -1830,7 +1864,10 @@ export class DatabaseStorage implements IStorage {
       .select({ services })
       .from(services)
       .innerJoin(staffServiceAbilities, eq(staffServiceAbilities.serviceId, services.id))
-      .where(eq(staffServiceAbilities.staffMemberId, staffMemberId));
+      .where(and(
+        eq(staffServiceAbilities.tenantId, this.tenantId),
+        eq(staffServiceAbilities.staffMemberId, staffMemberId)
+      ));
     return rows.map(r => r.services);
   }
 
@@ -1841,6 +1878,7 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(staffServiceAbilities, eq(staffServiceAbilities.staffMemberId, staffMembers.id))
       .where(
         and(
+          eq(staffServiceAbilities.tenantId, this.tenantId),
           eq(staffServiceAbilities.serviceId, serviceId),
           eq(staffMembers.isActive, true)
         )
@@ -1849,10 +1887,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async setStaffServiceAbilities(staffMemberId: number, serviceIds: number[]): Promise<void> {
-    await db.delete(staffServiceAbilities).where(eq(staffServiceAbilities.staffMemberId, staffMemberId));
+    await db.delete(staffServiceAbilities).where(and(eq(staffServiceAbilities.tenantId, this.tenantId), eq(staffServiceAbilities.staffMemberId, staffMemberId)));
     if (serviceIds.length > 0) {
       await db.insert(staffServiceAbilities).values(
-        serviceIds.map(serviceId => ({ staffMemberId, serviceId }))
+        serviceIds.map(serviceId => ({ tenantId: this.tenantId, staffMemberId, serviceId }))
       );
     }
   }
@@ -1861,7 +1899,7 @@ export class DatabaseStorage implements IStorage {
 
   async getStaffAvailability(staffMemberId: number): Promise<StaffAvailability[]> {
     return await db.select().from(staffAvailability)
-      .where(eq(staffAvailability.staffMemberId, staffMemberId))
+      .where(and(eq(staffAvailability.tenantId, this.tenantId), eq(staffAvailability.staffMemberId, staffMemberId)))
       .orderBy(asc(staffAvailability.dayOfWeek));
   }
 
@@ -1869,10 +1907,10 @@ export class DatabaseStorage implements IStorage {
     staffMemberId: number,
     availability: Omit<InsertStaffAvailability, 'staffMemberId'>[]
   ): Promise<StaffAvailability[]> {
-    await db.delete(staffAvailability).where(eq(staffAvailability.staffMemberId, staffMemberId));
+    await db.delete(staffAvailability).where(and(eq(staffAvailability.tenantId, this.tenantId), eq(staffAvailability.staffMemberId, staffMemberId)));
     if (availability.length === 0) return [];
     return await db.insert(staffAvailability)
-      .values(availability.map(a => ({ ...a, staffMemberId })))
+      .values(availability.map(a => ({ ...a, tenantId: this.tenantId, staffMemberId })))
       .returning();
   }
 
@@ -1880,13 +1918,14 @@ export class DatabaseStorage implements IStorage {
 
   async getStaffAvailabilityOverrides(staffMemberId: number): Promise<StaffAvailabilityOverride[]> {
     return await db.select().from(staffAvailabilityOverrides)
-      .where(eq(staffAvailabilityOverrides.staffMemberId, staffMemberId))
+      .where(and(eq(staffAvailabilityOverrides.tenantId, this.tenantId), eq(staffAvailabilityOverrides.staffMemberId, staffMemberId)))
       .orderBy(asc(staffAvailabilityOverrides.date));
   }
 
   async getStaffAvailabilityOverridesByDate(staffMemberId: number, date: string): Promise<StaffAvailabilityOverride | undefined> {
     const rows = await db.select().from(staffAvailabilityOverrides)
       .where(and(
+        eq(staffAvailabilityOverrides.tenantId, this.tenantId),
         eq(staffAvailabilityOverrides.staffMemberId, staffMemberId),
         eq(staffAvailabilityOverrides.date, date)
       ))
@@ -1895,25 +1934,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createStaffAvailabilityOverride(data: InsertStaffAvailabilityOverride): Promise<StaffAvailabilityOverride> {
-    const rows = await db.insert(staffAvailabilityOverrides).values(data).returning();
+    const rows = await db.insert(staffAvailabilityOverrides).values({ ...data, tenantId: this.tenantId }).returning();
     return rows[0];
   }
 
   async deleteStaffAvailabilityOverride(id: number): Promise<void> {
-    await db.delete(staffAvailabilityOverrides).where(eq(staffAvailabilityOverrides.id, id));
+    await db.delete(staffAvailabilityOverrides).where(and(eq(staffAvailabilityOverrides.tenantId, this.tenantId), eq(staffAvailabilityOverrides.id, id)));
   }
 
   // ─── Staff Google Calendar ─────────────────────────────────────────────────
 
   async getStaffGoogleCalendar(staffMemberId: number): Promise<StaffGoogleCalendar | undefined> {
     const [row] = await db.select().from(staffGoogleCalendar)
-      .where(eq(staffGoogleCalendar.staffMemberId, staffMemberId));
+      .where(and(eq(staffGoogleCalendar.tenantId, this.tenantId), eq(staffGoogleCalendar.staffMemberId, staffMemberId)));
     return row;
   }
 
   async upsertStaffGoogleCalendar(calendar: InsertStaffGoogleCalendar): Promise<StaffGoogleCalendar> {
     const [row] = await db.insert(staffGoogleCalendar)
-      .values(calendar)
+      .values({ ...calendar, tenantId: this.tenantId })
       .onConflictDoUpdate({
         target: staffGoogleCalendar.staffMemberId,
         set: {
@@ -1928,7 +1967,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteStaffGoogleCalendar(staffMemberId: number): Promise<void> {
-    await db.delete(staffGoogleCalendar).where(eq(staffGoogleCalendar.staffMemberId, staffMemberId));
+    await db.delete(staffGoogleCalendar).where(and(eq(staffGoogleCalendar.tenantId, this.tenantId), eq(staffGoogleCalendar.staffMemberId, staffMemberId)));
   }
 
   async markCalendarNeedsReconnect(staffMemberId: number): Promise<void> {
@@ -1936,6 +1975,7 @@ export class DatabaseStorage implements IStorage {
       .set({ needsReconnect: true, lastDisconnectedAt: new Date() })
       .where(
         and(
+          eq(staffGoogleCalendar.tenantId, this.tenantId),
           eq(staffGoogleCalendar.staffMemberId, staffMemberId),
           eq(staffGoogleCalendar.needsReconnect, false)
         )
@@ -1945,7 +1985,7 @@ export class DatabaseStorage implements IStorage {
   async clearCalendarNeedsReconnect(staffMemberId: number): Promise<void> {
     await db.update(staffGoogleCalendar)
       .set({ needsReconnect: false })
-      .where(eq(staffGoogleCalendar.staffMemberId, staffMemberId));
+      .where(and(eq(staffGoogleCalendar.tenantId, this.tenantId), eq(staffGoogleCalendar.staffMemberId, staffMemberId)));
   }
 
   async getAllCalendarStatuses(): Promise<Array<{
@@ -1967,7 +2007,7 @@ export class DatabaseStorage implements IStorage {
       })
       .from(staffMembers)
       .leftJoin(staffGoogleCalendar, eq(staffGoogleCalendar.staffMemberId, staffMembers.id))
-      .where(eq(staffMembers.isActive, true));
+      .where(and(eq(staffMembers.tenantId, this.tenantId), eq(staffMembers.isActive, true)));
 
     return rows.map((row) => ({
       staffMemberId: row.staffMemberId,
