@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v8.0
 milestone_name: Multi-Tenant Architecture
 status: executing
-stopped_at: Completed 38-02-PLAN.md
-last_updated: "2026-05-13T20:20:45.224Z"
-last_activity: 2026-05-13 -- Phase 39 execution started
+stopped_at: Completed 39-02-PLAN.md
+last_updated: "2026-05-13T20:39:45.524Z"
+last_activity: 2026-05-13
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 11
-  completed_plans: 8
+  completed_plans: 10
   percent: 0
 ---
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-05-13)
 ## Current Position
 
 Phase: 39 (Storage Refactor) — EXECUTING
-Plan: 1 of 3
-Status: Executing Phase 39
-Last activity: 2026-05-13 -- Phase 39 execution started
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-05-13
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -84,6 +84,9 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 38-01]: setval() in seed migration advances serial sequence past id=1 to prevent future auto-increment unique constraint violation
 - [Phase 38-schema-foundation]: Drizzle forward references allow users.tenantId to reference tenants before its declaration — no file reordering needed
 - [Phase 38-schema-foundation]: Custom select projections must explicitly list tenantId to satisfy TypeScript inferred types from schema
+- [Phase 39-02]: getServiceAreaCities: unconditionally start conditions array with tenantId — removes the if-guard since tenantId is always present
+- [Phase 39-02]: deleteService cascades: serviceAddons/serviceOptions tenant-scoped to prevent cross-tenant row deletion during soft-delete transaction
+- [Phase 39-02]: deleteServiceAreaGroup city guard scoped to this.tenantId — a group with zero cities for this tenant deletes cleanly regardless of other tenant data
 
 ### Roadmap Evolution
 
@@ -100,7 +103,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-13T19:55:38.671Z
-Stopped at: Completed 38-02-PLAN.md
+Last session: 2026-05-13T20:39:45.518Z
+Stopped at: Completed 39-02-PLAN.md
 Resume file: None
 Next: `/gsd:plan-phase 38`

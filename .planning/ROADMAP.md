@@ -168,8 +168,8 @@ Plans:
   3. No business query method in storage.ts reads or writes rows without including the tenantId filter
 **Plans**: 3 plans
 Plans:
-- [ ] 39-01-PLAN.md — Class factory pattern: private tenantId field, static forTenant(), updated singleton export
-- [ ] 39-02-PLAN.md — Core method groups: Users, Categories, Services, Bookings, Company Settings, FAQs, Service Areas, Integration Settings
+- [x] 39-01-PLAN.md — Class factory pattern: private tenantId field, static forTenant(), updated singleton export
+- [x] 39-02-PLAN.md — Core method groups: Users, Categories, Services, Bookings, Company Settings, FAQs, Service Areas, Integration Settings
 - [ ] 39-03-PLAN.md — Remaining groups: Chat, Blog, Staff, Contacts, Notifications, Recurring Bookings, raw SQL Calendar Sync
 
 ### Phase 40: Tenant Resolution Middleware
@@ -209,7 +209,7 @@ Plans:
 | 33–35 | v6.0 | 7/7 | Complete | 2026-05-13 |
 | 36–37 | v7.0 | 6/6 | Complete | 2026-05-13 |
 | 38 | v8.0 | 2/2 | Complete    | 2026-05-13 |
-| 39 | v8.0 | 0/3 | Not started | - |
+| 39 | v8.0 | 2/3 | In Progress|  |
 | 40 | v8.0 | 0/TBD | Not started | - |
 | 41 | v8.0 | 0/TBD | Not started | - |
 

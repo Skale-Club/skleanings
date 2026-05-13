@@ -19,7 +19,7 @@
 ### Storage Refactor (Phase 39)
 
 - [ ] **MT-06**: `DatabaseStorage` refatorado para `DatabaseStorage.forTenant(tenantId: number)` — retorna instância com todas as queries filtradas por `WHERE tenant_id = tenantId`
-- [ ] **MT-07**: Todos os métodos de storage que lêem ou escrevem dados de negócio incluem o filtro de tenantId automaticamente — nenhuma query de negócio fica sem o filtro
+- [x] **MT-07**: Todos os métodos de storage que lêem ou escrevem dados de negócio incluem o filtro de tenantId automaticamente — nenhuma query de negócio fica sem o filtro
 - [ ] **MT-08**: Storage singleton existente (`export const storage`) mantido como `storage.forTenant(1)` para compatibilidade durante a transição
 
 ### Tenant Resolution Middleware (Phase 40)
@@ -65,7 +65,7 @@
 | MT-04 | Phase 38 | Complete |
 | MT-05 | Phase 38 | Complete |
 | MT-06 | Phase 39 | Pending |
-| MT-07 | Phase 39 | Pending |
+| MT-07 | Phase 39 | Complete |
 | MT-08 | Phase 39 | Pending |
 | MT-09 | Phase 40 | Pending |
 | MT-10 | Phase 40 | Pending |
