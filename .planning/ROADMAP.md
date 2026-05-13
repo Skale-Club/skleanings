@@ -155,7 +155,7 @@ Plans:
   5. The `userTenants` table exists with a composite PK on (userId, tenantId) and a role text column
 **Plans**: 2 plans
 Plans:
-- [ ] 38-01-PLAN.md — DDL migration (tenants/domains/user_tenants tables + tenant_id on 40 business tables) + seed migration + supabase db push
+- [x] 38-01-PLAN.md — DDL migration (tenants/domains/user_tenants tables + tenant_id on 40 business tables) + seed migration + supabase db push
 - [ ] 38-02-PLAN.md — Drizzle schema.ts: add tenants/domains/userTenants table declarations + tenantId field on all 40 business tables
 
 ### Phase 39: Storage Refactor
@@ -204,7 +204,7 @@ Plans:
 | 30–32 | v5.0 | 9/9 | Complete | 2026-05-13 |
 | 33–35 | v6.0 | 7/7 | Complete | 2026-05-13 |
 | 36–37 | v7.0 | 6/6 | Complete | 2026-05-13 |
-| 38 | v8.0 | 0/2 | Not started | - |
+| 38 | v8.0 | 1/2 | In Progress|  |
 | 39 | v8.0 | 0/TBD | Not started | - |
 | 40 | v8.0 | 0/TBD | Not started | - |
 | 41 | v8.0 | 0/TBD | Not started | - |

@@ -10,11 +10,11 @@
 
 ### Schema Foundation (Phase 38)
 
-- [ ] **MT-01**: Tabela `tenants` criada (id serial PK, name text, slug text unique, status text default 'active', createdAt timestamp)
-- [ ] **MT-02**: Tabela `domains` criada (id serial PK, tenantId FK → tenants.id, hostname text unique, isPrimary boolean default false)
-- [ ] **MT-03**: Tabela `userTenants` criada (userId FK → users.id, tenantId FK → tenants.id, role text, PK composto)
-- [ ] **MT-04**: `tenantId INTEGER NOT NULL DEFAULT 1` adicionado a todas as tabelas de negócio (38 tabelas) via migration Supabase
-- [ ] **MT-05**: Skleanings seeded como tenant id=1 (INSERT INTO tenants), domínio localhost inserido em domains, todos os dados existentes têm tenantId=1 (via DEFAULT 1 na migration)
+- [x] **MT-01**: Tabela `tenants` criada (id serial PK, name text, slug text unique, status text default 'active', createdAt timestamp)
+- [x] **MT-02**: Tabela `domains` criada (id serial PK, tenantId FK → tenants.id, hostname text unique, isPrimary boolean default false)
+- [x] **MT-03**: Tabela `userTenants` criada (userId FK → users.id, tenantId FK → tenants.id, role text, PK composto)
+- [x] **MT-04**: `tenantId INTEGER NOT NULL DEFAULT 1` adicionado a todas as tabelas de negócio (38 tabelas) via migration Supabase
+- [x] **MT-05**: Skleanings seeded como tenant id=1 (INSERT INTO tenants), domínio localhost inserido em domains, todos os dados existentes têm tenantId=1 (via DEFAULT 1 na migration)
 
 ### Storage Refactor (Phase 39)
 
@@ -59,11 +59,11 @@
 
 | REQ-ID | Phase | Plan |
 |--------|-------|------|
-| MT-01 | Phase 38 | Pending |
-| MT-02 | Phase 38 | Pending |
-| MT-03 | Phase 38 | Pending |
-| MT-04 | Phase 38 | Pending |
-| MT-05 | Phase 38 | Pending |
+| MT-01 | Phase 38 | Complete |
+| MT-02 | Phase 38 | Complete |
+| MT-03 | Phase 38 | Complete |
+| MT-04 | Phase 38 | Complete |
+| MT-05 | Phase 38 | Complete |
 | MT-06 | Phase 39 | Pending |
 | MT-07 | Phase 39 | Pending |
 | MT-08 | Phase 39 | Pending |
