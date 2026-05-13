@@ -125,7 +125,11 @@ Plans:
   3. The panel displays live tenant stats: total bookings, total customers, total services, staff count, and DB uptime
   4. The panel displays a health check section showing DB connectivity, applied Supabase migration count, and presence of required environment variables
   5. Super-admin can view and edit companySettings fields and see the last 50 server error log entries from within the panel
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 37-01-PLAN.md — Server foundation: session.d.ts TypeScript augmentation + error-log ring buffer + patchConsoleError() startup wire
+- [ ] 37-02-PLAN.md — Super-admin API routes: login/logout/me, stats, health check, company-settings CRUD, error logs
+- [ ] 37-03-PLAN.md — Frontend: SuperAdmin.tsx standalone page (login + dashboard), useSuperAdmin hooks, App.tsx route isolation
 **UI hint**: yes
 
 ---
