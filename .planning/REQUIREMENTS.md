@@ -59,7 +59,20 @@
 
 | REQ-ID | Phase | Plan |
 |--------|-------|------|
-| MT-01–05 | — | — |
-| MT-06–08 | — | — |
-| MT-09–13 | — | — |
-| MT-14–17 | — | — |
+| MT-01 | Phase 38 | Pending |
+| MT-02 | Phase 38 | Pending |
+| MT-03 | Phase 38 | Pending |
+| MT-04 | Phase 38 | Pending |
+| MT-05 | Phase 38 | Pending |
+| MT-06 | Phase 39 | Pending |
+| MT-07 | Phase 39 | Pending |
+| MT-08 | Phase 39 | Pending |
+| MT-09 | Phase 40 | Pending |
+| MT-10 | Phase 40 | Pending |
+| MT-11 | Phase 40 | Pending |
+| MT-12 | Phase 40 | Pending |
+| MT-13 | Phase 40 | Pending |
+| MT-14 | Phase 41 | Pending |
+| MT-15 | Phase 41 | Pending |
+| MT-16 | Phase 41 | Pending |
+| MT-17 | Phase 41 | Pending |

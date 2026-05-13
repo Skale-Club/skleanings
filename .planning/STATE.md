@@ -7,7 +7,7 @@ stopped_at: —
 last_updated: "2026-05-13T00:00:00.000Z"
 last_activity: 2026-05-13
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -21,11 +21,11 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-13)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 37 — Super-Admin Panel
+**Current focus:** Phase 38 — Schema Foundation (v8.0 Multi-Tenant Architecture)
 
 ## Current Position
 
-Phase: 37
+Phase: 38
 Plan: Not started
 Status: Ready to execute
 Last activity: 2026-05-13
@@ -42,15 +42,18 @@ Progress: [░░░░░░░░░░] 0%
 | v4.0 Booking Intelligence | 21–29 (9 phases) | 27 | 2026-05-11 |
 | v5.0 Booking Experience | 30–32 (3 phases) | 9 | 2026-05-13 |
 | v6.0 Platform Quality | 33–35 (3 phases) | 7 | 2026-05-13 |
+| v7.0 Xkedule Foundation | 36–37 (2 phases) | 6 | 2026-05-13 |
 
 See: .planning/MILESTONES.md
 
-## v7.0 Phases
+## v8.0 Phases
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 36 | Locale Settings | LOC-01–05 | Not started |
-| 37 | Super-Admin Panel | SADM-01–06 | Not started |
+| 38 | Schema Foundation | MT-01, MT-02, MT-03, MT-04, MT-05 | Not started |
+| 39 | Storage Refactor | MT-06, MT-07, MT-08 | Not started |
+| 40 | Tenant Resolution Middleware | MT-09, MT-10, MT-11, MT-12, MT-13 | Not started |
+| 41 | Infra Config | MT-14, MT-15, MT-16, MT-17 | Not started |
 
 ## Pending Items
 
@@ -79,17 +82,19 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 ### Roadmap Evolution
 
 - v7.0 phases 36–37 derived from SEED-011 (locale settings) and SEED-015 (super-admin panel)
-- Phase numbering continues from v6.0 last phase (35)
+- v8.0 phases 38–41 derived from MT-01–17 (multi-tenant architecture)
+- Phase numbering continues from v7.0 last phase (37)
+- Phase 38 migration must be idempotent — 38 business tables need tenantId DEFAULT 1
 
 ### Blockers/Concerns
 
-- **MIGRATION PENDING** — Phase 35 requires `supabase db push` to drop system_heartbeats table
-- **SECRET PENDING** — Phase 35 requires `BLOG_CRON_TOKEN` added to GitHub repository secrets
-- Phase 19 human UAT items pending browser verification
+- **MIGRATION PENDING** — Phase 35 requires `supabase db push` (drop system_heartbeats) + add `BLOG_CRON_TOKEN` to GitHub Secrets
+- Phase 38 migration scope is large (38 tables) — must be written as a single idempotent Supabase CLI migration
+- Super-admin routes (/api/super-admin/*) must be explicitly excluded from Phase 40 tenant resolution
 
 ## Session Continuity
 
 Last session: 2026-05-13T19:04:01.751Z
-Stopped at: Completed 37-02-PLAN.md
+Stopped at: v8.0 roadmap created
 Resume file: None
-Next: `/gsd:plan-phase 36`
+Next: `/gsd:plan-phase 38`
