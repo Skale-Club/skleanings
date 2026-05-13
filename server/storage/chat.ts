@@ -122,6 +122,7 @@ export async function getConversations(): Promise<Conversation[]> {
 
   return await db.select({
     id: conversations.id,
+    tenantId: conversations.tenantId,
     status: conversations.status,
     createdAt: conversations.createdAt,
     updatedAt: conversations.updatedAt,

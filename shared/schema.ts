@@ -11,6 +11,7 @@ export * from "./models/auth";
 
 export const users = pgTable("users", {
   id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   email: text("email").unique(),
   firstName: text("first_name"),
   lastName: text("last_name"),
@@ -57,6 +58,7 @@ export const userTenants = pgTable("user_tenants", {
 
 export const categories = pgTable("categories", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
   description: text("description"),
@@ -66,6 +68,7 @@ export const categories = pgTable("categories", {
 
 export const subcategories = pgTable("subcategories", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   categoryId: integer("category_id").references(() => categories.id).notNull(),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
@@ -83,6 +86,7 @@ export interface AreaSizePreset {
 
 export const services = pgTable("services", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   categoryId: integer("category_id").references(() => categories.id).notNull(),
   subcategoryId: integer("subcategory_id").references(() => subcategories.id),
   name: text("name").notNull(),
@@ -111,6 +115,7 @@ export const services = pgTable("services", {
 // Service add-on relationships (e.g., Sofa can suggest Ottoman as add-on)
 export const serviceAddons = pgTable("service_addons", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   serviceId: integer("service_id").references(() => services.id).notNull(), // The main service
   addonServiceId: integer("addon_service_id").references(() => services.id).notNull(), // The add-on service
 });
@@ -118,6 +123,7 @@ export const serviceAddons = pgTable("service_addons", {
 // Service options for base_plus_addons pricing (e.g., Extra Bedroom +$20)
 export const serviceOptions = pgTable("service_options", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   serviceId: integer("service_id").references(() => services.id).notNull(),
   name: text("name").notNull(), // e.g., "Extra Bedroom"
   price: numeric("price", { precision: 10, scale: 2 }).notNull(), // e.g., 20.00
@@ -128,6 +134,7 @@ export const serviceOptions = pgTable("service_options", {
 // Service frequencies for base_plus_addons pricing (e.g., Weekly - 15% discount)
 export const serviceFrequencies = pgTable("service_frequencies", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   serviceId: integer("service_id").references(() => services.id).notNull(),
   name: text("name").notNull(), // e.g., "Weekly", "Every 15 days"
   discountPercent: numeric("discount_percent", { precision: 5, scale: 2 }).default("0"), // e.g., 15.00 for 15%
@@ -139,6 +146,7 @@ export const serviceFrequencies = pgTable("service_frequencies", {
 // When a service has rows here, the booking flow shows a duration selector.
 export const serviceDurations = pgTable("service_durations", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   serviceId: integer("service_id").references(() => services.id, { onDelete: "cascade" }).notNull(),
   label: text("label").notNull(), // e.g., "2 hours — Small apartment"
   durationMinutes: integer("duration_minutes").notNull(),
@@ -149,6 +157,7 @@ export const serviceDurations = pgTable("service_durations", {
 // Service-specific intake questions shown during customer checkout (Phase 26 QUEST-01)
 export const serviceBookingQuestions = pgTable("service_booking_questions", {
   id:        serial("id").primaryKey(),
+  tenantId:  integer("tenant_id").notNull().default(1).references(() => tenants.id),
   serviceId: integer("service_id").references(() => services.id, { onDelete: "cascade" }).notNull(),
   label:     text("label").notNull(),
   type:      text("type").notNull().default("text"),  // 'text' | 'textarea' | 'select'
@@ -164,6 +173,7 @@ export type InsertServiceBookingQuestion = z.infer<typeof insertServiceBookingQu
 // Customer contacts — deduplicated across bookings by email (primary) or phone (fallback)
 export const contacts = pgTable("contacts", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   name: text("name").notNull(),
   email: text("email").unique(),
   phone: text("phone"),
@@ -186,6 +196,7 @@ export type UserRole = 'admin' | 'staff' | 'viewer';
 // last_* columns: updated only when request has UTM params or external referrer (D-02).
 export const visitorSessions = pgTable("visitor_sessions", {
   id: uuid("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   // First-touch attribution (immutable after INSERT)
   firstUtmSource:     text("first_utm_source"),
   firstUtmMedium:     text("first_utm_medium"),
@@ -228,6 +239,7 @@ export type InsertVisitorSession = z.infer<typeof insertVisitorSessionSchema>;
 // Must be defined before bookings because bookings.recurringBookingId references this table.
 export const recurringBookings = pgTable("recurring_bookings", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   contactId: integer("contact_id").references(() => contacts.id, { onDelete: "set null" }),
   serviceId: integer("service_id").references(() => services.id, { onDelete: "restrict" }).notNull(),
   serviceFrequencyId: integer("service_frequency_id").references(() => serviceFrequencies.id, { onDelete: "restrict" }).notNull(),
@@ -274,6 +286,7 @@ export interface RecurringBookingWithDetails extends RecurringBooking {
 
 export const bookings = pgTable("bookings", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   customerName: text("customer_name").notNull(),
   customerEmail: text("customer_email"),
   customerPhone: text("customer_phone").notNull(),
@@ -310,6 +323,7 @@ export const bookings = pgTable("bookings", {
 // Denormalized attribution snapshot at event time — no JOIN needed for reports.
 export const conversionEvents = pgTable("conversion_events", {
   id:           serial("id").primaryKey(),
+  tenantId:     integer("tenant_id").notNull().default(1).references(() => tenants.id),
   visitorId:    uuid("visitor_id").references(() => visitorSessions.id, { onDelete: "set null" }),
   eventType:    text("event_type").notNull(),
   // eventType: 'booking_completed' | 'booking_started' | 'chat_initiated'
@@ -349,6 +363,7 @@ export type InsertConversionEvent = z.infer<typeof insertConversionEventSchema>;
 // GoHighLevel Integration Settings
 export const integrationSettings = pgTable("integration_settings", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   provider: text("provider").notNull().default("gohighlevel"), // gohighlevel, etc.
   apiKey: text("api_key"), // Encrypted API key
   locationId: text("location_id"),
@@ -361,6 +376,7 @@ export const integrationSettings = pgTable("integration_settings", {
 // Chat Settings (singleton table - only one row)
 export const chatSettings = pgTable("chat_settings", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   enabled: boolean("enabled").default(false),
   agentName: text("agent_name").default("Assistant"),
   agentAvatarUrl: text("agent_avatar_url").default(""),
@@ -386,6 +402,7 @@ export const chatSettings = pgTable("chat_settings", {
 // Chat Integrations (OpenAI)
 export const chatIntegrations = pgTable("chat_integrations", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   provider: text("provider").notNull().default("openai"),
   enabled: boolean("enabled").default(false),
   model: text("model").default("gpt-4o-mini"),
@@ -397,6 +414,7 @@ export const chatIntegrations = pgTable("chat_integrations", {
 // Twilio Integration Settings
 export const twilioSettings = pgTable("twilio_settings", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   enabled: boolean("enabled").default(false),
   accountSid: text("account_sid"),
   authToken: text("auth_token"),
@@ -410,6 +428,7 @@ export const twilioSettings = pgTable("twilio_settings", {
 // Email (Resend) Integration Settings — Phase 31
 export const emailSettings = pgTable("email_settings", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   enabled: boolean("enabled").default(false),
   resendApiKey: text("resend_api_key"),
   fromAddress: text("from_address"),   // full display-name format: "Skleanings <no-reply@domain.com>"
@@ -420,6 +439,7 @@ export const emailSettings = pgTable("email_settings", {
 // Telegram Integration Settings
 export const telegramSettings = pgTable("telegram_settings", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   enabled: boolean("enabled").default(false),
   botToken: text("bot_token"),
   chatIds: text("chat_ids").array().notNull().default(sql`ARRAY[]::text[]`),
@@ -430,6 +450,7 @@ export const telegramSettings = pgTable("telegram_settings", {
 
 export const conversations = pgTable("conversations", {
   id: uuid("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   status: text("status").notNull().default("open"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -476,6 +497,7 @@ export interface ConversationMemory {
 
 export const conversationMessages = pgTable("conversation_messages", {
   id: uuid("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   conversationId: uuid("conversation_id").references(() => conversations.id).notNull(),
   role: text("role").notNull(),
   content: text("content").notNull(),
@@ -519,6 +541,7 @@ export interface QuestionAnswer {
 
 export const bookingItems = pgTable("booking_items", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   bookingId: integer("booking_id").references(() => bookings.id).notNull(),
   serviceId: integer("service_id").references(() => services.id).notNull(),
   serviceName: text("service_name").notNull(), // Snapshot in case service changes
@@ -775,6 +798,7 @@ export const DEFAULT_BUSINESS_HOURS: BusinessHours = {
 // Company Settings (singleton table - only one row)
 export const companySettings = pgTable("company_settings", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   companyName: text("company_name").default(''),
   industry: text("industry").default(''),
   companyEmail: text("company_email").default(''),
@@ -840,6 +864,7 @@ export type InsertCompanySettings = z.infer<typeof insertCompanySettingsSchema>;
 // FAQ table
 export const faqs = pgTable("faqs", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   question: text("question").notNull(),
   answer: text("answer").notNull(),
   order: integer("order").default(0),
@@ -853,6 +878,7 @@ export type InsertFaq = z.infer<typeof insertFaqSchema>;
 // Service Area Groups table (regions/counties like "MetroWest", "Greater Boston")
 export const serviceAreaGroups = pgTable("service_area_groups", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   name: text("name").notNull(), // e.g., "MetroWest", "Greater Boston"
   slug: text("slug").notNull().unique(),
   description: text("description"),
@@ -871,6 +897,7 @@ export type InsertServiceAreaGroup = z.infer<typeof insertServiceAreaGroupSchema
 // Service Area Cities table (cities within each area group)
 export const serviceAreaCities = pgTable("service_area_cities", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   areaGroupId: integer("area_group_id").references(() => serviceAreaGroups.id).notNull(),
   name: text("name").notNull(), // e.g., "Framingham", "Natick"
   zipcode: text("zipcode"),
@@ -889,6 +916,7 @@ export type InsertServiceAreaCity = z.infer<typeof insertServiceAreaCitySchema>;
 // Legacy Service Areas table (kept for backward compatibility during migration)
 export const serviceAreas = pgTable("service_areas", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   name: text("name").notNull(),
   region: text("region").notNull(),
   zipcode: text("zipcode"),
@@ -907,6 +935,7 @@ export type InsertServiceArea = z.infer<typeof insertServiceAreaSchema>;
 // Blog Posts table
 export const blogPosts = pgTable("blog_posts", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   title: text("title").notNull(),
   slug: text("slug").notNull().unique(),
   content: text("content").notNull(),
@@ -925,6 +954,7 @@ export const blogPosts = pgTable("blog_posts", {
 // Junction table for blog posts and services (related products)
 export const blogPostServices = pgTable("blog_post_services", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   blogPostId: integer("blog_post_id").references(() => blogPosts.id).notNull(),
   serviceId: integer("service_id").references(() => services.id).notNull(),
 });
@@ -932,6 +962,7 @@ export const blogPostServices = pgTable("blog_post_services", {
 // Blog Settings (singleton table)
 export const blogSettings = pgTable("blog_settings", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   enabled: boolean("enabled").default(false).notNull(),
   postsPerDay: integer("posts_per_day").default(1).notNull(),
   lastRunAt: timestamp("last_run_at"),
@@ -968,6 +999,7 @@ export type InsertBlogSettings = z.infer<typeof insertBlogSettingsSchema>;
 // Blog Generation Jobs - tracks autopost generation with proper scheduling, history
 export const blogGenerationJobs = pgTable("blog_generation_jobs", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   postId: integer("post_id").references(() => blogPosts.id).notNull(),
   status: text("status").notNull().default('pending'),
   scheduledAt: timestamp("scheduled_at"),
@@ -1004,6 +1036,7 @@ export type InsertBlogGenerationJob = z.infer<typeof insertBlogGenerationJobSche
 // Time Slot Locks - prevents double-booking during concurrent requests
 export const timeSlotLocks = pgTable("time_slot_locks", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   bookingDate: date("booking_date").notNull(),
   startTime: text("start_time").notNull(), // HH:MM
   conversationId: uuid("conversation_id").notNull(),
@@ -1024,6 +1057,7 @@ export type InsertTimeSlotLock = z.infer<typeof insertTimeSlotLockSchema>;
 // Staff members who perform services (barber-shop model)
 export const staffMembers = pgTable("staff_members", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   email: text("email").unique(),
@@ -1040,6 +1074,7 @@ export const staffMembers = pgTable("staff_members", {
 // Junction: which services each staff member can perform
 export const staffServiceAbilities = pgTable("staff_service_abilities", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   staffMemberId: integer("staff_member_id").references(() => staffMembers.id, { onDelete: "cascade" }).notNull(),
   serviceId: integer("service_id").references(() => services.id, { onDelete: "cascade" }).notNull(),
 });
@@ -1047,6 +1082,7 @@ export const staffServiceAbilities = pgTable("staff_service_abilities", {
 // Per-staff working hours by day of week
 export const staffAvailability = pgTable("staff_availability", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   staffMemberId: integer("staff_member_id").references(() => staffMembers.id, { onDelete: "cascade" }).notNull(),
   dayOfWeek: integer("day_of_week").notNull(), // 0=Sunday, 1=Monday, ..., 6=Saturday (JS Date convention)
   startTime: text("start_time").notNull(), // HH:MM
@@ -1058,6 +1094,7 @@ export const staffAvailability = pgTable("staff_availability", {
 // Optional Google Calendar OAuth tokens per staff member
 export const staffGoogleCalendar = pgTable("staff_google_calendar", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   staffMemberId: integer("staff_member_id").references(() => staffMembers.id, { onDelete: "cascade" }).notNull().unique(),
   accessToken: text("access_token").notNull(),
   refreshToken: text("refresh_token").notNull(),
@@ -1071,6 +1108,7 @@ export const staffGoogleCalendar = pgTable("staff_google_calendar", {
 // Date-specific overrides: block a date or set custom hours overriding weekly schedule
 export const staffAvailabilityOverrides = pgTable("staff_availability_overrides", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   staffMemberId: integer("staff_member_id").references(() => staffMembers.id, { onDelete: "cascade" }).notNull(),
   date: date("date").notNull(),          // YYYY-MM-DD
   isUnavailable: boolean("is_unavailable").notNull().default(false),
@@ -1128,6 +1166,7 @@ export type StaffAvailabilityOverride = typeof staffAvailabilityOverrides.$infer
 
 export const notificationLogs = pgTable("notification_logs", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   conversationId: uuid("conversation_id").references(() => conversations.id, { onDelete: "set null" }),
   bookingId: integer("booking_id").references(() => bookings.id, { onDelete: "set null" }),
   channel: text("channel").notNull(),            // 'sms' | 'telegram' | 'ghl'
@@ -1152,6 +1191,7 @@ export type InsertNotificationLog = z.infer<typeof insertNotificationLogSchema>;
 
 export const calendarSyncQueue = pgTable("calendar_sync_queue", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   bookingId: integer("booking_id").references(() => bookings.id, { onDelete: "cascade" }).notNull(),
   target: text("target").notNull(),       // 'ghl_contact' | 'ghl_appointment' | 'google_calendar'
   operation: text("operation").notNull(), // 'create' | 'update' | 'cancel'

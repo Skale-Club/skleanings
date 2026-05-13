@@ -1462,6 +1462,7 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select({
         id: conversations.id,
+        tenantId: conversations.tenantId,
         status: conversations.status,
         createdAt: conversations.createdAt,
         updatedAt: conversations.updatedAt,
@@ -2119,6 +2120,7 @@ export class DatabaseStorage implements IStorage {
     const rows = await db
       .select({
         id: recurringBookings.id,
+        tenantId: recurringBookings.tenantId,
         contactId: recurringBookings.contactId,
         serviceId: recurringBookings.serviceId,
         serviceFrequencyId: recurringBookings.serviceFrequencyId,

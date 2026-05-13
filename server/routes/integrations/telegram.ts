@@ -82,6 +82,7 @@ router.post("/telegram/test", requireAdmin, async (req, res) => {
             chatIds: chatIdsToTest,
             notifyOnNewChat: existingSettings?.notifyOnNewChat ?? true,
             id: existingSettings?.id ?? 0,
+            tenantId: existingSettings?.tenantId ?? 1,
             createdAt: existingSettings?.createdAt ?? new Date(),
             updatedAt: existingSettings?.updatedAt ?? new Date(),
         };
