@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
 import { storage } from "../storage/index";
-import { isRateLimited } from "../lib/rate-limit";
 import { log } from "../lib/logger";
 import { requireAdmin } from "../lib/auth";
 import { getOverviewData, getSourcesData, getCampaignsData, getConversionsData, getVisitorSession } from "../storage/analytics";
@@ -24,13 +23,6 @@ const router = Router();
 // Called by useUTMCapture hook on first visit and on return visits with UTM signal.
 router.post("/session", async (req, res) => {
   try {
-    const ip = req.ip || "unknown";
-
-    // D-06: Rate limit 60 req/IP/min (much higher than booking endpoints — analytics is high-frequency)
-    if (isRateLimited(`analytics:${ip}`, 60, 60_000)) {
-      return res.status(429).json({ message: "Too many requests" });
-    }
-
     const parsed = sessionSchema.parse(req.body);
 
     const { session, isNew } = await storage.upsertVisitorSession({
@@ -67,10 +59,6 @@ const eventSchema = z.object({
 
 router.post("/events", async (req, res) => {
   try {
-    const ip = req.ip || "unknown";
-    if (isRateLimited(`analytics:${ip}`, 60, 60_000)) {
-      return res.status(429).json({ message: "Too many requests" });
-    }
     const parsed = eventSchema.parse(req.body);
     await storage.recordConversionEvent(parsed.eventType, {
       visitorId: parsed.visitorId ?? undefined,
