@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, numeric, timestamp, boolean, date, jsonb, uuid, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, numeric, timestamp, boolean, date, jsonb, uuid, index, uniqueIndex, primaryKey } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -25,6 +25,35 @@ export const users = pgTable("users", {
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 export const insertUserSchema = createInsertSchema(users);
+
+// === MULTI-TENANT REGISTRY (global — no tenantId on these tables) ===
+
+export const tenants = pgTable("tenants", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  status: text("status").notNull().default("active"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const domains = pgTable("domains", {
+  id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  hostname: text("hostname").notNull().unique(),
+  isPrimary: boolean("is_primary").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const userTenants = pgTable("user_tenants", {
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tenantId: integer("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  role: text("role").notNull().default("viewer"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  primaryKey({ columns: [table.userId, table.tenantId] }),
+]);
 
 export const categories = pgTable("categories", {
   id: serial("id").primaryKey(),
