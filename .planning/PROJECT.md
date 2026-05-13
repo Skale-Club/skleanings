@@ -121,11 +121,13 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-## Current Milestone: v7.0 (Planning next milestone)
+## Current Milestone: v7.0 Xkedule Foundation
 
-### Active
+**Goal:** Criar a infraestrutura de operação da plataforma (super-admin panel) e melhorar a configurabilidade por tenant (locale settings), preparando o terreno para multi-tenancy.
 
-(Planning next milestone)
+**Target features:**
+- Super-admin panel com visão da plataforma, stats do tenant atual, health check e acesso protegido por rota dedicada (SEED-015)
+- Locale settings no admin: language, startOfWeek, date format — consumidos pelo booking flow e calendário (SEED-011)
 
 ---
-*Last updated: 2026-05-13 — v6.0 Platform Quality archived*
+*Last updated: 2026-05-13 — v7.0 Xkedule Foundation started*
