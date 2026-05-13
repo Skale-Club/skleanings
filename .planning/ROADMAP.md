@@ -197,7 +197,10 @@ Plans:
   2. `infra/app.service` exists as a valid systemd unit file that starts the Node server via PM2 or direct node, with environment file reference and restart policy
   3. `.github/workflows/deploy.yml` exists with a manual trigger (`workflow_dispatch`) that SSH-deploys to the Hetzner VM — it does not run automatically on push
   4. `infra/README.md` documents the full Hetzner CX23 setup sequence: Node install, PM2, Caddy, Cloudflare DNS configuration
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 41-01-PLAN.md — Caddyfile (wildcard TLS + reverse proxy) + systemd app.service (MT-14, MT-15)
+- [ ] 41-02-PLAN.md — GitHub Actions deploy.yml (manual SSH deploy) + Hetzner setup README.md (MT-16, MT-17)
 
 ---
 
@@ -215,7 +218,7 @@ Plans:
 | 38 | v8.0 | 2/2 | Complete    | 2026-05-13 |
 | 39 | v8.0 | 3/3 | Complete    | 2026-05-13 |
 | 40 | v8.0 | 3/3 | Complete    | 2026-05-13 |
-| 41 | v8.0 | 0/TBD | Not started | - |
+| 41 | v8.0 | 0/2 | Not started | - |
 
 ---
 
