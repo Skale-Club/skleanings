@@ -1,6 +1,6 @@
 ---
 id: SEED-003
-status: dormant
+status: shipped
 planted: 2026-05-10
 planted_during: v1.0 / Phase 15 (schema-foundation-detokenization)
 trigger_when: before any paid marketing campaign, or when the domain goes public/indexed
