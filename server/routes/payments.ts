@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { z } from "zod";
-import { storage } from "../storage";
 import { linkBookingToAttribution, recordConversionEvent } from "../storage/analytics";
 import { insertBookingSchema } from "@shared/schema";
 import { checkAvailability } from "../lib/availability";
@@ -17,6 +16,7 @@ const router = Router();
 // Creates a booking with pending_payment status + Stripe Checkout session.
 // Returns { sessionUrl, bookingId } — client redirects to sessionUrl.
 router.post("/checkout", async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     // Check Stripe is connected + enabled
     const stripeCreds = await storage.getIntegrationSettings("stripe");
@@ -33,6 +33,7 @@ router.post("/checkout", async (req, res) => {
 
     // Availability check
     const isAvailable = await checkAvailability(
+      storage,
       validatedData.bookingDate,
       validatedData.startTime,
       validatedData.endTime,
@@ -98,7 +99,7 @@ router.post("/checkout", async (req, res) => {
 
     // Create Stripe Checkout session
     const origin = `${req.protocol}://${req.get("host")}`;
-    const session = await createCheckoutSession({
+    const session = await createCheckoutSession(storage, {
       bookingId: booking.id,
       customerEmail: validatedData.customerEmail || undefined,
       lineItems,
@@ -122,12 +123,13 @@ router.post("/checkout", async (req, res) => {
 // Stripe sends events here. Verifies signature using req.rawBody (captured globally).
 // Handles checkout.session.completed → marks booking paid.
 router.post("/webhook", async (req, res) => {
+  const storage = res.locals.storage!;
   const signature = req.headers["stripe-signature"] as string;
   if (!signature) return res.status(400).send("Missing stripe-signature header");
 
   let event;
   try {
-    event = await verifyWebhookEvent(req.rawBody as Buffer, signature);
+    event = await verifyWebhookEvent(storage, req.rawBody as Buffer, signature);
   } catch (err) {
     return res.status(400).send(`Webhook signature verification failed: ${(err as Error).message}`);
   }
@@ -163,9 +165,10 @@ router.post("/webhook", async (req, res) => {
 // GET /api/payments/verify/:sessionId
 // Called by confirmation page to check payment status after Stripe redirect.
 router.get("/verify/:sessionId", async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const { sessionId } = req.params;
-    const session = await retrieveCheckoutSession(sessionId);
+    const session = await retrieveCheckoutSession(storage, sessionId);
     const booking = await storage.getBookingByStripeSessionId(sessionId);
 
     res.json({

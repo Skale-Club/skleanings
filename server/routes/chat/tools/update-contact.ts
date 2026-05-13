@@ -107,7 +107,7 @@ export const updateContactHandler: ToolHandler<UpdateContactInput> = async (
                 }
             );
 
-            await logNotification({
+            await logNotification(chatDeps.storage, {
                 channel: "ghl",
                 trigger: "new_chat",
                 recipient: contactEmail || contactPhone,

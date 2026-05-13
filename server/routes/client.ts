@@ -1,7 +1,6 @@
 
 import { Router } from "express";
 import { z } from "zod";
-import { storage } from "../storage";
 import { requireClient } from "../lib/auth";
 import { checkAvailability } from "../lib/availability";
 import { syncClientCancelToExternal, syncClientRescheduleToExternal } from "../lib/booking-client-sync";
@@ -17,6 +16,7 @@ const patchMeSchema = z.object({
 
 // GET /api/client/me
 router.get("/me", requireClient, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const user = (req as any).user;
         const profile = await storage.getUser(user.id);
@@ -29,6 +29,7 @@ router.get("/me", requireClient, async (req, res) => {
 
 // PATCH /api/client/me
 router.patch("/me", requireClient, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const user = (req as any).user;
         const validatedData = patchMeSchema.parse(req.body);
@@ -44,6 +45,7 @@ router.patch("/me", requireClient, async (req, res) => {
 
 // GET /api/client/bookings
 router.get("/bookings", requireClient, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const user = (req as any).user;
         const clientBookings = await storage.getClientBookings(user.id, user.email ?? "");
@@ -55,6 +57,7 @@ router.get("/bookings", requireClient, async (req, res) => {
 
 // GET /api/client/bookings/:id
 router.get("/bookings/:id(\\d+)", requireClient, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const user = (req as any).user;
         const booking = await storage.getBooking(Number(req.params.id));
@@ -80,6 +83,7 @@ const rescheduleSchema = z.object({
 
 // POST /api/client/bookings/:id/cancel
 router.post("/bookings/:id(\\d+)/cancel", requireClient, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const user = (req as any).user;
         const booking = await storage.getBooking(Number(req.params.id));
@@ -101,7 +105,7 @@ router.post("/bookings/:id(\\d+)/cancel", requireClient, async (req, res) => {
 
         await storage.updateBookingStatus(booking.id, "cancelled");
         res.json({ success: true });
-        syncClientCancelToExternal(booking).catch(err =>
+        syncClientCancelToExternal(storage, booking).catch(err =>
             console.error("[ClientSync] Unhandled cancel sync error:", err)
         );
         return;
@@ -112,6 +116,7 @@ router.post("/bookings/:id(\\d+)/cancel", requireClient, async (req, res) => {
 
 // POST /api/client/bookings/:id/reschedule
 router.post("/bookings/:id(\\d+)/reschedule", requireClient, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const validatedData = rescheduleSchema.parse(req.body);
         const user = (req as any).user;
@@ -133,6 +138,7 @@ router.post("/bookings/:id(\\d+)/reschedule", requireClient, async (req, res) =>
         }
 
         const available = await checkAvailability(
+            storage,
             validatedData.bookingDate,
             validatedData.startTime,
             validatedData.endTime,
@@ -148,7 +154,7 @@ router.post("/bookings/:id(\\d+)/reschedule", requireClient, async (req, res) =>
             endTime: validatedData.endTime,
         });
         res.json(updated);
-        syncClientRescheduleToExternal(booking, validatedData.bookingDate, validatedData.startTime, validatedData.endTime).catch(err =>
+        syncClientRescheduleToExternal(storage, booking, validatedData.bookingDate, validatedData.startTime, validatedData.endTime).catch(err =>
             console.error("[ClientSync] Unhandled reschedule sync error:", err)
         );
         return;

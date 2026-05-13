@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { storage } from "../../storage";
 import { requireAdmin } from "../../lib/auth";
 import {
     testGHLConnection,
@@ -12,6 +11,7 @@ import {
 const router = Router();
 
 router.get("/ghl", requireAdmin, async (_req, res) => {
+    const storage = res.locals.storage!;
     try {
         const settings = await storage.getIntegrationSettings("gohighlevel");
         if (!settings) {
@@ -25,6 +25,7 @@ router.get("/ghl", requireAdmin, async (_req, res) => {
 });
 
 router.put("/ghl", requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const { apiKey, locationId, calendarId, isEnabled } = req.body;
         console.log("GHL Save Request:", { apiKey: apiKey ? "provided" : "not provided", locationId, calendarId, isEnabled });
@@ -52,6 +53,7 @@ router.put("/ghl", requireAdmin, async (req, res) => {
 });
 
 router.post("/ghl/test", requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const { apiKey, locationId } = req.body;
         let keyToTest = apiKey;
@@ -70,6 +72,7 @@ router.post("/ghl/test", requireAdmin, async (req, res) => {
 });
 
 router.get("/ghl/free-slots", async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const settings = await storage.getIntegrationSettings("gohighlevel");
         if (!settings?.isEnabled || !settings.apiKey || !settings.calendarId) {
@@ -90,6 +93,7 @@ router.get("/ghl/free-slots", async (req, res) => {
 });
 
 router.get("/ghl/status", async (_req, res) => {
+    const storage = res.locals.storage!;
     try {
         const settings = await storage.getIntegrationSettings("gohighlevel");
         res.json({ enabled: settings?.isEnabled || false, hasCalendar: !!settings?.calendarId });
@@ -99,6 +103,7 @@ router.get("/ghl/status", async (_req, res) => {
 });
 
 router.post("/ghl/sync-booking", async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const settings = await storage.getIntegrationSettings("gohighlevel");
         if (!settings?.isEnabled || !settings.apiKey || !settings.locationId || !settings.calendarId) {

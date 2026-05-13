@@ -1,7 +1,6 @@
 
 import { Router } from "express";
 import { z } from "zod";
-import { storage } from "../storage";
 import { requireAdmin } from "../lib/auth";
 import { insertServiceAreaSchema } from "@shared/schema";
 
@@ -9,6 +8,7 @@ const router = Router();
 
 // Service Areas (public GET, admin CRUD)
 router.get('/', async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const includeInactive = req.query.includeInactive === '1' || req.query.includeInactive === 'true';
         const areas = await storage.getServiceAreas(includeInactive);
@@ -19,6 +19,7 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const validatedData = insertServiceAreaSchema.parse(req.body);
         const area = await storage.createServiceArea(validatedData);
@@ -32,6 +33,7 @@ router.post('/', requireAdmin, async (req, res) => {
 });
 
 router.put('/:id', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const validatedData = insertServiceAreaSchema.partial().parse(req.body);
         const area = await storage.updateServiceArea(Number(req.params.id), validatedData);
@@ -45,6 +47,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
 });
 
 router.delete('/:id', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         await storage.deleteServiceArea(Number(req.params.id));
         res.json({ success: true });
@@ -54,6 +57,7 @@ router.delete('/:id', requireAdmin, async (req, res) => {
 });
 
 router.post('/reorder', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const updates = req.body as { id: number; order: number }[];
         await storage.reorderServiceAreas(updates);
@@ -65,6 +69,7 @@ router.post('/reorder', requireAdmin, async (req, res) => {
 
 // === Service Area Groups (Hierarchical) ===
 router.get('/groups', async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const includeInactive = req.query.includeInactive === '1' || req.query.includeInactive === 'true';
         const groups = await storage.getServiceAreaGroups(includeInactive);
@@ -75,6 +80,7 @@ router.get('/groups', async (req, res) => {
 });
 
 router.post('/groups', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const validatedData = z.object({
             name: z.string().min(1),
@@ -94,6 +100,7 @@ router.post('/groups', requireAdmin, async (req, res) => {
 });
 
 router.put('/groups/:id', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const validatedData = z.object({
             name: z.string().min(1).optional(),
@@ -113,6 +120,7 @@ router.put('/groups/:id', requireAdmin, async (req, res) => {
 });
 
 router.delete('/groups/:id', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         await storage.deleteServiceAreaGroup(Number(req.params.id));
         res.json({ success: true });
@@ -122,6 +130,7 @@ router.delete('/groups/:id', requireAdmin, async (req, res) => {
 });
 
 router.post('/groups/reorder', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const updates = req.body as { id: number; order: number }[];
         await storage.reorderServiceAreaGroups(updates);
@@ -133,6 +142,7 @@ router.post('/groups/reorder', requireAdmin, async (req, res) => {
 
 // === Service Area Cities (Hierarchical) ===
 router.get('/cities', async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const groupId = req.query.groupId ? Number(req.query.groupId) : undefined;
         const includeInactive = req.query.includeInactive === '1' || req.query.includeInactive === 'true';
@@ -144,6 +154,7 @@ router.get('/cities', async (req, res) => {
 });
 
 router.post('/cities', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const validatedData = z.object({
             areaGroupId: z.number(),
@@ -163,6 +174,7 @@ router.post('/cities', requireAdmin, async (req, res) => {
 });
 
 router.put('/cities/:id', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const validatedData = z.object({
             areaGroupId: z.number().optional(),
@@ -182,6 +194,7 @@ router.put('/cities/:id', requireAdmin, async (req, res) => {
 });
 
 router.delete('/cities/:id', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         await storage.deleteServiceAreaCity(Number(req.params.id));
         res.json({ success: true });
@@ -191,6 +204,7 @@ router.delete('/cities/:id', requireAdmin, async (req, res) => {
 });
 
 router.post('/cities/reorder', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const updates = req.body as { id: number; order: number }[];
         await storage.reorderServiceAreaCities(updates);

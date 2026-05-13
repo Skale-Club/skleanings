@@ -1,12 +1,12 @@
 import { Router } from "express";
 import { requireAdmin } from "../lib/auth";
-import { storage } from "../storage";
 
 const router = Router();
 
 // GET /api/conversations/:id/notifications
 // Returns notification log rows for a specific conversation (admin only)
 router.get("/conversations/:id/notifications", requireAdmin, async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const { id } = req.params;
     const logs = await storage.getNotificationLogsByConversation(id);
@@ -20,6 +20,7 @@ router.get("/conversations/:id/notifications", requireAdmin, async (req, res) =>
 // GET /api/admin/notification-logs
 // Global paginated notification log with optional filters (admin only)
 router.get("/admin/notification-logs", requireAdmin, async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const { channel, status, trigger, from, to, search, limit, offset } = req.query;
 

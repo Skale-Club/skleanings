@@ -1,11 +1,11 @@
 import { Router } from "express";
-import { storage } from "../../storage";
 import { requireAdmin } from "../../lib/auth";
 import { getConnectAuthUrl, exchangeConnectCode, deauthorizeConnectAccount } from "../../lib/stripe";
 
 const router = Router();
 
 router.get("/stripe", requireAdmin, async (_req, res) => {
+    const storage = res.locals.storage!;
     try {
         const settings = await storage.getIntegrationSettings("stripe");
         if (!settings?.apiKey) return res.json({ connected: false });
@@ -21,6 +21,7 @@ router.get("/stripe", requireAdmin, async (_req, res) => {
 });
 
 router.put("/stripe/webhook", requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const { webhookSecret, isEnabled } = req.body;
         const existing = await storage.getIntegrationSettings("stripe");
@@ -55,6 +56,7 @@ router.get("/stripe/connect", requireAdmin, async (_req, res) => {
 });
 
 router.get("/stripe/callback", async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const code = String(req.query.code || "");
         if (!code) return res.status(400).send("Missing OAuth code");
@@ -74,6 +76,7 @@ router.get("/stripe/callback", async (req, res) => {
 });
 
 router.delete("/stripe/disconnect", requireAdmin, async (_req, res) => {
+    const storage = res.locals.storage!;
     try {
         const existing = await storage.getIntegrationSettings("stripe");
         if (existing?.locationId) {

@@ -240,7 +240,7 @@ export const createBookingHandler: ToolHandler<CreateBookingInput> = async (
     const endMinute = startDate.getMinutes().toString().padStart(2, '0');
     const endTime = `${endHour}:${endMinute}`;
 
-    if (conversationId && !(await acquireTimeSlotLock(bookingDate, startTime, conversationId))) {
+    if (conversationId && !(await acquireTimeSlotLock(chatDeps.storage, bookingDate, startTime, conversationId))) {
         console.log(`[create_booking:${correlationId}] Time slot is locked by another booking:`, { bookingDate, startTime });
         return bookingFailure(
             'booking:slot_taken',
@@ -256,7 +256,7 @@ export const createBookingHandler: ToolHandler<CreateBookingInput> = async (
         const hasConflict = existingBookings.some((booking) => startTime < booking.endTime && endTime > booking.startTime);
         if (hasConflict) {
             if (conversationId) {
-                await releaseTimeSlotLock(bookingDate, startTime, conversationId);
+                await releaseTimeSlotLock(chatDeps.storage, bookingDate, startTime, conversationId);
             }
             return bookingFailure(
                 'booking:slot_unavailable',
@@ -277,6 +277,7 @@ export const createBookingHandler: ToolHandler<CreateBookingInput> = async (
 
         try {
             slotsForDay = await getAvailabilityForDate(
+                chatDeps.storage,
                 bookingDate,
                 totalDuration,
                 useGhl,
@@ -286,7 +287,7 @@ export const createBookingHandler: ToolHandler<CreateBookingInput> = async (
         } catch (error: any) {
             const errorMsg = error?.message || 'Failed to verify availability in GoHighLevel.';
             if (conversationId) {
-                await releaseTimeSlotLock(bookingDate, startTime, conversationId);
+                await releaseTimeSlotLock(chatDeps.storage, bookingDate, startTime, conversationId);
                 await addInternalConversationMessage(
                     conversationId,
                     `[create_booking:${correlationId}] Failed: Availability check error`,
@@ -305,7 +306,7 @@ export const createBookingHandler: ToolHandler<CreateBookingInput> = async (
 
         if (slotsForDay.length > 0 && !slotsForDay.includes(startTime)) {
             if (conversationId) {
-                await releaseTimeSlotLock(bookingDate, startTime, conversationId);
+                await releaseTimeSlotLock(chatDeps.storage, bookingDate, startTime, conversationId);
                 await addInternalConversationMessage(
                     conversationId,
                     `[create_booking:${correlationId}] Failed: Time slot ${startTime} not available`,
@@ -353,7 +354,7 @@ export const createBookingHandler: ToolHandler<CreateBookingInput> = async (
             .map((service) => service.name?.trim())
             .filter((name): name is string => Boolean(name));
         const serviceNames = serviceNamesForNotification.join(', ');
-        const ghlSync = await syncBookingToGhl(booking, serviceNames);
+        const ghlSync = await syncBookingToGhl(chatDeps.storage, booking, serviceNames);
         const pendingSync = ghlSync.attempted && !ghlSync.synced;
 
         try {
@@ -365,6 +366,7 @@ export const createBookingHandler: ToolHandler<CreateBookingInput> = async (
             if (twilioSettings?.enabled && twilioSettings.authToken && twilioSettings.fromPhoneNumber) {
                 try {
                     await chatDeps.twilio.sendBookingNotification(
+                        chatDeps.storage,
                         booking,
                         serviceNamesForNotification,
                         twilioSettings,
@@ -379,6 +381,7 @@ export const createBookingHandler: ToolHandler<CreateBookingInput> = async (
             if (telegramSettings?.enabled && telegramSettings.botToken && telegramSettings.chatIds.length > 0) {
                 try {
                     await chatDeps.telegram.sendBookingNotification(
+                        chatDeps.storage,
                         booking,
                         serviceNamesForNotification,
                         telegramSettings,
@@ -443,7 +446,7 @@ export const createBookingHandler: ToolHandler<CreateBookingInput> = async (
             }
 
             recordBookingCreation(conversationId);
-            await releaseTimeSlotLock(bookingDate, startTime, conversationId);
+            await releaseTimeSlotLock(chatDeps.storage, bookingDate, startTime, conversationId);
         }
 
         if (pendingSync) {
@@ -477,7 +480,7 @@ export const createBookingHandler: ToolHandler<CreateBookingInput> = async (
     } catch (error: any) {
         console.error('[create_booking] Error:', error);
         if (conversationId) {
-            await releaseTimeSlotLock(bookingDate, startTime, conversationId);
+            await releaseTimeSlotLock(chatDeps.storage, bookingDate, startTime, conversationId);
         }
         return bookingFailure('booking:creation_failed', 'An unexpected error occurred.', {
             userMessage: getErrorMessage('systemUnavailable', language),

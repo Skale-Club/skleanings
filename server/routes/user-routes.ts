@@ -1,15 +1,16 @@
 import { Router } from "express";
-import { storage } from "../storage";
 import { requireAdmin } from "../lib/auth";
 
 const router = Router();
 
 router.get("/", requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     const users = await storage.getUsers();
     res.json(users);
 });
 
 router.post("/", requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     const newUser = await storage.createUser(req.body);
 
     // Bridge: if role=staff, auto-create linked staffMembers record
@@ -30,6 +31,7 @@ router.post("/", requireAdmin, async (req, res) => {
 });
 
 router.patch("/:id", requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     const id = req.params.id;
     const updates = req.body;
 
@@ -38,7 +40,7 @@ router.patch("/:id", requireAdmin, async (req, res) => {
         const user = await storage.getUser(id);
         if (user && user.role === 'admin') {
             const users = await storage.getUsers();
-            const adminCount = users.filter(u => u.role === 'admin').length;
+            const adminCount = users.filter((u: { role?: string | null }) => u.role === 'admin').length;
             if (adminCount <= 1) {
                 return res.status(400).json({ message: "Cannot remove the last administrator." });
             }
@@ -69,6 +71,7 @@ router.patch("/:id", requireAdmin, async (req, res) => {
 
 // PATCH /api/users/:id/staff-link — links/unlinks user to a staff member
 router.patch("/:id/staff-link", requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const userId = req.params.id;
         const { staffMemberId } = req.body;
@@ -77,7 +80,7 @@ router.patch("/:id/staff-link", requireAdmin, async (req, res) => {
         } else {
             // Clear any existing link by setting userId=null on any linked staff member
             const allStaff = await storage.getStaffMembers(true);
-            const linked = allStaff.find(s => s.userId === userId);
+            const linked = allStaff.find((s: { userId?: string | null; id: number }) => s.userId === userId);
             if (linked) {
                 await storage.linkStaffMemberToUser(linked.id, null as any);
             }
@@ -89,12 +92,13 @@ router.patch("/:id/staff-link", requireAdmin, async (req, res) => {
 });
 
 router.delete("/:id", requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     const id = req.params.id;
     const user = await storage.getUser(id);
 
     if (user && user.role === 'admin') {
         const users = await storage.getUsers();
-        const adminCount = users.filter(u => u.role === 'admin').length;
+        const adminCount = users.filter((u: { role?: string | null }) => u.role === 'admin').length;
         if (adminCount <= 1) {
             return res.status(400).json({ message: "Cannot delete the last administrator." });
         }

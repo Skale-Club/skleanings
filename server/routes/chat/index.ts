@@ -3,7 +3,6 @@ import { Request, Response, Router } from "express";
 import crypto from "crypto";
 import { handleMessage } from "./message-handler";
 import { getAuthenticatedUser, requireAdmin } from "../../lib/auth";
-import { storage } from "../../storage";
 import { insertChatSettingsSchema } from "@shared/schema";
 import { conversationEvents } from "../../lib/chat-events";
 import { getFallbackChatSettings, getFallbackCompanySettings } from "../../lib/public-data-fallback";
@@ -51,9 +50,10 @@ function setPublicChatConfigCacheHeaders(res: Response) {
     res.setHeader("Cache-Control", "public, max-age=300, s-maxage=300, stale-while-revalidate=86400");
 }
 
-async function isAuthenticatedAdminRequest(req: Request): Promise<boolean> {
+async function isAuthenticatedAdminRequest(req: Request, res: Response): Promise<boolean> {
     try {
-        const user = await getAuthenticatedUser(req);
+        const storage = res.locals.storage!;
+        const user = await getAuthenticatedUser(req, storage);
         return user?.role === "admin";
     } catch {
         return false;
@@ -65,10 +65,15 @@ async function isAuthenticatedAdminRequest(req: Request): Promise<boolean> {
 // ============================
 
 // POST /api/chat/message — public chat message handler
-router.post("/chat/message", handleMessage);
+router.post("/chat/message", async (req, res) => {
+    const { setChatDependencies } = await import("./dependencies");
+    setChatDependencies({ storage: res.locals.storage! });
+    return handleMessage(req, res);
+});
 
 // GET /api/chat/config — public chat widget config (controls whether chat appears)
 router.get("/chat/config", async (_req, res) => {
+    const storage = res.locals.storage!;
     if (process.env.VERCEL) {
         try {
             if (publicChatConfigCache && publicChatConfigCache.expiresAt > Date.now()) {
@@ -196,6 +201,7 @@ router.get("/chat/config", async (_req, res) => {
 // GET /api/chat/conversations/:id/messages — paginated messages (used by public ChatWidget AND admin)
 // No requireAdmin here so ChatWidget can load its own conversation history
 router.get("/chat/conversations/:id/messages", async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const { id } = req.params;
         const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
@@ -204,7 +210,7 @@ router.get("/chat/conversations/:id/messages", async (req, res) => {
         let includeInternal = false;
 
         if (includeInternalRequested) {
-            const isAdmin = await isAuthenticatedAdminRequest(req);
+            const isAdmin = await isAuthenticatedAdminRequest(req, res);
             if (!isAdmin) {
                 return res.status(401).json({ message: "Authentication required to access internal messages." });
             }
@@ -251,6 +257,7 @@ router.get("/chat/conversations/:id/messages", async (req, res) => {
 
 // GET /api/chat/settings — full admin chat settings
 router.get("/chat/settings", requireAdmin, async (_req, res) => {
+    const storage = res.locals.storage!;
     try {
         const settings = await storage.getChatSettings();
         res.json(settings);
@@ -261,6 +268,7 @@ router.get("/chat/settings", requireAdmin, async (_req, res) => {
 
 // PUT /api/chat/settings — update admin chat settings (partial update)
 router.put("/chat/settings", requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const validatedData = insertChatSettingsSchema.partial().parse(req.body);
         const settings = await storage.updateChatSettings(validatedData);
@@ -276,6 +284,7 @@ router.put("/chat/settings", requireAdmin, async (req, res) => {
 
 // POST /api/chat/config — legacy admin update settings (kept for backward compat)
 router.post("/chat/config", requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const validatedData = insertChatSettingsSchema.parse(req.body);
         const settings = await storage.updateChatSettings(validatedData);
@@ -291,6 +300,7 @@ router.post("/chat/config", requireAdmin, async (req, res) => {
 
 // GET /api/chat/ghl-status — check if GHL is configured and ready for chat
 router.get("/chat/ghl-status", requireAdmin, async (_req, res) => {
+    const storage = res.locals.storage!;
     try {
         const ghlSettings = await storage.getIntegrationSettings("gohighlevel");
         const chatSettings = await storage.getChatSettings();
@@ -309,6 +319,7 @@ router.get("/chat/ghl-status", requireAdmin, async (_req, res) => {
 
 // GET /api/chat/conversations — list all conversations (admin)
 router.get("/chat/conversations", requireAdmin, async (_req, res) => {
+    const storage = res.locals.storage!;
     try {
         const convs = await storage.getConversations();
         res.json(convs);
@@ -319,6 +330,7 @@ router.get("/chat/conversations", requireAdmin, async (_req, res) => {
 
 // GET /api/chat/conversations/:id — single conversation detail (admin)
 router.get("/chat/conversations/:id", requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const conversation = await storage.getConversation(req.params.id);
         if (!conversation) {
@@ -332,6 +344,7 @@ router.get("/chat/conversations/:id", requireAdmin, async (req, res) => {
 
 // POST /api/chat/conversations/:id/messages — send manual message as admin
 router.post("/chat/conversations/:id/messages", requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const { id } = req.params;
         const body = z.object({
@@ -370,6 +383,7 @@ router.post("/chat/conversations/:id/messages", requireAdmin, async (req, res) =
 
 // POST /api/chat/conversations/:id/status — update conversation status (admin)
 router.post("/chat/conversations/:id/status", requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const { status } = req.body;
         if (!status || !["active", "open", "closed", "archived"].includes(status)) {
@@ -385,6 +399,7 @@ router.post("/chat/conversations/:id/status", requireAdmin, async (req, res) => 
 
 // DELETE /api/chat/conversations/:id — delete conversation and its messages (admin)
 router.delete("/chat/conversations/:id", requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         await storage.deleteConversation(req.params.id);
         res.json({ success: true });
