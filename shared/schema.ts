@@ -399,14 +399,6 @@ export const telegramSettings = pgTable("telegram_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Heartbeat log table for keep-alive cron runs
-export const systemHeartbeats = pgTable("system_heartbeats", {
-  id: serial("id").primaryKey(),
-  source: text("source").notNull().default("vercel-cron"),
-  note: text("note").notNull().default(""),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
 export const conversations = pgTable("conversations", {
   id: uuid("id").primaryKey(),
   status: text("status").notNull().default("open"),
@@ -642,7 +634,6 @@ export type ChatIntegrations = typeof chatIntegrations.$inferSelect;
 export type TwilioSettings = typeof twilioSettings.$inferSelect;
 export type TelegramSettings = typeof telegramSettings.$inferSelect;
 export type EmailSettings = typeof emailSettings.$inferSelect;
-export type SystemHeartbeat = typeof systemHeartbeats.$inferSelect;
 export type Conversation = typeof conversations.$inferSelect;
 export type ConversationMessage = typeof conversationMessages.$inferSelect;
 
