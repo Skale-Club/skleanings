@@ -79,7 +79,7 @@ Full details: [milestones/v5.0-ROADMAP.md](milestones/v5.0-ROADMAP.md)
 ### v6.0 Platform Quality (Phases 33–35)
 
 - [x] **Phase 33: Rate Limiting** - Add in-memory rate limiting to public analytics and chat endpoints (completed 2026-05-13)
-- [ ] **Phase 34: Component Split** - Refactor BookingPage and AppointmentsCalendarSection into focused sub-components
+- [x] **Phase 34: Component Split** - Refactor BookingPage and AppointmentsCalendarSection into focused sub-components (completed 2026-05-13)
 - [ ] **Phase 35: Blog Cron Migration** - Migrate blog generation cron from Vercel Cron to GitHub Actions with endpoint auth
 
 ---
@@ -139,7 +139,7 @@ Plans:
 | 21–29 | v4.0 | 27/27 | Complete | 2026-05-11 |
 | 30–32 | v5.0 | 9/9 | Complete | 2026-05-13 |
 | 33 | v6.0 | 1/1 | Complete    | 2026-05-13 |
-| 34 | v6.0 | 3/4 | In Progress|  |
+| 34 | v6.0 | 3/4 | Complete    | 2026-05-13 |
 | 35 | v6.0 | 0/? | Not started | - |
 
 ---
