@@ -10,10 +10,10 @@
 
 ### Rate Limiting — Endpoints Públicos (SEED-003)
 
-- [ ] **RATE-01**: `POST /api/analytics/session` aceita no máximo 10 req/min por IP; excesso retorna 429 com header `Retry-After`
-- [ ] **RATE-02**: `POST /api/analytics/events` aceita no máximo 10 req/min por IP; excesso retorna 429
-- [ ] **RATE-03**: `POST /api/chat/message` aceita no máximo 20 req/min por IP; excesso retorna 429
-- [ ] **RATE-04**: Rate limiter usa `express-rate-limit` em memória com `standardHeaders: true` e `legacyHeaders: false`
+- [x] **RATE-01**: `POST /api/analytics/session` aceita no máximo 10 req/min por IP; excesso retorna 429 com header `Retry-After`
+- [x] **RATE-02**: `POST /api/analytics/events` aceita no máximo 10 req/min por IP; excesso retorna 429
+- [x] **RATE-03**: `POST /api/chat/message` aceita no máximo 20 req/min por IP; excesso retorna 429
+- [x] **RATE-04**: Rate limiter usa `express-rate-limit` em memória com `standardHeaders: true` e `legacyHeaders: false`
 
 ### Split de Componentes Gigantes (SEED-004)
 

@@ -78,7 +78,7 @@ Full details: [milestones/v5.0-ROADMAP.md](milestones/v5.0-ROADMAP.md)
 
 ### v6.0 Platform Quality (Phases 33–35)
 
-- [ ] **Phase 33: Rate Limiting** - Add in-memory rate limiting to public analytics and chat endpoints
+- [x] **Phase 33: Rate Limiting** - Add in-memory rate limiting to public analytics and chat endpoints (completed 2026-05-13)
 - [ ] **Phase 34: Component Split** - Refactor BookingPage and AppointmentsCalendarSection into focused sub-components
 - [ ] **Phase 35: Blog Cron Migration** - Migrate blog generation cron from Vercel Cron to GitHub Actions with endpoint auth
 
@@ -98,7 +98,7 @@ Full details: [milestones/v5.0-ROADMAP.md](milestones/v5.0-ROADMAP.md)
   5. Rate limiter config uses `standardHeaders: true` and `legacyHeaders: false` (no `X-RateLimit-*` legacy headers emitted)
 **Plans**: 1 plan
 Plans:
-- [ ] 33-01-PLAN.md — Fix express-rate-limit config and remove duplicate custom guards
+- [x] 33-01-PLAN.md — Fix express-rate-limit config and remove duplicate custom guards
 
 ### Phase 34: Component Split
 **Goal**: BookingPage and AppointmentsCalendarSection are maintainable files with focused sub-components and no regressions
@@ -134,7 +134,7 @@ Plans:
 | 20 | v3.0 | 4/4 | Complete | 2026-05-11 |
 | 21–29 | v4.0 | 27/27 | Complete | 2026-05-11 |
 | 30–32 | v5.0 | 9/9 | Complete | 2026-05-13 |
-| 33 | v6.0 | 0/1 | Not started | - |
+| 33 | v6.0 | 1/1 | Complete   | 2026-05-13 |
 | 34 | v6.0 | 0/? | Not started | - |
 | 35 | v6.0 | 0/? | Not started | - |
 
