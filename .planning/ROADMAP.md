@@ -109,8 +109,12 @@ Plans:
   2. `BookingPage.tsx` contains only orchestration logic; each step lives in its own file (`StepStaffSelector`, `StepTimeSlot`, `StepCustomerDetails`, `StepPaymentMethod`, `StepConfirmation`)
   3. The `booking_started` analytics event fires exactly once per booking flow regardless of re-renders (useRef fire-once guard preserved)
   4. Admin calendar displays correctly with `CreateBookingModal` and drag-to-reschedule operating as separate extracted components
-**Plans**: TBD
-**UI hint**: yes
+**Plans**: 4 plans
+Plans:
+- [ ] 34-01-PLAN.md — bookingSchema.ts + BookingSummary.tsx (schema/type foundation)
+- [ ] 34-02-PLAN.md — Four step components: StepStaffSelector, StepTimeSlot, StepCustomerDetails, StepPaymentMethod
+- [ ] 34-03-PLAN.md — CreateBookingModal.tsx + useDragToReschedule.ts (admin calendar split)
+- [ ] 34-04-PLAN.md — Wire sub-components into BookingPage and AppointmentsCalendarSection orchestrators
 
 ### Phase 35: Blog Cron Migration
 **Goal**: Blog generation runs reliably via GitHub Actions; Vercel Cron config and the systemHeartbeats table are fully removed
@@ -135,7 +139,7 @@ Plans:
 | 21–29 | v4.0 | 27/27 | Complete | 2026-05-11 |
 | 30–32 | v5.0 | 9/9 | Complete | 2026-05-13 |
 | 33 | v6.0 | 1/1 | Complete    | 2026-05-13 |
-| 34 | v6.0 | 0/? | Not started | - |
+| 34 | v6.0 | 0/4 | Not started | - |
 | 35 | v6.0 | 0/? | Not started | - |
 
 ---
