@@ -108,7 +108,11 @@ Full details: [milestones/v6.0-ROADMAP.md](milestones/v6.0-ROADMAP.md)
   2. The admin appointments calendar first day of week reflects the saved startOfWeek value without a page reload after saving
   3. Dates displayed in the customer booking flow use the tenant's configured dateFormat
   4. All three locale columns are persisted via a Supabase CLI migration applied to companySettings
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 36-01-PLAN.md — DB migration + Drizzle schema + CompanySettingsData type extension
+- [ ] 36-02-PLAN.md — Admin UI: three locale Select fields in CompanySettingsSection General tab
+- [ ] 36-03-PLAN.md — Consumer wiring: AppointmentsCalendarSection weekStartsOn + booking flow month header locale
 **UI hint**: yes
 
 ### Phase 37: Super-Admin Panel
@@ -136,7 +140,7 @@ Full details: [milestones/v6.0-ROADMAP.md](milestones/v6.0-ROADMAP.md)
 | 21–29 | v4.0 | 27/27 | Complete | 2026-05-11 |
 | 30–32 | v5.0 | 9/9 | Complete | 2026-05-13 |
 | 33–35 | v6.0 | 7/7 | Complete | 2026-05-13 |
-| 36 | v7.0 | 0/? | Not started | - |
+| 36 | v7.0 | 0/3 | In progress | - |
 | 37 | v7.0 | 0/? | Not started | - |
 
 ---
