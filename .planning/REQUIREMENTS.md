@@ -1,55 +1,48 @@
-# Requirements — v5.0 Booking Experience
+# Requirements — v6.0 Platform Quality
 
-**Milestone:** v5.0 Booking Experience
-**Goal:** Melhorar a experiência de booking com durações flexíveis, comunicação transacional por email e sync confiável com calendários externos.
+**Milestone:** v6.0 Platform Quality
+**Goal:** Melhorar segurança, manutenibilidade e confiabilidade da plataforma sem adicionar features visíveis ao usuário final.
 **Status:** Active
 
 ---
 
 ## Milestone Requirements
 
-### Múltiplas Durações por Serviço (SEED-029)
+### Rate Limiting — Endpoints Públicos (SEED-003)
 
-- [x] **DUR-01**: Admin pode configurar múltiplas durações para um serviço (label, duração em minutos, preço, ordem)
-- [x] **DUR-02**: Admin pode adicionar, remover e reordenar durações na tela de editar serviço
-- [x] **DUR-03**: Cliente vê cards de seleção de duração (label + tempo + preço) antes do calendário quando o serviço tem durações configuradas
-- [x] **DUR-04**: Slot de disponibilidade calculado usa a duração selecionada pelo cliente, não a duração padrão do serviço
-- [x] **DUR-05**: Duração e label selecionados ficam em snapshot no bookingItem no momento da criação do booking
-- [x] **DUR-06**: Subscriptions recorrentes preservam a duração escolhida — gerador cria futuras instâncias com a mesma duração
+- [ ] **RATE-01**: `POST /api/analytics/session` aceita no máximo 10 req/min por IP; excesso retorna 429 com header `Retry-After`
+- [ ] **RATE-02**: `POST /api/analytics/events` aceita no máximo 10 req/min por IP; excesso retorna 429
+- [ ] **RATE-03**: `POST /api/chat/message` aceita no máximo 20 req/min por IP; excesso retorna 429
+- [ ] **RATE-04**: Rate limiter usa `express-rate-limit` em memória com `standardHeaders: true` e `legacyHeaders: false`
 
-### Emails Transacionais com Marca (SEED-019)
+### Split de Componentes Gigantes (SEED-004)
 
-- [x] **EMAIL-01**: Admin pode configurar API key do Resend, from address e ativar/desativar emails transacionais no painel admin
-- [ ] **EMAIL-02**: Cliente recebe email de confirmação de booking imediatamente após status confirmado, com detalhes do serviço, data, hora e endereço
-- [x] **EMAIL-03**: Cliente recebe email de lembrete 24h antes do horário agendado via cron job
-- [ ] **EMAIL-04**: Cliente recebe email de cancelamento imediatamente quando booking é cancelado (por cliente ou admin)
-- [ ] **EMAIL-05**: Templates de email usam logo, nome da empresa e cores da marca vindos de companySettings
+- [ ] **SPLIT-01**: `BookingPage.tsx` refatorado para orquestrador thin — cada step extraído para sub-componente dedicado (`StepStaffSelector`, `StepTimeSlot`, `StepCustomerDetails`, `StepPaymentMethod`, `StepConfirmation`)
+- [ ] **SPLIT-02**: Estado compartilhado entre steps permanece no BookingPage pai (fluxo existente não se quebra)
+- [ ] **SPLIT-03**: Guard `useRef` fire-once do `booking_started` (Phase 11) preservado após o split
+- [ ] **SPLIT-04**: `AppointmentsCalendarSection.tsx` refatorado — `CreateBookingModal` e drag-to-reschedule extraídos em componentes separados
+- [ ] **SPLIT-05**: Fluxo completo de booking funciona após o split (sem regressões visíveis)
 
-### Calendar Harmony — Retry Queue (SEED-002)
+### Blog Cron via GitHub Actions (SEED-009)
 
-- [x] **SYNC-01**: Criação, atualização e cancelamento de booking enfileiram jobs de sync para Google Calendar e GoHighLevel em vez de chamar as APIs diretamente
-- [x] **SYNC-02**: Worker processa a fila com SELECT FOR UPDATE SKIP LOCKED e backoff exponencial (1min → 5min → 30min → 2h → 24h → failed_permanent)
-- [x] **SYNC-03**: Jobs são processados em transação única (sem orphans in_progress) com stale-row reaper para rows presas > 10min
-- [x] **SYNC-04**: Admin vê painel de observabilidade com contagem de jobs pending/failed por target (GCal, GHL) e tabela de falhas recentes com mensagem de erro
-- [x] **SYNC-05**: Admin pode acionar retry manual de jobs falhos por booking individual
-- [x] **SYNC-06**: Sistema detecta 10+ falhas consecutivas do mesmo target e exibe banner "Reconectar [GCal/GHL]" no admin
-- [x] **SYNC-07**: GitHub Actions workflow dispara o worker a cada 5 minutos (substitui node-cron — incompatível com Vercel serverless)
+- [ ] **BLOG-01**: Workflow `.github/workflows/blog-cron.yml` dispara `POST /api/blog/generate` diariamente às 9h UTC com autenticação Bearer `BLOG_CRON_TOKEN`
+- [ ] **BLOG-02**: Endpoint `POST /api/blog/generate` rejeita requests sem `Authorization: Bearer <BLOG_CRON_TOKEN>` com 401
+- [ ] **BLOG-03**: Vercel Cron config de blog generation removida de `vercel.json`
+- [ ] **BLOG-04**: Tabela `systemHeartbeats` removida (keep-alive era para Vercel — desnecessária com GH Actions)
 
 ---
 
 ## Future Requirements
 
-- Reagendamento por email (link no email de confirmação para escolher novo horário)
-- Edição de body do email pelo admin (por ora: from-address + brand colors apenas)
-- Suporte a múltiplos calendários Google por staff (SEED-024 — cancelado)
-- Múltiplos fusos horários (SEED-011)
+- Redis como backing store para rate limiter (sobrevive reinicializações)
+- Rate limiting por conversationId além de IP
+- Testes unitários nos sub-componentes extraídos (SEED-001)
 
 ## Out of Scope
 
-- Edição de HTML dos templates de email pelo admin — risco de quebrar layout; admin configura from-address e brand identity apenas
-- Cart misto residencial/comercial (SEED-028 cancelado — plataforma foca em residencial)
-- pg-boss ou Redis para fila — SELECT FOR UPDATE SKIP LOCKED é suficiente no volume atual
-- Multiple Google Calendars per staff (SEED-024 — cancelado)
+- Migração para Hetzner — SEED-009 prepara infra de cron, migração de servidor é SEED-013
+- Redis para rate limiter — memória suficiente para volume atual
+- Multi-tenant blog cron — escopo Xkedule futuro
 
 ---
 
@@ -57,21 +50,6 @@
 
 | REQ-ID | Phase | Plan |
 |--------|-------|------|
-| DUR-01 | Phase 30 | — |
-| DUR-02 | Phase 30 | — |
-| DUR-03 | Phase 30 | — |
-| DUR-04 | Phase 30 | — |
-| DUR-05 | Phase 30 | — |
-| DUR-06 | Phase 30 | — |
-| EMAIL-01 | Phase 31 | — |
-| EMAIL-02 | Phase 31 | — |
-| EMAIL-03 | Phase 31 | — |
-| EMAIL-04 | Phase 31 | — |
-| EMAIL-05 | Phase 31 | — |
-| SYNC-01 | Phase 32 | — |
-| SYNC-02 | Phase 32 | — |
-| SYNC-03 | Phase 32 | — |
-| SYNC-04 | Phase 32 | — |
-| SYNC-05 | Phase 32 | — |
-| SYNC-06 | Phase 32 | — |
-| SYNC-07 | Phase 32 | — |
+| RATE-01–04 | — | — |
+| SPLIT-01–05 | — | — |
+| BLOG-01–04 | — | — |
