@@ -24,11 +24,11 @@
 
 ### Tenant Resolution Middleware (Phase 40)
 
-- [ ] **MT-09**: `resolveTenantMiddleware` lê `X-Forwarded-Host` (fallback: `Host`), busca no cache LRU, depois na tabela `domains`, e anexa `res.locals.tenant` + `res.locals.storage` à request
-- [ ] **MT-10**: Cache LRU de 500 entradas com TTL de 5 minutos para resolução de tenant (sem hit na DB a cada request)
-- [ ] **MT-11**: `requireTenantMiddleware` retorna 404 se `res.locals.tenant` não foi resolvido (hostname desconhecido)
+- [x] **MT-09**: `resolveTenantMiddleware` lê `X-Forwarded-Host` (fallback: `Host`), busca no cache LRU, depois na tabela `domains`, e anexa `res.locals.tenant` + `res.locals.storage` à request
+- [x] **MT-10**: Cache LRU de 500 entradas com TTL de 5 minutos para resolução de tenant (sem hit na DB a cada request)
+- [x] **MT-11**: `requireTenantMiddleware` retorna 404 se `res.locals.tenant` não foi resolvido (hostname desconhecido)
 - [ ] **MT-12**: Todas as rotas de negócio usam `res.locals.storage` em vez do singleton `storage`
-- [ ] **MT-13**: Rotas de super-admin (`/api/super-admin/*`) EXCLUÍDAS do tenant resolution — operam no DB global diretamente
+- [x] **MT-13**: Rotas de super-admin (`/api/super-admin/*`) EXCLUÍDAS do tenant resolution — operam no DB global diretamente
 
 ### Infra Config (Phase 41)
 
@@ -67,11 +67,11 @@
 | MT-06 | Phase 39 | Pending |
 | MT-07 | Phase 39 | Complete |
 | MT-08 | Phase 39 | Pending |
-| MT-09 | Phase 40 | Pending |
-| MT-10 | Phase 40 | Pending |
-| MT-11 | Phase 40 | Pending |
+| MT-09 | Phase 40 | Complete |
+| MT-10 | Phase 40 | Complete |
+| MT-11 | Phase 40 | Complete |
 | MT-12 | Phase 40 | Pending |
-| MT-13 | Phase 40 | Pending |
+| MT-13 | Phase 40 | Complete |
 | MT-14 | Phase 41 | Pending |
 | MT-15 | Phase 41 | Pending |
 | MT-16 | Phase 41 | Pending |

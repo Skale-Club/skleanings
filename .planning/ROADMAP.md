@@ -184,7 +184,7 @@ Plans:
   5. `res.locals.tenant` is populated with the resolved tenant object on every successfully resolved request
 **Plans**: 3 plans
 Plans:
-- [ ] 40-01-PLAN.md — lru-cache install + locals.d.ts TypeScript augmentation + resolveTenantMiddleware + routes.ts ordering
+- [x] 40-01-PLAN.md — lru-cache install + locals.d.ts TypeScript augmentation + resolveTenantMiddleware + routes.ts ordering
 - [ ] 40-02-PLAN.md — Lib files refactor: 11 server/lib/ files receive IStorage parameter (remove global singleton import)
 - [ ] 40-03-PLAN.md — Route files migration: 24 business route files read storage from res.locals.storage + human smoke test checkpoint
 
@@ -214,7 +214,7 @@ Plans:
 | 36–37 | v7.0 | 6/6 | Complete | 2026-05-13 |
 | 38 | v8.0 | 2/2 | Complete    | 2026-05-13 |
 | 39 | v8.0 | 3/3 | Complete    | 2026-05-13 |
-| 40 | v8.0 | 0/3 | Not started | - |
+| 40 | v8.0 | 1/3 | In Progress|  |
 | 41 | v8.0 | 0/TBD | Not started | - |
 
 ---

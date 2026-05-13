@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v8.0
 milestone_name: Multi-Tenant Architecture
-status: completed
-stopped_at: Completed 39-03-PLAN.md
-last_updated: "2026-05-13T20:57:13.785Z"
+status: executing
+stopped_at: Completed 40-01-PLAN.md
+last_updated: "2026-05-13T21:20:42.584Z"
 last_activity: 2026-05-13
 progress:
   total_phases: 6
   completed_phases: 4
-  total_plans: 11
-  completed_plans: 11
+  total_plans: 14
+  completed_plans: 12
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-13)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 39 — Storage Refactor
+**Current focus:** Phase 40 — Tenant Resolution Middleware
 
 ## Current Position
 
-Phase: 40
-Plan: Not started
-Status: Phase complete
+Phase: 40 (Tenant Resolution Middleware) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
 Last activity: 2026-05-13
 
 Progress: [░░░░░░░░░░] 0%
@@ -90,6 +90,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 39-03]: upsertContact email uniqueness scoped per-tenant — contacts with same email in different tenants are distinct (cross-tenant collision fix)
 - [Phase 39-03]: Raw SQL calendar sync methods use AND tenant_id = ${this.tenantId} in template literals — db.execute(sql`...`) bypasses Drizzle query builder
 - [Phase 39-03]: contacts.email UNIQUE constraint is global not per-tenant — deferred to Phase 40+ to add composite (tenant_id, email) unique index
+- [Phase 40]: Use req.hostname for LRU cache key to avoid port contamination; super-admin routes mounted before resolveTenantMiddleware for bypass
 
 ### Roadmap Evolution
 
@@ -106,7 +107,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-13T21:10:00.000Z
-Stopped at: Completed 39-03-PLAN.md
+Last session: 2026-05-13T21:20:42.577Z
+Stopped at: Completed 40-01-PLAN.md
 Resume file: None
 Next: Phase 39 complete — ready for Phase 40 (Tenant Resolution Middleware)
