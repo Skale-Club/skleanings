@@ -127,7 +127,7 @@ Plans:
   4. The `systemHeartbeats` table and all references to it are removed from schema, migrations, storage, and routes
 **Plans**: 2 plans
 Plans:
-- [ ] 35-01-PLAN.md — Dual-auth on POST /generate + blog-cron.yml (replaces blog-autopost.yml)
+- [x] 35-01-PLAN.md — Dual-auth on POST /generate + blog-cron.yml (replaces blog-autopost.yml)
 - [ ] 35-02-PLAN.md — Remove systemHeartbeats from schema + Supabase DROP TABLE migration
 
 ---
@@ -143,7 +143,7 @@ Plans:
 | 30–32 | v5.0 | 9/9 | Complete | 2026-05-13 |
 | 33 | v6.0 | 1/1 | Complete    | 2026-05-13 |
 | 34 | v6.0 | 3/4 | Complete    | 2026-05-13 |
-| 35 | v6.0 | 0/2 | Not started | - |
+| 35 | v6.0 | 1/2 | In Progress|  |
 
 ---
 

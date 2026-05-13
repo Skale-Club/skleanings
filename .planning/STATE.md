@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Platform Quality
-status: verifying
-stopped_at: Completed 34-02-PLAN.md
-last_updated: "2026-05-13T16:17:01.623Z"
+status: executing
+stopped_at: Completed 35-01-PLAN.md
+last_updated: "2026-05-13T16:29:28.667Z"
 last_activity: 2026-05-13
 progress:
   total_phases: 3
   completed_phases: 2
-  total_plans: 5
-  completed_plans: 5
+  total_plans: 7
+  completed_plans: 6
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-13)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 34 — Component Split
+**Current focus:** Phase 35 — Blog Cron Migration
 
 ## Current Position
 
-Phase: 35
-Plan: Not started
-Status: Phase complete — ready for verification
+Phase: 35 (Blog Cron Migration) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
 Last activity: 2026-05-13
 
 Progress: [░░░░░░░░░░] 0%
@@ -98,6 +98,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 34-component-split]: useDragToReschedule uses .tsx extension (not .ts) because the file contains JSX for ToastAction undo toast
 - [Phase 34-component-split]: formatTime helper duplicated locally in StepTimeSlot to avoid circular imports into BookingPage
 - [Phase 34-component-split]: UseFormReturn<BookingFormValues> passed as prop to step components — no useForm calls in children (pitfall 2 avoidance)
+- [Phase 35-01]: Dual-auth pattern on /api/blog/generate: BLOG_CRON_TOKEN bearer checked first; invalid bearer returns 401 without leaking to admin session path
 
 ### Roadmap Evolution
 
@@ -113,7 +114,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-13T13:01:17.529Z
-Stopped at: Completed 34-02-PLAN.md
+Last session: 2026-05-13T16:29:28.653Z
+Stopped at: Completed 35-01-PLAN.md
 Resume file: None
 Next: `/gsd:plan-phase 33`
