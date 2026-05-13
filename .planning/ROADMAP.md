@@ -106,7 +106,7 @@ Plans:
 **Requirements**: SPLIT-01, SPLIT-02, SPLIT-03, SPLIT-04, SPLIT-05
 **Success Criteria** (what must be TRUE):
   1. Customer can complete a full booking (staff selection through confirmation) without any regression in behavior or UI
-  2. `BookingPage.tsx` contains only orchestration logic; each step lives in its own file (`StepStaffSelector`, `StepTimeSlot`, `StepCustomerDetails`, `StepPaymentMethod`, `StepConfirmation`)
+  2. `BookingPage.tsx` contains only orchestration logic; each step lives in its own file (`StepStaffSelector`, `StepTimeSlot`, `StepCustomerDetails`, `StepPaymentMethod`)
   3. The `booking_started` analytics event fires exactly once per booking flow regardless of re-renders (useRef fire-once guard preserved)
   4. Admin calendar displays correctly with `CreateBookingModal` and drag-to-reschedule operating as separate extracted components
 **Plans**: 4 plans
