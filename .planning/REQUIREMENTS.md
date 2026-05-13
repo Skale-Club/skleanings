@@ -46,5 +46,14 @@
 
 | REQ-ID | Phase | Plan |
 |--------|-------|------|
-| SADM-01–06 | — | — |
-| LOC-01–05 | — | — |
+| LOC-01 | Phase 36 | — |
+| LOC-02 | Phase 36 | — |
+| LOC-03 | Phase 36 | — |
+| LOC-04 | Phase 36 | — |
+| LOC-05 | Phase 36 | — |
+| SADM-01 | Phase 37 | — |
+| SADM-02 | Phase 37 | — |
+| SADM-03 | Phase 37 | — |
+| SADM-04 | Phase 37 | — |
+| SADM-05 | Phase 37 | — |
+| SADM-06 | Phase 37 | — |

@@ -4,10 +4,10 @@ milestone: v7.0
 milestone_name: Xkedule Foundation
 status: planning
 stopped_at: —
-last_updated: "2026-05-13T00:00:00.000Z"
-last_activity: 2026-05-13
+last_updated: "2026-05-11T00:00:00.000Z"
+last_activity: 2026-05-11
 progress:
-  total_phases: 0
+  total_phases: 2
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-13)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 35 — Blog Cron Migration
+**Current focus:** v7.0 Xkedule Foundation — Phase 36 (Locale Settings)
 
 ## Current Position
 
-Phase: 35
+Phase: 36 (1 of 2)
 Plan: Not started
-Status: Phase complete — ready for verification
-Last activity: 2026-05-13
+Status: Ready to plan
+Last activity: 2026-05-11
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -41,25 +41,21 @@ Progress: [░░░░░░░░░░] 0%
 | v3.0 Calendar Polish | 20 (1 phase) | 4 | 2026-05-11 |
 | v4.0 Booking Intelligence | 21–29 (9 phases) | 27 | 2026-05-11 |
 | v5.0 Booking Experience | 30–32 (3 phases) | 9 | 2026-05-13 |
+| v6.0 Platform Quality | 33–35 (3 phases) | 7 | 2026-05-13 |
 
 See: .planning/MILESTONES.md
 
-## v6.0 Phases
+## v7.0 Phases
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 33 | Rate Limiting | RATE-01–04 | Not started |
-| 34 | Component Split | SPLIT-01–05 | Not started |
-| 35 | Blog Cron Migration | BLOG-01–04 | Not started |
+| 36 | Locale Settings | LOC-01–05 | Not started |
+| 37 | Super-Admin Panel | SADM-01–06 | Not started |
 
 ## Pending Items
 
 - **Phase 19 UAT** — 5 human browser checks in `.planning/phases/19-receptionist-booking-flow-multi-staff-view/19-HUMAN-UAT.md`
-  - By Staff column layout
-  - Quick Book 30-second walk-in flow
-  - Drag-to-reassign with undo toast
-  - GCal busy block not draggable
-  - Customer per-staff availability badges on step 3
+- **Phase 35** — `supabase db push` (drop system_heartbeats) + add `BLOG_CRON_TOKEN` to GitHub Secrets
 
 ## Accumulated Context
 
@@ -67,55 +63,25 @@ See: .planning/MILESTONES.md
 
 All milestone decisions logged in PROJECT.md Key Decisions table.
 
-- [Phase 21]: timeSlotInterval is nullable (null = use durationMinutes) to avoid requiring a value on every existing service row
-- [Phase 21]: Booking Rules section uses plain useState toggle (no new shadcn dependency) and timeSlotInterval submits null when blank
-- [Phase 21]: Import BookingLimits/shiftHHMM into availability.ts from staff-availability.ts; no circular dependency
-- [Phase 21]: Limits loaded BEFORE staffId fast-path in getSlotsForServices so fast-path receives populated limits
-- [Phase 21]: getAvailabilityRange (month-view) left unchanged — month-view limits out of scope for phase 21
-- [Phase 22-date-overrides-staff-availability]: uniqueIndex used for named compound unique index on staffAvailabilityOverrides(staffMemberId, date)
-- [Phase 22-date-overrides-staff-availability]: date column uses Drizzle date() type (YYYY-MM-DD string) for consistency with slot booking flow
-- [Phase 22-date-overrides-staff-availability]: POST override uses delete-then-insert upsert; override with isUnavailable=false and no times falls through to weekly schedule
-- [Phase 22-date-overrides-staff-availability]: _generateSlots extracted as private helper in staff-availability.ts; called from both override and weekly-schedule paths
-- [Phase 22-03]: Added missing Trash2 import from lucide-react alongside Loader2 (plan incorrectly stated it was pre-imported)
-- [Phase 22-03]: DateOverridesTab uses StaffAvailabilityOverride type from @shared/schema — no schema changes needed (type defined in plan 22-01)
-- [Phase 24-manual-confirmation-flow-per-service]: requiresConfirmation boolean added as NOT NULL default false — safe for existing rows with no backfill
-- [Phase 24-manual-confirmation-flow-per-service]: status passed to createBooking via as-any type assertion — Zod omits status by design but DB default is overridable
-- [Phase 24-manual-confirmation-flow-per-service]: rejection reason logged server-side only — no notes column in bookings table; Plan 03 may add persistence
-- [Phase 24]: Approve/Reject buttons placed in interactive variant only, visible solely when status === awaiting_approval
-- [Phase 24]: awaiting=true query param used for Confirmation routing — works across page reloads
-- [Phase 24]: requiresConfirmation toggle placed inside Booking Rules collapsible to keep ServiceForm uncluttered
-- [Phase 29]: RecurringSubscriptionsPanel uses authenticatedRequest(method, url, token_string) — must call getAccessToken() before each request
-- [Phase 29]: ManageSubscription route uses :token path param (not ?token= query param) to match /api/subscriptions/manage/:token
-- [Phase 31]: Migration numbered 000006 not 000007 — correct sequential next slot after 000005
-- [Phase 31]: sendResendEmail reads DB settings on every call for live config changes without restart
-- [Phase 31]: build24hReminderEmail() added in Plan 03 (not 02) because Plan 02 and 03 run in parallel Wave 2
-- [Phase 32-calendar-harmony-retry-queue]: db.execute() returns RowList directly — use Array.from(result) not result.rows for raw SQL results in storage.ts
-- [Phase 32-calendar-harmony-retry-queue]: Migration applied via supabase db push (Supabase CLI), NOT drizzle-kit push — calendar_sync_queue table pending user action
-- [Phase 32]: [Phase 32-03]: Tab value is 'calendar-sync' in INTEGRATION_TABS; CalendarSyncTab wired after Calendar tab in IntegrationsSection
-- [Phase 33-rate-limiting]: analyticsLimiter max corrected from 20 to 10; chatLimiter max from 30 to 20; standardHeaders: true enables Retry-After on 429
-- [Phase 34-component-split]: bookingFormSchema and BookingFormValues extracted to bookingSchema.ts as pure schema module preventing circular imports
-- [Phase 34-component-split]: BookingSummary receives all state via props with no hook calls — enables use by thin orchestrator in plan 04
-- [Phase 34-component-split]: useDragToReschedule uses .tsx extension (not .ts) because the file contains JSX for ToastAction undo toast
-- [Phase 34-component-split]: formatTime helper duplicated locally in StepTimeSlot to avoid circular imports into BookingPage
-- [Phase 34-component-split]: UseFormReturn<BookingFormValues> passed as prop to step components — no useForm calls in children (pitfall 2 avoidance)
 - [Phase 35-01]: Dual-auth pattern on /api/blog/generate: BLOG_CRON_TOKEN bearer checked first; invalid bearer returns 401 without leaking to admin session path
 - [Phase 35-02]: Migration uses DROP TABLE IF EXISTS — system_heartbeats may not exist in live DB since it was only in legacy Drizzle migrations, not Supabase CLI migrations
+- [Phase 34-component-split]: bookingFormSchema and BookingFormValues extracted to bookingSchema.ts as pure schema module preventing circular imports
+- [Phase 32]: db.execute() returns RowList directly — use Array.from(result) not result.rows for raw SQL results in storage.ts
 
 ### Roadmap Evolution
 
-- Phase 21 added: Per-service booking limits — buffer time, minimum notice, time-slot interval (SEED-026)
-- v6.0 phases 33–35 derived from SEED-003 (rate limiting), SEED-004 (component split), SEED-009 (blog cron migration)
+- v7.0 phases 36–37 derived from SEED-011 (locale settings) and SEED-015 (super-admin panel)
+- Phase numbering continues from v6.0 last phase (35)
 
 ### Blockers/Concerns
 
-- **MIGRATION PENDING** — `supabase/migrations/20260425000000_add_utm_tracking.sql` requires `POSTGRES_URL_NON_POOLING` (direct connection, port 5432). Get from Supabase Dashboard > Settings > Database.
-- **MIGRATION PENDING** — `supabase/migrations/20260428000000_add_white_label_columns.sql` also pending. Required for Phase 17 admin UI and Phase 18 address-gating features.
-- Phase 19 human UAT items pending browser verification (see above).
-- Phase 35 requires `BLOG_CRON_TOKEN` secret added to GitHub repository secrets before the workflow can authenticate.
+- **MIGRATION PENDING** — Phase 35 requires `supabase db push` to drop system_heartbeats table
+- **SECRET PENDING** — Phase 35 requires `BLOG_CRON_TOKEN` added to GitHub repository secrets
+- Phase 19 human UAT items pending browser verification
 
 ## Session Continuity
 
-Last session: 2026-05-13T17:28:33.369Z
-Stopped at: Completed 35-02-PLAN.md
+Last session: 2026-05-13
+Stopped at: v7.0 roadmap created — phases 36 and 37 defined
 Resume file: None
-Next: `/gsd:plan-phase 33`
+Next: `/gsd:plan-phase 36`
