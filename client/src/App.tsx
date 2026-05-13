@@ -88,6 +88,7 @@ const StaffSettings = lazy(() => import("@/pages/StaffSettings").then(m => ({ de
 const AccountShell = lazy(() => import("@/pages/AccountShell").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const ClientLogin = lazy(() => import("@/pages/ClientLogin").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const ManageSubscription = lazy(() => import("@/pages/ManageSubscription").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const SuperAdmin = lazy(() => import("@/pages/SuperAdmin"));
 
 function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const { data: settings } = useQuery<CompanySettings>({
@@ -162,6 +163,18 @@ function Router() {
           <Route path="/account/login" component={ClientLogin} />
           <Route path="/account" component={AccountShell} />
           <Route path="/account/:rest*" component={AccountShell} />
+          <Route component={NotFound} />
+        </Switch>
+      </Suspense>
+    );
+  }
+
+  const isSuperAdminRoute = location.startsWith('/superadmin');
+  if (isSuperAdminRoute) {
+    return (
+      <Suspense fallback={fallback}>
+        <Switch>
+          <Route path="/superadmin" component={SuperAdmin} />
           <Route component={NotFound} />
         </Switch>
       </Suspense>
