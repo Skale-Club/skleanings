@@ -157,7 +157,12 @@ export default function BookingPage() {
       });
     },
   });
-  const { data: companySettings } = useQuery<{ timeFormat?: string; minimumBookingValue?: string }>({ queryKey: ['/api/company-settings'] });
+  const { data: companySettings } = useQuery<{
+    timeFormat?: string;
+    minimumBookingValue?: string;
+    language?: string;
+    dateFormat?: string;
+  }>({ queryKey: ['/api/company-settings'] });
 
   // Fetch monthly availability to disable dates without slots
   const viewYear = viewDate.getFullYear();
@@ -166,6 +171,8 @@ export default function BookingPage() {
   const isSlotsPending = isLoadingSlots || isFetchingSlots || isPerStaffLoading || serviceDetailsLoading;
   const isMonthAvailabilityPending = isLoadingMonthAvailability || isFetchingMonthAvailability;
   const timeFormat = companySettings?.timeFormat || '12h';
+  const language   = companySettings?.language   || 'en';
+  const dateFormat = companySettings?.dateFormat  || 'MM/DD/YYYY';
   const minimumBookingValueStr = companySettings?.minimumBookingValue || '0';
   const minimumBookingValue = parseFloat(minimumBookingValueStr) || 0;
   const isBelowMinimum = minimumBookingValue > 0 && totalPrice < minimumBookingValue;
@@ -337,6 +344,8 @@ export default function BookingPage() {
                 staffBySlot={staffBySlot}
                 staffCount={staffCount}
                 timeFormat={timeFormat}
+                language={language}
+                dateFormat={dateFormat}
                 itemsWithDurations={itemsWithDurations}
                 selectedDurations={selectedDurations}
                 allDurationsSelected={allDurationsSelected}
