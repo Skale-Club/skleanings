@@ -11,9 +11,9 @@
 ### Super-Admin Panel (SEED-015)
 
 - [x] **SADM-01**: Rota `/superadmin` acessível apenas com credenciais super-admin (env vars `SUPER_ADMIN_EMAIL` + `SUPER_ADMIN_PASSWORD_HASH`) — retorna 403 para qualquer outra sessão
-- [ ] **SADM-02**: Painel super-admin exibe stats do tenant atual: total de bookings, total de clientes, total de serviços, número de staff, uptime da DB
-- [ ] **SADM-03**: Painel super-admin exibe health check da plataforma: DB conectada, migrações aplicadas (supabase migrations status), variáveis de ambiente obrigatórias presentes
-- [ ] **SADM-04**: Super-admin pode ver e editar companySettings do tenant atual (acesso de suporte sem precisar do login de admin do tenant)
+- [x] **SADM-02**: Painel super-admin exibe stats do tenant atual: total de bookings, total de clientes, total de serviços, número de staff, uptime da DB
+- [x] **SADM-03**: Painel super-admin exibe health check da plataforma: DB conectada, migrações aplicadas (supabase migrations status), variáveis de ambiente obrigatórias presentes
+- [x] **SADM-04**: Super-admin pode ver e editar companySettings do tenant atual (acesso de suporte sem precisar do login de admin do tenant)
 - [x] **SADM-05**: Logs de erros recentes da aplicação (últimos 50 erros de server) visíveis no painel super-admin
 - [x] **SADM-06**: Rotas `/api/super-admin/*` retornam 403 para requests sem cookie de sessão super-admin válido
 
