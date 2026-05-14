@@ -538,7 +538,7 @@ Plans:
 | 52 | v13.0 | 1/2 | Complete    | 2026-05-14 |
 | 53 | v14.0 | 2/2 | Complete    | 2026-05-14 |
 | 54 | v14.0 | 1/2 | Complete    | 2026-05-14 |
-| 55 | v15.0 | 1/3 | In Progress|  |
+| 55 | v15.0 | 1/3 | Complete    | 2026-05-14 |
 | 56 | v15.0 | 0/TBD | Not started | - |
 
 ---
