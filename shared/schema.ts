@@ -71,6 +71,23 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
 export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
 
+// === Tenant Subscriptions (Phase 48) ===
+// Global registry — one row per tenant. Tracks Stripe customer + subscription state.
+export const tenantSubscriptions = pgTable("tenant_subscriptions", {
+  id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().unique().references(() => tenants.id, { onDelete: "cascade" }),
+  stripeCustomerId: text("stripe_customer_id").notNull(),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  status: text("status").notNull().default("none"),
+  planId: text("plan_id"),
+  currentPeriodEnd: timestamp("current_period_end", { mode: "date" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type TenantSubscription = typeof tenantSubscriptions.$inferSelect;
+export type InsertTenantSubscription = typeof tenantSubscriptions.$inferInsert;
+
 export const categories = pgTable("categories", {
   id: serial("id").primaryKey(),
   tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),

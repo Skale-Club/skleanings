@@ -125,6 +125,9 @@ import {
   passwordResetTokens,
   type PasswordResetToken,
   type InsertPasswordResetToken,
+  tenantSubscriptions,
+  type TenantSubscription,
+  type InsertTenantSubscription,
 } from "@shared/schema";
 type TenantRow = typeof tenants.$inferSelect;
 type DomainRow  = typeof domains.$inferSelect;
@@ -433,6 +436,11 @@ export interface IStorage {
   findPasswordResetToken(tokenHash: string): Promise<PasswordResetToken | undefined>;
   markPasswordResetTokenUsed(id: number): Promise<void>;
   updateUserPassword(userId: string, hashedPassword: string): Promise<void>;
+
+  // Tenant Subscriptions — Phase 48 (global registry, uses db directly)
+  createTenantSubscription(tenantId: number, stripeCustomerId: string): Promise<TenantSubscription>;
+  getTenantSubscription(tenantId: number): Promise<TenantSubscription | undefined>;
+  upsertTenantSubscription(tenantId: number, data: Partial<Omit<InsertTenantSubscription, 'tenantId' | 'stripeCustomerId'>>): Promise<TenantSubscription>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2456,6 +2464,37 @@ export class DatabaseStorage implements IStorage {
         language: "en",
       })
       .onConflictDoNothing();
+  }
+
+  // Tenant Subscriptions — Phase 48
+  // NOTE: Global registry — uses db directly, NOT this.tenantId.
+
+  async createTenantSubscription(tenantId: number, stripeCustomerId: string): Promise<TenantSubscription> {
+    const [row] = await db
+      .insert(tenantSubscriptions)
+      .values({ tenantId, stripeCustomerId })
+      .returning();
+    return row;
+  }
+
+  async getTenantSubscription(tenantId: number): Promise<TenantSubscription | undefined> {
+    const [row] = await db
+      .select()
+      .from(tenantSubscriptions)
+      .where(eq(tenantSubscriptions.tenantId, tenantId));
+    return row;
+  }
+
+  async upsertTenantSubscription(
+    tenantId: number,
+    data: Partial<Omit<InsertTenantSubscription, 'tenantId' | 'stripeCustomerId'>>,
+  ): Promise<TenantSubscription> {
+    const [row] = await db
+      .update(tenantSubscriptions)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(tenantSubscriptions.tenantId, tenantId))
+      .returning();
+    return row;
   }
 }
 
