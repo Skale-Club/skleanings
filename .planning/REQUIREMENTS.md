@@ -10,9 +10,9 @@
 
 ### Billing Email Notifications (Phase 53)
 
-- [ ] **BH-01**: When the Stripe webhook delivers a `customer.subscription.trial_will_end` event, send a Resend email to the tenant admin warning that their trial ends in 3 days and prompting them to add a payment method — email includes the Stripe Billing Portal URL
-- [ ] **BH-02**: When the Stripe webhook delivers a `customer.subscription.updated` event and the new status is `past_due`, send a Resend email to the tenant admin notifying them their payment failed and their service will be suspended — email includes the Stripe Billing Portal URL
-- [ ] **BH-03**: Both billing emails use the existing `sendResendEmail()` module and follow the established branded HTML template pattern (brand colors, company name from companySettings, Resend FROM address from emailSettings)
+- [x] **BH-01**: When the Stripe webhook delivers a `customer.subscription.trial_will_end` event, send a Resend email to the tenant admin warning that their trial ends in 3 days and prompting them to add a payment method — email includes the Stripe Billing Portal URL
+- [x] **BH-02**: When the Stripe webhook delivers a `customer.subscription.updated` event and the new status is `past_due`, send a Resend email to the tenant admin notifying them their payment failed and their service will be suspended — email includes the Stripe Billing Portal URL
+- [x] **BH-03**: Both billing emails use the existing `sendResendEmail()` module and follow the established branded HTML template pattern (brand colors, company name from companySettings, Resend FROM address from emailSettings)
 
 ### Signup Rate Limiting (Phase 53)
 
@@ -45,9 +45,9 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BH-01 | Phase 53 | Pending |
-| BH-02 | Phase 53 | Pending |
-| BH-03 | Phase 53 | Pending |
+| BH-01 | Phase 53 | Complete |
+| BH-02 | Phase 53 | Complete |
+| BH-03 | Phase 53 | Complete |
 | BH-04 | Phase 53 | Pending |
 | BH-05 | Phase 54 | Pending |
 | BH-06 | Phase 54 | Pending |
