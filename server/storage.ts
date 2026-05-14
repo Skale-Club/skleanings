@@ -122,6 +122,9 @@ import {
   tenants,
   domains,
   userTenants,
+  passwordResetTokens,
+  type PasswordResetToken,
+  type InsertPasswordResetToken,
 } from "@shared/schema";
 type TenantRow = typeof tenants.$inferSelect;
 type DomainRow  = typeof domains.$inferSelect;
@@ -424,6 +427,12 @@ export interface IStorage {
   removeDomain(id: number): Promise<void>;
   provisionTenantAdmin(tenantId: number, email: string, hashedPassword: string): Promise<{ userId: string }>;
   seedTenantCompanySettings(tenantId: number, companyName: string): Promise<void>;
+
+  // Password Reset Tokens (Phase 47)
+  createPasswordResetToken(userId: string, tokenHash: string, expiresAt: Date): Promise<PasswordResetToken>;
+  findPasswordResetToken(tokenHash: string): Promise<PasswordResetToken | undefined>;
+  markPasswordResetTokenUsed(id: number): Promise<void>;
+  updateUserPassword(userId: string, hashedPassword: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -458,6 +467,35 @@ export class DatabaseStorage implements IStorage {
   }
   async deleteUser(id: string): Promise<void> {
     await db.delete(users).where(and(eq(users.tenantId, this.tenantId), eq(users.id, id)));
+  }
+
+  // Password Reset Tokens — Phase 47
+  // NOTE: password_reset_tokens has NO tenant_id column — tokens are global (user_id FK is sufficient).
+  // However, updateUserPassword IS tenant-scoped via this.tenantId to prevent cross-tenant writes.
+  async createPasswordResetToken(userId: string, tokenHash: string, expiresAt: Date): Promise<PasswordResetToken> {
+    const [token] = await db.insert(passwordResetTokens)
+      .values({ userId, tokenHash, expiresAt })
+      .returning();
+    return token;
+  }
+
+  async findPasswordResetToken(tokenHash: string): Promise<PasswordResetToken | undefined> {
+    const [token] = await db.select()
+      .from(passwordResetTokens)
+      .where(eq(passwordResetTokens.tokenHash, tokenHash));
+    return token;
+  }
+
+  async markPasswordResetTokenUsed(id: number): Promise<void> {
+    await db.update(passwordResetTokens)
+      .set({ usedAt: new Date() })
+      .where(eq(passwordResetTokens.id, id));
+  }
+
+  async updateUserPassword(userId: string, hashedPassword: string): Promise<void> {
+    await db.update(users)
+      .set({ password: hashedPassword, updatedAt: new Date() })
+      .where(and(eq(users.tenantId, this.tenantId), eq(users.id, userId)));
   }
 
   private chatSchemaEnsured = false;
