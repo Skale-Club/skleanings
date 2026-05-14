@@ -10,7 +10,7 @@ Customers can discover, book, and pay for cleaning services online without calli
 
 ## Current State
 
-**Eight milestones shipped:**
+**Twelve milestones shipped:**
 
 - **v1.0 Marketing Attribution** — First-party UTM tracking, booking flow attribution, marketing dashboard, GoHighLevel CRM UTM sync, admin calendar create-booking-from-slot
 - **v2.0 White Label** — Hardcoded brand removed, DB-driven SEO/favicon/legal pages, receptionist multi-staff calendar view with drag-to-reassign and QuickBook walk-in flow
@@ -20,6 +20,10 @@ Customers can discover, book, and pay for cleaning services online without calli
 - **v6.0 Platform Quality** — Rate limiting on public endpoints, BookingPage + AppointmentsCalendarSection split into focused sub-components, blog cron migrated from Vercel to GitHub Actions
 - **v7.0 Xkedule Foundation** — Locale settings (language/startOfWeek/dateFormat) per tenant, Super-admin panel at /superadmin with session auth, stats, health check, error logs
 - **v8.0 Multi-Tenant Architecture** — tenantId on all 40 business tables, `DatabaseStorage.forTenant(id)` pattern, hostname-based LRU-cached tenant resolution middleware, Hetzner infra config files
+- **v9.0 Tenant Onboarding** — Super-admin tenant/domain CRUD, atomic provisioning (user + company settings), LRU cache invalidation, 503 guard for inactive tenants, per-tenant stats
+- **v10.0 Tenant Admin Auth** — Tenant-scoped login endpoint, timing-safe bcrypt, cross-tenant 403 guard, AdminTenantAuthContext, Supabase auth removed from admin panel
+- **v11.0 Password Reset** — SHA-256 token flow (forgot/reset/change-password), branded Resend email, ForgotPassword + ResetPassword pages
+- **v12.0 SaaS Billing** — tenant_subscriptions table, Stripe customer auto-created on tenant creation, subscribe endpoint, billing webhook, 402 enforcement with 3-day grace, /admin/billing self-service portal
 
 **Pending human UAT:** Phase 19 (5 items), Phase 20 (4 CAL-FIX items), Phases 25–29 (browser-only checks), Phase 31 (4 Resend email delivery checks), Phase 34 (booking flow smoke test) — deferred to live session.
 **Pending human actions:** Phase 35 — `supabase db push` (drop system_heartbeats) + add `BLOG_CRON_TOKEN` to GitHub Secrets. Phase 38 — `supabase db push` for multi-tenant schema migrations.
@@ -127,17 +131,20 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
----
-## Current Milestone: v12.0 SaaS Billing
 
-**Goal:** A plataforma cobra assinatura mensal por tenant via Stripe — super-admin gerencia planos, tenant admin vê e gerencia sua assinatura.
+## Current Milestone: v13.0 Self-Serve Signup
+
+**Goal:** Any business can sign up independently via a public page — no super-admin action required to onboard a new tenant, with a 14-day free trial auto-started on signup.
 
 **Target features:**
-- Login endpoint tenant-scoped (`POST /api/auth/tenant-login`) com bcrypt timing-safe
-- `requireAdmin` valida `tenantId` da sessão contra o tenant atual (hostname)
-- Path de login legado (env vars) mantido para backward compat
-- Admin panel frontend funciona para qualquer tenant autenticado
+- Public /signup page (company name, subdomain slug, email, password)
+- Atomic signup: tenant + domain + admin user + company settings + Stripe customer + trial subscription in one transaction
+- Subdomain uniqueness validation with friendly error
+- Post-signup redirect to /admin at the new tenant's subdomain
+- Trial status visible in /admin/billing (days remaining countdown)
+- Stripe webhook for `customer.subscription.trial_end` → update status to active/past_due
+- Super-admin sees self-serve signups in tenant list (source indicator)
 
 ---
 
-*Last updated: 2026-05-14 — v10.0 Tenant Admin Auth started*
+*Last updated: 2026-05-14 — v13.0 Self-Serve Signup started*
