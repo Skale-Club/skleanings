@@ -331,7 +331,7 @@ Plans:
   5. The reset email body includes the tenant's company name from `companySettings` and uses the existing Resend email formatting established in Phase 31
 **Plans**: 3 plans
 Plans:
-- [ ] 47-01-PLAN.md — Supabase migration (password_reset_tokens table) + Drizzle schema + IStorage methods + DatabaseStorage implementation
+- [x] 47-01-PLAN.md — Supabase migration (password_reset_tokens table) + Drizzle schema + IStorage methods + DatabaseStorage implementation
 - [ ] 47-02-PLAN.md — buildPasswordResetEmail() template + 3 API routes: forgot-password, reset-password, change-password
 - [ ] 47-03-PLAN.md — Frontend: ForgotPassword.tsx, ResetPassword.tsx, AdminLogin forgot-password link, App.tsx routes
 **UI hint**: yes
@@ -358,7 +358,7 @@ Plans:
 | 44 | v9.0 | 2/2 | Complete | 2026-05-14 |
 | 45 | v10.0 | 2/2 | Complete | 2026-05-14 |
 | 46 | v10.0 | 1/1 | Complete | 2026-05-14 |
-| 47 | v11.0 | 0/3 | Not started | - |
+| 47 | v11.0 | 1/3 | In Progress|  |
 
 ---
 

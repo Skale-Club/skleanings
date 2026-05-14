@@ -10,9 +10,9 @@
 
 ### Reset Flow (Phase 47)
 
-- [ ] **PR-01**: Admin envia seu email em `POST /api/auth/forgot-password` — se o email existe na tabela `users` para o tenant atual, um token de reset é gerado e enviado via Resend; se não existe, responde com 200 mesmo (sem revelar se email existe)
-- [ ] **PR-02**: Token de reset é armazenado na tabela `password_reset_tokens` (userId, token hash, expiresAt, usedAt) — token expira em 1 hora
-- [ ] **PR-03**: Admin clica no link do email → `GET /reset-password?token=...` no frontend — formulário para nova senha
+- [x] **PR-01**: Admin envia seu email em `POST /api/auth/forgot-password` — se o email existe na tabela `users` para o tenant atual, um token de reset é gerado e enviado via Resend; se não existe, responde com 200 mesmo (sem revelar se email existe)
+- [x] **PR-02**: Token de reset é armazenado na tabela `password_reset_tokens` (userId, token hash, expiresAt, usedAt) — token expira em 1 hora
+- [x] **PR-03**: Admin clica no link do email → `GET /reset-password?token=...` no frontend — formulário para nova senha
 - [ ] **PR-04**: Admin submete nova senha em `POST /api/auth/reset-password` com o token — token validado (existe, não expirado, não usado), senha atualizada com bcrypt, token marcado como usado
 
 ### Admin Self-Service (Phase 47)
@@ -40,9 +40,9 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PR-01 | Phase 47 | Pending |
-| PR-02 | Phase 47 | Pending |
-| PR-03 | Phase 47 | Pending |
+| PR-01 | Phase 47 | Complete |
+| PR-02 | Phase 47 | Complete |
+| PR-03 | Phase 47 | Complete |
 | PR-04 | Phase 47 | Pending |
 | PR-05 | Phase 47 | Pending |
 | PR-06 | Phase 47 | Pending |

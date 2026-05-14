@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v11.0
 milestone_name: Password Reset
-status: planning
-stopped_at: Roadmap created — Phase 47 defined
-last_updated: "2026-05-14T00:00:00.000Z"
+status: executing
+stopped_at: Completed 47-01-PLAN.md
+last_updated: "2026-05-14T13:39:01.594Z"
 last_activity: 2026-05-14
 progress:
-  total_phases: 1
-  completed_phases: 0
-  total_plans: 3
-  completed_plans: 0
+  total_phases: 12
+  completed_phases: 11
+  total_plans: 30
+  completed_plans: 28
   percent: 0
 ---
 
@@ -25,9 +25,9 @@ See: .planning/PROJECT.md (updated 2026-05-14)
 
 ## Current Position
 
-Phase: 47
-Plan: Not started
-Status: Roadmap created — ready for planning
+Phase: 47 (Password Reset) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
 Last activity: 2026-05-14
 
 Progress: [----------] 0%
@@ -114,6 +114,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 45]: logout route uses req.session.destroy callback unconditionally — safe even when session already expired
 - [Phase 46]: useAdminAuth kept in Admin.tsx only for getAccessToken — CalendarReconnectBanner still needs Supabase access token
 - [Phase 46]: AdminTenantAuthProvider nested inside AuthProvider — customer Supabase auth and admin session auth coexist independently
+- [Phase 47-01]: password_reset_tokens has no tenant_id column — user_id FK is sufficient scope for token lookup
+- [Phase 47-01]: findPasswordResetToken is NOT tenant-scoped; updateUserPassword IS tenant-scoped to prevent cross-tenant writes
 
 ### Roadmap Evolution
 
@@ -134,7 +136,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-14T00:00:00.000Z
-Stopped at: v11.0 roadmap created
+Last session: 2026-05-14T13:39:01.589Z
+Stopped at: Completed 47-01-PLAN.md
 Resume file: None
 Next: Plan Phase 47 (Password Reset) via /gsd:plan-phase 47
