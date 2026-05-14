@@ -9,9 +9,11 @@
 import { type Request, type Response, Router } from "express";
 import Stripe from "stripe";
 import { db } from "../db";
-import { tenantSubscriptions } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { tenantSubscriptions, users, companySettings } from "@shared/schema";
+import { eq, and } from "drizzle-orm";
 import { requireAdmin } from "../lib/auth";
+import { DatabaseStorage } from "../storage";
+import { sendResendEmail } from "../lib/email-resend";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
