@@ -127,5 +127,16 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
+## Current Milestone: v9.0 Tenant Onboarding
 
-*Last updated: 2026-05-13 — v8.0 Multi-Tenant Architecture shipped*
+**Goal:** Super-admin pode criar e configurar novos tenants na plataforma — cada tenant recebe seu domínio, admin próprio e acesso isolado aos seus dados.
+
+**Target features:**
+- Listar, criar e gerenciar tenants via painel /superadmin
+- Provisionar admin inicial de cada tenant (usuário + company settings padrão)
+- Invalidação de cache LRU ao modificar domínios
+- Verificação end-to-end de isolamento de dados entre tenants
+
+---
+
+*Last updated: 2026-05-13 — v9.0 Tenant Onboarding started*
