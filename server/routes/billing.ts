@@ -105,6 +105,72 @@ export async function billingWebhookHandler(req: Request, res: Response): Promis
           .where(eq(tenantSubscriptions.tenantId, subRow.tenantId));
 
         console.warn(`[billing/webhook] trial_will_end: tenant ${subRow.tenantId} trial ending soon`);
+
+        // BH-01: Send trial-ending warning email to tenant admin (fire-and-forget, non-fatal)
+        try {
+          const tenantStorage = DatabaseStorage.forTenant(subRow.tenantId);
+
+          // Look up admin user for this tenant
+          const [adminUser] = await db
+            .select({ email: users.email })
+            .from(users)
+            .where(and(eq(users.tenantId, subRow.tenantId), eq(users.role, "admin")))
+            .limit(1);
+
+          // Look up company name from companySettings
+          const [companySetting] = await db
+            .select({ companyName: companySettings.companyName })
+            .from(companySettings)
+            .where(eq(companySettings.tenantId, subRow.tenantId))
+            .limit(1);
+
+          if (adminUser?.email) {
+            const siteUrl = process.env.SITE_URL ?? "https://app.xkedule.com";
+            const billingUrl = `${siteUrl}/admin/billing`;
+            const companyName = companySetting?.companyName || "Your account";
+
+            const subject = "Your trial ends in 3 days — add a payment method to continue";
+            const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8" /></head>
+<body style="font-family: Inter, sans-serif; background: #f8fafc; padding: 32px;">
+  <div style="max-width: 480px; margin: 0 auto; background: #fff; border-radius: 8px; padding: 32px; border: 1px solid #e2e8f0;">
+    <h2 style="font-family: Outfit, sans-serif; color: #1C53A3; margin-top: 0;">Your trial ends in 3 days</h2>
+    <p style="color: #374151;">Hi there,</p>
+    <p style="color: #374151;">Your <strong>${companyName}</strong> trial subscription expires in <strong>3 days</strong>. To keep your account active, please add a payment method before your trial ends.</p>
+    <p style="color: #374151;">Without a payment method, your account will be suspended when the trial expires.</p>
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="${billingUrl}"
+         style="background: #FFFF01; color: #000; font-weight: 700; font-family: Outfit, sans-serif;
+                padding: 14px 32px; border-radius: 9999px; text-decoration: none; display: inline-block;">
+        Add Payment Method
+      </a>
+    </div>
+    <p style="color: #6b7280; font-size: 13px;">
+      Or copy this link into your browser:<br />
+      <a href="${billingUrl}" style="color: #1C53A3; word-break: break-all;">${billingUrl}</a>
+    </p>
+  </div>
+</body>
+</html>`;
+            const text = `Your ${companyName} trial ends in 3 days.\n\nAdd a payment method to keep your account active: ${billingUrl}`;
+
+            await sendResendEmail(
+              tenantStorage,
+              adminUser.email,
+              subject,
+              html,
+              text,
+              undefined,
+              "trial_will_end"
+            );
+            console.log(`[billing/webhook] trial_will_end: warning email sent to ${adminUser.email} for tenant ${subRow.tenantId}`);
+          }
+        } catch (emailErr) {
+          // Non-fatal — log and continue, webhook must still return 200
+          console.error("[billing/webhook] trial_will_end: failed to send warning email:", emailErr);
+        }
         break;
       }
 
