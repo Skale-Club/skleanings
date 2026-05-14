@@ -149,7 +149,7 @@ Full details: [milestones/v10.0-ROADMAP.md](milestones/v10.0-ROADMAP.md)
 
 ### v12.0 SaaS Billing
 
-- [ ] **Phase 48: Stripe Subscription Infrastructure** - tenant_subscriptions table migration + IStorage methods, Stripe customer creation on tenant create, subscribe endpoint, billing webhook handler
+- [x] **Phase 48: Stripe Subscription Infrastructure** - tenant_subscriptions table migration + IStorage methods, Stripe customer creation on tenant create, subscribe endpoint, billing webhook handler (completed 2026-05-14)
 - [ ] **Phase 49: Subscription Enforcement** - 402 middleware guard for canceled/past_due tenants, super-admin billing status columns in tenant list
 - [ ] **Phase 50: Tenant Billing Self-Service** - Billing portal API endpoint, /admin/billing page for tenant admins
 
@@ -413,7 +413,7 @@ Plans:
 | 45 | v10.0 | 2/2 | Complete | 2026-05-14 |
 | 46 | v10.0 | 1/1 | Complete | 2026-05-14 |
 | 47 | v11.0 | 3/3 | Complete | 2026-05-14 |
-| 48 | v12.0 | 2/3 | In Progress|  |
+| 48 | v12.0 | 2/3 | Complete    | 2026-05-14 |
 | 49 | v12.0 | 0/2 | Not started | - |
 | 50 | v12.0 | 0/2 | Not started | - |
 
