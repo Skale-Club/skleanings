@@ -115,7 +115,7 @@ Full details: [milestones/v8.0-ROADMAP.md](milestones/v8.0-ROADMAP.md)
 ### v9.0 Tenant Onboarding (Phases 42–44) — ACTIVE
 
 - [x] **Phase 42: Tenant Management UI** - Super-admin CRUD for tenants and domains in /superadmin panel (completed 2026-05-14)
-- [ ] **Phase 43: Tenant Provisioning** - Admin user creation, company settings seed, and LRU cache invalidation
+- [x] **Phase 43: Tenant Provisioning** - Admin user creation, company settings seed, and LRU cache invalidation (completed 2026-05-14)
 - [ ] **Phase 44: Isolation Verification** - 503 for inactive tenants, per-tenant stats, and E2E data isolation
 
 ---
@@ -245,7 +245,7 @@ Plans:
 Plans:
 - [x] 43-01-PLAN.md — DB migration (password column) + schema.ts update + IStorage provisionTenantAdmin + seedTenantCompanySettings
 - [x] 43-02-PLAN.md — invalidateTenantCache export + provision endpoint + cache invalidation in domain routes + settings seed in POST /tenants
-- [ ] 43-03-PLAN.md — Frontend: useSuperAdminProvision hook + ProvisionDialog + Provision Admin button in TenantsSection
+- [x] 43-03-PLAN.md — Frontend: useSuperAdminProvision hook + ProvisionDialog + Provision Admin button in TenantsSection
 
 ### Phase 44: Isolation Verification
 **Goal**: The platform provably enforces data isolation — inactive tenants are blocked at the middleware layer, data never leaks between tenants, and super-admin has per-tenant observability
@@ -275,7 +275,7 @@ Plans:
 | 40 | v8.0 | 3/3 | Complete | 2026-05-13 |
 | 41 | v8.0 | 2/2 | Complete | 2026-05-13 |
 | 42 | v9.0 | 3/3 | Complete    | 2026-05-14 |
-| 43 | v9.0 | 2/3 | In Progress|  |
+| 43 | v9.0 | 3/3 | Complete   | 2026-05-14 |
 | 44 | v9.0 | 0/TBD | Not started | - |
 
 ---

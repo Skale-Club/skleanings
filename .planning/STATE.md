@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v9.0
 milestone_name: Tenant Onboarding
-status: executing
-stopped_at: Completed 43-02-PLAN.md
-last_updated: "2026-05-14T01:26:16.587Z"
+status: verifying
+stopped_at: Completed 43-03-PLAN.md
+last_updated: "2026-05-14T01:37:56.404Z"
 last_activity: 2026-05-14
 progress:
   total_phases: 9
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 22
-  completed_plans: 21
+  completed_plans: 22
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-05-13)
 
 Phase: 43 (Tenant Provisioning) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-05-14
 
 Progress: [░░░░░░░░░░] 0%
@@ -104,6 +104,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 43]: provisionTenantAdmin uses db.transaction directly (not this.tenantId) — global registry operation, cross-tenant by design
 - [Phase 43-02]: hostnameCache stays module-private — only invalidateTenantCache wrapper exported for encapsulation
 - [Phase 43-02]: POST /provision returns plaintext password once in response body — never stored after that single response
+- [Phase 43-03]: provision.reset() on dialog close unconditionally wipes password from state — not just on success — any close guarantees credentials gone
+- [Phase 43-03]: ProvisionDialog defined as top-level component (not inside TenantsSection) to avoid re-creation on parent renders
 
 ### Roadmap Evolution
 
@@ -125,7 +127,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-14T01:26:16.582Z
-Stopped at: Completed 43-02-PLAN.md
+Last session: 2026-05-14T01:37:56.396Z
+Stopped at: Completed 43-03-PLAN.md
 Resume file: None
 Next: Plan Phase 42 (Tenant Management UI) via /gsd:plan-phase 42
