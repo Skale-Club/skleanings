@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: v14.0 roadmap created — Phase 53 is next
-stopped_at: Completed 53-01-PLAN.md
-last_updated: "2026-05-14T19:12:28.221Z"
+stopped_at: Completed 54-01-PLAN.md
+last_updated: "2026-05-14T19:23:10.178Z"
 last_activity: 2026-05-14
 progress:
   total_phases: 19
   completed_phases: 18
-  total_plans: 43
-  completed_plans: 43
+  total_plans: 45
+  completed_plans: 44
   percent: 0
 ---
 
@@ -147,6 +147,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 52]: Wrap /signup route with AdminTenantAuthProvider inline in public Switch so useAdminTenantAuth() works while preserving Navbar/Footer rendering
 - [Phase 53]: BH-01/BH-02 email sends are inner try/catch blocks nested inside outer webhook try/catch — email failure is fully isolated, webhook always returns 200
 - [Phase 53]: DatabaseStorage.forTenant() constructs tenant-scoped storage in webhook context where res.locals.storage is not available
+- [Phase 54-01]: Return { invoices: [] } (not 404) when stripeCustomerId absent — consistent with /status pattern for new tenants without Stripe customer
 
 ### Roadmap Evolution
 
@@ -169,7 +170,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-14T19:08:45.255Z
-Stopped at: Completed 53-01-PLAN.md
+Last session: 2026-05-14T19:23:10.171Z
+Stopped at: Completed 54-01-PLAN.md
 Resume file: None
 Next: Plan Phase 53 (Billing Email Notifications + Signup Rate Limit) via /gsd:plan-phase 53
