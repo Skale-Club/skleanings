@@ -901,6 +901,8 @@ export const companySettings = pgTable("company_settings", {
   privacyPolicyContent: text("privacy_policy_content").default(''),
   termsOfServiceContent: text("terms_of_service_content").default(''),
   faviconUrl: text("favicon_url").default(''),
+  // === Phase 56: Setup checklist dismiss ===
+  setupDismissedAt: timestamp("setup_dismissed_at", { withTimezone: true }),
 });
 
 export const insertCompanySettingsSchema = createInsertSchema(companySettings, {
