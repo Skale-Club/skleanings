@@ -297,7 +297,9 @@ Plans:
   1. After logging in as a tenant 2 admin, navigating to `/admin/bookings`, `/admin/services`, `/admin/staff`, and `/admin/settings` shows only tenant 2 records — no tenant 1 data appears in any list or response
   2. Visiting any `/admin/*` route without an active session redirects the browser to the login page — the redirect happens client-side via the `useAuth` hook detecting the 401 response from the server
   3. The `useAuth` hook reads the current tenant from the server-side session context (not a hardcoded tenant 1 reference) — admins from any tenant see their own tenant identity reflected in the auth state
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 46-01-PLAN.md — AdminTenantAuthContext + AdminLogin tenant-login + Admin.tsx 401 redirect
 **UI hint**: yes
 
 ---
@@ -321,7 +323,7 @@ Plans:
 | 43 | v9.0 | 3/3 | Complete | 2026-05-14 |
 | 44 | v9.0 | 2/2 | Complete | 2026-05-14 |
 | 45 | v10.0 | 2/2 | Complete    | 2026-05-14 |
-| 46 | v10.0 | 0/2 | Not started | - |
+| 46 | v10.0 | 0/1 | Not started | - |
 
 ---
 
