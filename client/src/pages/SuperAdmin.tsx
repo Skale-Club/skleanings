@@ -7,12 +7,32 @@ import {
   useSuperAdminHealth,
   useSuperAdminErrorLogs,
   useSuperAdminSettings,
+  useSuperAdminTenants,
+  useSuperAdminTenantDomains,
+  type TenantListItem,
+  type DomainRow,
 } from "@/hooks/useSuperAdmin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 // =============================================================================
 // Helpers
@@ -110,6 +130,285 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
 }
 
 // =============================================================================
+// ManageDomainsDialog — list + add + remove domains for one tenant
+// =============================================================================
+
+function ManageDomainsDialog({ tenant, open, onOpenChange }: {
+  tenant: TenantListItem | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const [newHostname, setNewHostname] = useState("");
+  const { query, addDomain, removeDomain } = useSuperAdminTenantDomains(
+    tenant?.id ?? null,
+    open && tenant !== null
+  );
+
+  function handleAdd(e: React.FormEvent) {
+    e.preventDefault();
+    addDomain.mutate(
+      { hostname: newHostname.trim() },
+      {
+        onSuccess: () => setNewHostname(""),
+        onError: (err) => alert(err.message),
+      }
+    );
+  }
+
+  function handleRemove(domainId: number) {
+    if (!confirm("Remove this domain?")) return;
+    removeDomain.mutate(domainId, {
+      onError: (err) => alert(err.message),
+    });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Manage Domains — {tenant?.name}</DialogTitle>
+          <DialogDescription>
+            Add or remove hostnames. The primary domain cannot be removed.
+          </DialogDescription>
+        </DialogHeader>
+
+        {query.isLoading && <p className="text-sm text-gray-400">Loading domains…</p>}
+        {query.isError && <p className="text-sm text-red-500">Failed to load domains</p>}
+        {query.data && (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Hostname</TableHead>
+                <TableHead>Primary</TableHead>
+                <TableHead></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {query.data.map((d: DomainRow) => (
+                <TableRow key={d.id}>
+                  <TableCell className="font-mono text-sm">{d.hostname}</TableCell>
+                  <TableCell>
+                    {d.isPrimary && (
+                      <Badge className="bg-blue-100 text-blue-800 text-xs">Primary</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={d.isPrimary || removeDomain.isPending}
+                      onClick={() => handleRemove(d.id)}
+                      className="text-red-600 hover:text-red-800 disabled:opacity-30"
+                    >
+                      Remove
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+
+        <form onSubmit={handleAdd} className="flex gap-2 mt-2">
+          <Input
+            placeholder="new-tenant.xkedule.com"
+            value={newHostname}
+            onChange={(e) => setNewHostname(e.target.value)}
+            className="flex-1"
+          />
+          <Button type="submit" disabled={addDomain.isPending || !newHostname.trim()}>
+            {addDomain.isPending ? "Adding…" : "Add"}
+          </Button>
+        </form>
+        {addDomain.isError && (
+          <p className="text-sm text-red-600">{addDomain.error?.message}</p>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// =============================================================================
+// TenantsSection — table with create + manage actions
+// =============================================================================
+
+function TenantsSection() {
+  const { query, createTenant, toggleStatus } = useSuperAdminTenants(true);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [domainsTarget, setDomainsTarget] = useState<TenantListItem | null>(null);
+
+  // Create form state
+  const [newName, setNewName] = useState("");
+  const [newSlug, setNewSlug] = useState("");
+  const [newDomain, setNewDomain] = useState("");
+  const [createError, setCreateError] = useState("");
+
+  function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    setCreateError("");
+    createTenant.mutate(
+      { name: newName.trim(), slug: newSlug.trim(), primaryDomain: newDomain.trim() },
+      {
+        onSuccess: () => {
+          setCreateOpen(false);
+          setNewName(""); setNewSlug(""); setNewDomain("");
+        },
+        onError: (err) => setCreateError(err.message),
+      }
+    );
+  }
+
+  function handleToggle(tenant: TenantListItem) {
+    const next = tenant.status === "active" ? "inactive" : "active";
+    toggleStatus.mutate(
+      { id: tenant.id, status: next },
+      { onError: (err) => alert(err.message) }
+    );
+  }
+
+  return (
+    <section>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-semibold uppercase tracking-widest text-gray-500">
+          Tenants
+        </h2>
+        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+          <DialogTrigger asChild>
+            <Button
+              size="sm"
+              className="rounded-full font-bold text-black"
+              style={{ backgroundColor: "#FFFF01" }}
+            >
+              Add Tenant
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Create Tenant</DialogTitle>
+              <DialogDescription>
+                Provide a name, unique slug, and primary hostname.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleCreate} className="space-y-3 mt-2">
+              <div className="space-y-1">
+                <Label htmlFor="t-name">Name</Label>
+                <Input
+                  id="t-name"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  required
+                  placeholder="Acme Cleaning"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="t-slug">Slug</Label>
+                <Input
+                  id="t-slug"
+                  value={newSlug}
+                  onChange={(e) => setNewSlug(e.target.value)}
+                  required
+                  placeholder="acme"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="t-domain">Primary Domain</Label>
+                <Input
+                  id="t-domain"
+                  value={newDomain}
+                  onChange={(e) => setNewDomain(e.target.value)}
+                  required
+                  placeholder="acme.xkedule.com"
+                />
+              </div>
+              {createError && <p className="text-sm text-red-600">{createError}</p>}
+              <Button
+                type="submit"
+                disabled={createTenant.isPending}
+                className="w-full rounded-full font-bold text-black"
+                style={{ backgroundColor: "#FFFF01" }}
+              >
+                {createTenant.isPending ? "Creating…" : "Create"}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {query.isLoading && <p className="text-sm text-gray-400">Loading tenants…</p>}
+      {query.isError && <p className="text-sm text-red-500">Failed to load tenants</p>}
+      {query.data && (
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Slug</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Primary Domain</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {query.data.map((tenant: TenantListItem) => (
+                  <TableRow key={tenant.id}>
+                    <TableCell className="font-medium">{tenant.name}</TableCell>
+                    <TableCell className="font-mono text-sm text-gray-600">{tenant.slug}</TableCell>
+                    <TableCell>
+                      <Badge
+                        className={
+                          tenant.status === "active"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-600"
+                        }
+                      >
+                        {tenant.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {tenant.primaryDomain ?? <span className="text-gray-400">—</span>}
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-500">
+                      {new Date(tenant.createdAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setDomainsTarget(tenant)}
+                        >
+                          Domains
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={toggleStatus.isPending}
+                          onClick={() => handleToggle(tenant)}
+                        >
+                          {tenant.status === "active" ? "Deactivate" : "Activate"}
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      <ManageDomainsDialog
+        tenant={domainsTarget}
+        open={domainsTarget !== null}
+        onOpenChange={(open) => { if (!open) setDomainsTarget(null); }}
+      />
+    </section>
+  );
+}
+
+// =============================================================================
 // Dashboard
 // =============================================================================
 
@@ -166,6 +465,8 @@ function Dashboard() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+
+        <TenantsSection />
 
         {/* Section 1 — Stats */}
         <section>
