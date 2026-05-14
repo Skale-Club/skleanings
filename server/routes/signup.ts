@@ -12,6 +12,7 @@ import Stripe from "stripe";
 import { z } from "zod";
 import rateLimit from "express-rate-limit";
 import { storage } from "../storage";
+import { buildVerificationEmail, buildWelcomeEmail, sendResendEmail } from "../lib/email-resend";
 
 const signupRateLimit = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
@@ -148,6 +149,26 @@ router.post("/auth/signup", signupRateLimit, async (req, res) => {
   };
 
   const adminUrl = `https://${subdomain}/admin`;
+
+  // Fire-and-forget: verification + welcome emails (Phase 55)
+  // Uses storage singleton (signup runs before tenant middleware, no res.locals.storage)
+  void (async () => {
+    try {
+      const siteUrl = process.env.SITE_URL || `${req.protocol}://${req.hostname}`;
+      const rawToken = await storage.createEmailVerificationToken(userId);
+      const verifyUrl = `${siteUrl}/api/auth/verify-email?token=${rawToken}`;
+
+      const { subject: vs, html: vh, text: vt } = buildVerificationEmail(verifyUrl, companyName);
+      await sendResendEmail(storage, email, vs, vh, vt, undefined, 'email_verification');
+
+      const { subject: ws, html: wh, text: wt } = buildWelcomeEmail(adminUrl, companyName);
+      await sendResendEmail(storage, email, ws, wh, wt, undefined, 'welcome');
+    } catch (emailErr) {
+      console.error('[auth/signup] Email send failed:', emailErr);
+      // Non-fatal — tenant is already provisioned
+    }
+  })();
+
   return res.status(201).json({ subdomain, adminUrl });
 });
 

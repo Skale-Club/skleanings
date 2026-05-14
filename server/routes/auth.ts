@@ -3,7 +3,7 @@ import { Router } from "express";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { getAuthenticatedUser } from "../lib/auth";
-import { buildPasswordResetEmail, sendResendEmail } from "../lib/email-resend";
+import { buildPasswordResetEmail, buildVerificationEmail, sendResendEmail } from "../lib/email-resend";
 
 const router = Router();
 
@@ -192,6 +192,68 @@ router.post('/auth/change-password', async (req, res) => {
 
   const hashedPassword = await bcrypt.hash(newPassword, 12);
   await storage.updateUserPassword(userId, hashedPassword);
+
+  return res.json({ ok: true });
+});
+
+// GET /api/auth/verify-email — public, no session required
+// Hashes the raw token, looks up in email_verification_tokens, marks used + sets emailVerifiedAt.
+// On success: redirect to /admin
+// On failure: redirect to /verify-email?error=invalid (frontend renders error message)
+router.get('/auth/verify-email', async (req, res) => {
+  const rawToken = req.query.token as string | undefined;
+  if (!rawToken) {
+    return res.redirect('/verify-email?error=invalid');
+  }
+
+  // Note: auth.ts routes are mounted under a tenant — res.locals.storage is available.
+  const storage = res.locals.storage!;
+
+  try {
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const record = await storage.findEmailVerificationToken(tokenHash);
+
+    if (!record) {
+      return res.redirect('/verify-email?error=invalid');
+    }
+
+    await storage.markEmailVerificationTokenUsed(record.id);
+    await storage.setEmailVerified(record.userId);
+
+    return res.redirect('/admin');
+  } catch (err) {
+    console.error('[auth/verify-email] Error:', err);
+    return res.redirect('/verify-email?error=invalid');
+  }
+});
+
+// POST /api/auth/resend-verification — requires active admin session
+// Creates a new token and resends the verification email.
+// Always returns 200 regardless of outcome (no enumeration / fail-safe).
+router.post('/auth/resend-verification', async (req, res) => {
+  if (!req.session.adminUser) {
+    return res.status(401).json({ message: 'Not authenticated' });
+  }
+
+  const storage = res.locals.storage!;
+
+  try {
+    const userId = req.session.adminUser.id;
+    const email = req.session.adminUser.email;
+
+    const siteUrl = process.env.SITE_URL || `${req.protocol}://${req.hostname}`;
+    const rawToken = await storage.createEmailVerificationToken(userId);
+    const verifyUrl = `${siteUrl}/api/auth/verify-email?token=${rawToken}`;
+
+    const settings = await storage.getCompanySettings();
+    const companyName = settings?.companyName || 'Admin';
+
+    const { subject, html, text } = buildVerificationEmail(verifyUrl, companyName);
+    await sendResendEmail(storage, email, subject, html, text, undefined, 'email_verification');
+  } catch (err) {
+    console.error('[auth/resend-verification] Error:', err);
+    // Intentionally swallowed — always returns 200
+  }
 
   return res.json({ ok: true });
 });

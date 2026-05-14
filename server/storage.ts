@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { db } from "./db";
 import {
   users,
@@ -125,6 +126,9 @@ import {
   passwordResetTokens,
   type PasswordResetToken,
   type InsertPasswordResetToken,
+  emailVerificationTokens,
+  type EmailVerificationToken,
+  type InsertEmailVerificationToken,
   tenantSubscriptions,
   type TenantSubscription,
   type InsertTenantSubscription,
@@ -437,6 +441,12 @@ export interface IStorage {
   markPasswordResetTokenUsed(id: number): Promise<void>;
   updateUserPassword(userId: string, hashedPassword: string): Promise<void>;
 
+  // Email Verification Tokens (Phase 55)
+  createEmailVerificationToken(userId: string): Promise<string>; // returns raw token
+  findEmailVerificationToken(tokenHash: string): Promise<EmailVerificationToken | undefined>;
+  markEmailVerificationTokenUsed(id: number): Promise<void>;
+  setEmailVerified(userId: string): Promise<void>;
+
   // Tenant Subscriptions — Phase 48 (global registry, uses db directly)
   createTenantSubscription(tenantId: number, stripeCustomerId: string): Promise<TenantSubscription>;
   getTenantSubscription(tenantId: number): Promise<TenantSubscription | undefined>;
@@ -512,6 +522,44 @@ export class DatabaseStorage implements IStorage {
     await db.update(users)
       .set({ password: hashedPassword, updatedAt: new Date() })
       .where(and(eq(users.tenantId, this.tenantId), eq(users.id, userId)));
+  }
+
+  // Email Verification Tokens — Phase 55
+  // NOTE: email_verification_tokens has NO tenant_id — tokens are global (user_id FK sufficient).
+  // setEmailVerified IS NOT tenant-scoped (users.email_verified_at is global state).
+  async createEmailVerificationToken(userId: string): Promise<string> {
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    await db.insert(emailVerificationTokens)
+      .values({ userId, tokenHash, expiresAt })
+      .returning();
+    return rawToken;
+  }
+
+  async findEmailVerificationToken(tokenHash: string): Promise<EmailVerificationToken | undefined> {
+    const [token] = await db.select()
+      .from(emailVerificationTokens)
+      .where(
+        and(
+          eq(emailVerificationTokens.tokenHash, tokenHash),
+          isNull(emailVerificationTokens.usedAt),
+          gte(emailVerificationTokens.expiresAt, new Date()),
+        )
+      );
+    return token;
+  }
+
+  async markEmailVerificationTokenUsed(id: number): Promise<void> {
+    await db.update(emailVerificationTokens)
+      .set({ usedAt: new Date() })
+      .where(eq(emailVerificationTokens.id, id));
+  }
+
+  async setEmailVerified(userId: string): Promise<void> {
+    await db.update(users)
+      .set({ emailVerifiedAt: new Date() })
+      .where(eq(users.id, userId));
   }
 
   private chatSchemaEnsured = false;
