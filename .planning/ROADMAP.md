@@ -329,7 +329,11 @@ Plans:
   3. After a successful password reset, the admin can log in with the new password and the old password no longer works
   4. A logged-in admin can change their own password via the admin settings UI (`POST /api/auth/change-password`) by providing their current password and a new one — wrong current password returns 401
   5. The reset email body includes the tenant's company name from `companySettings` and uses the existing Resend email formatting established in Phase 31
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 47-01-PLAN.md — Supabase migration (password_reset_tokens table) + Drizzle schema + IStorage methods + DatabaseStorage implementation
+- [ ] 47-02-PLAN.md — buildPasswordResetEmail() template + 3 API routes: forgot-password, reset-password, change-password
+- [ ] 47-03-PLAN.md — Frontend: ForgotPassword.tsx, ResetPassword.tsx, AdminLogin forgot-password link, App.tsx routes
 **UI hint**: yes
 
 ---
