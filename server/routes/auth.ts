@@ -74,15 +74,29 @@ router.post('/auth/tenant-login', async (req, res) => {
   });
 });
 
-// GET /api/auth/admin-me — returns current session state (used by frontend to check login status)
-router.get('/auth/admin-me', (req, res) => {
-  if (req.session.adminUser) {
+// GET /api/auth/admin-me — returns current session state including emailVerifiedAt
+router.get('/auth/admin-me', async (req, res) => {
+  if (!req.session.adminUser) {
+    return res.status(401).json({ authenticated: false });
+  }
+
+  const storage = res.locals.storage!;
+  try {
+    const user = await storage.getUser(req.session.adminUser.id);
     return res.json({
       authenticated: true,
       ...req.session.adminUser,
+      emailVerifiedAt: user?.emailVerifiedAt ?? null,
+    });
+  } catch (err) {
+    console.error('[auth/admin-me] DB lookup failed:', err);
+    // Fall back to session data only — do not expose emailVerifiedAt
+    return res.json({
+      authenticated: true,
+      ...req.session.adminUser,
+      emailVerifiedAt: null,
     });
   }
-  return res.status(401).json({ authenticated: false });
 });
 
 // POST /api/auth/logout — destroy session and return ok

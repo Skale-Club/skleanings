@@ -92,6 +92,7 @@ const ManageSubscription = lazy(() => import("@/pages/ManageSubscription").then(
 const SuperAdmin = lazy(() => import("@/pages/SuperAdmin"));
 const ForgotPassword = lazy(() => import("@/pages/ForgotPassword").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const ResetPassword = lazy(() => import("@/pages/ResetPassword").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const VerifyEmail = lazy(() => import("@/pages/VerifyEmail").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Signup = lazy(() => import("@/pages/Signup").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const BillingPage = lazy(() => import("@/pages/admin/BillingPage").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 
@@ -232,6 +233,7 @@ function Router() {
               </AdminTenantAuthProvider>
             )} />
             <Route path="/reset-password" component={ResetPassword} />
+            <Route path="/verify-email" component={VerifyEmail} />
             <Route component={NotFound} />
           </Switch>
         </Suspense>
