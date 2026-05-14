@@ -373,7 +373,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [ ] 49-01-PLAN.md — 402 subscription enforcement guard in resolveTenantMiddleware (query tenant_subscriptions, canceled/past_due+grace logic)
-- [ ] 49-02-PLAN.md — GET /api/super-admin/tenants returns billing columns + frontend TenantsSection Billing Status column
+- [x] 49-02-PLAN.md — GET /api/super-admin/tenants returns billing columns + frontend TenantsSection Billing Status column
 **UI hint**: yes
 
 ### Phase 50: Tenant Billing Self-Service
@@ -413,8 +413,8 @@ Plans:
 | 45 | v10.0 | 2/2 | Complete | 2026-05-14 |
 | 46 | v10.0 | 1/1 | Complete | 2026-05-14 |
 | 47 | v11.0 | 3/3 | Complete | 2026-05-14 |
-| 48 | v12.0 | 2/3 | Complete    | 2026-05-14 |
-| 49 | v12.0 | 0/2 | Not started | - |
+| 48 | v12.0 | 3/3 | Complete    | 2026-05-14 |
+| 49 | v12.0 | 1/2 | In progress | - |
 | 50 | v12.0 | 0/2 | Not started | - |
 
 ---
