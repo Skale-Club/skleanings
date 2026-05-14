@@ -1,5 +1,18 @@
 # Milestones
 
+## v14.0 Billing Hardening (Shipped: 2026-05-14)
+
+**Phases completed:** 2 phases (53–54), 4 plans, all complete
+
+**Key accomplishments:**
+
+- `customer.subscription.trial_will_end` and `customer.subscription.updated` (past_due) webhook cases extended with non-fatal Resend email sends — branded HTML using `sendResendEmail()` with company name from `companySettings` and Billing Portal URL CTA
+- `POST /api/auth/signup` protected with `express-rate-limit` — 5 requests per IP per hour, 429 + RFC 6585 `Retry-After` header
+- `GET /api/billing/invoices` (guarded by `requireAdmin`) — fetches last 10 Stripe invoices via `stripe.invoices.list`, maps to `{ id, date, amount, currency, status, invoiceUrl }`, returns `[]` gracefully when no Stripe customer
+- Invoice History card in `BillingPage.tsx` — React Query fetch, 3-row Skeleton loading state, empty state, Table with date/amount/status Badge/Download anchor
+
+---
+
 ## v13.0 Self-Serve Signup (Shipped: 2026-05-14)
 
 **Phases completed:** 2 phases (51–52), 4 plans, all complete

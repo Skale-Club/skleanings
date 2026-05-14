@@ -10,7 +10,7 @@ Customers can discover, book, and pay for cleaning services online without calli
 
 ## Current State
 
-**Thirteen milestones shipped:**
+**Fourteen milestones shipped:**
 
 - **v1.0 Marketing Attribution** — First-party UTM tracking, booking flow attribution, marketing dashboard, GoHighLevel CRM UTM sync, admin calendar create-booking-from-slot
 - **v2.0 White Label** — Hardcoded brand removed, DB-driven SEO/favicon/legal pages, receptionist multi-staff calendar view with drag-to-reassign and QuickBook walk-in flow
@@ -25,6 +25,7 @@ Customers can discover, book, and pay for cleaning services online without calli
 - **v11.0 Password Reset** — SHA-256 token flow (forgot/reset/change-password), branded Resend email, ForgotPassword + ResetPassword pages
 - **v12.0 SaaS Billing** — tenant_subscriptions table, Stripe customer auto-created on tenant creation, subscribe endpoint, billing webhook, 402 enforcement with 3-day grace, /admin/billing self-service portal
 - **v13.0 Self-Serve Signup** — POST /api/auth/signup atomic provisioning (db.transaction), Stripe 14-day trial, public /signup page with live subdomain preview, trial badge + countdown + Add Payment Method CTA in /admin/billing
+- **v14.0 Billing Hardening** — Resend emails on trial_will_end + past_due webhook events, signup rate limiting (5/hr), GET /api/billing/invoices + Invoice History card with React Query
 
 **Pending human UAT:** Phase 19 (5 items), Phase 20 (4 CAL-FIX items), Phases 25–29 (browser-only checks), Phase 31 (4 Resend email delivery checks), Phase 34 (booking flow smoke test) — deferred to live session.
 **Pending human actions:** Phase 35 — `supabase db push` (drop system_heartbeats) + add `BLOG_CRON_TOKEN` to GitHub Secrets. Phase 38 — `supabase db push` for multi-tenant schema migrations.
@@ -133,16 +134,10 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-## Current Milestone: v14.0 Billing Hardening
+## Current Milestone: v14.0 Billing Hardening ✅ SHIPPED
 
-**Goal:** The billing lifecycle is fully automated — tenants receive email warnings before their trial ends and when their subscription lapses, can view their invoice history, and the signup endpoint is rate-limited against abuse.
-
-**Target features:**
-- Trial expiry email (Resend) sent 3 days before trial ends via `customer.subscription.trial_will_end` webhook
-- Dunning email (Resend) sent when subscription transitions to `past_due` via `customer.subscription.updated` webhook
-- Rate limiting on `POST /api/auth/signup` (max 5 per IP per hour) via express-rate-limit
-- Invoice history in `/admin/billing` — fetches last 10 invoices from Stripe API and renders as a table
+**Status:** Complete — all 6 requirements (BH-01–BH-06) shipped.
 
 ---
 
-*Last updated: 2026-05-14 — v14.0 Billing Hardening started*
+*Last updated: 2026-05-14 — v14.0 Billing Hardening shipped*

@@ -15,7 +15,7 @@
 - ✅ **v11.0 Password Reset** — Phase 47 (shipped 2026-05-14)
 - ✅ **v12.0 SaaS Billing** — Phases 48–50 (shipped 2026-05-14)
 - ✅ **v13.0 Self-Serve Signup** — Phases 51–52 (shipped 2026-05-14)
-- 🔲 **v14.0 Billing Hardening** — Phases 53–54
+- ✅ **v14.0 Billing Hardening** — Phases 53–54 (shipped 2026-05-14)
 
 ---
 
@@ -437,6 +437,16 @@ Plans:
 
 ---
 
+<details>
+<summary>✅ v14.0 Billing Hardening (Phases 53–54) — SHIPPED 2026-05-14</summary>
+
+- [x] Phase 53: Billing Email Notifications + Signup Rate Limit (2/2 plans) — completed 2026-05-14
+- [x] Phase 54: Invoice History (2/2 plans) — completed 2026-05-14
+
+Full details: [milestones/v14.0-ROADMAP.md](milestones/v14.0-ROADMAP.md)
+
+</details>
+
 ### Phase 53: Billing Email Notifications + Signup Rate Limit
 **Goal**: The billing lifecycle sends automated email warnings to tenants at critical subscription events, and the public signup endpoint is protected against abuse via IP-based rate limiting
 **Depends on**: Phase 52
@@ -494,7 +504,7 @@ Plans:
 | 50 | v12.0 | 2/2 | Complete    | 2026-05-14 |
 | 51 | v13.0 | 2/2 | Complete    | 2026-05-14 |
 | 52 | v13.0 | 1/2 | Complete    | 2026-05-14 |
-| 53 | v14.0 | 1/2 | Complete    | 2026-05-14 |
+| 53 | v14.0 | 2/2 | Complete    | 2026-05-14 |
 | 54 | v14.0 | 1/2 | Complete    | 2026-05-14 |
 
 ---
