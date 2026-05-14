@@ -26,11 +26,15 @@ import recurringBookingsRouter, { adminRecurringRouter, publicRecurringRouter } 
 import { superAdminRouter } from "./routes/super-admin";
 import { calendarSyncRouter } from "./routes/calendar-sync";
 import { billingRouter } from "./routes/billing";
+import signupRouter from "./routes/signup";
 import { resolveTenantMiddleware } from "./middleware/tenant";
 
 export async function registerRoutes(server: Server, app: Express) {
   // 1. Super-admin — bypasses tenant resolution (MT-13)
   app.use("/api/super-admin", superAdminRouter);
+
+  // Phase 51: Signup — platform-level, no tenant required (bypass resolveTenantMiddleware)
+  app.use("/api", signupRouter);
 
   // 2. Tenant resolution — applies to all routes below
   app.use(resolveTenantMiddleware);
