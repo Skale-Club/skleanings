@@ -18,7 +18,7 @@
 ### Subscription Enforcement (Phase 49)
 
 - [ ] **SB-05**: `resolveTenantMiddleware` verifica status da subscription — tenants com status `canceled` ou `past_due` há mais de 3 dias recebem 402 "Subscription required" antes de qualquer route handler
-- [ ] **SB-06**: Super-admin vê status de billing (status, planId, currentPeriodEnd) para cada tenant na listagem de tenants
+- [x] **SB-06**: Super-admin vê status de billing (status, planId, currentPeriodEnd) para cada tenant na listagem de tenants
 
 ### Tenant Billing Self-Service (Phase 50)
 
@@ -52,7 +52,7 @@
 | SB-03 | Phase 48 | Complete |
 | SB-04 | Phase 48 | Pending |
 | SB-05 | Phase 49 | Pending |
-| SB-06 | Phase 49 | Pending |
+| SB-06 | Phase 49 | Complete |
 | SB-07 | Phase 50 | Pending |
 | SB-08 | Phase 50 | Pending |
 
