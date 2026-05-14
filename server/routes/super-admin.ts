@@ -6,7 +6,7 @@ import path from "path";
 import Stripe from "stripe";
 import { and, asc, count, eq } from "drizzle-orm";
 import { db, ensureDatabaseReady } from "../db";
-import { bookings, contacts, domains, services, staffMembers, tenants } from "@shared/schema";
+import { bookings, contacts, domains, services, staffMembers, tenantSubscriptions, tenants } from "@shared/schema";
 import { collectRuntimeEnvDiagnostics } from "../lib/runtime-env";
 import { getRecentErrors } from "../lib/error-log";
 import { storage } from "../storage";
@@ -190,9 +190,14 @@ router.get("/tenants", requireSuperAdmin, async (_req: Request, res: Response): 
         status: tenants.status,
         createdAt: tenants.createdAt,
         primaryDomain: domains.hostname,
+        // Phase 49: billing columns from tenant_subscriptions (LEFT JOIN — may be null if row missing)
+        billingStatus: tenantSubscriptions.status,
+        billingPlanId: tenantSubscriptions.planId,
+        billingCurrentPeriodEnd: tenantSubscriptions.currentPeriodEnd,
       })
       .from(tenants)
       .leftJoin(domains, and(eq(domains.tenantId, tenants.id), eq(domains.isPrimary, true)))
+      .leftJoin(tenantSubscriptions, eq(tenantSubscriptions.tenantId, tenants.id))
       .orderBy(asc(tenants.createdAt));
 
     const [bookingCounts, serviceCounts, staffCounts] = await Promise.all([
