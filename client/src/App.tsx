@@ -90,6 +90,8 @@ const AccountShell = lazy(() => import("@/pages/AccountShell").then(m => ({ defa
 const ClientLogin = lazy(() => import("@/pages/ClientLogin").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const ManageSubscription = lazy(() => import("@/pages/ManageSubscription").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const SuperAdmin = lazy(() => import("@/pages/SuperAdmin"));
+const ForgotPassword = lazy(() => import("@/pages/ForgotPassword").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const ResetPassword = lazy(() => import("@/pages/ResetPassword").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 
 function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const { data: settings } = useQuery<CompanySettings>({
@@ -188,6 +190,7 @@ function Router() {
         <Suspense fallback={fallback}>
           <Switch>
             <Route path="/admin/login" component={AdminLogin} />
+            <Route path="/admin/forgot-password" component={ForgotPassword} />
             <Route path="/admin" component={Admin} />
             <Route path="/admin/:section" component={Admin} />
             <Route path="/admin/:section/:tab" component={Admin} />
@@ -220,6 +223,7 @@ function Router() {
             <Route path="/service-areas" component={ServiceAreas} />
             <Route path="/team" component={Team} />
             <Route path="/manage-subscription/:token" component={ManageSubscription} />
+            <Route path="/reset-password" component={ResetPassword} />
             <Route component={NotFound} />
           </Switch>
         </Suspense>

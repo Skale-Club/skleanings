@@ -134,6 +134,11 @@ export default function AdminLogin() {
                 {loading ? 'Signing in...' : 'Sign In'}
               </Button>
             </form>
+            <div className="text-center mt-2">
+              <Link href="/admin/forgot-password" className="text-sm text-slate-500 hover:text-primary hover:underline">
+                Forgot password?
+              </Link>
+            </div>
           </CardContent>
         </Card>
       </div>
