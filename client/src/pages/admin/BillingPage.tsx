@@ -73,6 +73,12 @@ export default function BillingPage() {
     return 'bg-gray-100 text-gray-600';
   };
 
+  const daysRemaining = billingStatus?.currentPeriodEnd
+    ? Math.max(0, Math.ceil(
+        (new Date(billingStatus.currentPeriodEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+      ))
+    : null;
+
   if (authLoading || fetchLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -110,7 +116,19 @@ export default function BillingPage() {
                 <Badge className={statusBadgeClass(billingStatus.status)}>
                   {billingStatus.status}
                 </Badge>
+                {billingStatus.status === 'trialing' && (
+                  <Badge className="bg-blue-100 text-blue-800">Trial</Badge>
+                )}
               </div>
+
+              {billingStatus.status === 'trialing' && daysRemaining !== null && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground w-32">Trial ends</span>
+                  <span className="text-sm text-foreground font-medium">
+                    {daysRemaining} day{daysRemaining !== 1 ? 's' : ''} remaining
+                  </span>
+                </div>
+              )}
 
               {billingStatus.planId && (
                 <div className="flex items-center gap-2">
@@ -131,6 +149,16 @@ export default function BillingPage() {
           )}
 
           <div className="pt-2">
+            {(billingStatus?.status === 'trialing' || billingStatus?.status === 'past_due') && (
+              <Button
+                onClick={handleManageBilling}
+                disabled={portalLoading || !billingStatus.stripeCustomerId}
+                className="gap-2 mr-2 bg-[#FFFF01] text-black font-bold hover:bg-yellow-300"
+              >
+                <ExternalLink className="w-4 h-4" />
+                {portalLoading ? 'Opening portal...' : 'Add Payment Method'}
+              </Button>
+            )}
             <Button
               onClick={handleManageBilling}
               disabled={portalLoading || !billingStatus?.stripeCustomerId}
