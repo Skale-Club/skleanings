@@ -2,9 +2,9 @@ import bcrypt from "bcrypt";
 import { Router, type Request, type Response, type NextFunction } from "express";
 import fs from "fs";
 import path from "path";
-import { count, eq } from "drizzle-orm";
+import { and, asc, count, eq } from "drizzle-orm";
 import { db, ensureDatabaseReady } from "../db";
-import { bookings, contacts, services, staffMembers } from "@shared/schema";
+import { bookings, contacts, domains, services, staffMembers, tenants } from "@shared/schema";
 import { collectRuntimeEnvDiagnostics } from "../lib/runtime-env";
 import { getRecentErrors } from "../lib/error-log";
 import { storage } from "../storage";
@@ -169,6 +169,186 @@ router.patch("/company-settings", requireSuperAdmin, async (req: Request, res: R
 
 router.get("/error-logs", requireSuperAdmin, (_req: Request, res: Response): void => {
   res.json(getRecentErrors());
+});
+
+// ---------------------------------------------------------------------------
+// GET /tenants  — list all tenants with primary domain (LEFT JOIN, no N+1)
+// ---------------------------------------------------------------------------
+
+router.get("/tenants", requireSuperAdmin, async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const rows = await db
+      .select({
+        id: tenants.id,
+        name: tenants.name,
+        slug: tenants.slug,
+        status: tenants.status,
+        createdAt: tenants.createdAt,
+        primaryDomain: domains.hostname,
+      })
+      .from(tenants)
+      .leftJoin(domains, and(eq(domains.tenantId, tenants.id), eq(domains.isPrimary, true)))
+      .orderBy(asc(tenants.createdAt));
+    res.json(rows);
+  } catch (err) {
+    console.error("[super-admin] /tenants GET error:", err);
+    res.status(500).json({ message: "Failed to fetch tenants" });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /tenants  — create tenant + primary domain row
+// ---------------------------------------------------------------------------
+
+router.post("/tenants", requireSuperAdmin, async (req: Request, res: Response): Promise<void> => {
+  const { name, slug, primaryDomain } = req.body as {
+    name?: string;
+    slug?: string;
+    primaryDomain?: string;
+  };
+
+  if (!name?.trim() || !slug?.trim() || !primaryDomain?.trim()) {
+    res.status(400).json({ message: "name, slug, and primaryDomain are required" });
+    return;
+  }
+
+  // Normalize hostname: strip protocol and trailing slash
+  const hostname = primaryDomain.trim().replace(/^https?:\/\//i, "").replace(/\/$/, "");
+  if (!hostname) {
+    res.status(400).json({ message: "Invalid primaryDomain format" });
+    return;
+  }
+
+  try {
+    const tenant = await storage.createTenant({ name: name.trim(), slug: slug.trim() });
+    const domain = await storage.addDomain(tenant.id, hostname, true);
+    res.status(201).json({ ...tenant, primaryDomain: domain.hostname });
+  } catch (err: unknown) {
+    if ((err as any)?.code === "23505") {
+      const msg = (err as any)?.message ?? "";
+      if (msg.includes("hostname")) {
+        res.status(409).json({ message: "Hostname already registered" });
+      } else {
+        res.status(409).json({ message: "Slug already taken" });
+      }
+      return;
+    }
+    console.error("[super-admin] /tenants POST error:", err);
+    res.status(500).json({ message: "Failed to create tenant" });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// PATCH /tenants/:id/status  — toggle active/inactive
+// ---------------------------------------------------------------------------
+
+router.patch("/tenants/:id/status", requireSuperAdmin, async (req: Request, res: Response): Promise<void> => {
+  const id = parseInt(req.params.id, 10);
+  const { status } = req.body as { status?: string };
+
+  if (isNaN(id)) {
+    res.status(400).json({ message: "Invalid tenant id" });
+    return;
+  }
+  if (status !== "active" && status !== "inactive") {
+    res.status(400).json({ message: "status must be 'active' or 'inactive'" });
+    return;
+  }
+
+  try {
+    const updated = await storage.updateTenantStatus(id, status);
+    res.json(updated);
+  } catch (err) {
+    console.error("[super-admin] /tenants/:id/status PATCH error:", err);
+    res.status(500).json({ message: "Failed to update tenant status" });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// GET /tenants/:id/domains  — list all domains for a tenant
+// ---------------------------------------------------------------------------
+
+router.get("/tenants/:id/domains", requireSuperAdmin, async (req: Request, res: Response): Promise<void> => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) {
+    res.status(400).json({ message: "Invalid tenant id" });
+    return;
+  }
+  try {
+    const domainList = await storage.getTenantDomains(id);
+    res.json(domainList);
+  } catch (err) {
+    console.error("[super-admin] /tenants/:id/domains GET error:", err);
+    res.status(500).json({ message: "Failed to fetch domains" });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /tenants/:id/domains  — add non-primary domain to a tenant
+// ---------------------------------------------------------------------------
+
+router.post("/tenants/:id/domains", requireSuperAdmin, async (req: Request, res: Response): Promise<void> => {
+  const tenantId = parseInt(req.params.id, 10);
+  const { hostname: rawHostname } = req.body as { hostname?: string };
+
+  if (isNaN(tenantId)) {
+    res.status(400).json({ message: "Invalid tenant id" });
+    return;
+  }
+  if (!rawHostname?.trim()) {
+    res.status(400).json({ message: "hostname is required" });
+    return;
+  }
+
+  // Normalize: strip protocol and trailing slash
+  const hostname = rawHostname.trim().replace(/^https?:\/\//i, "").replace(/\/$/, "");
+  if (!hostname) {
+    res.status(400).json({ message: "Invalid hostname format" });
+    return;
+  }
+
+  try {
+    const domain = await storage.addDomain(tenantId, hostname, false);
+    res.status(201).json(domain);
+  } catch (err: unknown) {
+    if ((err as any)?.code === "23505") {
+      res.status(409).json({ message: "Hostname already registered" });
+      return;
+    }
+    console.error("[super-admin] /tenants/:id/domains POST error:", err);
+    res.status(500).json({ message: "Failed to add domain" });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// DELETE /domains/:id  — remove non-primary domain
+// ---------------------------------------------------------------------------
+
+router.delete("/domains/:id", requireSuperAdmin, async (req: Request, res: Response): Promise<void> => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) {
+    res.status(400).json({ message: "Invalid domain id" });
+    return;
+  }
+
+  // Fetch first to guard primary domain deletion
+  const [domain] = await db.select().from(domains).where(eq(domains.id, id));
+  if (!domain) {
+    res.status(404).json({ message: "Domain not found" });
+    return;
+  }
+  if (domain.isPrimary) {
+    res.status(400).json({ message: "Cannot remove primary domain" });
+    return;
+  }
+
+  try {
+    await storage.removeDomain(id);
+    res.status(204).send();
+  } catch (err) {
+    console.error("[super-admin] /domains/:id DELETE error:", err);
+    res.status(500).json({ message: "Failed to remove domain" });
+  }
 });
 
 // ---------------------------------------------------------------------------
