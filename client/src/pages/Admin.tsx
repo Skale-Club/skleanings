@@ -49,6 +49,7 @@ import { MarketingSection } from '@/components/admin/MarketingSection';
 import { AppointmentsCalendarSection } from '@/components/admin/AppointmentsCalendarSection';
 import { ContactsSection } from '@/components/admin/ContactsSection';
 import { useMe } from '@/hooks/useMe';
+import { SetupChecklist } from '@/components/SetupChecklist';
 
 const menuItems: AdminMenuItem[] = [
   { id: 'dashboard', title: 'Dashboard', icon: LayoutDashboard },
@@ -191,16 +192,19 @@ function AdminContent() {
         )}
         <div className={activeSection === 'chat' ? 'min-h-0 p-0' : 'min-h-0 p-6 sm:p-6 md:p-8 pb-8'}>
           {activeSection === 'dashboard' && (
-            <DashboardSection
-              getAccessToken={getAccessToken}
-              goToBookings={() => {
-                if (!sectionsOrder.includes('bookings')) {
-                  setSectionsOrder((prev) => [...prev, 'bookings']);
-                }
-                setLocation('/admin/bookings');
-                document.getElementById('admin-top')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-            />
+            <>
+              <SetupChecklist />
+              <DashboardSection
+                getAccessToken={getAccessToken}
+                goToBookings={() => {
+                  if (!sectionsOrder.includes('bookings')) {
+                    setSectionsOrder((prev) => [...prev, 'bookings']);
+                  }
+                  setLocation('/admin/bookings');
+                  document.getElementById('admin-top')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+              />
+            </>
           )}
           {activeSection === 'calendar' && (
             <AppointmentsCalendarSection
