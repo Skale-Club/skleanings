@@ -114,3 +114,49 @@ export async function sendResendEmail(
     console.error('[Resend] Send error:', JSON.stringify(error));
   }
 }
+
+/**
+ * Build the password reset email content.
+ * Pure function — no side effects, no DB calls.
+ * Caller passes resetUrl and companyName, then calls sendResendEmail() with the result.
+ *
+ * @param resetUrl    Full URL: ${SITE_URL}/reset-password?token=${rawToken}
+ * @param companyName Tenant company name from companySettings
+ */
+export function buildPasswordResetEmail(
+  resetUrl: string,
+  companyName: string
+): { subject: string; html: string; text: string } {
+  const subject = `Reset your ${companyName} admin password`;
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8" /></head>
+<body style="font-family: Inter, sans-serif; background: #f8fafc; padding: 32px;">
+  <div style="max-width: 480px; margin: 0 auto; background: #fff; border-radius: 8px; padding: 32px; border: 1px solid #e2e8f0;">
+    <h2 style="font-family: Outfit, sans-serif; color: #1C53A3; margin-top: 0;">Password Reset Request</h2>
+    <p style="color: #374151;">You requested a password reset for your <strong>${companyName}</strong> admin account.</p>
+    <p style="color: #374151;">Click the button below to set a new password. This link expires in <strong>1 hour</strong>.</p>
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="${resetUrl}"
+         style="background: #FFFF01; color: #000; font-weight: 700; font-family: Outfit, sans-serif;
+                padding: 14px 32px; border-radius: 9999px; text-decoration: none; display: inline-block;">
+        Reset Password
+      </a>
+    </div>
+    <p style="color: #6b7280; font-size: 13px;">
+      If you did not request this, you can safely ignore this email. Your password will not change.
+    </p>
+    <p style="color: #6b7280; font-size: 13px;">
+      Or copy this link into your browser:<br />
+      <a href="${resetUrl}" style="color: #1C53A3; word-break: break-all;">${resetUrl}</a>
+    </p>
+  </div>
+</body>
+</html>`;
+
+  const text = `Reset your ${companyName} admin password\n\nVisit this link to reset your password (expires in 1 hour):\n${resetUrl}\n\nIf you did not request this, ignore this email.`;
+
+  return { subject, html, text };
+}
