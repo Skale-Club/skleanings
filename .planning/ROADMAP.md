@@ -228,7 +228,7 @@ Plans:
   5. Super-admin can toggle a tenant's status between active and inactive — the status column in `tenants` reflects the change immediately
 **Plans**: 3 plans
 Plans:
-- [ ] 42-01-PLAN.md — IStorage extension: six global registry methods (getTenants/createTenant/updateTenantStatus/getTenantDomains/addDomain/removeDomain)
+- [x] 42-01-PLAN.md — IStorage extension: six global registry methods (getTenants/createTenant/updateTenantStatus/getTenantDomains/addDomain/removeDomain)
 - [ ] 42-02-PLAN.md — API routes: GET/POST tenants, PATCH status, GET/POST domains, DELETE domain (all guarded by requireSuperAdmin)
 - [ ] 42-03-PLAN.md — Frontend: useSuperAdminTenants + useSuperAdminTenantDomains hooks + TenantsSection UI wired into SuperAdmin dashboard
 **UI hint**: yes
@@ -270,7 +270,7 @@ Plans:
 | 39 | v8.0 | 3/3 | Complete | 2026-05-13 |
 | 40 | v8.0 | 3/3 | Complete | 2026-05-13 |
 | 41 | v8.0 | 2/2 | Complete | 2026-05-13 |
-| 42 | v9.0 | 0/3 | Not started | - |
+| 42 | v9.0 | 1/3 | In Progress|  |
 | 43 | v9.0 | 0/TBD | Not started | - |
 | 44 | v9.0 | 0/TBD | Not started | - |
 

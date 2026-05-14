@@ -10,10 +10,10 @@
 
 ### Tenant Management — Super-Admin (Phase 42)
 
-- [ ] **TO-01**: Super-admin pode listar todos os tenants com nome, slug, status, domínio primário e data de criação
-- [ ] **TO-02**: Super-admin pode criar um novo tenant (nome, slug, domínio primário) via formulário no painel /superadmin
-- [ ] **TO-03**: Super-admin pode adicionar e remover domínios extras de um tenant (tabela `domains`)
-- [ ] **TO-04**: Super-admin pode ativar ou desativar um tenant (status active/inactive) — tenants inativos recebem 503 no middleware de resolução
+- [x] **TO-01**: Super-admin pode listar todos os tenants com nome, slug, status, domínio primário e data de criação
+- [x] **TO-02**: Super-admin pode criar um novo tenant (nome, slug, domínio primário) via formulário no painel /superadmin
+- [x] **TO-03**: Super-admin pode adicionar e remover domínios extras de um tenant (tabela `domains`)
+- [x] **TO-04**: Super-admin pode ativar ou desativar um tenant (status active/inactive) — tenants inativos recebem 503 no middleware de resolução
 
 ### Tenant Provisioning (Phase 43)
 
@@ -50,10 +50,10 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TO-01 | Phase 42 | Pending |
-| TO-02 | Phase 42 | Pending |
-| TO-03 | Phase 42 | Pending |
-| TO-04 | Phase 42 | Pending |
+| TO-01 | Phase 42 | Complete |
+| TO-02 | Phase 42 | Complete |
+| TO-03 | Phase 42 | Complete |
+| TO-04 | Phase 42 | Complete |
 | TO-05 | Phase 43 | Pending |
 | TO-06 | Phase 43 | Pending |
 | TO-07 | Phase 43 | Pending |

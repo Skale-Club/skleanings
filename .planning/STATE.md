@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v9.0
 milestone_name: Tenant Onboarding
-status: planning
-stopped_at: Roadmap created — Phase 42 not started
-last_updated: "2026-05-13T00:00:00.000Z"
-last_activity: 2026-05-13
+status: executing
+stopped_at: Completed 42-01-PLAN.md
+last_updated: "2026-05-14T00:41:47.670Z"
+last_activity: 2026-05-14
 progress:
-  total_phases: 3
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_phases: 9
+  completed_phases: 6
+  total_plans: 19
+  completed_plans: 17
   percent: 0
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-05-13)
 
 ## Current Position
 
-Phase: 42
-Plan: Not started
-Status: Roadmap created — ready for plan-phase
-Last activity: 2026-05-13
+Phase: 42 (Tenant Management UI) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-05-14
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -96,6 +96,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 41-infra-config]: DNS-01 via Cloudflare for wildcard TLS; direct Node systemd unit (Type=simple) over PM2 for CX23 simplicity
 - [Phase 41]: deploy.yml uses workflow_dispatch only (no push trigger) per MT-16 — prevents accidental production deploys
 - [Phase 41]: infra/README.md documents NodeSource apt install for Node.js (not nvm) — systemd ExecStart requires absolute /usr/bin/node path
+- [Phase 42]: Global registry methods on DatabaseStorage use db directly (no this.tenantId) — registry ops are cross-tenant by design
+- [Phase 42-01]: TenantRow/DomainRow type aliases derived via $inferSelect — no separate type definitions needed
 
 ### Roadmap Evolution
 
@@ -117,7 +119,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-13
-Stopped at: v9.0 roadmap created
+Last session: 2026-05-14T00:41:47.666Z
+Stopped at: Completed 42-01-PLAN.md
 Resume file: None
 Next: Plan Phase 42 (Tenant Management UI) via /gsd:plan-phase 42
