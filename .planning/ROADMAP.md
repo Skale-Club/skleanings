@@ -284,7 +284,10 @@ Plans:
   4. POSTing to `POST /api/auth/logout` destroys the session — subsequent requests to protected admin endpoints return 401
   5. An admin session for tenant 2 calling any `requireAdmin`-guarded endpoint on tenant 1's hostname receives 403 — `req.session.adminUser.tenantId` is validated against `res.locals.tenant.id` on every protected request
   6. The existing `POST /api/auth/login` endpoint using ADMIN_EMAIL + ADMIN_PASSWORD_HASH env vars continues to work unchanged on the tenant 1 domain — no regression
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 45-01-PLAN.md — session.d.ts adminUser type + requireAdmin cross-tenant guard + POST /api/auth/tenant-login + GET /api/auth/admin-me
+- [ ] 45-02-PLAN.md — POST /api/auth/logout + npm run check TypeScript compile verification
 
 ### Phase 46: Admin Panel Frontend Auth
 **Goal**: The admin panel frontend correctly handles authentication for any tenant — it detects the current tenant from the hostname, redirects unauthenticated users to login, and renders only that tenant's data after a successful login
