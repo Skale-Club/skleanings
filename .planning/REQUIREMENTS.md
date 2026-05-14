@@ -21,7 +21,7 @@
 
 ### Setup Checklist (Phase 56)
 
-- [ ] **OB-06**: `/admin` dashboard shows a "Setup Checklist" card when the tenant has not completed all 3 items — each item is checked live against the DB: (1) has at least 1 service, (2) has at least 1 staff member, (3) has at least 1 availability window
+- [x] **OB-06**: `/admin` dashboard shows a "Setup Checklist" card when the tenant has not completed all 3 items — each item is checked live against the DB: (1) has at least 1 service, (2) has at least 1 staff member, (3) has at least 1 availability window
 - [x] **OB-07**: `GET /api/admin/setup-status` returns `{ hasService: boolean, hasStaff: boolean, hasAvailability: boolean, dismissed: boolean }` — guarded by `requireAdmin`, reads from `res.locals.storage`
 - [x] **OB-08**: The checklist card is dismissible — `POST /api/admin/setup-dismiss` saves a `setupDismissedAt` timestamp on the tenant's `companySettings` row; dismissed tenants never see the checklist again even if items are incomplete
 
@@ -52,7 +52,7 @@
 | OB-03 | Phase 55 | Complete |
 | OB-04 | Phase 55 | Pending |
 | OB-05 | Phase 55 | Pending |
-| OB-06 | Phase 56 | Pending |
+| OB-06 | Phase 56 | Complete |
 | OB-07 | Phase 56 | Complete |
 | OB-08 | Phase 56 | Complete |
 
