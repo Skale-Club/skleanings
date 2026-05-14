@@ -116,7 +116,7 @@ Full details: [milestones/v8.0-ROADMAP.md](milestones/v8.0-ROADMAP.md)
 
 - [x] **Phase 42: Tenant Management UI** - Super-admin CRUD for tenants and domains in /superadmin panel (completed 2026-05-14)
 - [x] **Phase 43: Tenant Provisioning** - Admin user creation, company settings seed, and LRU cache invalidation (completed 2026-05-14)
-- [ ] **Phase 44: Isolation Verification** - 503 for inactive tenants, per-tenant stats, and E2E data isolation
+- [x] **Phase 44: Isolation Verification** - 503 for inactive tenants, per-tenant stats, and E2E data isolation (completed 2026-05-14)
 
 ---
 
@@ -258,7 +258,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [x] 44-01-PLAN.md — 503 inactive-tenant guard in resolveTenantMiddleware + per-tenant stats in GET /tenants API + TenantListItem type update
-- [ ] 44-02-PLAN.md — Frontend: Bookings/Services/Staff columns in TenantsSection table + human verification checkpoint
+- [x] 44-02-PLAN.md — Frontend: Bookings/Services/Staff columns in TenantsSection table + human verification checkpoint
 
 ---
 
@@ -279,7 +279,7 @@ Plans:
 | 41 | v8.0 | 2/2 | Complete | 2026-05-13 |
 | 42 | v9.0 | 3/3 | Complete    | 2026-05-14 |
 | 43 | v9.0 | 3/3 | Complete    | 2026-05-14 |
-| 44 | v9.0 | 1/2 | In Progress|  |
+| 44 | v9.0 | 2/2 | Complete   | 2026-05-14 |
 
 ---
 
