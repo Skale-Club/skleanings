@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v9.0
 milestone_name: Tenant Onboarding
-status: planning
-stopped_at: Roadmap created — Phase 42 not started
-last_updated: "2026-05-13T00:00:00.000Z"
+status: Roadmap created — ready for plan-phase
+stopped_at: Completed 42-02-PLAN.md
+last_updated: "2026-05-14T00:46:52.973Z"
 last_activity: 2026-05-13
 progress:
-  total_phases: 3
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_phases: 9
+  completed_phases: 6
+  total_plans: 16
+  completed_plans: 17
   percent: 0
 ---
 
@@ -96,6 +96,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 41-infra-config]: DNS-01 via Cloudflare for wildcard TLS; direct Node systemd unit (Type=simple) over PM2 for CX23 simplicity
 - [Phase 41]: deploy.yml uses workflow_dispatch only (no push trigger) per MT-16 — prevents accidental production deploys
 - [Phase 41]: infra/README.md documents NodeSource apt install for Node.js (not nvm) — systemd ExecStart requires absolute /usr/bin/node path
+- [Phase 42]: GET /tenants uses direct db LEFT JOIN to return primaryDomain in-row without N+1 — one query for the full list
+- [Phase 42-02]: DELETE /domains/:id pre-fetches domain row for isPrimary guard at route layer — avoids storage-layer change
 
 ### Roadmap Evolution
 
@@ -117,7 +119,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-13
-Stopped at: v9.0 roadmap created
+Last session: 2026-05-14T00:46:52.967Z
+Stopped at: Completed 42-02-PLAN.md
 Resume file: None
 Next: Plan Phase 42 (Tenant Management UI) via /gsd:plan-phase 42
