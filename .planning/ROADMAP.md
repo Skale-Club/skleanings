@@ -446,7 +446,10 @@ Plans:
   2. When Stripe delivers a `customer.subscription.updated` webhook event with `status = 'past_due'`, the tenant admin receives a Resend email notifying them of payment failure and the risk of service suspension — including the Stripe Billing Portal URL
   3. Both billing emails use `sendResendEmail()` and render the tenant's company name and brand colors from `companySettings` and `emailSettings` — they are visually consistent with the existing transactional email templates
   4. POSTing to `POST /api/auth/signup` more than 5 times from the same IP within one hour returns 429 with a `Retry-After` header and JSON body `{ message: 'Too many signup attempts. Try again later.' }` — the 6th attempt is blocked without creating any DB rows
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 53-01-PLAN.md — Billing email notifications: trial_will_end + past_due webhook sends (BH-01, BH-02, BH-03)
+- [ ] 53-02-PLAN.md — Signup rate limiting: 5 req/hr per IP on POST /api/auth/signup (BH-04)
 
 ### Phase 54: Invoice History
 **Goal**: Tenant admins can view their complete invoice history directly within the billing page — the last 10 Stripe invoices are fetched server-side and displayed with status and download links
