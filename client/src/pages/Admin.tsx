@@ -8,6 +8,7 @@ import {
   Calendar,
   CalendarDays,
   Clock,
+  CreditCard,
   FileText,
   FolderOpen,
   HelpCircle,
@@ -64,6 +65,7 @@ const menuItems: AdminMenuItem[] = [
   { id: 'blog', title: 'Blog', icon: FileText },
   { id: 'seo', title: 'SEO', icon: Search },
   { id: 'integrations', title: 'Integrations', icon: Puzzle },
+  { id: 'billing', title: 'Billing', icon: CreditCard },
 ];
 
 function AdminContent() {
@@ -187,6 +189,13 @@ function AdminContent() {
           {activeSection === 'integrations' && <IntegrationsSection getAccessToken={getAccessToken} />}
           {activeSection === 'blog' && <BlogSection resetSignal={blogResetSignal} getAccessToken={getAccessToken} />}
           {activeSection === 'marketing' && <MarketingSection getAccessToken={getAccessToken} />}
+          {activeSection === 'billing' && (
+            <div className="flex items-center justify-center h-full">
+              <p className="text-muted-foreground text-sm">
+                Visit <a href="/admin/billing" className="underline text-primary">/admin/billing</a> to manage billing.
+              </p>
+            </div>
+          )}
         </div>
       </main>
     </div>
