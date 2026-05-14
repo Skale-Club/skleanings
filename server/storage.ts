@@ -119,7 +119,11 @@ import {
   calendarSyncQueue,
   type CalendarSyncHealth,
   type CalendarSyncJob,
+  tenants,
+  domains,
 } from "@shared/schema";
+type TenantRow = typeof tenants.$inferSelect;
+type DomainRow  = typeof domains.$inferSelect;
 import { eq, and, or, gte, lte, inArray, desc, asc, sql, ne, isNull, like } from "drizzle-orm";
 import { z } from "zod";
 
@@ -409,6 +413,14 @@ export interface IStorage {
   getCalendarSyncHealth(): Promise<CalendarSyncHealth[]>;
   retryCalendarSyncJob(jobId: number): Promise<void>;
   listRecentSyncFailures(target?: string, limit?: number): Promise<CalendarSyncJob[]>;
+
+  // Global Registry — Tenants and Domains (Phase 42, no tenantId scope)
+  getTenants(): Promise<TenantRow[]>;
+  createTenant(data: { name: string; slug: string }): Promise<TenantRow>;
+  updateTenantStatus(id: number, status: string): Promise<TenantRow>;
+  getTenantDomains(tenantId: number): Promise<DomainRow[]>;
+  addDomain(tenantId: number, hostname: string, isPrimary: boolean): Promise<DomainRow>;
+  removeDomain(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2326,6 +2338,44 @@ export class DatabaseStorage implements IStorage {
       LIMIT ${limit}
     `);
     return Array.from(rows) as CalendarSyncJob[];
+  }
+
+  // ---------------------------------------------------------------------------
+  // Global Registry — Tenants and Domains (Phase 42)
+  // ---------------------------------------------------------------------------
+
+  async getTenants(): Promise<TenantRow[]> {
+    return await db.select().from(tenants).orderBy(asc(tenants.createdAt));
+  }
+
+  async createTenant(data: { name: string; slug: string }): Promise<TenantRow> {
+    const [row] = await db.insert(tenants).values({
+      name: data.name,
+      slug: data.slug,
+      status: "active",
+    }).returning();
+    return row;
+  }
+
+  async updateTenantStatus(id: number, status: string): Promise<TenantRow> {
+    const [row] = await db.update(tenants)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(tenants.id, id))
+      .returning();
+    return row;
+  }
+
+  async getTenantDomains(tenantId: number): Promise<DomainRow[]> {
+    return await db.select().from(domains).where(eq(domains.tenantId, tenantId));
+  }
+
+  async addDomain(tenantId: number, hostname: string, isPrimary: boolean): Promise<DomainRow> {
+    const [row] = await db.insert(domains).values({ tenantId, hostname, isPrimary }).returning();
+    return row;
+  }
+
+  async removeDomain(id: number): Promise<void> {
+    await db.delete(domains).where(eq(domains.id, id));
   }
 }
 
