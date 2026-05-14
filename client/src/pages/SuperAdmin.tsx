@@ -466,6 +466,9 @@ function TenantsSection() {
                   <TableHead>Slug</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Primary Domain</TableHead>
+                  <TableHead className="text-right">Bookings</TableHead>
+                  <TableHead className="text-right">Services</TableHead>
+                  <TableHead className="text-right">Staff</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
@@ -488,6 +491,15 @@ function TenantsSection() {
                     </TableCell>
                     <TableCell className="font-mono text-sm">
                       {tenant.primaryDomain ?? <span className="text-gray-400">—</span>}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-sm">
+                      {tenant.bookingCount}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-sm">
+                      {tenant.serviceCount}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-sm">
+                      {tenant.staffCount}
                     </TableCell>
                     <TableCell className="text-sm text-gray-500">
                       {new Date(tenant.createdAt).toLocaleDateString()}
