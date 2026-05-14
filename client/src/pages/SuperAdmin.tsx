@@ -518,6 +518,9 @@ function TenantsSection() {
                           >
                             {tenant.billingStatus}
                           </Badge>
+                          {tenant.billingPlanId && (
+                            <p className="text-xs text-gray-500 font-mono">{tenant.billingPlanId}</p>
+                          )}
                           {tenant.billingCurrentPeriodEnd && (
                             <p className="text-xs text-gray-400">
                               {new Date(tenant.billingCurrentPeriodEnd).toLocaleDateString()}
