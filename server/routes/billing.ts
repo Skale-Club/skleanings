@@ -6,11 +6,12 @@
  * Do NOT add this router to registerRoutes() — it must bypass resolveTenantMiddleware.
  */
 
-import { type Request, type Response } from "express";
+import { type Request, type Response, Router } from "express";
 import Stripe from "stripe";
 import { db } from "../db";
 import { tenantSubscriptions } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import { requireAdmin } from "../lib/auth";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -84,3 +85,58 @@ export async function billingWebhookHandler(req: Request, res: Response): Promis
     res.status(500).json({ message: "Webhook processing failed" });
   }
 }
+
+// ─── Billing self-service router — Phase 50 ─────────────────────────────────
+// Mounted in registerRoutes() at /api/billing, AFTER resolveTenantMiddleware
+// so res.locals.tenant and res.locals.storage are populated.
+
+export const billingRouter = Router();
+
+// GET /api/billing/status — returns current tenant's subscription row
+// Protected by requireAdmin (session-based fast-path or Supabase JWT)
+billingRouter.get("/status", requireAdmin, async (req, res) => {
+  const tenant = res.locals.tenant;
+  if (!tenant) return res.status(503).json({ message: "Tenant not resolved" });
+
+  try {
+    const sub = await res.locals.storage!.getTenantSubscription(tenant.id);
+    if (!sub) {
+      // New tenant — no subscription row yet
+      return res.json({ status: "none", planId: null, currentPeriodEnd: null, stripeCustomerId: null });
+    }
+    return res.json({
+      status: sub.status,
+      planId: sub.planId,
+      currentPeriodEnd: sub.currentPeriodEnd,
+      stripeCustomerId: sub.stripeCustomerId,
+    });
+  } catch (err) {
+    console.error("[billing/status] Error:", err);
+    return res.status(500).json({ message: "Failed to fetch billing status" });
+  }
+});
+
+// POST /api/billing/portal — creates Stripe Customer Portal session, returns { url }
+// Protected by requireAdmin
+billingRouter.post("/portal", requireAdmin, async (req, res) => {
+  const tenant = res.locals.tenant;
+  if (!tenant) return res.status(503).json({ message: "Tenant not resolved" });
+
+  try {
+    const sub = await res.locals.storage!.getTenantSubscription(tenant.id);
+    if (!sub?.stripeCustomerId) {
+      return res.status(404).json({ message: "No Stripe customer found for this tenant" });
+    }
+
+    const siteUrl = process.env.SITE_URL ?? `https://${req.hostname}`;
+    const session = await stripe.billingPortal.sessions.create({
+      customer: sub.stripeCustomerId,
+      return_url: `${siteUrl}/admin/billing`,
+    });
+
+    return res.json({ url: session.url });
+  } catch (err) {
+    console.error("[billing/portal] Error:", err);
+    return res.status(500).json({ message: "Failed to create billing portal session" });
+  }
+});
