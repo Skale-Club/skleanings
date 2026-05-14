@@ -9,8 +9,10 @@ import {
   useSuperAdminSettings,
   useSuperAdminTenants,
   useSuperAdminTenantDomains,
+  useSuperAdminProvision,
   type TenantListItem,
   type DomainRow,
+  type ProvisionResult,
 } from "@/hooks/useSuperAdmin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -229,6 +231,123 @@ function ManageDomainsDialog({ tenant, open, onOpenChange }: {
 }
 
 // =============================================================================
+// ProvisionDialog — email input → one-time credentials display
+// =============================================================================
+
+function ProvisionDialog({ tenantId, open, onOpenChange }: {
+  tenantId: number | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const provision = useSuperAdminProvision(tenantId);
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    provision.mutate(
+      { email: email.trim() },
+      {
+        onError: (err) => setError(err.message),
+      }
+    );
+  }
+
+  function handleClose(open: boolean) {
+    if (!open) {
+      // Reset all state when dialog closes — password gone after close
+      provision.reset();
+      setEmail("");
+      setError("");
+    }
+    onOpenChange(open);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Provision Admin</DialogTitle>
+          <DialogDescription>
+            Creates a bcrypt-hashed password. The plaintext is shown once — copy it now.
+          </DialogDescription>
+        </DialogHeader>
+
+        {!provision.data ? (
+          <form onSubmit={handleSubmit} className="space-y-3 mt-2">
+            <div className="space-y-1">
+              <Label htmlFor="p-email">Admin Email</Label>
+              <Input
+                id="p-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder="admin@tenant.com"
+              />
+            </div>
+            {error && <p className="text-sm text-red-600">{error}</p>}
+            <Button
+              type="submit"
+              disabled={provision.isPending}
+              className="w-full rounded-full font-bold text-black"
+              style={{ backgroundColor: "#FFFF01" }}
+            >
+              {provision.isPending ? "Provisioning…" : "Provision"}
+            </Button>
+          </form>
+        ) : (
+          <div className="space-y-3 mt-2">
+            <p className="text-sm text-gray-600">
+              Credentials created. Copy these now — the password will not be shown again.
+            </p>
+            <div className="space-y-2">
+              <div className="space-y-1">
+                <Label>Email</Label>
+                <div className="flex items-center gap-2">
+                  <Input value={provision.data.email} readOnly />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigator.clipboard.writeText((provision.data as ProvisionResult).email)}
+                  >
+                    Copy
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label>Generated Password</Label>
+                <div className="flex items-center gap-2">
+                  <Input value={provision.data.password} readOnly className="font-mono" />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigator.clipboard.writeText((provision.data as ProvisionResult).password)}
+                  >
+                    Copy
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <Button
+              type="button"
+              onClick={() => handleClose(false)}
+              className="w-full rounded-full font-bold text-black"
+              style={{ backgroundColor: "#FFFF01" }}
+            >
+              Done
+            </Button>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// =============================================================================
 // TenantsSection — table with create + manage actions
 // =============================================================================
 
@@ -236,6 +355,7 @@ function TenantsSection() {
   const { query, createTenant, toggleStatus } = useSuperAdminTenants(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [domainsTarget, setDomainsTarget] = useState<TenantListItem | null>(null);
+  const [provisionTarget, setProvisionTarget] = useState<TenantListItem | null>(null);
 
   // Create form state
   const [newName, setNewName] = useState("");
@@ -384,6 +504,13 @@ function TenantsSection() {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => setProvisionTarget(tenant)}
+                        >
+                          Provision Admin
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           disabled={toggleStatus.isPending}
                           onClick={() => handleToggle(tenant)}
                         >
@@ -403,6 +530,11 @@ function TenantsSection() {
         tenant={domainsTarget}
         open={domainsTarget !== null}
         onOpenChange={(open) => { if (!open) setDomainsTarget(null); }}
+      />
+      <ProvisionDialog
+        tenantId={provisionTarget?.id ?? null}
+        open={provisionTarget !== null}
+        onOpenChange={(open) => { if (!open) setProvisionTarget(null); }}
       />
     </section>
   );
