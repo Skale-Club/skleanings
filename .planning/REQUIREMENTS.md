@@ -20,7 +20,7 @@
 
 ### Invoice History UI (Phase 54)
 
-- [ ] **BH-05**: `/admin/billing` shows an "Invoice History" section listing the last 10 invoices fetched from `stripe.invoices.list({ customer: stripeCustomerId, limit: 10 })` — each row shows date, amount, status (paid/open/void), and a "Download" link to the Stripe-hosted invoice PDF
+- [x] **BH-05**: `/admin/billing` shows an "Invoice History" section listing the last 10 invoices fetched from `stripe.invoices.list({ customer: stripeCustomerId, limit: 10 })` — each row shows date, amount, status (paid/open/void), and a "Download" link to the Stripe-hosted invoice PDF
 - [x] **BH-06**: The invoice list is fetched server-side via `GET /api/billing/invoices` (guarded by `requireAdmin`) and returns an array of `{ id, date, amount, currency, status, invoiceUrl }` objects — the frontend renders it with React Query
 
 ---
@@ -49,7 +49,7 @@
 | BH-02 | Phase 53 | Complete |
 | BH-03 | Phase 53 | Complete |
 | BH-04 | Phase 53 | Complete |
-| BH-05 | Phase 54 | Pending |
+| BH-05 | Phase 54 | Complete |
 | BH-06 | Phase 54 | Complete |
 
 **Coverage:**
