@@ -292,3 +292,27 @@ export function useSuperAdminTenantDomains(tenantId: number | null, enabled: boo
 
   return { query, addDomain, removeDomain };
 }
+
+// =============================================================================
+// useSuperAdminProvision — POST /api/super-admin/tenants/:id/provision
+// =============================================================================
+
+export interface ProvisionResult {
+  userId: string;
+  email: string;
+  password: string; // cleartext — shown once, never persisted
+}
+
+export function useSuperAdminProvision(tenantId: number | null) {
+  return useMutation<ProvisionResult, Error, { email: string }>({
+    mutationFn: ({ email }) =>
+      superAdminFetch<ProvisionResult>(
+        `/api/super-admin/tenants/${tenantId}/provision`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        },
+      ),
+  });
+}
