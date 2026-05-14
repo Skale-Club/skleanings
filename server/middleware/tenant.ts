@@ -12,6 +12,10 @@ const hostnameCache = new LRUCache<string, CachedTenant>({
   ttl: 5 * 60 * 1000, // 5-minute TTL in milliseconds
 });
 
+export function invalidateTenantCache(hostname: string): void {
+  hostnameCache.delete(hostname);
+}
+
 export async function resolveTenantMiddleware(
   req: Request,
   res: Response,
