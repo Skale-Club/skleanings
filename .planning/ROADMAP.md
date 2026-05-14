@@ -433,7 +433,10 @@ Plans:
   3. Submitting a slug that is already taken returns the 409 error from the API and displays it inline on the Subdomain field without a full page reload
   4. After a successful signup, the browser is redirected to `https://[slug].xkedule.com/admin` automatically
   5. A tenant admin with `status = 'trialing'` visiting `/admin/billing` sees a "Trial" badge, an "X days remaining" countdown derived from `currentPeriodEnd`, and an "Add Payment Method" button that opens the Stripe Billing Portal
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 56-01-PLAN.md — DB migration + Drizzle schema + adminSetupRouter (GET /setup-status, POST /setup-dismiss)
+- [ ] 56-02-PLAN.md — useSetupStatus hook + SetupChecklist component + Admin.tsx wiring
 **UI hint**: yes
 
 ---
