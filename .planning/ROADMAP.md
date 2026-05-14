@@ -241,7 +241,11 @@ Plans:
   1. After provisioning via the super-admin form, a row exists in `users` with the provided email and a bcrypt-hashed password, and a corresponding row exists in `user_tenants` with role='admin' for the new tenant
   2. The new tenant's `companySettings` row is auto-inserted at tenant creation time with tenant name, default timezone (America/New_York), and default locale (en) — the booking flow renders without errors on first visit
   3. After a domain is added or removed, the next HTTP request to that hostname resolves correctly without restarting the server — the LRU cache entry for that hostname is deleted at write time
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 43-01-PLAN.md — DB migration (password column) + schema.ts update + IStorage provisionTenantAdmin + seedTenantCompanySettings
+- [ ] 43-02-PLAN.md — invalidateTenantCache export + provision endpoint + cache invalidation in domain routes + settings seed in POST /tenants
+- [ ] 43-03-PLAN.md — Frontend: useSuperAdminProvision hook + ProvisionDialog + Provision Admin button in TenantsSection
 
 ### Phase 44: Isolation Verification
 **Goal**: The platform provably enforces data isolation — inactive tenants are blocked at the middleware layer, data never leaks between tenants, and super-admin has per-tenant observability
@@ -271,7 +275,7 @@ Plans:
 | 40 | v8.0 | 3/3 | Complete | 2026-05-13 |
 | 41 | v8.0 | 2/2 | Complete | 2026-05-13 |
 | 42 | v9.0 | 3/3 | Complete    | 2026-05-14 |
-| 43 | v9.0 | 0/TBD | Not started | - |
+| 43 | v9.0 | 0/3 | Not started | - |
 | 44 | v9.0 | 0/TBD | Not started | - |
 
 ---
