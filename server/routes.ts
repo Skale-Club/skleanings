@@ -27,6 +27,7 @@ import { superAdminRouter } from "./routes/super-admin";
 import { calendarSyncRouter } from "./routes/calendar-sync";
 import { billingRouter } from "./routes/billing";
 import signupRouter from "./routes/signup";
+import { adminSetupRouter } from "./routes/admin-setup";
 import { resolveTenantMiddleware } from "./middleware/tenant";
 
 export async function registerRoutes(server: Server, app: Express) {
@@ -102,5 +103,8 @@ export async function registerRoutes(server: Server, app: Express) {
   // Billing routes (GET /api/billing/status, POST /api/billing/portal)
   // guarded by requireAdmin inside the router — per SB-07, SB-08
   app.use("/api/billing", billingRouter);
+
+  // Setup checklist routes (GET /api/admin/setup-status, POST /api/admin/setup-dismiss) — Phase 56
+  app.use("/api/admin", adminSetupRouter);
 
 }
