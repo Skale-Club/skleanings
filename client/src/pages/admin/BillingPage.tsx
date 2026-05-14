@@ -153,7 +153,7 @@ export default function BillingPage() {
               <Button
                 onClick={handleManageBilling}
                 disabled={portalLoading || !billingStatus.stripeCustomerId}
-                className="gap-2 mr-2 bg-[#FFFF01] text-black font-bold hover:bg-yellow-300"
+                className="gap-2 mr-2 rounded-full bg-[#FFFF01] text-black font-bold hover:bg-yellow-300"
               >
                 <ExternalLink className="w-4 h-4" />
                 {portalLoading ? 'Opening portal...' : 'Add Payment Method'}

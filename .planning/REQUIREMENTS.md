@@ -27,8 +27,8 @@
 
 ### Signup Page UI (Phase 52)
 
-- [ ] **SS-09**: The `/signup` page renders a clean public form with fields: Company Name, Subdomain (with live `.xkedule.com` suffix preview), Email, Password, Confirm Password — all using existing shadcn/ui Input components and brand styling
-- [ ] **SS-10**: On submit, the form shows inline validation errors (required fields, password mismatch, subdomain format) before hitting the API — on API error (409 slug conflict), the subdomain field shows the error message inline without full page reload
+- [x] **SS-09**: The `/signup` page renders a clean public form with fields: Company Name, Subdomain (with live `.xkedule.com` suffix preview), Email, Password, Confirm Password — all using existing shadcn/ui Input components and brand styling
+- [x] **SS-10**: On submit, the form shows inline validation errors (required fields, password mismatch, subdomain format) before hitting the API — on API error (409 slug conflict), the subdomain field shows the error message inline without full page reload
 
 ---
 
@@ -63,8 +63,8 @@
 | SS-06 | Phase 51 | Pending |
 | SS-07 | Phase 52 | Complete |
 | SS-08 | Phase 52 | Complete |
-| SS-09 | Phase 52 | Pending |
-| SS-10 | Phase 52 | Pending |
+| SS-09 | Phase 52 | Complete |
+| SS-10 | Phase 52 | Complete |
 
 **Coverage:**
 - v1 requirements: 10 total
