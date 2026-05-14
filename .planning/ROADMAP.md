@@ -11,6 +11,7 @@
 - ✅ **v7.0 Xkedule Foundation** — Phases 36–37 (shipped 2026-05-13)
 - ✅ **v8.0 Multi-Tenant Architecture** — Phases 38–41 (shipped 2026-05-13)
 - ✅ **v9.0 Tenant Onboarding** — Phases 42–44 (shipped 2026-05-14)
+- **v10.0 Tenant Admin Auth** — Phases 45–46 (active)
 
 ---
 
@@ -122,6 +123,11 @@ Full details: [milestones/v8.0-ROADMAP.md](milestones/v8.0-ROADMAP.md)
 Full details: [milestones/v9.0-ROADMAP.md](milestones/v9.0-ROADMAP.md)
 
 </details>
+
+### v10.0 Tenant Admin Auth (Phases 45–46)
+
+- [ ] **Phase 45: Tenant Admin Auth Backend** - Tenant-scoped login endpoint, timing-safe auth, session persistence, logout, requireAdmin tenantId validation, legacy env-var path preserved
+- [ ] **Phase 46: Admin Panel Frontend Auth** - Admin panel data isolation post-login, 401 redirect behavior, useAuth hostname-aware tenant detection
 
 ---
 
@@ -267,6 +273,32 @@ Plans:
 
 ---
 
+### Phase 45: Tenant Admin Auth Backend
+**Goal**: Provisioned tenant admins can authenticate against their own tenant's user record — the login endpoint is tenant-scoped, sessions carry tenantId, requireAdmin enforces cross-tenant isolation, and the legacy env-var login path remains intact for tenant 1 backward compatibility
+**Depends on**: Phase 44
+**Requirements**: TA-01, TA-02, TA-03, TA-04, TA-05, TA-06
+**Success Criteria** (what must be TRUE):
+  1. A provisioned admin POSTing to `POST /api/auth/tenant-login` with correct email and password receives a session cookie and the response body confirms the authenticated tenantId matches the hostname's tenant
+  2. Posting to `POST /api/auth/tenant-login` with a wrong password or unknown email always returns 401 — bcrypt.compare executes even when the email is not found (timing-safe, no early exit)
+  3. After login, refreshing the browser tab returns 200 from any protected admin API endpoint — the session persists without re-authentication
+  4. POSTing to `POST /api/auth/logout` destroys the session — subsequent requests to protected admin endpoints return 401
+  5. An admin session for tenant 2 calling any `requireAdmin`-guarded endpoint on tenant 1's hostname receives 403 — `req.session.adminUser.tenantId` is validated against `res.locals.tenant.id` on every protected request
+  6. The existing `POST /api/auth/login` endpoint using ADMIN_EMAIL + ADMIN_PASSWORD_HASH env vars continues to work unchanged on the tenant 1 domain — no regression
+**Plans**: TBD
+
+### Phase 46: Admin Panel Frontend Auth
+**Goal**: The admin panel frontend correctly handles authentication for any tenant — it detects the current tenant from the hostname, redirects unauthenticated users to login, and renders only that tenant's data after a successful login
+**Depends on**: Phase 45
+**Requirements**: TA-07, TA-08, TA-09
+**Success Criteria** (what must be TRUE):
+  1. After logging in as a tenant 2 admin, navigating to `/admin/bookings`, `/admin/services`, `/admin/staff`, and `/admin/settings` shows only tenant 2 records — no tenant 1 data appears in any list or response
+  2. Visiting any `/admin/*` route without an active session redirects the browser to the login page — the redirect happens client-side via the `useAuth` hook detecting the 401 response from the server
+  3. The `useAuth` hook reads the current tenant from the server-side session context (not a hardcoded tenant 1 reference) — admins from any tenant see their own tenant identity reflected in the auth state
+**Plans**: TBD
+**UI hint**: yes
+
+---
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -282,9 +314,11 @@ Plans:
 | 39 | v8.0 | 3/3 | Complete | 2026-05-13 |
 | 40 | v8.0 | 3/3 | Complete | 2026-05-13 |
 | 41 | v8.0 | 2/2 | Complete | 2026-05-13 |
-| 42 | v9.0 | 3/3 | Complete    | 2026-05-14 |
-| 43 | v9.0 | 3/3 | Complete    | 2026-05-14 |
-| 44 | v9.0 | 2/2 | Complete    | 2026-05-14 |
+| 42 | v9.0 | 3/3 | Complete | 2026-05-14 |
+| 43 | v9.0 | 3/3 | Complete | 2026-05-14 |
+| 44 | v9.0 | 2/2 | Complete | 2026-05-14 |
+| 45 | v10.0 | 0/2 | Not started | - |
+| 46 | v10.0 | 0/2 | Not started | - |
 
 ---
 

@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v9.0
-milestone_name: Tenant Onboarding
-status: verifying
-stopped_at: Completed 44-02-PLAN.md
-last_updated: "2026-05-14T11:49:29.122Z"
+milestone: v10.0
+milestone_name: Tenant Admin Auth
+status: roadmapped
+stopped_at: Roadmap created — Phase 45 not started
+last_updated: "2026-05-14T00:00:00.000Z"
 last_activity: 2026-05-14
 progress:
-  total_phases: 9
-  completed_phases: 9
-  total_plans: 24
-  completed_plans: 24
+  total_phases: 2
+  completed_phases: 0
+  total_plans: 4
+  completed_plans: 0
   percent: 0
 ---
 
@@ -18,16 +18,16 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-05-13)
+See: .planning/PROJECT.md (updated 2026-05-14)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 44 — Isolation Verification
+**Current focus:** Phase 45 — Tenant Admin Auth Backend
 
 ## Current Position
 
-Phase: 44
+Phase: 45
 Plan: Not started
-Status: Phase complete — ready for verification
+Status: Roadmap complete — ready to plan Phase 45
 Last activity: 2026-05-14
 
 Progress: [░░░░░░░░░░] 0%
@@ -44,16 +44,16 @@ Progress: [░░░░░░░░░░] 0%
 | v6.0 Platform Quality | 33–35 (3 phases) | 7 | 2026-05-13 |
 | v7.0 Xkedule Foundation | 36–37 (2 phases) | 6 | 2026-05-13 |
 | v8.0 Multi-Tenant Architecture | 38–41 (4 phases) | 10 | 2026-05-13 |
+| v9.0 Tenant Onboarding | 42–44 (3 phases) | 8 | 2026-05-14 |
 
 See: .planning/MILESTONES.md
 
-## v9.0 Phases
+## v10.0 Phases
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 42 | Tenant Management UI | TO-01, TO-02, TO-03, TO-04 | Not started |
-| 43 | Tenant Provisioning | TO-05, TO-06, TO-07 | Not started |
-| 44 | Isolation Verification | TO-08, TO-09, TO-10 | Not started |
+| 45 | Tenant Admin Auth Backend | TA-01, TA-02, TA-03, TA-04, TA-05, TA-06 | Not started |
+| 46 | Admin Panel Frontend Auth | TA-07, TA-08, TA-09 | Not started |
 
 ## Pending Items
 
@@ -115,22 +115,22 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - v7.0 phases 36–37 derived from SEED-011 (locale settings) and SEED-015 (super-admin panel)
 - v8.0 phases 38–41 derived from MT-01–17 (multi-tenant architecture)
 - v9.0 phases 42–44 derived from TO-01–10 (tenant onboarding)
-- Phase numbering continues from v8.0 last phase (41); v9.0 starts at Phase 42
-- Phase 42 extends existing /superadmin panel (Phase 37) — no new auth surface
-- Phase 43 LRU cache invalidation: delete hostname key from lru-cache on domain add/remove in Phase 43, not rebuild middleware
-- Phase 44 503 response: resolveTenantMiddleware already resolves tenant — add status check after resolution, before passing to next()
+- v10.0 phases 45–46 derived from TA-01–09 (tenant admin auth)
+- Phase numbering continues from v9.0 last phase (44); v10.0 starts at Phase 45
+- Phase 45 adds POST /api/auth/tenant-login alongside existing POST /api/auth/login (legacy env-var path preserved for tenant 1 backward compat)
+- Phase 45 requireAdmin extended to validate req.session.adminUser.tenantId === res.locals.tenant.id — cross-tenant session rejection at middleware layer
+- Phase 46 frontend-only: useAuth hook and admin panel routing made hostname-aware; no new DB migrations required
 
 ### Blockers/Concerns
 
 - **MIGRATION PENDING** — Phase 35 requires `supabase db push` (drop system_heartbeats) + add `BLOG_CRON_TOKEN` to GitHub Secrets
 - **MIGRATION PENDING** — Phase 38 requires `supabase db push` for multi-tenant schema
-- Phase 42 new /api/super-admin/* endpoints must be added under existing super-admin session auth guard (Phase 37 pattern)
-- Phase 43 bcrypt password hashing for provisioned admin user — use same pattern as existing admin auth (ADMIN_PASSWORD_HASH)
-- Phase 44 E2E isolation test requires a second tenant row in DB — provisioning from Phase 43 must complete first
+- Phase 45 must not break existing POST /api/auth/login (env-var path) — test both paths before marking complete
+- Phase 46 useAuth hook currently assumes tenant 1; must read tenant from session/server response instead of hardcoding
 
 ## Session Continuity
 
-Last session: 2026-05-14T11:46:00.707Z
-Stopped at: Completed 44-02-PLAN.md
+Last session: 2026-05-14
+Stopped at: Roadmap created for v10.0
 Resume file: None
-Next: Plan Phase 42 (Tenant Management UI) via /gsd:plan-phase 42
+Next: Plan Phase 45 (Tenant Admin Auth Backend) via /gsd:plan-phase 45
