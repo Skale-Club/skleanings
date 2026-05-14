@@ -10,7 +10,17 @@ import { Router } from "express";
 import bcrypt from "bcrypt";
 import Stripe from "stripe";
 import { z } from "zod";
+import rateLimit from "express-rate-limit";
 import { storage } from "../storage";
+
+const signupRateLimit = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5,
+  standardHeaders: true, // sends RateLimit-* headers including Retry-After
+  legacyHeaders: false,
+  message: { message: "Too many signup attempts. Try again later." },
+  keyGenerator: (req) => req.ip ?? "unknown",
+});
 
 const router = Router();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -31,7 +41,7 @@ const signupSchema = z.object({
 
 export { signupSchema };
 
-router.post("/auth/signup", async (req, res) => {
+router.post("/auth/signup", signupRateLimit, async (req, res) => {
   // Parse and validate input
   const parsed = signupSchema.safeParse(req.body);
   if (!parsed.success) {
