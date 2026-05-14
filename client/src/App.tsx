@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider, useAdminAuth } from "@/context/AuthContext";
+import { AdminTenantAuthProvider } from "@/context/AdminTenantAuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { CompanySettingsProvider, useCompanySettings } from "@/context/CompanySettingsContext";
 import { BrandColorInjector } from "@/components/BrandColorInjector";
@@ -183,15 +184,17 @@ function Router() {
 
   if (isAdminRoute) {
     return (
-      <Suspense fallback={fallback}>
-        <Switch>
-          <Route path="/admin/login" component={AdminLogin} />
-          <Route path="/admin" component={Admin} />
-          <Route path="/admin/:section" component={Admin} />
-          <Route path="/admin/:section/:tab" component={Admin} />
-          <Route component={NotFound} />
-        </Switch>
-      </Suspense>
+      <AdminTenantAuthProvider>
+        <Suspense fallback={fallback}>
+          <Switch>
+            <Route path="/admin/login" component={AdminLogin} />
+            <Route path="/admin" component={Admin} />
+            <Route path="/admin/:section" component={Admin} />
+            <Route path="/admin/:section/:tab" component={Admin} />
+            <Route component={NotFound} />
+          </Switch>
+        </Suspense>
+      </AdminTenantAuthProvider>
     );
   }
 

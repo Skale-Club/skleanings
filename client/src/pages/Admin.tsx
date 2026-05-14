@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useAdminAuth } from '@/context/AuthContext';
+import { useAdminTenantAuth } from '@/context/AdminTenantAuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import type { AdminSection, CompanySettingsData } from '@/components/admin/shared/types';
@@ -67,15 +68,9 @@ const menuItems: AdminMenuItem[] = [
 
 function AdminContent() {
   const { toast } = useToast();
-  const { user, isAdmin, role, email, loading, signOut, getAccessToken } = useAdminAuth();
+  const { isAuthenticated, loading: tenantAuthLoading, email: tenantEmail, logout: tenantLogout } = useAdminTenantAuth();
+  const { getAccessToken } = useAdminAuth();
   const [, setLocation] = useLocation();
-
-  // Redirect staff to their own settings page
-  useEffect(() => {
-    if (!loading && role === 'staff') {
-      setLocation('/staff/settings');
-    }
-  }, [role, loading, setLocation]);
   const [, params] = useRoute('/admin/:section?/:tab?');
   const sectionFromUrl = params?.section as AdminSection | undefined;
   const activeSection: AdminSection = sectionFromUrl && menuItems.some((i) => i.id === sectionFromUrl)
@@ -128,25 +123,7 @@ function AdminContent() {
     }
   }, [activeSection, setLocation]);
 
-  if (!loading && role === 'staff') {
-    return <Redirect to="/staff/settings" />;
-  }
-
-  if (!loading && role === 'user') {
-    return <Redirect to="/" />;
-  }
-
-  if (!loading && !isAdmin && role !== null) {
-    return <Redirect to="/admin/login" />;
-  }
-
-  if (!loading && user && role === null) {
-    // Role fetch finished but returned nothing (DB error, 401, etc.) — redirect to login.
-    // Staying on this route with role=null causes an infinite spinner.
-    return <Redirect to="/admin/login" />;
-  }
-
-  if (loading) {
+  if (tenantAuthLoading) {
     return (
       <div className="w-full min-h-screen flex items-center justify-center bg-slate-50">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -154,18 +131,22 @@ function AdminContent() {
     );
   }
 
+  if (!isAuthenticated) {
+    return <Redirect to="/admin/login" />;
+  }
+
   return (
     <div className="flex h-svh w-full bg-background relative overflow-hidden">
       <AdminSidebar
         companySettings={companySettings}
-        email={email}
+        email={tenantEmail}
         menuItems={menuItems}
         sectionsOrder={isStaff ? sectionsOrder.filter(id => STAFF_ALLOWED_SECTIONS.includes(id as AdminSection)) : sectionsOrder}
         activeSection={activeSection}
         onSectionSelect={handleSectionSelect}
         onSectionsReorder={updateSectionOrder}
         onLogout={async () => {
-          await signOut();
+          await tenantLogout();
           setLocation('/admin/login');
         }}
       />
