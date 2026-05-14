@@ -17,6 +17,7 @@
 - ✅ **v13.0 Self-Serve Signup** — Phases 51–52 (shipped 2026-05-14)
 - ✅ **v14.0 Billing Hardening** — Phases 53–54 (shipped 2026-05-14)
 - ✅ **v15.0 Tenant Onboarding Experience** — Phases 55–56 (shipped 2026-05-14)
+- 🔲 **v16.0 Staff Invitation Flow** — Phases 57–58
 
 ---
 
@@ -523,6 +524,32 @@ Plans:
 
 ---
 
+### Phase 57: Staff Invitation Backend
+**Goal**: Tenant admins can invite staff members by email via a token-secured flow — the invitation is persisted, a branded email is sent, and all token lifecycle operations (validate, accept, revoke) are exposed as API endpoints
+**Depends on**: Phase 56
+**Requirements**: SF-01, SF-02, SF-03, SF-04, SF-05
+**Success Criteria** (what must be TRUE):
+  1. A tenant admin POSTing `{ email, role }` to `POST /api/admin/staff/invite` receives 201 — a row exists in `staff_invitations` with a SHA-256 token hash and 48h expiry, and the invited email receives a branded Resend email with an "Accept Invitation" CTA link to `/accept-invite?token=...`
+  2. `GET /api/auth/validate-invite?token=...` returns `{ email, tenantId, companyName, role }` for a valid, unexpired, unaccepted token — an expired or already-accepted token returns 410 Gone
+  3. `POST /api/auth/accept-invite` with a valid token atomically creates a `users` row and a `user_tenants` row (role from invitation), marks `acceptedAt` on the invitation, establishes an admin session, and returns `{ adminUrl }` for redirect — an invalid or expired token returns 410
+  4. `DELETE /api/admin/staff/invite/:id` revokes a pending invitation (null acceptedAt) — attempting to revoke an already-accepted invitation returns 409 Conflict
+  5. All invite management endpoints (`POST /invite`, `DELETE /invite/:id`) are guarded by `requireAdmin`; validate and accept endpoints are public and use `res.locals.storage` via tenant resolution
+**Plans**: TBD
+
+### Phase 58: Staff Invitation Frontend
+**Goal**: Staff can complete account setup via a public accept-invite page, and tenant admins can send and manage pending invitations directly within the existing /admin/staff page
+**Depends on**: Phase 57
+**Requirements**: SF-06, SF-07
+**Success Criteria** (what must be TRUE):
+  1. Visiting `/accept-invite?token=...` fetches `GET /api/auth/validate-invite` on load — a valid token renders the company name, pre-filled email, and a Name + Password + Confirm Password form; an expired or invalid token renders an "Invitation expired or already used" error state with no form
+  2. Submitting the accept-invite form calls `POST /api/auth/accept-invite` and on success redirects the browser to the tenant's `/admin` URL — the staff member is logged in immediately without a separate login step
+  3. The `/admin/staff` page has a "Pending Invitations" section listing all invitations where `acceptedAt` is null — each row shows email, role, expiry date, and a "Revoke" button; clicking Revoke calls `DELETE /api/admin/staff/invite/:id` and removes the row from the list without a page reload
+  4. An "Invite Staff Member" button on `/admin/staff` opens a dialog with email and role fields — submitting the dialog calls `POST /api/admin/staff/invite`, shows a success toast, and the new invitation appears in the Pending Invitations list
+**Plans**: TBD
+**UI hint**: yes
+
+---
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -553,6 +580,8 @@ Plans:
 | 54 | v14.0 | 1/2 | Complete    | 2026-05-14 |
 | 55 | v15.0 | 3/3 | Complete    | 2026-05-14 |
 | 56 | v15.0 | 1/2 | Complete    | 2026-05-14 |
+| 57 | v16.0 | 0/TBD | Not started | - |
+| 58 | v16.0 | 0/TBD | Not started | - |
 
 ---
 

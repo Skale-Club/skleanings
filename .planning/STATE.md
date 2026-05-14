@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: v15.0 roadmap created — Phase 55 is next
-stopped_at: Completed 56-01-PLAN.md
-last_updated: "2026-05-14T23:32:12.733Z"
+milestone: v16.0
+milestone_name: Staff Invitation Flow
+status: v16.0 roadmap created — Phase 57 is next
+stopped_at: Roadmap created — no plans written yet
+last_updated: "2026-05-14T00:00:00.000Z"
 last_activity: 2026-05-14
 progress:
-  total_phases: 21
-  completed_phases: 21
-  total_plans: 50
-  completed_plans: 50
+  total_phases: 2
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-14)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 55 — Email Verification + Welcome Email
+**Current focus:** Phase 57 — Staff Invitation Backend
 
 ## Current Position
 
-Phase: 56
+Phase: 57
 Plan: Not started
-Status: v15.0 roadmap created — Phase 55 is next
+Status: v16.0 roadmap created — Phase 57 is next
 Last activity: 2026-05-14
 
 Progress: [          ] 0%
@@ -50,15 +50,16 @@ Progress: [          ] 0%
 | v12.0 SaaS Billing | 48–50 (3 phases) | 7 | 2026-05-14 |
 | v13.0 Self-Serve Signup | 51–52 (2 phases) | 4 | 2026-05-14 |
 | v14.0 Billing Hardening | 53–54 (2 phases) | 4 | 2026-05-14 |
+| v15.0 Tenant Onboarding Experience | 55–56 (2 phases) | 5 | 2026-05-14 |
 
 See: .planning/MILESTONES.md
 
-## v15.0 Phases
+## v16.0 Phases
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 55 | Email Verification + Welcome Email | OB-01, OB-02, OB-03, OB-04, OB-05 | Not started |
-| 56 | Setup Checklist | OB-06, OB-07, OB-08 | Not started |
+| 57 | Staff Invitation Backend | SF-01, SF-02, SF-03, SF-04, SF-05 | Not started |
+| 58 | Staff Invitation Frontend | SF-06, SF-07 | Not started |
 
 ## Pending Items
 
@@ -106,6 +107,9 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - v15.0 phases 55–56 derived from OB-01–08 (tenant onboarding experience)
 - Phase 55 delivers email verification token flow (Resend) + welcome email + admin verification banner
 - Phase 56 delivers setup checklist card in /admin dashboard with live DB checks + dismiss persistence
+- v16.0 phases 57–58 derived from SF-01–07 (staff invitation flow)
+- Phase 57 delivers staff_invitations table + IStorage methods + buildInviteEmail() + 3 API endpoints (invite, validate-invite, accept-invite, revoke)
+- Phase 58 delivers /accept-invite public page + pending invitations section in /admin/staff with Invite button/dialog
 
 ### Blockers/Concerns
 
@@ -116,7 +120,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-14T23:28:12.781Z
-Stopped at: Completed 56-01-PLAN.md
+Last session: 2026-05-14T00:00:00.000Z
+Stopped at: v16.0 roadmap created
 Resume file: None
-Next: Plan Phase 55 (Email Verification + Welcome Email) via /gsd:plan-phase 55
+Next: Plan Phase 57 (Staff Invitation Backend) via /gsd:plan-phase 57
