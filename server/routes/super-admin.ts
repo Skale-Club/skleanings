@@ -3,6 +3,7 @@ import { randomBytes } from "crypto";
 import { Router, type Request, type Response, type NextFunction } from "express";
 import fs from "fs";
 import path from "path";
+import Stripe from "stripe";
 import { and, asc, count, eq } from "drizzle-orm";
 import { db, ensureDatabaseReady } from "../db";
 import { bookings, contacts, domains, services, staffMembers, tenants } from "@shared/schema";
@@ -10,6 +11,8 @@ import { collectRuntimeEnvDiagnostics } from "../lib/runtime-env";
 import { getRecentErrors } from "../lib/error-log";
 import { storage } from "../storage";
 import { invalidateTenantCache } from "../middleware/tenant";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 const router = Router();
 
@@ -254,6 +257,19 @@ router.post("/tenants", requireSuperAdmin, async (req: Request, res: Response): 
     const tenant = await storage.createTenant({ name: name.trim(), slug: slug.trim() });
     const domain = await storage.addDomain(tenant.id, hostname, true);
     await storage.seedTenantCompanySettings(tenant.id, name.trim());
+
+    // Phase 48: Create Stripe customer and subscription tracking row
+    try {
+      const customer = await stripe.customers.create({
+        name: name.trim(),
+        metadata: { tenantId: String(tenant.id) },
+      });
+      await storage.createTenantSubscription(tenant.id, customer.id);
+    } catch (stripeErr) {
+      console.error("[super-admin] Stripe customer creation failed for tenant", tenant.id, stripeErr);
+      // Non-fatal: tenant is created, subscription row will be missing until backfilled
+    }
+
     res.status(201).json({ ...tenant, primaryDomain: domain.hostname });
   } catch (err: unknown) {
     if ((err as any)?.code === "23505") {
