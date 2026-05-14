@@ -22,9 +22,9 @@
 
 ### Admin Panel Access (Phase 46)
 
-- [ ] **TA-07**: Após login, o admin do tenant 2 consegue acessar `/admin` e vê os dados do seu tenant (bookings, services, staff, company settings) — todos via `res.locals.storage` do tenant correto
-- [ ] **TA-08**: Rotas protegidas por `requireAdmin` retornam 401 quando não há sessão ativa — o painel frontend redireciona para login
-- [ ] **TA-09**: Admin panel frontend detecta o tenant correto pelo hostname — `useAuth` hook sabe que está num tenant específico, não no tenant 1 hardcoded
+- [x] **TA-07**: Após login, o admin do tenant 2 consegue acessar `/admin` e vê os dados do seu tenant (bookings, services, staff, company settings) — todos via `res.locals.storage` do tenant correto
+- [x] **TA-08**: Rotas protegidas por `requireAdmin` retornam 401 quando não há sessão ativa — o painel frontend redireciona para login
+- [x] **TA-09**: Admin panel frontend detecta o tenant correto pelo hostname — `useAuth` hook sabe que está num tenant específico, não no tenant 1 hardcoded
 
 ---
 
@@ -54,9 +54,9 @@
 | TA-04 | Phase 45 | Complete |
 | TA-05 | Phase 45 | Pending |
 | TA-06 | Phase 45 | Pending |
-| TA-07 | Phase 46 | Pending |
-| TA-08 | Phase 46 | Pending |
-| TA-09 | Phase 46 | Pending |
+| TA-07 | Phase 46 | Complete |
+| TA-08 | Phase 46 | Complete |
+| TA-09 | Phase 46 | Complete |
 
 **Coverage:**
 - v1 requirements: 9 total

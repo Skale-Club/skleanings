@@ -127,7 +127,7 @@ Full details: [milestones/v9.0-ROADMAP.md](milestones/v9.0-ROADMAP.md)
 ### v10.0 Tenant Admin Auth (Phases 45–46)
 
 - [x] **Phase 45: Tenant Admin Auth Backend** - Tenant-scoped login endpoint, timing-safe auth, session persistence, logout, requireAdmin tenantId validation, legacy env-var path preserved (completed 2026-05-14)
-- [ ] **Phase 46: Admin Panel Frontend Auth** - Admin panel data isolation post-login, 401 redirect behavior, useAuth hostname-aware tenant detection
+- [x] **Phase 46: Admin Panel Frontend Auth** - Admin panel data isolation post-login, 401 redirect behavior, useAuth hostname-aware tenant detection (completed 2026-05-14)
 
 ---
 
@@ -299,7 +299,7 @@ Plans:
   3. The `useAuth` hook reads the current tenant from the server-side session context (not a hardcoded tenant 1 reference) — admins from any tenant see their own tenant identity reflected in the auth state
 **Plans**: 1 plan
 Plans:
-- [ ] 46-01-PLAN.md — AdminTenantAuthContext + AdminLogin tenant-login + Admin.tsx 401 redirect
+- [x] 46-01-PLAN.md — AdminTenantAuthContext + AdminLogin tenant-login + Admin.tsx 401 redirect
 **UI hint**: yes
 
 ---
@@ -323,7 +323,7 @@ Plans:
 | 43 | v9.0 | 3/3 | Complete | 2026-05-14 |
 | 44 | v9.0 | 2/2 | Complete | 2026-05-14 |
 | 45 | v10.0 | 2/2 | Complete    | 2026-05-14 |
-| 46 | v10.0 | 0/1 | Not started | - |
+| 46 | v10.0 | 1/1 | Complete   | 2026-05-14 |
 
 ---
 
