@@ -92,6 +92,7 @@ const ManageSubscription = lazy(() => import("@/pages/ManageSubscription").then(
 const SuperAdmin = lazy(() => import("@/pages/SuperAdmin"));
 const ForgotPassword = lazy(() => import("@/pages/ForgotPassword").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const ResetPassword = lazy(() => import("@/pages/ResetPassword").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const Signup = lazy(() => import("@/pages/Signup").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const BillingPage = lazy(() => import("@/pages/admin/BillingPage").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 
 function AnalyticsProvider({ children }: { children: React.ReactNode }) {
@@ -225,6 +226,11 @@ function Router() {
             <Route path="/service-areas" component={ServiceAreas} />
             <Route path="/team" component={Team} />
             <Route path="/manage-subscription/:token" component={ManageSubscription} />
+            <Route path="/signup" component={() => (
+              <AdminTenantAuthProvider>
+                <Signup />
+              </AdminTenantAuthProvider>
+            )} />
             <Route path="/reset-password" component={ResetPassword} />
             <Route component={NotFound} />
           </Switch>
