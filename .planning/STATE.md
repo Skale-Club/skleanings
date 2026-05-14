@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v11.0
 milestone_name: Password Reset
 status: executing
-stopped_at: Completed 49-01-PLAN.md (Subscription enforcement)
-last_updated: "2026-05-14T14:53:11.322Z"
+stopped_at: Completed 50-01-PLAN.md (Tenant billing self-service)
+last_updated: "2026-05-14T15:04:45.665Z"
 last_activity: 2026-05-14
 progress:
-  total_phases: 41
+  total_phases: 42
   completed_phases: 40
-  total_plans: 113
-  completed_plans: 113
+  total_plans: 115
+  completed_plans: 114
   percent: 0
 ---
 
@@ -21,12 +21,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-14)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 48 — Stripe Subscription Infrastructure
+**Current focus:** Phase 50 — Tenant Billing Self-Service
 
 ## Current Position
 
-Phase: 49
-Plan: Not started
+Phase: 50 (Tenant Billing Self-Service) — EXECUTING
+Plan: 2 of 2
 Status: Ready to execute
 Last activity: 2026-05-14
 
@@ -136,6 +136,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 49]: 402 guard uses db directly in middleware — res.locals.storage does not exist yet when middleware runs
 - [Phase 49]: No subRow in tenant_subscriptions means new tenant — passes through unblocked, matching 'none' status design from Phase 48-01
 - [Phase 49]: billingRows fetches all subscription rows in single full-table scan; billingMap keyed by tenantId for O(1) lookup
+- [Phase 50]: billingRouter mounted after resolveTenantMiddleware — res.locals.tenant and res.locals.storage populated for both billing routes
+- [Phase 50]: billingWebhookHandler left unchanged — still mounted pre-body-parser in server/index.ts for raw body Stripe signature verification
 
 ### Roadmap Evolution
 
@@ -159,7 +161,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-14T14:40:12.855Z
-Stopped at: Completed 49-01-PLAN.md (Subscription enforcement)
+Last session: 2026-05-14T15:04:45.658Z
+Stopped at: Completed 50-01-PLAN.md (Tenant billing self-service)
 Resume file: None
 Next: Plan Phase 48 (Stripe Subscription Infrastructure) via /gsd:plan-phase 48

@@ -386,7 +386,7 @@ Plans:
   3. The `/admin/billing` page is inaccessible to unauthenticated users — it redirects to the admin login page under the same `requireAdmin` guard used by all other admin routes
 **Plans**: 2 plans
 Plans:
-- [ ] 50-01-PLAN.md — POST /api/billing/portal (Stripe billingPortal.sessions.create, returns URL, guarded by requireAdmin + tenant subscription lookup)
+- [x] 50-01-PLAN.md — POST /api/billing/portal (Stripe billingPortal.sessions.create, returns URL, guarded by requireAdmin + tenant subscription lookup)
 - [ ] 50-02-PLAN.md — /admin/billing page (BillingPage.tsx): status card, renewal date, Manage Billing button wired to portal endpoint
 **UI hint**: yes
 
@@ -415,7 +415,7 @@ Plans:
 | 47 | v11.0 | 3/3 | Complete | 2026-05-14 |
 | 48 | v12.0 | 3/3 | Complete    | 2026-05-14 |
 | 49 | v12.0 | 1/2 | Complete    | 2026-05-14 |
-| 50 | v12.0 | 0/2 | Not started | - |
+| 50 | v12.0 | 1/2 | In Progress|  |
 
 ---
 

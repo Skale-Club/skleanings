@@ -22,8 +22,8 @@
 
 ### Tenant Billing Self-Service (Phase 50)
 
-- [ ] **SB-07**: Admin do tenant vê status da própria assinatura em `/admin/billing` — exibe status, data de renovação, e link para Stripe Customer Portal
-- [ ] **SB-08**: `POST /api/billing/portal` cria uma Stripe Billing Portal session para o tenant atual e retorna a URL — admin é redirecionado para gerenciar cartão/cancelar
+- [x] **SB-07**: Admin do tenant vê status da própria assinatura em `/admin/billing` — exibe status, data de renovação, e link para Stripe Customer Portal
+- [x] **SB-08**: `POST /api/billing/portal` cria uma Stripe Billing Portal session para o tenant atual e retorna a URL — admin é redirecionado para gerenciar cartão/cancelar
 
 ---
 
@@ -53,8 +53,8 @@
 | SB-04 | Phase 48 | Pending |
 | SB-05 | Phase 49 | Complete |
 | SB-06 | Phase 49 | Complete |
-| SB-07 | Phase 50 | Pending |
-| SB-08 | Phase 50 | Pending |
+| SB-07 | Phase 50 | Complete |
+| SB-08 | Phase 50 | Complete |
 
 **Coverage:**
 - v1 requirements: 8 total
