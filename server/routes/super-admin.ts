@@ -1,4 +1,5 @@
 import bcrypt from "bcrypt";
+import { randomBytes } from "crypto";
 import { Router, type Request, type Response, type NextFunction } from "express";
 import fs from "fs";
 import path from "path";
@@ -8,6 +9,7 @@ import { bookings, contacts, domains, services, staffMembers, tenants } from "@s
 import { collectRuntimeEnvDiagnostics } from "../lib/runtime-env";
 import { getRecentErrors } from "../lib/error-log";
 import { storage } from "../storage";
+import { invalidateTenantCache } from "../middleware/tenant";
 
 const router = Router();
 
@@ -222,6 +224,7 @@ router.post("/tenants", requireSuperAdmin, async (req: Request, res: Response): 
   try {
     const tenant = await storage.createTenant({ name: name.trim(), slug: slug.trim() });
     const domain = await storage.addDomain(tenant.id, hostname, true);
+    await storage.seedTenantCompanySettings(tenant.id, name.trim());
     res.status(201).json({ ...tenant, primaryDomain: domain.hostname });
   } catch (err: unknown) {
     if ((err as any)?.code === "23505") {
@@ -309,6 +312,7 @@ router.post("/tenants/:id/domains", requireSuperAdmin, async (req: Request, res:
 
   try {
     const domain = await storage.addDomain(tenantId, hostname, false);
+    invalidateTenantCache(hostname);
     res.status(201).json(domain);
   } catch (err: unknown) {
     if ((err as any)?.code === "23505") {
@@ -344,10 +348,46 @@ router.delete("/domains/:id", requireSuperAdmin, async (req: Request, res: Respo
 
   try {
     await storage.removeDomain(id);
+    invalidateTenantCache(domain.hostname);
     res.status(204).send();
   } catch (err) {
     console.error("[super-admin] /domains/:id DELETE error:", err);
     res.status(500).json({ message: "Failed to remove domain" });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /tenants/:id/provision  — create initial admin user for a tenant
+// ---------------------------------------------------------------------------
+
+router.post("/tenants/:id/provision", requireSuperAdmin, async (req: Request, res: Response): Promise<void> => {
+  const tenantId = parseInt(req.params.id, 10);
+  const { email } = req.body as { email?: string };
+
+  if (isNaN(tenantId)) {
+    res.status(400).json({ message: "Invalid tenant id" });
+    return;
+  }
+  if (!email?.trim()) {
+    res.status(400).json({ message: "email is required" });
+    return;
+  }
+
+  // Cryptographically secure random 16-char password
+  const plainPassword = randomBytes(10).toString("base64url").slice(0, 16);
+  const hashedPassword = await bcrypt.hash(plainPassword, 12);
+
+  try {
+    const { userId } = await storage.provisionTenantAdmin(tenantId, email.trim(), hashedPassword);
+    // Return cleartext password ONCE — it is not stored anywhere after this response
+    res.status(201).json({ userId, email: email.trim(), password: plainPassword });
+  } catch (err: unknown) {
+    if ((err as any)?.code === "23505") {
+      res.status(409).json({ message: "Email already registered" });
+      return;
+    }
+    console.error("[super-admin] /tenants/:id/provision POST error:", err);
+    res.status(500).json({ message: "Failed to provision admin" });
   }
 });
 
