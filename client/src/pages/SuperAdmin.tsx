@@ -469,6 +469,7 @@ function TenantsSection() {
                   <TableHead className="text-right">Bookings</TableHead>
                   <TableHead className="text-right">Services</TableHead>
                   <TableHead className="text-right">Staff</TableHead>
+                  <TableHead>Billing</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
@@ -500,6 +501,32 @@ function TenantsSection() {
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm">
                       {tenant.staffCount}
+                    </TableCell>
+                    <TableCell>
+                      {tenant.billingStatus ? (
+                        <div className="space-y-0.5">
+                          <Badge
+                            className={
+                              tenant.billingStatus === "active" || tenant.billingStatus === "trialing"
+                                ? "bg-green-100 text-green-800"
+                                : tenant.billingStatus === "past_due"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : tenant.billingStatus === "canceled"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-gray-100 text-gray-600"
+                            }
+                          >
+                            {tenant.billingStatus}
+                          </Badge>
+                          {tenant.billingCurrentPeriodEnd && (
+                            <p className="text-xs text-gray-400">
+                              {new Date(tenant.billingCurrentPeriodEnd).toLocaleDateString()}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 text-sm">—</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-sm text-gray-500">
                       {new Date(tenant.createdAt).toLocaleDateString()}

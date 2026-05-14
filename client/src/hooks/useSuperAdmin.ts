@@ -193,6 +193,10 @@ export interface TenantListItem {
   bookingCount: number;
   serviceCount: number;
   staffCount: number;
+  // Phase 49: billing columns (null when no subscription row exists)
+  billingStatus: string | null;
+  billingPlanId: string | null;
+  billingCurrentPeriodEnd: string | null;
 }
 
 export interface DomainRow {
