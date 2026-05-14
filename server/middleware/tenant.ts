@@ -46,6 +46,11 @@ export async function resolveTenantMiddleware(
       hostnameCache.set(hostname, tenant);
     }
 
+    if (tenant.status === 'inactive') {
+      res.status(503).json({ message: 'Tenant temporarily unavailable' });
+      return;
+    }
+
     res.locals.tenant = tenant;
     res.locals.storage = DatabaseStorage.forTenant(tenant.id);
     next();
