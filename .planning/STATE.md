@@ -1,10 +1,10 @@
 ---
 gsd_state_version: 1.0
-milestone: v11.0
-milestone_name: Password Reset
-status: verifying
-stopped_at: Completed 50-02-PLAN.md (Tenant billing self-service frontend)
-last_updated: "2026-05-14T15:12:39.620Z"
+milestone: v12.0
+milestone_name: SaaS Billing
+status: milestone_complete
+stopped_at: Completed v12.0 SaaS Billing milestone (phases 48–50)
+last_updated: "2026-05-14T16:00:00.000Z"
 last_activity: 2026-05-14
 progress:
   total_phases: 42
