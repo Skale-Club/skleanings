@@ -128,5 +128,16 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 ---
+## Current Milestone: v10.0 Tenant Admin Auth
 
-*Last updated: 2026-05-14 — v9.0 Tenant Onboarding shipped*
+**Goal:** Admins provisionados conseguem fazer login no painel `/admin` do seu tenant — o loop de onboarding está completo e a plataforma SaaS é funcional end-to-end.
+
+**Target features:**
+- Login endpoint tenant-scoped (`POST /api/auth/tenant-login`) com bcrypt timing-safe
+- `requireAdmin` valida `tenantId` da sessão contra o tenant atual (hostname)
+- Path de login legado (env vars) mantido para backward compat
+- Admin panel frontend funciona para qualquer tenant autenticado
+
+---
+
+*Last updated: 2026-05-14 — v10.0 Tenant Admin Auth started*

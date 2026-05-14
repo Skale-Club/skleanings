@@ -1,71 +1,68 @@
-# Requirements — v9.0 Tenant Onboarding
+# Requirements — v10.0 Tenant Admin Auth
 
-**Milestone:** v9.0 Tenant Onboarding
-**Goal:** Super-admin pode criar e configurar novos tenants na plataforma — cada tenant recebe seu domínio, admin próprio e acesso isolado aos seus dados.
+**Milestone:** v10.0 Tenant Admin Auth
+**Goal:** Admins provisionados pela super-admin conseguem fazer login no painel `/admin` do seu tenant usando as credenciais geradas — o loop de onboarding está completo.
 **Status:** Active
 
 ---
 
 ## Milestone Requirements
 
-### Tenant Management — Super-Admin (Phase 42)
+### Tenant Admin Login (Phase 45)
 
-- [x] **TO-01**: Super-admin pode listar todos os tenants com nome, slug, status, domínio primário e data de criação
-- [x] **TO-02**: Super-admin pode criar um novo tenant (nome, slug, domínio primário) via formulário no painel /superadmin
-- [x] **TO-03**: Super-admin pode adicionar e remover domínios extras de um tenant (tabela `domains`)
-- [x] **TO-04**: Super-admin pode ativar ou desativar um tenant (status active/inactive) — tenants inativos recebem 503 no middleware de resolução
+- [ ] **TA-01**: Tenant admin pode fazer login em `POST /api/auth/tenant-login` com email + senha — session criada com `req.session.adminUser` scoped ao tenantId do tenant atual (via `res.locals.tenant.id`)
+- [ ] **TA-02**: Tentativa de login com senha errada ou email desconhecido retorna 401 timing-safe (bcrypt.compare sempre executa para evitar timing attack)
+- [ ] **TA-03**: Sessão persiste entre refreshes do browser — admin permanece logado sem reautenticar
+- [ ] **TA-04**: Admin pode fazer logout via `POST /api/auth/logout` — sessão destruída, redirect para login
 
-### Tenant Provisioning (Phase 43)
+### Session Scoping (Phase 45)
 
-- [x] **TO-05**: Super-admin pode provisionar o admin inicial de um tenant — criar um usuário na tabela `users` com email e senha bcrypt e inserir na `user_tenants` com role='admin'
-- [x] **TO-06**: Ao criar um tenant, company settings padrão são inseridos automaticamente (nome do tenant, fuso horário padrão, locale padrão) para que o booking flow funcione imediatamente
-- [x] **TO-07**: O cache LRU do middleware de resolução é invalidado quando um domínio é adicionado ou removido — nova request resolve o domínio atualizado sem restart do servidor
+- [ ] **TA-05**: `requireAdmin` middleware valida que `req.session.adminUser.tenantId === res.locals.tenant.id` — admin do tenant 1 não consegue acessar rotas do tenant 2
+- [ ] **TA-06**: O path de login legado (env vars `ADMIN_EMAIL` + `ADMIN_PASSWORD_HASH`) continua funcional para tenant 1 (Skleanings) — compatibilidade backward mantida
 
-### Tenant Isolation Verification (Phase 44)
+### Admin Panel Access (Phase 46)
 
-- [x] **TO-08**: Admin de tenant 2 faz login em seu domínio e vê apenas os dados do tenant 2 — bookings, services, staff e company settings são isolados
-- [x] **TO-09**: Request para um domínio de tenant inativo recebe 503 com mensagem "Tenant temporarily unavailable" antes de atingir qualquer rota de negócio
-- [x] **TO-10**: Super-admin pode visualizar stats por tenant (total bookings, total services, staff count) diretamente no painel de listagem de tenants
+- [ ] **TA-07**: Após login, o admin do tenant 2 consegue acessar `/admin` e vê os dados do seu tenant (bookings, services, staff, company settings) — todos via `res.locals.storage` do tenant correto
+- [ ] **TA-08**: Rotas protegidas por `requireAdmin` retornam 401 quando não há sessão ativa — o painel frontend redireciona para login
+- [ ] **TA-09**: Admin panel frontend detecta o tenant correto pelo hostname — `useAuth` hook sabe que está num tenant específico, não no tenant 1 hardcoded
 
 ---
 
 ## Future Requirements
 
-- SaaS billing por tenant (Stripe subscription por tenant) — SEED-014
-- Custom domain SSL automatizado via Caddy ACME — requer Hetzner provisionado
-- Tenant impersonation (super-admin acessa painel de qualquer tenant) — SEED-016
-- Feature flags por plano — SEED-017
-- Tenant onboarding wizard para self-serve signup — pós Hetzner
+- Recuperação de senha por email (reset link via Resend) — pós v10.0
+- Perfil do admin (trocar email/senha) — pós v10.0
+- Role-based access control dentro do tenant (admin vs viewer) — pós v10.0
+- OAuth/SSO por tenant — muito posterior
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Self-serve signup de tenants | Requer billing e Hetzner provisionado — v10.0 |
-| DNS automático | Requer Cloudflare API por tenant — pós migração Hetzner |
-| Migração de dados entre tenants | Operação de DBA manual, fora do produto |
-| Multi-region por tenant | Infraestrutura única CX23 por ora |
+| Self-serve signup de tenant admins | Requer billing e aprovação do super-admin |
+| Recuperação de senha | Requer Resend config por tenant — v11.0 |
+| 2FA | Não prioritário para MVP multi-tenant |
+| JWT tokens | Session-based é o padrão do projeto — não quebrar |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TO-01 | Phase 42 | Complete |
-| TO-02 | Phase 42 | Complete |
-| TO-03 | Phase 42 | Complete |
-| TO-04 | Phase 42 | Complete |
-| TO-05 | Phase 43 | Complete |
-| TO-06 | Phase 43 | Complete |
-| TO-07 | Phase 43 | Complete |
-| TO-08 | Phase 44 | Complete |
-| TO-09 | Phase 44 | Complete |
-| TO-10 | Phase 44 | Complete |
+| TA-01 | Phase 45 | Pending |
+| TA-02 | Phase 45 | Pending |
+| TA-03 | Phase 45 | Pending |
+| TA-04 | Phase 45 | Pending |
+| TA-05 | Phase 45 | Pending |
+| TA-06 | Phase 45 | Pending |
+| TA-07 | Phase 46 | Pending |
+| TA-08 | Phase 46 | Pending |
+| TA-09 | Phase 46 | Pending |
 
 **Coverage:**
-- v1 requirements: 10 total
-- Mapped to phases: 10
+- v1 requirements: 9 total
+- Mapped to phases: 9
 - Unmapped: 0 ✓
 
 ---
-*Requirements defined: 2026-05-13*
-*Last updated: 2026-05-13 — traceability confirmed after roadmap creation*
+*Requirements defined: 2026-05-14*
+*Last updated: 2026-05-14 after initial definition*
