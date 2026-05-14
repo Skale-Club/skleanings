@@ -6,7 +6,7 @@ import path from "path";
 import Stripe from "stripe";
 import { and, asc, count, eq } from "drizzle-orm";
 import { db, ensureDatabaseReady } from "../db";
-import { bookings, contacts, domains, services, staffMembers, tenants } from "@shared/schema";
+import { bookings, contacts, domains, services, staffMembers, tenants, tenantSubscriptions } from "@shared/schema";
 import { collectRuntimeEnvDiagnostics } from "../lib/runtime-env";
 import { getRecentErrors } from "../lib/error-log";
 import { storage } from "../storage";
@@ -195,7 +195,7 @@ router.get("/tenants", requireSuperAdmin, async (_req: Request, res: Response): 
       .leftJoin(domains, and(eq(domains.tenantId, tenants.id), eq(domains.isPrimary, true)))
       .orderBy(asc(tenants.createdAt));
 
-    const [bookingCounts, serviceCounts, staffCounts] = await Promise.all([
+    const [bookingCounts, serviceCounts, staffCounts, billingRows] = await Promise.all([
       db
         .select({ tenantId: bookings.tenantId, cnt: count() })
         .from(bookings)
@@ -210,17 +210,38 @@ router.get("/tenants", requireSuperAdmin, async (_req: Request, res: Response): 
         .from(staffMembers)
         .where(eq(staffMembers.isActive, true))
         .groupBy(staffMembers.tenantId),
+      db
+        .select({
+          tenantId: tenantSubscriptions.tenantId,
+          status: tenantSubscriptions.status,
+          planId: tenantSubscriptions.planId,
+          currentPeriodEnd: tenantSubscriptions.currentPeriodEnd,
+        })
+        .from(tenantSubscriptions),
     ]);
 
     const bMap = Object.fromEntries(bookingCounts.map(r => [r.tenantId, Number(r.cnt)]));
     const sMap = Object.fromEntries(serviceCounts.map(r => [r.tenantId, Number(r.cnt)]));
     const stMap = Object.fromEntries(staffCounts.map(r => [r.tenantId, Number(r.cnt)]));
+    const billingMap = Object.fromEntries(
+      billingRows.map(r => [
+        r.tenantId,
+        {
+          billingStatus: r.status,
+          billingPlanId: r.planId,
+          billingPeriodEnd: r.currentPeriodEnd ? r.currentPeriodEnd.toISOString() : null,
+        },
+      ])
+    );
 
     const result = rows.map(t => ({
       ...t,
       bookingCount: bMap[t.id] ?? 0,
       serviceCount: sMap[t.id] ?? 0,
       staffCount: stMap[t.id] ?? 0,
+      billingStatus: billingMap[t.id]?.billingStatus ?? null,
+      billingPlanId: billingMap[t.id]?.billingPlanId ?? null,
+      billingPeriodEnd: billingMap[t.id]?.billingPeriodEnd ?? null,
     }));
 
     res.json(result);

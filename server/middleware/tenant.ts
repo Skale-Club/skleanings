@@ -1,6 +1,6 @@
 import { LRUCache } from "lru-cache";
 import { db } from "../db";
-import { domains, tenants } from "@shared/schema";
+import { domains, tenants, tenantSubscriptions } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { DatabaseStorage } from "../storage";
 import type { Request, Response, NextFunction } from "express";
@@ -49,6 +49,30 @@ export async function resolveTenantMiddleware(
     if (tenant.status === 'inactive') {
       res.status(503).json({ message: 'Tenant temporarily unavailable' });
       return;
+    }
+
+    // Subscription enforcement (SB-05)
+    const [subRow] = await db
+      .select({
+        status: tenantSubscriptions.status,
+        currentPeriodEnd: tenantSubscriptions.currentPeriodEnd,
+      })
+      .from(tenantSubscriptions)
+      .where(eq(tenantSubscriptions.tenantId, tenant.id))
+      .limit(1);
+
+    if (subRow) {
+      const GRACE_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
+      const lapsed =
+        subRow.status === "canceled" ||
+        (subRow.status === "past_due" &&
+          subRow.currentPeriodEnd !== null &&
+          subRow.currentPeriodEnd.getTime() < Date.now() - GRACE_MS);
+
+      if (lapsed) {
+        res.status(402).json({ message: "Subscription required" });
+        return;
+      }
     }
 
     res.locals.tenant = tenant;
