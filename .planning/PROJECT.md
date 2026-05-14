@@ -28,6 +28,7 @@ Customers can discover, book, and pay for cleaning services online without calli
 - **v14.0 Billing Hardening** — Resend emails on trial_will_end + past_due webhook events, signup rate limiting (5/hr), GET /api/billing/invoices + Invoice History card with React Query
 - **v15.0 Tenant Onboarding Experience** — Email verification token flow, welcome email, admin verification banner, setup checklist with live DB state + dismiss
 
+
 **Pending human UAT:** Phase 19 (5 items), Phase 20 (4 CAL-FIX items), Phases 25–29 (browser-only checks), Phase 31 (4 Resend email delivery checks), Phase 34 (booking flow smoke test) — deferred to live session.
 **Pending human actions:** Phase 35 — `supabase db push` (drop system_heartbeats) + add `BLOG_CRON_TOKEN` to GitHub Secrets. Phase 38 — `supabase db push` for multi-tenant schema migrations.
 **Pending live verification:** Phase 41 infra — Caddy wildcard cert issuance and deploy.yml trigger require a real Hetzner VM.
@@ -135,10 +136,17 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-## Current Milestone: v15.0 Tenant Onboarding Experience ✅ SHIPPED
+## Current Milestone: v16.0 Staff Invitation Flow
 
-**Status:** Complete — all 8 requirements (OB-01–OB-08) shipped.
+**Goal:** Tenant admins can invite staff members by email — no super-admin intervention required. Staff accept the invite, set their password, and are immediately logged in and associated with the tenant.
+
+**Target features:**
+- POST /api/admin/staff/invite — creates staff_invitations row + sends branded invite email with 48h token
+- GET /validate-invite?token= + POST /accept-invite — validates token, creates user+user_tenants, marks accepted, logs in
+- /accept-invite public page — company name, pre-filled email, name + password form
+- Pending invitations list in /admin/staff with Revoke button
+- DELETE /api/admin/staff/invite/:id — revokes pending invitation
 
 ---
 
-*Last updated: 2026-05-14 — v15.0 Tenant Onboarding Experience shipped*
+*Last updated: 2026-05-14 — v16.0 Staff Invitation Flow started*
