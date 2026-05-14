@@ -80,7 +80,7 @@ Customers can discover, book, and pay for cleaning services online without calli
 
 **Admin panel:** All admin views use the same sidebar navigation, card-based layout, and React Query patterns. New admin features must match existing UI conventions.
 
-**Codebase state:** Eight milestones shipped (Phases 1–41, 75+ plans). Multi-tenant architecture complete — `DatabaseStorage.forTenant(tenantId)` with 220 scoped queries, hostname-based LRU tenant resolution middleware, all 24 business route files use `res.locals.storage`. Server routes in `server/routes/`. All lib files accept `IStorage` as explicit parameter. Drizzle schema in `shared/schema.ts` includes tenants/domains/userTenants. Supabase CLI only for migrations. Three GH Actions cron workflows (email reminders, calendar sync, blog generation) + one manual deploy.yml for Hetzner. Caddy reverse proxy config + systemd unit in `infra/`.
+**Codebase state:** Nine milestones shipped (Phases 1–44, 83+ plans). Full multi-tenant SaaS backend operational — `DatabaseStorage.forTenant(tenantId)`, hostname LRU middleware, all routes use `res.locals.storage`. Super-admin panel at /superadmin with tenant CRUD (list, create, manage domains, provision admin, activate/deactivate), per-tenant stats, and LRU cache invalidation on domain changes. `users.password` column added — provisioned admins stored with bcrypt. Company settings auto-seeded on tenant creation. 503 guard for inactive tenants. Supabase CLI only for migrations. Three GH Actions cron workflows + manual deploy.yml. Caddy + systemd infra config in `infra/`.
 
 **White-label / multi-tenant status:** All "Skleanings" literals removed. Brand identity fully configurable via `companySettings`. Complete data isolation per tenantId — platform ready for SaaS deployment with multiple tenants on Hetzner CX23.
 
@@ -127,16 +127,6 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-## Current Milestone: v9.0 Tenant Onboarding
-
-**Goal:** Super-admin pode criar e configurar novos tenants na plataforma — cada tenant recebe seu domínio, admin próprio e acesso isolado aos seus dados.
-
-**Target features:**
-- Listar, criar e gerenciar tenants via painel /superadmin
-- Provisionar admin inicial de cada tenant (usuário + company settings padrão)
-- Invalidação de cache LRU ao modificar domínios
-- Verificação end-to-end de isolamento de dados entre tenants
-
 ---
 
-*Last updated: 2026-05-13 — v9.0 Tenant Onboarding started*
+*Last updated: 2026-05-14 — v9.0 Tenant Onboarding shipped*

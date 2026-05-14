@@ -1,5 +1,22 @@
 # Milestones
 
+## v9.0 Tenant Onboarding (Shipped: 2026-05-14)
+
+**Phases completed:** 3 phases (42–44), 8 plans, all complete
+
+**Key accomplishments:**
+
+- IStorage extended with 6 global-registry methods (getTenants, createTenant, updateTenantStatus, getTenantDomains, addDomain, removeDomain) — all use `db` directly, no tenantId scoping
+- 6 super-admin API routes (GET/POST /tenants, PATCH status, GET/POST/DELETE /domains) with 409 conflict guards, hostname normalization, isPrimary delete protection
+- React Query hooks + `TenantsSection` + `ManageDomainsDialog` in SuperAdmin.tsx — full tenant/domain CRUD without page reloads
+- `users.password` migration + `provisionTenantAdmin` (db.transaction) + `seedTenantCompanySettings` (onConflictDoNothing) storage methods
+- `POST /api/super-admin/tenants/:id/provision` — bcrypt hash + randomBytes credential, one-time display in ProvisionDialog, companySettings auto-seeded on tenant creation
+- `invalidateTenantCache(hostname)` exported from tenant.ts — called on domain add/remove so LRU reflects changes without server restart
+- 503 guard in `resolveTenantMiddleware` for inactive tenants — fires before any route handler
+- Per-tenant stats (bookings/services/staff) via `Promise.all` aggregates in GET /tenants — rendered as 3 columns in TenantsSection table
+
+---
+
 ## v8.0 Multi-Tenant Architecture (Shipped: 2026-05-13)
 
 **Phases completed:** 4 phases (38–41), 10 plans, all complete
