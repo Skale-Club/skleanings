@@ -460,7 +460,10 @@ Plans:
   2. Clicking "Download" on any invoice row opens the Stripe-hosted invoice PDF in a new browser tab
   3. The invoice list is populated via `GET /api/billing/invoices` which is guarded by `requireAdmin` — an unauthenticated request returns 401 and no invoice data is exposed
   4. The invoice table renders with a loading skeleton while the React Query fetch is in flight and shows an empty state message when the tenant has no invoices yet
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 54-01-PLAN.md — GET /api/billing/invoices backend endpoint (BH-06)
+- [ ] 54-02-PLAN.md — Invoice History table in BillingPage.tsx (BH-05)
 **UI hint**: yes
 
 ---
@@ -492,7 +495,7 @@ Plans:
 | 51 | v13.0 | 2/2 | Complete    | 2026-05-14 |
 | 52 | v13.0 | 1/2 | Complete    | 2026-05-14 |
 | 53 | v14.0 | 1/2 | Complete    | 2026-05-14 |
-| 54 | v14.0 | 0/? | Not started | - |
+| 54 | v14.0 | 0/2 | Not started | - |
 
 ---
 
