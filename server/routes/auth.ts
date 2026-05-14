@@ -83,4 +83,11 @@ router.get('/auth/admin-me', (req, res) => {
   return res.status(401).json({ authenticated: false });
 });
 
+// POST /api/auth/logout — destroy session and return ok
+router.post('/auth/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.json({ ok: true });
+  });
+});
+
 export default router;
