@@ -448,7 +448,7 @@ Plans:
   4. POSTing to `POST /api/auth/signup` more than 5 times from the same IP within one hour returns 429 with a `Retry-After` header and JSON body `{ message: 'Too many signup attempts. Try again later.' }` — the 6th attempt is blocked without creating any DB rows
 **Plans**: 2 plans
 Plans:
-- [ ] 53-01-PLAN.md — Billing email notifications: trial_will_end + past_due webhook sends (BH-01, BH-02, BH-03)
+- [x] 53-01-PLAN.md — Billing email notifications: trial_will_end + past_due webhook sends (BH-01, BH-02, BH-03)
 - [ ] 53-02-PLAN.md — Signup rate limiting: 5 req/hr per IP on POST /api/auth/signup (BH-04)
 
 ### Phase 54: Invoice History
@@ -491,7 +491,7 @@ Plans:
 | 50 | v12.0 | 2/2 | Complete    | 2026-05-14 |
 | 51 | v13.0 | 2/2 | Complete    | 2026-05-14 |
 | 52 | v13.0 | 1/2 | Complete    | 2026-05-14 |
-| 53 | v14.0 | 0/? | Not started | - |
+| 53 | v14.0 | 1/2 | In Progress|  |
 | 54 | v14.0 | 0/? | Not started | - |
 
 ---
