@@ -15,11 +15,13 @@ import {
   Image,
   LayoutDashboard,
   Loader2,
+  MailCheck,
   MessageSquare,
   Package,
   Puzzle,
   Search,
   Users,
+  X,
 } from 'lucide-react';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useAdminAuth } from '@/context/AuthContext';
@@ -70,7 +72,7 @@ const menuItems: AdminMenuItem[] = [
 
 function AdminContent() {
   const { toast } = useToast();
-  const { isAuthenticated, loading: tenantAuthLoading, email: tenantEmail, logout: tenantLogout } = useAdminTenantAuth();
+  const { isAuthenticated, loading: tenantAuthLoading, email: tenantEmail, logout: tenantLogout, emailVerifiedAt } = useAdminTenantAuth();
   const { getAccessToken } = useAdminAuth();
   const [, setLocation] = useLocation();
   const [, params] = useRoute('/admin/:section?/:tab?');
@@ -85,6 +87,16 @@ function AdminContent() {
 
   const [blogResetSignal, setBlogResetSignal] = useState(0);
   const [sectionsOrder, setSectionsOrder] = useState<AdminSection[]>(menuItems.map((item) => item.id));
+  const [verifyBannerDismissed, setVerifyBannerDismissed] = useState(false);
+
+  const handleResendVerification = async () => {
+    try {
+      await fetch('/api/auth/resend-verification', { method: 'POST', credentials: 'include' });
+      toast({ title: 'Verification email sent', description: 'Check your inbox for a new link.' });
+    } catch {
+      toast({ title: 'Verification email sent', description: 'Check your inbox for a new link.' });
+    }
+  };
 
   const { data: companySettings } = useQuery<CompanySettingsData>({
     queryKey: ['/api/company-settings'],
@@ -156,6 +168,27 @@ function AdminContent() {
       <main className="flex-1 min-w-0 min-h-0 relative bg-background overflow-y-auto overscroll-contain" id="admin-top">
         <AdminHeader companyName={companySettings?.companyName} />
         {activeSection !== 'chat' && <CalendarReconnectBanner getAccessToken={getAccessToken} />}
+        {activeSection !== 'chat' && !emailVerifiedAt && !verifyBannerDismissed && (
+          <div className="flex items-center gap-3 px-6 py-3 bg-yellow-50 border-b border-yellow-200 text-sm text-yellow-900">
+            <MailCheck className="w-4 h-4 shrink-0 text-yellow-600" />
+            <span className="flex-1">
+              <strong>Please verify your email</strong> — check your inbox for a verification link.
+              <button
+                onClick={handleResendVerification}
+                className="ml-2 underline font-medium hover:text-yellow-700"
+              >
+                Resend verification email
+              </button>
+            </span>
+            <button
+              onClick={() => setVerifyBannerDismissed(true)}
+              className="p-1 rounded hover:bg-yellow-100"
+              aria-label="Dismiss"
+            >
+              <X className="w-4 h-4 text-yellow-600" />
+            </button>
+          </div>
+        )}
         <div className={activeSection === 'chat' ? 'min-h-0 p-0' : 'min-h-0 p-6 sm:p-6 md:p-8 pb-8'}>
           {activeSection === 'dashboard' && (
             <DashboardSection
