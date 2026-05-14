@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v11.0
 milestone_name: Password Reset
 status: planning
-stopped_at: Completed 47-02-PLAN.md
-last_updated: "2026-05-14T13:43:13.441Z"
+stopped_at: Completed 47-03-PLAN.md
+last_updated: "2026-05-14T13:48:38.438Z"
 last_activity: 2026-05-14
 progress:
   total_phases: 12
-  completed_phases: 11
-  total_plans: 27
-  completed_plans: 27
+  completed_phases: 12
+  total_plans: 30
+  completed_plans: 30
   percent: 0
 ---
 
@@ -117,6 +117,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 47-02]: buildPasswordResetEmail is pure (no IStorage param) — caller fetches companyName and passes it in
 - [Phase 47-02]: forgot-password swallows all errors in try/catch to prevent timing-based enumeration
 - [Phase 47-02]: reset-password checks usedAt before expiresAt — used token rejected even within time window
+- [Phase 47-03]: ForgotPassword always shows success state — mirrors backend no-enumeration policy at UX layer
+- [Phase 47-03]: /reset-password is in public Switch — token links arrive via email with no session
 
 ### Roadmap Evolution
 
@@ -137,7 +139,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-14T13:43:13.435Z
-Stopped at: Completed 47-02-PLAN.md
+Last session: 2026-05-14T13:48:33.568Z
+Stopped at: Completed 47-03-PLAN.md
 Resume file: None
 Next: Plan Phase 47 (Password Reset) via /gsd:plan-phase 47

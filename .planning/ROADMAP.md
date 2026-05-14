@@ -142,7 +142,7 @@ Full details: [milestones/v10.0-ROADMAP.md](milestones/v10.0-ROADMAP.md)
 
 ### v11.0 Password Reset
 
-- [ ] **Phase 47: Password Reset** - Forgot-password token flow, reset-password frontend page, change-password for logged-in admins, tenant-branded Resend email template
+- [x] **Phase 47: Password Reset** - Forgot-password token flow, reset-password frontend page, change-password for logged-in admins, tenant-branded Resend email template (completed 2026-05-14)
 
 ---
 
@@ -332,8 +332,8 @@ Plans:
 **Plans**: 3 plans
 Plans:
 - [x] 47-01-PLAN.md — Supabase migration (password_reset_tokens table) + Drizzle schema + IStorage methods + DatabaseStorage implementation
-- [ ] 47-02-PLAN.md — buildPasswordResetEmail() template + 3 API routes: forgot-password, reset-password, change-password
-- [ ] 47-03-PLAN.md — Frontend: ForgotPassword.tsx, ResetPassword.tsx, AdminLogin forgot-password link, App.tsx routes
+- [x] 47-02-PLAN.md — buildPasswordResetEmail() template + 3 API routes: forgot-password, reset-password, change-password
+- [x] 47-03-PLAN.md — Frontend: ForgotPassword.tsx, ResetPassword.tsx, AdminLogin forgot-password link, App.tsx routes
 **UI hint**: yes
 
 ---
@@ -358,7 +358,7 @@ Plans:
 | 44 | v9.0 | 2/2 | Complete | 2026-05-14 |
 | 45 | v10.0 | 2/2 | Complete | 2026-05-14 |
 | 46 | v10.0 | 1/1 | Complete | 2026-05-14 |
-| 47 | v11.0 | 1/3 | In Progress|  |
+| 47 | v11.0 | 3/3 | Complete   | 2026-05-14 |
 
 ---
 
