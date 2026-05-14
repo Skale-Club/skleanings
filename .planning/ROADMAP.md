@@ -16,7 +16,7 @@
 - ✅ **v12.0 SaaS Billing** — Phases 48–50 (shipped 2026-05-14)
 - ✅ **v13.0 Self-Serve Signup** — Phases 51–52 (shipped 2026-05-14)
 - ✅ **v14.0 Billing Hardening** — Phases 53–54 (shipped 2026-05-14)
-- 🔲 **v15.0 Tenant Onboarding Experience** — Phases 55–56
+- ✅ **v15.0 Tenant Onboarding Experience** — Phases 55–56 (shipped 2026-05-14)
 
 ---
 
@@ -482,6 +482,16 @@ Plans:
 
 ---
 
+<details>
+<summary>✅ v15.0 Tenant Onboarding Experience (Phases 55–56) — SHIPPED 2026-05-14</summary>
+
+- [x] Phase 55: Email Verification + Welcome Email (3/3 plans) — completed 2026-05-14
+- [x] Phase 56: Setup Checklist (2/2 plans) — completed 2026-05-14
+
+Full details: [milestones/v15.0-ROADMAP.md](milestones/v15.0-ROADMAP.md)
+
+</details>
+
 ### Phase 55: Email Verification + Welcome Email
 **Goal**: New tenants receive a verification email immediately after signup and a welcome email with first-steps guidance — unverified admins see a persistent banner in the admin panel until they verify their email address
 **Depends on**: Phase 54
@@ -541,7 +551,7 @@ Plans:
 | 52 | v13.0 | 1/2 | Complete    | 2026-05-14 |
 | 53 | v14.0 | 2/2 | Complete    | 2026-05-14 |
 | 54 | v14.0 | 1/2 | Complete    | 2026-05-14 |
-| 55 | v15.0 | 1/3 | Complete    | 2026-05-14 |
+| 55 | v15.0 | 3/3 | Complete    | 2026-05-14 |
 | 56 | v15.0 | 1/2 | Complete    | 2026-05-14 |
 
 ---

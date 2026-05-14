@@ -1,5 +1,18 @@
 # Milestones
 
+## v15.0 Tenant Onboarding Experience (Shipped: 2026-05-14)
+
+**Phases completed:** 2 phases (55–56), 5 plans, all complete
+
+**Key accomplishments:**
+
+- `email_verification_tokens` Supabase migration + 4 IStorage methods + fire-and-forget verification + welcome email sends in `signup.ts`; `GET /api/auth/verify-email` server-side redirect route; `POST /api/auth/resend-verification` session-guarded
+- `VerifyEmail.tsx` public error page + `/verify-email` App.tsx route; `admin-me` made async to return `emailVerifiedAt`; `AdminTenantAuthContext` extended with `emailVerifiedAt`; dismissible yellow banner in `Admin.tsx`
+- `setup_dismissed_at` Supabase migration + `setupDismissedAt` on Drizzle `companySettings`; `server/routes/admin-setup.ts` with `GET /api/admin/setup-status` + `POST /api/admin/setup-dismiss` (both `requireAdmin`, `res.locals.storage` only)
+- `useSetupStatus` React Query hook + `SetupChecklist.tsx` component (CheckCircle/Circle per live DB state, dismiss button, hides when all complete or dismissed) wired into `Admin.tsx` dashboard section
+
+---
+
 ## v14.0 Billing Hardening (Shipped: 2026-05-14)
 
 **Phases completed:** 2 phases (53–54), 4 plans, all complete
