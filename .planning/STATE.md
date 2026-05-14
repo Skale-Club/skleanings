@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v8.0
-milestone_name: Multi-Tenant Architecture
-status: verifying
-stopped_at: Completed 41-02-PLAN.md
-last_updated: "2026-05-13T23:27:30.569Z"
+milestone: v9.0
+milestone_name: Tenant Onboarding
+status: planning
+stopped_at: Roadmap created — Phase 42 not started
+last_updated: "2026-05-13T00:00:00.000Z"
 last_activity: 2026-05-13
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 16
-  completed_plans: 16
+  total_phases: 3
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-13)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 41 — Infra Config
+**Current focus:** Phase 42 — Tenant Management UI
 
 ## Current Position
 
-Phase: 41
+Phase: 42
 Plan: Not started
-Status: Phase complete — ready for verification
+Status: Roadmap created — ready for plan-phase
 Last activity: 2026-05-13
 
 Progress: [░░░░░░░░░░] 0%
@@ -43,22 +43,23 @@ Progress: [░░░░░░░░░░] 0%
 | v5.0 Booking Experience | 30–32 (3 phases) | 9 | 2026-05-13 |
 | v6.0 Platform Quality | 33–35 (3 phases) | 7 | 2026-05-13 |
 | v7.0 Xkedule Foundation | 36–37 (2 phases) | 6 | 2026-05-13 |
+| v8.0 Multi-Tenant Architecture | 38–41 (4 phases) | 10 | 2026-05-13 |
 
 See: .planning/MILESTONES.md
 
-## v8.0 Phases
+## v9.0 Phases
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 38 | Schema Foundation | MT-01, MT-02, MT-03, MT-04, MT-05 | Not started |
-| 39 | Storage Refactor | MT-06, MT-07, MT-08 | Not started |
-| 40 | Tenant Resolution Middleware | MT-09, MT-10, MT-11, MT-12, MT-13 | Not started |
-| 41 | Infra Config | MT-14, MT-15, MT-16, MT-17 | Not started |
+| 42 | Tenant Management UI | TO-01, TO-02, TO-03, TO-04 | Not started |
+| 43 | Tenant Provisioning | TO-05, TO-06, TO-07 | Not started |
+| 44 | Isolation Verification | TO-08, TO-09, TO-10 | Not started |
 
 ## Pending Items
 
 - **Phase 19 UAT** — 5 human browser checks in `.planning/phases/19-receptionist-booking-flow-multi-staff-view/19-HUMAN-UAT.md`
 - **Phase 35** — `supabase db push` (drop system_heartbeats) + add `BLOG_CRON_TOKEN` to GitHub Secrets
+- **Phase 38** — `supabase db push` for multi-tenant schema migrations
 
 ## Accumulated Context
 
@@ -100,18 +101,23 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 - v7.0 phases 36–37 derived from SEED-011 (locale settings) and SEED-015 (super-admin panel)
 - v8.0 phases 38–41 derived from MT-01–17 (multi-tenant architecture)
-- Phase numbering continues from v7.0 last phase (37)
-- Phase 38 migration must be idempotent — 38 business tables need tenantId DEFAULT 1
+- v9.0 phases 42–44 derived from TO-01–10 (tenant onboarding)
+- Phase numbering continues from v8.0 last phase (41); v9.0 starts at Phase 42
+- Phase 42 extends existing /superadmin panel (Phase 37) — no new auth surface
+- Phase 43 LRU cache invalidation: delete hostname key from lru-cache on domain add/remove in Phase 43, not rebuild middleware
+- Phase 44 503 response: resolveTenantMiddleware already resolves tenant — add status check after resolution, before passing to next()
 
 ### Blockers/Concerns
 
 - **MIGRATION PENDING** — Phase 35 requires `supabase db push` (drop system_heartbeats) + add `BLOG_CRON_TOKEN` to GitHub Secrets
-- Phase 38 migration scope is large (38 tables) — must be written as a single idempotent Supabase CLI migration
-- Super-admin routes (/api/super-admin/*) must be explicitly excluded from Phase 40 tenant resolution
+- **MIGRATION PENDING** — Phase 38 requires `supabase db push` for multi-tenant schema
+- Phase 42 new /api/super-admin/* endpoints must be added under existing super-admin session auth guard (Phase 37 pattern)
+- Phase 43 bcrypt password hashing for provisioned admin user — use same pattern as existing admin auth (ADMIN_PASSWORD_HASH)
+- Phase 44 E2E isolation test requires a second tenant row in DB — provisioning from Phase 43 must complete first
 
 ## Session Continuity
 
-Last session: 2026-05-13T23:23:16.605Z
-Stopped at: Completed 41-02-PLAN.md
+Last session: 2026-05-13
+Stopped at: v9.0 roadmap created
 Resume file: None
-Next: Phase 39 complete — ready for Phase 40 (Tenant Resolution Middleware)
+Next: Plan Phase 42 (Tenant Management UI) via /gsd:plan-phase 42

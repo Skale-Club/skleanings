@@ -10,6 +10,7 @@
 - ✅ **v6.0 Platform Quality** — Phases 33–35 (shipped 2026-05-13)
 - ✅ **v7.0 Xkedule Foundation** — Phases 36–37 (shipped 2026-05-13)
 - ✅ **v8.0 Multi-Tenant Architecture** — Phases 38–41 (shipped 2026-05-13)
+- 🔄 **v9.0 Tenant Onboarding** — Phases 42–44 (active)
 
 ---
 
@@ -111,6 +112,12 @@ Full details: [milestones/v8.0-ROADMAP.md](milestones/v8.0-ROADMAP.md)
 
 </details>
 
+### v9.0 Tenant Onboarding (Phases 42–44) — ACTIVE
+
+- [ ] **Phase 42: Tenant Management UI** - Super-admin CRUD for tenants and domains in /superadmin panel
+- [ ] **Phase 43: Tenant Provisioning** - Admin user creation, company settings seed, and LRU cache invalidation
+- [ ] **Phase 44: Isolation Verification** - 503 for inactive tenants, per-tenant stats, and E2E data isolation
+
 ---
 
 ## Phase Details
@@ -209,6 +216,41 @@ Plans:
 
 ---
 
+### Phase 42: Tenant Management UI
+**Goal**: Super-admin can list, create, and manage tenants and their domains entirely from within the existing /superadmin panel — no direct DB access required for onboarding a new tenant
+**Depends on**: Phase 41
+**Requirements**: TO-01, TO-02, TO-03, TO-04
+**Success Criteria** (what must be TRUE):
+  1. The /superadmin panel shows a Tenants table listing every tenant with name, slug, status, primary domain, and created-at date — the list updates without a page reload after any create or edit action
+  2. Super-admin submits a form with name, slug, and primary domain and a new row appears in the `tenants` table and a corresponding row in `domains` with isPrimary=true
+  3. Super-admin can add an additional hostname to an existing tenant and that hostname appears in the `domains` table associated with the correct tenantId
+  4. Super-admin can remove a non-primary domain from a tenant and that row is deleted from `domains`
+  5. Super-admin can toggle a tenant's status between active and inactive — the status column in `tenants` reflects the change immediately
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 43: Tenant Provisioning
+**Goal**: Creating a tenant is a complete operation — the new tenant immediately has an admin user, working company settings, and a correctly updated domain cache so its booking flow is live without any server restart
+**Depends on**: Phase 42
+**Requirements**: TO-05, TO-06, TO-07
+**Success Criteria** (what must be TRUE):
+  1. After provisioning via the super-admin form, a row exists in `users` with the provided email and a bcrypt-hashed password, and a corresponding row exists in `user_tenants` with role='admin' for the new tenant
+  2. The new tenant's `companySettings` row is auto-inserted at tenant creation time with tenant name, default timezone (America/New_York), and default locale (en) — the booking flow renders without errors on first visit
+  3. After a domain is added or removed, the next HTTP request to that hostname resolves correctly without restarting the server — the LRU cache entry for that hostname is deleted at write time
+**Plans**: TBD
+
+### Phase 44: Isolation Verification
+**Goal**: The platform provably enforces data isolation — inactive tenants are blocked at the middleware layer, data never leaks between tenants, and super-admin has per-tenant observability
+**Depends on**: Phase 43
+**Requirements**: TO-08, TO-09, TO-10
+**Success Criteria** (what must be TRUE):
+  1. An admin user created for tenant 2 can log in at tenant 2's domain and the bookings, services, staff, and company settings pages show only tenant 2 data — tenant 1 records are absent from every response
+  2. A GET request to any business route on an inactive tenant's domain receives a 503 response with body containing "Tenant temporarily unavailable" before any business route handler executes
+  3. The Tenants list in /superadmin shows a stats column (or inline badge) per tenant displaying total bookings count, total services count, and staff count — values are accurate for each respective tenant
+**Plans**: TBD
+
+---
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -220,10 +262,13 @@ Plans:
 | 30–32 | v5.0 | 9/9 | Complete | 2026-05-13 |
 | 33–35 | v6.0 | 7/7 | Complete | 2026-05-13 |
 | 36–37 | v7.0 | 6/6 | Complete | 2026-05-13 |
-| 38 | v8.0 | 2/2 | Complete    | 2026-05-13 |
-| 39 | v8.0 | 3/3 | Complete    | 2026-05-13 |
-| 40 | v8.0 | 3/3 | Complete    | 2026-05-13 |
-| 41 | v8.0 | 2/2 | Complete    | 2026-05-13 |
+| 38 | v8.0 | 2/2 | Complete | 2026-05-13 |
+| 39 | v8.0 | 3/3 | Complete | 2026-05-13 |
+| 40 | v8.0 | 3/3 | Complete | 2026-05-13 |
+| 41 | v8.0 | 2/2 | Complete | 2026-05-13 |
+| 42 | v9.0 | 0/TBD | Not started | - |
+| 43 | v9.0 | 0/TBD | Not started | - |
+| 44 | v9.0 | 0/TBD | Not started | - |
 
 ---
 
