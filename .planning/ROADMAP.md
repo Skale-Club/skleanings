@@ -126,7 +126,7 @@ Full details: [milestones/v9.0-ROADMAP.md](milestones/v9.0-ROADMAP.md)
 
 ### v10.0 Tenant Admin Auth (Phases 45–46)
 
-- [ ] **Phase 45: Tenant Admin Auth Backend** - Tenant-scoped login endpoint, timing-safe auth, session persistence, logout, requireAdmin tenantId validation, legacy env-var path preserved
+- [x] **Phase 45: Tenant Admin Auth Backend** - Tenant-scoped login endpoint, timing-safe auth, session persistence, logout, requireAdmin tenantId validation, legacy env-var path preserved (completed 2026-05-14)
 - [ ] **Phase 46: Admin Panel Frontend Auth** - Admin panel data isolation post-login, 401 redirect behavior, useAuth hostname-aware tenant detection
 
 ---
@@ -286,8 +286,8 @@ Plans:
   6. The existing `POST /api/auth/login` endpoint using ADMIN_EMAIL + ADMIN_PASSWORD_HASH env vars continues to work unchanged on the tenant 1 domain — no regression
 **Plans**: 2 plans
 Plans:
-- [ ] 45-01-PLAN.md — session.d.ts adminUser type + requireAdmin cross-tenant guard + POST /api/auth/tenant-login + GET /api/auth/admin-me
-- [ ] 45-02-PLAN.md — POST /api/auth/logout + npm run check TypeScript compile verification
+- [x] 45-01-PLAN.md — session.d.ts adminUser type + requireAdmin cross-tenant guard + POST /api/auth/tenant-login + GET /api/auth/admin-me
+- [x] 45-02-PLAN.md — POST /api/auth/logout + npm run check TypeScript compile verification
 
 ### Phase 46: Admin Panel Frontend Auth
 **Goal**: The admin panel frontend correctly handles authentication for any tenant — it detects the current tenant from the hostname, redirects unauthenticated users to login, and renders only that tenant's data after a successful login
@@ -320,7 +320,7 @@ Plans:
 | 42 | v9.0 | 3/3 | Complete | 2026-05-14 |
 | 43 | v9.0 | 3/3 | Complete | 2026-05-14 |
 | 44 | v9.0 | 2/2 | Complete | 2026-05-14 |
-| 45 | v10.0 | 0/2 | Not started | - |
+| 45 | v10.0 | 2/2 | Complete   | 2026-05-14 |
 | 46 | v10.0 | 0/2 | Not started | - |
 
 ---

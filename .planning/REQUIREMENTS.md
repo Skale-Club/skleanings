@@ -13,7 +13,7 @@
 - [ ] **TA-01**: Tenant admin pode fazer login em `POST /api/auth/tenant-login` com email + senha — session criada com `req.session.adminUser` scoped ao tenantId do tenant atual (via `res.locals.tenant.id`)
 - [ ] **TA-02**: Tentativa de login com senha errada ou email desconhecido retorna 401 timing-safe (bcrypt.compare sempre executa para evitar timing attack)
 - [ ] **TA-03**: Sessão persiste entre refreshes do browser — admin permanece logado sem reautenticar
-- [ ] **TA-04**: Admin pode fazer logout via `POST /api/auth/logout` — sessão destruída, redirect para login
+- [x] **TA-04**: Admin pode fazer logout via `POST /api/auth/logout` — sessão destruída, redirect para login
 
 ### Session Scoping (Phase 45)
 
@@ -51,7 +51,7 @@
 | TA-01 | Phase 45 | Pending |
 | TA-02 | Phase 45 | Pending |
 | TA-03 | Phase 45 | Pending |
-| TA-04 | Phase 45 | Pending |
+| TA-04 | Phase 45 | Complete |
 | TA-05 | Phase 45 | Pending |
 | TA-06 | Phase 45 | Pending |
 | TA-07 | Phase 46 | Pending |

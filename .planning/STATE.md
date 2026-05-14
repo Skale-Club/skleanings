@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v10.0
 milestone_name: Tenant Admin Auth
-status: planning
-stopped_at: Completed 45-01-PLAN.md
-last_updated: "2026-05-14T12:17:35.094Z"
-last_activity: 2026-05-14
+status: executing
+stopped_at: Completed 45-02-PLAN.md
+last_updated: "2026-05-14T12:39:59.174Z"
+last_activity: 2026-05-13
 progress:
   total_phases: 11
-  completed_phases: 9
-  total_plans: 24
-  completed_plans: 25
-  percent: 0
+  completed_phases: 10
+  total_plans: 26
+  completed_plans: 26
+  percent: 100
 ---
 
 # Project State
@@ -111,6 +111,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 44-02]: Three stat columns inserted after Primary Domain and before Created — preserves existing column order without restructuring
 - [Phase 45-01]: adminUser.tenantId is optional — legacy env-var sessions pass cross-tenant guard unchanged
 - [Phase 45-01]: requireAdmin session fast-path placed BEFORE Supabase JWT path — session-authed tenants never hit JWT validation
+- [Phase 45]: logout route uses req.session.destroy callback unconditionally — safe even when session already expired
 
 ### Roadmap Evolution
 
@@ -132,7 +133,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-14T12:17:35.081Z
-Stopped at: Completed 45-01-PLAN.md
+Last session: 2026-05-14T12:39:59.168Z
+Stopped at: Completed 45-02-PLAN.md
 Resume file: None
 Next: Plan Phase 45 (Tenant Admin Auth Backend) via /gsd:plan-phase 45
