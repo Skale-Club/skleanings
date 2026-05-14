@@ -265,6 +265,93 @@ router.patch("/tenants/:id/status", requireSuperAdmin, async (req: Request, res:
 });
 
 // ---------------------------------------------------------------------------
+// GET /tenants/:id/domains  — list all domains for a tenant
+// ---------------------------------------------------------------------------
+
+router.get("/tenants/:id/domains", requireSuperAdmin, async (req: Request, res: Response): Promise<void> => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) {
+    res.status(400).json({ message: "Invalid tenant id" });
+    return;
+  }
+  try {
+    const domainList = await storage.getTenantDomains(id);
+    res.json(domainList);
+  } catch (err) {
+    console.error("[super-admin] /tenants/:id/domains GET error:", err);
+    res.status(500).json({ message: "Failed to fetch domains" });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /tenants/:id/domains  — add non-primary domain to a tenant
+// ---------------------------------------------------------------------------
+
+router.post("/tenants/:id/domains", requireSuperAdmin, async (req: Request, res: Response): Promise<void> => {
+  const tenantId = parseInt(req.params.id, 10);
+  const { hostname: rawHostname } = req.body as { hostname?: string };
+
+  if (isNaN(tenantId)) {
+    res.status(400).json({ message: "Invalid tenant id" });
+    return;
+  }
+  if (!rawHostname?.trim()) {
+    res.status(400).json({ message: "hostname is required" });
+    return;
+  }
+
+  // Normalize: strip protocol and trailing slash
+  const hostname = rawHostname.trim().replace(/^https?:\/\//i, "").replace(/\/$/, "");
+  if (!hostname) {
+    res.status(400).json({ message: "Invalid hostname format" });
+    return;
+  }
+
+  try {
+    const domain = await storage.addDomain(tenantId, hostname, false);
+    res.status(201).json(domain);
+  } catch (err: unknown) {
+    if ((err as any)?.code === "23505") {
+      res.status(409).json({ message: "Hostname already registered" });
+      return;
+    }
+    console.error("[super-admin] /tenants/:id/domains POST error:", err);
+    res.status(500).json({ message: "Failed to add domain" });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// DELETE /domains/:id  — remove non-primary domain
+// ---------------------------------------------------------------------------
+
+router.delete("/domains/:id", requireSuperAdmin, async (req: Request, res: Response): Promise<void> => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) {
+    res.status(400).json({ message: "Invalid domain id" });
+    return;
+  }
+
+  // Fetch first to guard primary domain deletion
+  const [domain] = await db.select().from(domains).where(eq(domains.id, id));
+  if (!domain) {
+    res.status(404).json({ message: "Domain not found" });
+    return;
+  }
+  if (domain.isPrimary) {
+    res.status(400).json({ message: "Cannot remove primary domain" });
+    return;
+  }
+
+  try {
+    await storage.removeDomain(id);
+    res.status(204).send();
+  } catch (err) {
+    console.error("[super-admin] /domains/:id DELETE error:", err);
+    res.status(500).json({ message: "Failed to remove domain" });
+  }
+});
+
+// ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
