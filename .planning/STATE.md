@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v11.0
 milestone_name: Password Reset
-status: executing
-stopped_at: Completed 50-01-PLAN.md (Tenant billing self-service)
-last_updated: "2026-05-14T15:04:45.665Z"
+status: verifying
+stopped_at: Completed 50-02-PLAN.md (Tenant billing self-service frontend)
+last_updated: "2026-05-14T15:09:31.354Z"
 last_activity: 2026-05-14
 progress:
   total_phases: 42
-  completed_phases: 40
+  completed_phases: 41
   total_plans: 115
-  completed_plans: 114
+  completed_plans: 115
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-05-14)
 
 Phase: 50 (Tenant Billing Self-Service) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-05-14
 
 Progress: [----------] 0%
@@ -138,6 +138,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 49]: billingRows fetches all subscription rows in single full-table scan; billingMap keyed by tenantId for O(1) lookup
 - [Phase 50]: billingRouter mounted after resolveTenantMiddleware — res.locals.tenant and res.locals.storage populated for both billing routes
 - [Phase 50]: billingWebhookHandler left unchanged — still mounted pre-body-parser in server/index.ts for raw body Stripe signature verification
+- [Phase 50]: BillingPage is a standalone route at /admin/billing not embedded in Admin.tsx shell — sidebar click navigates via setLocation which matches the new Route in App.tsx
+- [Phase 50]: Badge colors reused from SuperAdmin.tsx pattern (green/yellow/red/gray for active/trialing/past_due/canceled)
 
 ### Roadmap Evolution
 
@@ -161,7 +163,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-14T15:04:45.658Z
-Stopped at: Completed 50-01-PLAN.md (Tenant billing self-service)
+Last session: 2026-05-14T15:09:31.345Z
+Stopped at: Completed 50-02-PLAN.md (Tenant billing self-service frontend)
 Resume file: None
 Next: Plan Phase 48 (Stripe Subscription Infrastructure) via /gsd:plan-phase 48
