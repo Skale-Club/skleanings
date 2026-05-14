@@ -12,6 +12,7 @@
 - ✅ **v8.0 Multi-Tenant Architecture** — Phases 38–41 (shipped 2026-05-13)
 - ✅ **v9.0 Tenant Onboarding** — Phases 42–44 (shipped 2026-05-14)
 - ✅ **v10.0 Tenant Admin Auth** — Phases 45–46 (shipped 2026-05-14)
+- 🔲 **v11.0 Password Reset** — Phase 47
 
 ---
 
@@ -136,6 +137,12 @@ Full details: [milestones/v10.0-ROADMAP.md](milestones/v10.0-ROADMAP.md)
 
 - [x] **Phase 45: Tenant Admin Auth Backend** - Tenant-scoped login endpoint, timing-safe auth, session persistence, logout, requireAdmin tenantId validation, legacy env-var path preserved (completed 2026-05-14)
 - [x] **Phase 46: Admin Panel Frontend Auth** - Admin panel data isolation post-login, 401 redirect behavior, useAuth hostname-aware tenant detection (completed 2026-05-14)
+
+---
+
+### v11.0 Password Reset
+
+- [ ] **Phase 47: Password Reset** - Forgot-password token flow, reset-password frontend page, change-password for logged-in admins, tenant-branded Resend email template
 
 ---
 
@@ -312,6 +319,21 @@ Plans:
 
 ---
 
+### Phase 47: Password Reset
+**Goal**: Tenant admins can recover account access via a time-limited email link and change their own password while logged in — without requiring super-admin intervention
+**Depends on**: Phase 46
+**Requirements**: PR-01, PR-02, PR-03, PR-04, PR-05, PR-06
+**Success Criteria** (what must be TRUE):
+  1. An admin submitting a valid email to `POST /api/auth/forgot-password` receives a Resend email containing a reset link with a unique token — an invalid email receives the same 200 response (no email enumeration)
+  2. Clicking the reset link navigates to `/reset-password?token=...` where the admin can submit a new password — submitting an expired, used, or invalid token returns a visible error message on the page
+  3. After a successful password reset, the admin can log in with the new password and the old password no longer works
+  4. A logged-in admin can change their own password via the admin settings UI (`POST /api/auth/change-password`) by providing their current password and a new one — wrong current password returns 401
+  5. The reset email body includes the tenant's company name from `companySettings` and uses the existing Resend email formatting established in Phase 31
+**Plans**: TBD
+**UI hint**: yes
+
+---
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -330,8 +352,9 @@ Plans:
 | 42 | v9.0 | 3/3 | Complete | 2026-05-14 |
 | 43 | v9.0 | 3/3 | Complete | 2026-05-14 |
 | 44 | v9.0 | 2/2 | Complete | 2026-05-14 |
-| 45 | v10.0 | 2/2 | Complete    | 2026-05-14 |
-| 46 | v10.0 | 1/1 | Complete    | 2026-05-14 |
+| 45 | v10.0 | 2/2 | Complete | 2026-05-14 |
+| 46 | v10.0 | 1/1 | Complete | 2026-05-14 |
+| 47 | v11.0 | 0/3 | Not started | - |
 
 ---
 

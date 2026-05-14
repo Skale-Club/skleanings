@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v10.0
-milestone_name: Tenant Admin Auth
-status: verifying
-stopped_at: Completed 46-01-PLAN.md
-last_updated: "2026-05-14T12:58:16.053Z"
+milestone: v11.0
+milestone_name: Password Reset
+status: planning
+stopped_at: Roadmap created — Phase 47 defined
+last_updated: "2026-05-14T00:00:00.000Z"
 last_activity: 2026-05-14
 progress:
-  total_phases: 11
-  completed_phases: 11
-  total_plans: 27
-  completed_plans: 27
-  percent: 100
+  total_phases: 1
+  completed_phases: 0
+  total_plans: 3
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-14)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 46 — Admin Panel Frontend Auth
+**Current focus:** Phase 47 — Password Reset
 
 ## Current Position
 
-Phase: 46
+Phase: 47
 Plan: Not started
-Status: Phase complete — ready for verification
+Status: Roadmap created — ready for planning
 Last activity: 2026-05-14
 
-Progress: [██████████] 100%
+Progress: [----------] 0%
 
 ## Shipped Milestones
 
@@ -45,15 +45,15 @@ Progress: [██████████] 100%
 | v7.0 Xkedule Foundation | 36–37 (2 phases) | 6 | 2026-05-13 |
 | v8.0 Multi-Tenant Architecture | 38–41 (4 phases) | 10 | 2026-05-13 |
 | v9.0 Tenant Onboarding | 42–44 (3 phases) | 8 | 2026-05-14 |
+| v10.0 Tenant Admin Auth | 45–46 (2 phases) | 3 | 2026-05-14 |
 
 See: .planning/MILESTONES.md
 
-## v10.0 Phases
+## v11.0 Phases
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 45 | Tenant Admin Auth Backend | TA-01, TA-02, TA-03, TA-04, TA-05, TA-06 | In progress (1/2 plans) |
-| 46 | Admin Panel Frontend Auth | TA-07, TA-08, TA-09 | Not started |
+| 47 | Password Reset | PR-01, PR-02, PR-03, PR-04, PR-05, PR-06 | Not started |
 
 ## Pending Items
 
@@ -121,21 +121,20 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - v8.0 phases 38–41 derived from MT-01–17 (multi-tenant architecture)
 - v9.0 phases 42–44 derived from TO-01–10 (tenant onboarding)
 - v10.0 phases 45–46 derived from TA-01–09 (tenant admin auth)
-- Phase numbering continues from v9.0 last phase (44); v10.0 starts at Phase 45
-- Phase 45 adds POST /api/auth/tenant-login alongside existing POST /api/auth/login (legacy env-var path preserved for tenant 1 backward compat)
-- Phase 45 requireAdmin extended to validate req.session.adminUser.tenantId === res.locals.tenant.id — cross-tenant session rejection at middleware layer
-- Phase 46 frontend-only: useAuth hook and admin panel routing made hostname-aware; no new DB migrations required
+- v11.0 phase 47 derived from PR-01–06 (password reset) — single-phase milestone
+- Phase numbering continues from v10.0 last phase (46); v11.0 starts at Phase 47
+- Phase 47 adds password_reset_tokens table (new Supabase migration), two new API endpoints (forgot-password, reset-password), change-password for logged-in admins, and /reset-password frontend page
+- forgot-password always returns 200 regardless of email existence — prevents email enumeration
 
 ### Blockers/Concerns
 
 - **MIGRATION PENDING** — Phase 35 requires `supabase db push` (drop system_heartbeats) + add `BLOG_CRON_TOKEN` to GitHub Secrets
 - **MIGRATION PENDING** — Phase 38 requires `supabase db push` for multi-tenant schema
-- Phase 45 must not break existing POST /api/auth/login (env-var path) — test both paths before marking complete
-- Phase 46 useAuth hook currently assumes tenant 1; must read tenant from session/server response instead of hardcoding
+- Phase 47 requires new `password_reset_tokens` table migration via Supabase CLI
 
 ## Session Continuity
 
-Last session: 2026-05-14T12:54:48.989Z
-Stopped at: Completed 46-01-PLAN.md
+Last session: 2026-05-14T00:00:00.000Z
+Stopped at: v11.0 roadmap created
 Resume file: None
-Next: Plan Phase 45 (Tenant Admin Auth Backend) via /gsd:plan-phase 45
+Next: Plan Phase 47 (Password Reset) via /gsd:plan-phase 47
