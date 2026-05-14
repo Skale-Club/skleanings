@@ -360,7 +360,7 @@ Plans:
 Plans:
 - [x] 48-01-PLAN.md — Supabase migration (tenant_subscriptions table) + Drizzle schema + IStorage methods (getTenantSubscription, upsertTenantSubscription)
 - [ ] 48-02-PLAN.md — Stripe customer creation wired into POST /api/super-admin/tenants + POST /api/super-admin/tenants/:id/subscribe endpoint
-- [ ] 48-03-PLAN.md — POST /api/billing/webhook handler (raw body, signature verify, subscription.updated + subscription.deleted events)
+- [x] 48-03-PLAN.md — POST /api/billing/webhook handler (raw body, signature verify, subscription.updated + subscription.deleted events)
 
 ### Phase 49: Subscription Enforcement
 **Goal**: Tenants with lapsed subscriptions are blocked from all business API routes, and super-admin can see each tenant's billing status without leaving the panel
@@ -413,7 +413,7 @@ Plans:
 | 45 | v10.0 | 2/2 | Complete | 2026-05-14 |
 | 46 | v10.0 | 1/1 | Complete | 2026-05-14 |
 | 47 | v11.0 | 3/3 | Complete | 2026-05-14 |
-| 48 | v12.0 | 1/3 | In Progress|  |
+| 48 | v12.0 | 2/3 | In Progress|  |
 | 49 | v12.0 | 0/2 | Not started | - |
 | 50 | v12.0 | 0/2 | Not started | - |
 

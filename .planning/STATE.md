@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v11.0
 milestone_name: Password Reset
 status: executing
-stopped_at: Completed 48-01-PLAN.md (tenant_subscriptions schema + storage)
-last_updated: "2026-05-14T14:18:13.952Z"
+stopped_at: Completed 48-03-PLAN.md
+last_updated: "2026-05-14T14:25:43.633Z"
 last_activity: 2026-05-14
 progress:
   total_phases: 40
   completed_phases: 38
   total_plans: 111
-  completed_plans: 109
+  completed_plans: 110
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-05-14)
 ## Current Position
 
 Phase: 48 (Stripe Subscription Infrastructure) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-05-14
 
@@ -131,6 +131,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 50 arch]: POST /api/billing/portal is a tenant-facing route guarded by requireAdmin — reads tenant's stripeCustomerId from tenant_subscriptions then creates Stripe Billing Portal session
 - [Phase 48-01]: tenant_subscriptions uses db directly (global registry pattern, not this.tenantId) — same as tenants/domains/passwordResetTokens
 - [Phase 48-01]: stripe_subscription_id is nullable — Stripe customer created before subscription exists; status DEFAULT 'none' indicates no subscription state
+- [Phase 48]: Stripe SDK v21: current_period_end moved to SubscriptionItem — webhook uses sub.items.data[0].current_period_end
+- [Phase 48]: Billing webhook bypasses resolveTenantMiddleware — mounted directly on app in index.ts before express.json()
 
 ### Roadmap Evolution
 
@@ -154,7 +156,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-14T14:18:13.943Z
-Stopped at: Completed 48-01-PLAN.md (tenant_subscriptions schema + storage)
+Last session: 2026-05-14T14:25:43.624Z
+Stopped at: Completed 48-03-PLAN.md
 Resume file: None
 Next: Plan Phase 48 (Stripe Subscription Infrastructure) via /gsd:plan-phase 48
