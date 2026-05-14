@@ -134,10 +134,16 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-## Current Milestone: v14.0 Billing Hardening ✅ SHIPPED
+## Current Milestone: v15.0 Tenant Onboarding Experience
 
-**Status:** Complete — all 6 requirements (BH-01–BH-06) shipped.
+**Goal:** New tenants get a smooth first-run experience — email verification prevents spam signups, a welcome email is sent immediately after signup, and an in-app setup checklist guides admins through the minimum viable configuration (services, staff, availability).
+
+**Target features:**
+- Email verification token sent on signup (Resend) — unverified tenants see a banner; verification link sets a verified_at timestamp
+- Welcome email sent on successful signup with the admin URL and first-steps guide
+- First-run setup checklist in /admin — tracks completion of: add first service, add first staff member, configure availability (read from DB, not hardcoded)
+- Checklist dismissible once all items complete or manually dismissed
 
 ---
 
-*Last updated: 2026-05-14 — v14.0 Billing Hardening shipped*
+*Last updated: 2026-05-14 — v15.0 Tenant Onboarding Experience started*
