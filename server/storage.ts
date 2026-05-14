@@ -441,6 +441,14 @@ export interface IStorage {
   createTenantSubscription(tenantId: number, stripeCustomerId: string): Promise<TenantSubscription>;
   getTenantSubscription(tenantId: number): Promise<TenantSubscription | undefined>;
   upsertTenantSubscription(tenantId: number, data: Partial<Omit<InsertTenantSubscription, 'tenantId' | 'stripeCustomerId'>>): Promise<TenantSubscription>;
+
+  // Self-serve signup — Phase 51 (global registry, uses db directly)
+  signupTenant(data: {
+    companyName: string;
+    slug: string;
+    email: string;
+    hashedPassword: string;
+  }): Promise<{ tenantId: number; userId: string; subdomain: string }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2495,6 +2503,75 @@ export class DatabaseStorage implements IStorage {
       .where(eq(tenantSubscriptions.tenantId, tenantId))
       .returning();
     return row;
+  }
+
+  // Self-serve signup — Phase 51 (global registry, uses db directly)
+  async signupTenant(data: {
+    companyName: string;
+    slug: string;
+    email: string;
+    hashedPassword: string;
+  }): Promise<{ tenantId: number; userId: string; subdomain: string }> {
+    const hostname = `${data.slug}.xkedule.com`;
+
+    // Uniqueness check before transaction — clearer 409 error than DB constraint
+    const [existingDomain] = await db
+      .select({ id: domains.id })
+      .from(domains)
+      .where(eq(domains.hostname, hostname))
+      .limit(1);
+
+    if (existingDomain) {
+      const err = new Error("Subdomain already taken") as any;
+      err.code = "SUBDOMAIN_TAKEN";
+      throw err;
+    }
+
+    // Atomic transaction: tenant + domain + user + user_tenants + companySettings
+    const { tenantId, userId } = await db.transaction(async (tx) => {
+      // 1. Create tenant
+      const [tenant] = await tx.insert(tenants).values({
+        name: data.companyName,
+        slug: data.slug,
+        status: "active",
+      }).returning();
+
+      // 2. Create primary domain
+      await tx.insert(domains).values({
+        tenantId: tenant.id,
+        hostname,
+        isPrimary: true,
+      });
+
+      // 3. Create admin user
+      const userId = crypto.randomUUID();
+      await tx.insert(users).values({
+        id: userId,
+        tenantId: tenant.id,
+        email: data.email,
+        password: data.hashedPassword,
+        role: "admin",
+      });
+
+      // 4. Create user_tenants link
+      await tx.insert(userTenants).values({
+        userId,
+        tenantId: tenant.id,
+        role: "admin",
+      });
+
+      // 5. Seed companySettings
+      await tx.insert(companySettings).values({
+        tenantId: tenant.id,
+        companyName: data.companyName,
+        timeZone: "America/New_York",
+        language: "en",
+      });
+
+      return { tenantId: tenant.id, userId };
+    });
+
+    return { tenantId, userId, subdomain: hostname };
   }
 }
 

@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v13.0
-milestone_name: Self-Serve Signup
-status: milestone_started
-stopped_at: Roadmap created for v13.0 — ready to plan Phase 51
-last_updated: "2026-05-14T16:30:00.000Z"
+milestone: v1.0
+milestone_name: milestone
+status: completed
+stopped_at: Completed 51-01-PLAN.md
+last_updated: "2026-05-14T17:56:19.716Z"
 last_activity: 2026-05-14
 progress:
-  total_phases: 2
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_phases: 17
+  completed_phases: 15
+  total_plans: 39
+  completed_plans: 38
+  percent: 100
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-05-14)
 ## Current Position
 
 Phase: 51
-Plan: Not started
-Status: Roadmap complete — ready to plan Phase 51
+Plan: 1 of 1 complete
+Status: Phase 51 Plan 01 complete — self-serve signup backend shipped
 Last activity: 2026-05-14
 
-Progress: [----------] 0%
+Progress: [==========] 100%
 
 ## Shipped Milestones
 
@@ -140,6 +140,9 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 50]: billingWebhookHandler left unchanged — still mounted pre-body-parser in server/index.ts for raw body Stripe signature verification
 - [Phase 50]: BillingPage is a standalone route at /admin/billing not embedded in Admin.tsx shell — sidebar click navigates via setLocation which matches the new Route in App.tsx
 - [Phase 50]: Badge colors reused from SuperAdmin.tsx pattern (green/yellow/red/gray for active/trialing/past_due/canceled)
+- [Phase 51]: signupTenant() is a global registry method (uses db directly, not this.tenantId) matching provisionTenantAdmin pattern
+- [Phase 51]: signupRouter mounted at /api before resolveTenantMiddleware so signup is accessible without a tenant context
+- [Phase 51]: Stripe subscription creation is non-fatal — tenant exists regardless of Stripe API availability
 
 ### Roadmap Evolution
 
@@ -162,7 +165,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-14T16:30:00.000Z
-Stopped at: v13.0 roadmap created — Phases 51 and 52 defined
+Last session: 2026-05-14T17:56:19.710Z
+Stopped at: Completed 51-01-PLAN.md
 Resume file: None
 Next: Plan Phase 51 (Self-Serve Signup Backend) via /gsd:plan-phase 51
