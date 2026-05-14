@@ -1,9 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
 import { useAdminTenantAuth } from '@/context/AdminTenantAuthContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
+} from '@/components/ui/table';
 import { CreditCard, ExternalLink } from 'lucide-react';
 
 interface BillingStatus {
@@ -13,6 +23,15 @@ interface BillingStatus {
   stripeCustomerId: string | null;
 }
 
+interface Invoice {
+  id: string;
+  date: string;
+  amount: number;
+  currency: string;
+  status: string;
+  invoiceUrl: string | null;
+}
+
 export default function BillingPage() {
   const { isAuthenticated, loading: authLoading } = useAdminTenantAuth();
   const [, setLocation] = useLocation();
@@ -20,6 +39,18 @@ export default function BillingPage() {
   const [fetchLoading, setFetchLoading] = useState(true);
   const [portalLoading, setPortalLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { data: invoiceData, isLoading: invoicesLoading } = useQuery<{ invoices: Invoice[] }>({
+    queryKey: ['/api/billing/invoices'],
+    queryFn: async () => {
+      const res = await fetch('/api/billing/invoices', { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to load invoices');
+      return res.json();
+    },
+    enabled: isAuthenticated,
+    staleTime: 30000,
+  });
+  const invoices = invoiceData?.invoices ?? [];
 
   // Auth guard
   useEffect(() => {
@@ -173,6 +204,63 @@ export default function BillingPage() {
               </p>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="mt-4">
+        <CardHeader>
+          <CardTitle>Invoice History</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {invoicesLoading ? (
+            <div className="space-y-2">
+              {[...Array(3)].map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </div>
+          ) : invoices.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No invoices yet.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Download</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {invoices.map((inv) => (
+                  <TableRow key={inv.id}>
+                    <TableCell>{new Date(inv.date).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      {(inv.amount / 100).toFixed(2)} {inv.currency.toUpperCase()}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={inv.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}>
+                        {inv.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {inv.invoiceUrl ? (
+                        <a
+                          href={inv.invoiceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline text-sm"
+                        >
+                          Download
+                        </a>
+                      ) : (
+                        '—'
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
