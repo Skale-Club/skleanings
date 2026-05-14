@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v11.0
 milestone_name: Password Reset
 status: executing
-stopped_at: Completed 48-02-PLAN.md (Stripe subscribe endpoints)
-last_updated: "2026-05-14T14:29:59.376Z"
+stopped_at: Completed 49-01-PLAN.md (Subscription enforcement)
+last_updated: "2026-05-14T14:40:18.816Z"
 last_activity: 2026-05-14
 progress:
-  total_phases: 40
+  total_phases: 41
   completed_phases: 39
   total_plans: 111
-  completed_plans: 111
+  completed_plans: 112
   percent: 0
 ---
 
@@ -133,6 +133,9 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 48-01]: stripe_subscription_id is nullable — Stripe customer created before subscription exists; status DEFAULT 'none' indicates no subscription state
 - [Phase 48]: Stripe customer creation failure is non-fatal in POST /tenants — inner try/catch isolates Stripe from tenant 201 response
 - [Phase 48]: Stripe SDK v21 dropped current_period_end from TS types — access via (stripeSub as any).current_period_end with null fallback
+- [Phase 49]: 402 guard uses db directly in middleware — res.locals.storage does not exist yet when middleware runs
+- [Phase 49]: No subRow in tenant_subscriptions means new tenant — passes through unblocked, matching 'none' status design from Phase 48-01
+- [Phase 49]: billingRows fetches all subscription rows in single full-table scan; billingMap keyed by tenantId for O(1) lookup
 
 ### Roadmap Evolution
 
@@ -156,7 +159,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-14T14:24:04.064Z
-Stopped at: Completed 48-02-PLAN.md (Stripe subscribe endpoints)
+Last session: 2026-05-14T14:40:12.855Z
+Stopped at: Completed 49-01-PLAN.md (Subscription enforcement)
 Resume file: None
 Next: Plan Phase 48 (Stripe Subscription Infrastructure) via /gsd:plan-phase 48
