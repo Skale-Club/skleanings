@@ -408,7 +408,7 @@ Plans:
   5. A `customer.subscription.trial_will_end` webhook event from Stripe causes the corresponding `tenant_subscriptions` row status to update correctly — a `customer.subscription.updated` event with a valid payment method transitions status to `active`, without a payment method to `past_due`
 **Plans**: 2 plans
 Plans:
-- [ ] 51-01-PLAN.md — signupTenant() IStorage method + POST /api/auth/signup route (atomic provision + Stripe trial + session)
+- [x] 51-01-PLAN.md — signupTenant() IStorage method + POST /api/auth/signup route (atomic provision + Stripe trial + session)
 - [ ] 51-02-PLAN.md — billingWebhookHandler: customer.subscription.trial_will_end event handling
 
 ### Phase 52: Self-Serve Signup Frontend
@@ -450,7 +450,7 @@ Plans:
 | 48 | v12.0 | 3/3 | Complete    | 2026-05-14 |
 | 49 | v12.0 | 2/2 | Complete    | 2026-05-14 |
 | 50 | v12.0 | 2/2 | Complete    | 2026-05-14 |
-| 51 | v13.0 | 0/2 | Not started | - |
+| 51 | v13.0 | 1/2 | In Progress|  |
 | 52 | v13.0 | 0/? | Not started | - |
 
 ---

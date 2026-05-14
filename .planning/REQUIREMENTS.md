@@ -10,10 +10,10 @@
 
 ### Public Signup Flow (Phase 51)
 
-- [ ] **SS-01**: A business owner visits `/signup` and submits company name, subdomain slug, email, and password — the system atomically creates: tenant, domain (slug.xkedule.com), admin user, company settings, Stripe customer, and a 14-day trial subscription in a single `db.transaction`
-- [ ] **SS-02**: The signup endpoint validates subdomain slug uniqueness — if the slug is already taken, the response returns a 409 with a field-level error message ("Subdomain already taken")
-- [ ] **SS-03**: After successful signup, the API returns the tenant subdomain — the frontend redirects the browser to `https://[slug].xkedule.com/admin`
-- [ ] **SS-04**: The `/signup` page is publicly accessible (no auth required) and redirects already-authenticated admins to `/admin`
+- [x] **SS-01**: A business owner visits `/signup` and submits company name, subdomain slug, email, and password — the system atomically creates: tenant, domain (slug.xkedule.com), admin user, company settings, Stripe customer, and a 14-day trial subscription in a single `db.transaction`
+- [x] **SS-02**: The signup endpoint validates subdomain slug uniqueness — if the slug is already taken, the response returns a 409 with a field-level error message ("Subdomain already taken")
+- [x] **SS-03**: After successful signup, the API returns the tenant subdomain — the frontend redirects the browser to `https://[slug].xkedule.com/admin`
+- [x] **SS-04**: The `/signup` page is publicly accessible (no auth required) and redirects already-authenticated admins to `/admin`
 
 ### Trial Subscription Lifecycle (Phase 51)
 
@@ -55,10 +55,10 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SS-01 | Phase 51 | Pending |
-| SS-02 | Phase 51 | Pending |
-| SS-03 | Phase 51 | Pending |
-| SS-04 | Phase 51 | Pending |
+| SS-01 | Phase 51 | Complete |
+| SS-02 | Phase 51 | Complete |
+| SS-03 | Phase 51 | Complete |
+| SS-04 | Phase 51 | Complete |
 | SS-05 | Phase 51 | Pending |
 | SS-06 | Phase 51 | Pending |
 | SS-07 | Phase 52 | Pending |
