@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v12.0
-milestone_name: SaaS Billing
-status: planning
-stopped_at: Roadmap created — Phase 48 not started
-last_updated: "2026-05-14T00:00:00.000Z"
+milestone: v11.0
+milestone_name: Password Reset
+status: executing
+stopped_at: Completed 48-01-PLAN.md (tenant_subscriptions schema + storage)
+last_updated: "2026-05-14T14:18:13.952Z"
 last_activity: 2026-05-14
 progress:
-  total_phases: 3
-  completed_phases: 0
-  total_plans: 7
-  completed_plans: 0
+  total_phases: 40
+  completed_phases: 38
+  total_plans: 111
+  completed_plans: 109
   percent: 0
 ---
 
@@ -25,9 +25,9 @@ See: .planning/PROJECT.md (updated 2026-05-14)
 
 ## Current Position
 
-Phase: 48
-Plan: Not started
-Status: Roadmap created — ready for planning
+Phase: 48 (Stripe Subscription Infrastructure) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
 Last activity: 2026-05-14
 
 Progress: [----------] 0%
@@ -129,6 +129,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 48 arch]: tenant_subscriptions is a global registry table (one row per tenant, no tenantId self-reference) — getTenantSubscription/upsertTenantSubscription use db directly, not this.tenantId
 - [Phase 49 arch]: 402 enforcement placed after the existing 503 inactive-tenant guard in resolveTenantMiddleware; grace period: past_due AND currentPeriodEnd < now() - 3 days
 - [Phase 50 arch]: POST /api/billing/portal is a tenant-facing route guarded by requireAdmin — reads tenant's stripeCustomerId from tenant_subscriptions then creates Stripe Billing Portal session
+- [Phase 48-01]: tenant_subscriptions uses db directly (global registry pattern, not this.tenantId) — same as tenants/domains/passwordResetTokens
+- [Phase 48-01]: stripe_subscription_id is nullable — Stripe customer created before subscription exists; status DEFAULT 'none' indicates no subscription state
 
 ### Roadmap Evolution
 
@@ -152,7 +154,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-14T00:00:00.000Z
-Stopped at: Roadmap created for v12.0 SaaS Billing
+Last session: 2026-05-14T14:18:13.943Z
+Stopped at: Completed 48-01-PLAN.md (tenant_subscriptions schema + storage)
 Resume file: None
 Next: Plan Phase 48 (Stripe Subscription Infrastructure) via /gsd:plan-phase 48
