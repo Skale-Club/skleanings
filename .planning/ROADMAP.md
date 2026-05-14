@@ -14,7 +14,7 @@
 - ✅ **v10.0 Tenant Admin Auth** — Phases 45–46 (shipped 2026-05-14)
 - ✅ **v11.0 Password Reset** — Phase 47 (shipped 2026-05-14)
 - ✅ **v12.0 SaaS Billing** — Phases 48–50 (shipped 2026-05-14)
-- 🔲 **v13.0 Self-Serve Signup** — Phases 51–52
+- ✅ **v13.0 Self-Serve Signup** — Phases 51–52 (shipped 2026-05-14)
 
 ---
 
@@ -396,6 +396,16 @@ Plans:
 
 ---
 
+<details>
+<summary>✅ v13.0 Self-Serve Signup (Phases 51–52) — SHIPPED 2026-05-14</summary>
+
+- [x] Phase 51: Self-Serve Signup Backend (2/2 plans) — completed 2026-05-14
+- [x] Phase 52: Self-Serve Signup Frontend (2/2 plans) — completed 2026-05-14
+
+Full details: [milestones/v13.0-ROADMAP.md](milestones/v13.0-ROADMAP.md)
+
+</details>
+
 ### Phase 51: Self-Serve Signup Backend
 **Goal**: Any business can sign up without super-admin involvement — a single POST endpoint atomically provisions the full tenant stack (tenant, domain, admin user, company settings, Stripe customer, trial subscription) and the Stripe webhook keeps trial status in sync
 **Depends on**: Phase 50
@@ -450,7 +460,7 @@ Plans:
 | 48 | v12.0 | 3/3 | Complete    | 2026-05-14 |
 | 49 | v12.0 | 2/2 | Complete    | 2026-05-14 |
 | 50 | v12.0 | 2/2 | Complete    | 2026-05-14 |
-| 51 | v13.0 | 1/2 | Complete    | 2026-05-14 |
+| 51 | v13.0 | 2/2 | Complete    | 2026-05-14 |
 | 52 | v13.0 | 1/2 | Complete    | 2026-05-14 |
 
 ---

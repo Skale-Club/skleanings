@@ -1,5 +1,18 @@
 # Milestones
 
+## v13.0 Self-Serve Signup (Shipped: 2026-05-14)
+
+**Phases completed:** 2 phases (51–52), 4 plans, all complete
+
+**Key accomplishments:**
+
+- `signupTenant()` global registry IStorage method — single `db.transaction` atomically provisions tenant + domain + admin user + user_tenants + companySettings; `POST /api/auth/signup` mounted before `resolveTenantMiddleware` (platform-level, no tenant required)
+- Stripe 14-day trial subscription created automatically on signup; `customer.subscription.trial_will_end` webhook case added to `billingWebhookHandler` to keep `tenant_subscriptions` status in sync
+- `Signup.tsx` public page — 5-field form (Company Name, Subdomain with live .xkedule.com preview, Email, Password, Confirm Password), inline validation, 409 field-level errors without page reload, cross-subdomain redirect on 201
+- `BillingPage.tsx` trial UI — blue Trial badge, days-remaining countdown from `currentPeriodEnd`, brand-yellow pill "Add Payment Method" CTA for trialing/past_due states reusing existing `POST /api/billing/portal` flow
+
+---
+
 ## v12.0 SaaS Billing (Shipped: 2026-05-14)
 
 **Phases completed:** 3 phases (48–50), 7 plans, all complete

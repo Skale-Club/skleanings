@@ -132,19 +132,12 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-## Current Milestone: v13.0 Self-Serve Signup
+## Current Milestone: v13.0 Self-Serve Signup ✅ SHIPPED
 
 **Goal:** Any business can sign up independently via a public page — no super-admin action required to onboard a new tenant, with a 14-day free trial auto-started on signup.
 
-**Target features:**
-- Public /signup page (company name, subdomain slug, email, password)
-- Atomic signup: tenant + domain + admin user + company settings + Stripe customer + trial subscription in one transaction
-- Subdomain uniqueness validation with friendly error
-- Post-signup redirect to /admin at the new tenant's subdomain
-- Trial status visible in /admin/billing (days remaining countdown)
-- Stripe webhook for `customer.subscription.trial_end` → update status to active/past_due
-- Super-admin sees self-serve signups in tenant list (source indicator)
+**Status:** Complete — all 10 requirements (SS-01–SS-10) shipped.
 
 ---
 
-*Last updated: 2026-05-14 — v13.0 Self-Serve Signup started*
+*Last updated: 2026-05-14 — v13.0 Self-Serve Signup shipped*
