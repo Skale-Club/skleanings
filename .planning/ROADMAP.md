@@ -270,7 +270,7 @@ Plans:
 | 39 | v8.0 | 3/3 | Complete | 2026-05-13 |
 | 40 | v8.0 | 3/3 | Complete | 2026-05-13 |
 | 41 | v8.0 | 2/2 | Complete | 2026-05-13 |
-| 42 | v9.0 | 3/3 | Complete   | 2026-05-14 |
+| 42 | v9.0 | 3/3 | Complete    | 2026-05-14 |
 | 43 | v9.0 | 0/TBD | Not started | - |
 | 44 | v9.0 | 0/TBD | Not started | - |
 
