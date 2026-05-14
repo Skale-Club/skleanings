@@ -11,7 +11,7 @@
 ### Stripe Subscription Infrastructure (Phase 48)
 
 - [x] **SB-01**: Tabela `tenant_subscriptions` armazena stripeCustomerId, stripeSubscriptionId, status (active/past_due/canceled/trialing), planId, currentPeriodEnd por tenant
-- [ ] **SB-02**: Na criação de um tenant (POST /api/super-admin/tenants), um Stripe Customer é criado automaticamente e `stripeCustomerId` salvo em `tenant_subscriptions`
+- [x] **SB-02**: Na criação de um tenant (POST /api/super-admin/tenants), um Stripe Customer é criado automaticamente e `stripeCustomerId` salvo em `tenant_subscriptions`
 - [x] **SB-03**: Super-admin pode iniciar uma assinatura para um tenant (`POST /api/super-admin/tenants/:id/subscribe`) — cria Stripe Subscription com price ID configurável via env var `STRIPE_SAAS_PRICE_ID`
 - [ ] **SB-04**: Webhook Stripe (`POST /api/billing/webhook`) processa eventos `customer.subscription.updated` e `customer.subscription.deleted` — atualiza status em `tenant_subscriptions`
 
@@ -48,7 +48,7 @@
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | SB-01 | Phase 48 | Complete |
-| SB-02 | Phase 48 | Pending |
+| SB-02 | Phase 48 | Complete |
 | SB-03 | Phase 48 | Complete |
 | SB-04 | Phase 48 | Pending |
 | SB-05 | Phase 49 | Pending |
