@@ -1,55 +1,64 @@
-# Requirements — v11.0 Password Reset
+# Requirements — v12.0 SaaS Billing
 
-**Milestone:** v11.0 Password Reset
-**Goal:** Tenant admins conseguem recuperar o acesso à conta via link enviado por email — sem depender do super-admin para re-provisionar credenciais.
+**Milestone:** v12.0 SaaS Billing
+**Goal:** A plataforma cobra uma assinatura mensal por tenant via Stripe — super-admin gerencia planos e vê status de billing, tenant admin vê e gerencia a própria assinatura.
 **Status:** Active
 
 ---
 
 ## Milestone Requirements
 
-### Reset Flow (Phase 47)
+### Stripe Subscription Infrastructure (Phase 48)
 
-- [x] **PR-01**: Admin envia seu email em `POST /api/auth/forgot-password` — se o email existe na tabela `users` para o tenant atual, um token de reset é gerado e enviado via Resend; se não existe, responde com 200 mesmo (sem revelar se email existe)
-- [x] **PR-02**: Token de reset é armazenado na tabela `password_reset_tokens` (userId, token hash, expiresAt, usedAt) — token expira em 1 hora
-- [x] **PR-03**: Admin clica no link do email → `GET /reset-password?token=...` no frontend — formulário para nova senha
-- [x] **PR-04**: Admin submete nova senha em `POST /api/auth/reset-password` com o token — token validado (existe, não expirado, não usado), senha atualizada com bcrypt, token marcado como usado
+- [ ] **SB-01**: Tabela `tenant_subscriptions` armazena stripeCustomerId, stripeSubscriptionId, status (active/past_due/canceled/trialing), planId, currentPeriodEnd por tenant
+- [ ] **SB-02**: Na criação de um tenant (POST /api/super-admin/tenants), um Stripe Customer é criado automaticamente e `stripeCustomerId` salvo em `tenant_subscriptions`
+- [ ] **SB-03**: Super-admin pode iniciar uma assinatura para um tenant (`POST /api/super-admin/tenants/:id/subscribe`) — cria Stripe Subscription com price ID configurável via env var `STRIPE_SAAS_PRICE_ID`
+- [ ] **SB-04**: Webhook Stripe (`POST /api/billing/webhook`) processa eventos `customer.subscription.updated` e `customer.subscription.deleted` — atualiza status em `tenant_subscriptions`
 
-### Admin Self-Service (Phase 47)
+### Subscription Enforcement (Phase 49)
 
-- [x] **PR-05**: Admin logado pode trocar a própria senha em `POST /api/auth/change-password` (senha atual + nova senha) — sem precisar de reset por email
-- [x] **PR-06**: Email de reset usa o template Resend existente (`server/lib/email-resend.ts`) com branding do tenant (company name do companySettings)
+- [ ] **SB-05**: `resolveTenantMiddleware` verifica status da subscription — tenants com status `canceled` ou `past_due` há mais de 3 dias recebem 402 "Subscription required" antes de qualquer route handler
+- [ ] **SB-06**: Super-admin vê status de billing (status, planId, currentPeriodEnd) para cada tenant na listagem de tenants
+
+### Tenant Billing Self-Service (Phase 50)
+
+- [ ] **SB-07**: Admin do tenant vê status da própria assinatura em `/admin/billing` — exibe status, data de renovação, e link para Stripe Customer Portal
+- [ ] **SB-08**: `POST /api/billing/portal` cria uma Stripe Billing Portal session para o tenant atual e retorna a URL — admin é redirecionado para gerenciar cartão/cancelar
 
 ---
 
 ## Future Requirements
 
-- Rate limiting no endpoint `/api/auth/forgot-password` para evitar spam de emails
-- Expiração e limpeza automática de tokens expirados via cron
-- Notificação de segurança quando senha é alterada
+- Trial period automático na criação de tenant (7-30 dias)
+- Múltiplos planos (basic/pro/enterprise) com feature flags
+- Dunning emails via Resend quando subscription está past_due
+- Invoice history no painel do tenant admin
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Magic link login (passwordless) | Sessão+bcrypt é o padrão do projeto |
-| SMS reset | Twilio existe mas não é o canal primário |
-| Admin pode ver/gerenciar outros admins | Escopo de IAM — v12.0+ |
+| Self-serve signup com billing | Requer Hetzner provisionado |
+| Múltiplos planos com feature flags | v13.0+ após billing básico validado |
+| Metered billing por booking | Complexidade desnecessária para MVP |
+| Período de trial automático | Simplificação — super-admin inicia assinatura manualmente |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PR-01 | Phase 47 | Complete |
-| PR-02 | Phase 47 | Complete |
-| PR-03 | Phase 47 | Complete |
-| PR-04 | Phase 47 | Complete |
-| PR-05 | Phase 47 | Complete |
-| PR-06 | Phase 47 | Complete |
+| SB-01 | Phase 48 | Pending |
+| SB-02 | Phase 48 | Pending |
+| SB-03 | Phase 48 | Pending |
+| SB-04 | Phase 48 | Pending |
+| SB-05 | Phase 49 | Pending |
+| SB-06 | Phase 49 | Pending |
+| SB-07 | Phase 50 | Pending |
+| SB-08 | Phase 50 | Pending |
 
 **Coverage:**
-- v1 requirements: 6 total
-- Mapped to phases: 6
+- v1 requirements: 8 total
+- Mapped to phases: 8
 - Unmapped: 0 ✓
 
 ---

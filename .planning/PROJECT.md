@@ -128,9 +128,9 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 ---
-## Current Milestone: v11.0 Password Reset
+## Current Milestone: v12.0 SaaS Billing
 
-**Goal:** Admins de tenant conseguem recuperar o acesso via link enviado por email — sem depender do super-admin para re-provisionar credenciais.
+**Goal:** A plataforma cobra assinatura mensal por tenant via Stripe — super-admin gerencia planos, tenant admin vê e gerencia sua assinatura.
 
 **Target features:**
 - Login endpoint tenant-scoped (`POST /api/auth/tenant-login`) com bcrypt timing-safe
