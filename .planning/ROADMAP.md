@@ -409,7 +409,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [ ] 51-01-PLAN.md — signupTenant() IStorage method + POST /api/auth/signup route (atomic provision + Stripe trial + session)
-- [ ] 51-02-PLAN.md — billingWebhookHandler: customer.subscription.trial_will_end event handling
+- [x] 51-02-PLAN.md — billingWebhookHandler: customer.subscription.trial_will_end event handling
 
 ### Phase 52: Self-Serve Signup Frontend
 **Goal**: A business owner can discover the platform, fill in their details on a public signup page, and land in their own admin panel — the /admin/billing page communicates trial status and guides them to add a payment method before the trial ends
@@ -450,7 +450,7 @@ Plans:
 | 48 | v12.0 | 3/3 | Complete    | 2026-05-14 |
 | 49 | v12.0 | 2/2 | Complete    | 2026-05-14 |
 | 50 | v12.0 | 2/2 | Complete    | 2026-05-14 |
-| 51 | v13.0 | 0/2 | Not started | - |
+| 51 | v13.0 | 1/2 | In Progress|  |
 | 52 | v13.0 | 0/? | Not started | - |
 
 ---
