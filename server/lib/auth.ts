@@ -250,6 +250,23 @@ export async function requireUser(req: Request, res: Response, next: NextFunctio
 }
 
 export async function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  // --- Session-based fast-path (tenant-scoped login) ---
+  if (req.session.adminUser) {
+    const sessionUser = req.session.adminUser;
+    // Cross-tenant guard: if session carries a tenantId, it must match the resolved tenant
+    if (
+      sessionUser.tenantId !== undefined &&
+      res.locals.tenant !== undefined &&
+      sessionUser.tenantId !== res.locals.tenant.id
+    ) {
+      return res.status(403).json({ message: "Cross-tenant access denied" });
+    }
+    // Session valid — attach to req for downstream use
+    (req as any).sessionUser = sessionUser;
+    return next();
+  }
+
+  // --- Existing Supabase JWT path (unchanged) ---
   const storage = res.locals.storage!;
   const user = await getAuthenticatedUser(req, storage);
   if (!user) return res.status(401).json({ message: "Authentication required" });
