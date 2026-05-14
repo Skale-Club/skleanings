@@ -489,7 +489,11 @@ Plans:
   3. Submitting an expired or already-used token to `GET /api/auth/verify-email` renders a clear error page — the user is not silently redirected to `/admin`
   4. An admin with `emailVerifiedAt = null` sees a dismissible yellow banner on every admin page reading "Please verify your email — check your inbox" with a "Resend verification email" link — clicking the link calls `POST /api/auth/resend-verification` and shows a confirmation toast
   5. The `email_verification_tokens` table (Supabase migration + Drizzle schema) stores SHA-256 token hash, userId, expiresAt, and usedAt — following the identical pattern as `password_reset_tokens` from Phase 47
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 55-01-PLAN.md — DB migration + Drizzle schema + IStorage methods (OB-03)
+- [ ] 55-02-PLAN.md — Email builders + signup fire-and-forget + verify-email and resend routes (OB-01, OB-02, OB-05)
+- [ ] 55-03-PLAN.md — VerifyEmail page + admin-me extension + AdminTenantAuthContext + verification banner (OB-04)
 **UI hint**: yes
 
 ### Phase 56: Setup Checklist
@@ -534,7 +538,7 @@ Plans:
 | 52 | v13.0 | 1/2 | Complete    | 2026-05-14 |
 | 53 | v14.0 | 2/2 | Complete    | 2026-05-14 |
 | 54 | v14.0 | 1/2 | Complete    | 2026-05-14 |
-| 55 | v15.0 | 0/TBD | Not started | - |
+| 55 | v15.0 | 0/3 | Not started | - |
 | 56 | v15.0 | 0/TBD | Not started | - |
 
 ---
