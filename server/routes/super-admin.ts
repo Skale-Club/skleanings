@@ -191,7 +191,36 @@ router.get("/tenants", requireSuperAdmin, async (_req: Request, res: Response): 
       .from(tenants)
       .leftJoin(domains, and(eq(domains.tenantId, tenants.id), eq(domains.isPrimary, true)))
       .orderBy(asc(tenants.createdAt));
-    res.json(rows);
+
+    const [bookingCounts, serviceCounts, staffCounts] = await Promise.all([
+      db
+        .select({ tenantId: bookings.tenantId, cnt: count() })
+        .from(bookings)
+        .groupBy(bookings.tenantId),
+      db
+        .select({ tenantId: services.tenantId, cnt: count() })
+        .from(services)
+        .where(eq(services.isArchived, false))
+        .groupBy(services.tenantId),
+      db
+        .select({ tenantId: staffMembers.tenantId, cnt: count() })
+        .from(staffMembers)
+        .where(eq(staffMembers.isActive, true))
+        .groupBy(staffMembers.tenantId),
+    ]);
+
+    const bMap = Object.fromEntries(bookingCounts.map(r => [r.tenantId, Number(r.cnt)]));
+    const sMap = Object.fromEntries(serviceCounts.map(r => [r.tenantId, Number(r.cnt)]));
+    const stMap = Object.fromEntries(staffCounts.map(r => [r.tenantId, Number(r.cnt)]));
+
+    const result = rows.map(t => ({
+      ...t,
+      bookingCount: bMap[t.id] ?? 0,
+      serviceCount: sMap[t.id] ?? 0,
+      staffCount: stMap[t.id] ?? 0,
+    }));
+
+    res.json(result);
   } catch (err) {
     console.error("[super-admin] /tenants GET error:", err);
     res.status(500).json({ message: "Failed to fetch tenants" });

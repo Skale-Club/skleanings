@@ -190,6 +190,9 @@ export interface TenantListItem {
   status: string;
   createdAt: string;
   primaryDomain: string | null;
+  bookingCount: number;
+  serviceCount: number;
+  staffCount: number;
 }
 
 export interface DomainRow {
