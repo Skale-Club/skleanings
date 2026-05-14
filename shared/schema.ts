@@ -57,6 +57,20 @@ export const userTenants = pgTable("user_tenants", {
   primaryKey({ columns: [table.userId, table.tenantId] }),
 ]);
 
+// === Password Reset Tokens (Phase 47) ===
+// Raw token never stored — only the SHA-256 hash is persisted.
+// No tenant_id: user_id FK is sufficient scope; tokens are per-user not per-tenant.
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull().unique(),
+  expiresAt: timestamp("expires_at", { mode: "date" }).notNull(),
+  usedAt: timestamp("used_at", { mode: "date" }),
+});
+
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
+
 export const categories = pgTable("categories", {
   id: serial("id").primaryKey(),
   tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
