@@ -1,5 +1,18 @@
 # Milestones
 
+## v12.0 SaaS Billing (Shipped: 2026-05-14)
+
+**Phases completed:** 3 phases (48–50), 7 plans, all complete
+
+**Key accomplishments:**
+
+- `tenant_subscriptions` table via Supabase migration, Drizzle schema export, and three IStorage methods (getTenantSubscription, createTenantSubscription, upsertTenantSubscription) implemented using the global registry db-direct pattern
+- Stripe customer created automatically on tenant creation (POST /api/super-admin/tenants); POST /api/super-admin/tenants/:id/subscribe activates a Stripe Subscription via STRIPE_SAAS_PRICE_ID; POST /api/billing/webhook (raw body, signature verify) handles customer.subscription.updated/deleted events
+- 402 subscription enforcement guard in resolveTenantMiddleware — canceled tenants blocked immediately, past_due tenants blocked after 3-day grace period; super-admin Tenants table shows Billing Status (status badge + planId + renewal date) per tenant
+- GET /api/billing/status and POST /api/billing/portal endpoints + BillingPage.tsx at /admin/billing — tenant admin sees subscription status card and clicks "Manage Billing" to redirect to Stripe Customer Portal
+
+---
+
 ## v11.0 Password Reset (Shipped: 2026-05-14)
 
 **Phases completed:** 1 phase (47), 3 plans, all complete
@@ -113,7 +126,7 @@
 
 ## v3.0 Calendar Polish (Shipped: 2026-05-11)
 
-**Phases completed:** 1 phases, 4 plans, 6 tasks
+**Phases completed:** 1 phase, 4 plans, 6 tasks
 
 **Key accomplishments:**
 
@@ -146,5 +159,3 @@
 - Marketing Dashboard UI — Overview KPIs, Sources and Campaigns performance tables, Conversions tab, Visitor Journey slide-over, date range filter with 7 presets, polished empty states
 - GoHighLevel CRM UTM sync — first-touch and last-touch source/campaign written to GHL contact custom fields fire-and-forget on booking completion
 - Admin calendar create-booking-from-slot — pre-filled form with customer type-ahead, computed end time + estimated price, full submit mutation with status confirmation and calendar refresh
-
----

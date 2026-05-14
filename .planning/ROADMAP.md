@@ -13,7 +13,7 @@
 - ✅ **v9.0 Tenant Onboarding** — Phases 42–44 (shipped 2026-05-14)
 - ✅ **v10.0 Tenant Admin Auth** — Phases 45–46 (shipped 2026-05-14)
 - ✅ **v11.0 Password Reset** — Phase 47 (shipped 2026-05-14)
-- 🔲 **v12.0 SaaS Billing** — Phases 48–50
+- ✅ **v12.0 SaaS Billing** — Phases 48–50 (shipped 2026-05-14)
 
 ---
 
@@ -136,22 +136,25 @@ Full details: [milestones/v10.0-ROADMAP.md](milestones/v10.0-ROADMAP.md)
 
 </details>
 
-- [x] **Phase 45: Tenant Admin Auth Backend** - Tenant-scoped login endpoint, timing-safe auth, session persistence, logout, requireAdmin tenantId validation, legacy env-var path preserved (completed 2026-05-14)
-- [x] **Phase 46: Admin Panel Frontend Auth** - Admin panel data isolation post-login, 401 redirect behavior, useAuth hostname-aware tenant detection (completed 2026-05-14)
+<details>
+<summary>✅ v11.0 Password Reset (Phase 47) — SHIPPED 2026-05-14</summary>
 
----
+- [x] Phase 47: Password Reset (3/3 plans) — completed 2026-05-14
 
-### v11.0 Password Reset
+Full details: [milestones/v11.0-ROADMAP.md](milestones/v11.0-ROADMAP.md)
 
-- [x] **Phase 47: Password Reset** - Forgot-password token flow, reset-password frontend page, change-password for logged-in admins, tenant-branded Resend email template (completed 2026-05-14)
+</details>
 
----
+<details>
+<summary>✅ v12.0 SaaS Billing (Phases 48–50) — SHIPPED 2026-05-14</summary>
 
-### v12.0 SaaS Billing
+- [x] Phase 48: Stripe Subscription Infrastructure (3/3 plans) — completed 2026-05-14
+- [x] Phase 49: Subscription Enforcement (2/2 plans) — completed 2026-05-14
+- [x] Phase 50: Tenant Billing Self-Service (2/2 plans) — completed 2026-05-14
 
-- [x] **Phase 48: Stripe Subscription Infrastructure** - tenant_subscriptions table migration + IStorage methods, Stripe customer creation on tenant create, subscribe endpoint, billing webhook handler (completed 2026-05-14)
-- [x] **Phase 49: Subscription Enforcement** - 402 middleware guard for canceled/past_due tenants, super-admin billing status columns in tenant list (completed 2026-05-14)
-- [x] **Phase 50: Tenant Billing Self-Service** - Billing portal API endpoint, /admin/billing page for tenant admins (completed 2026-05-14)
+Full details: [milestones/v12.0-ROADMAP.md](milestones/v12.0-ROADMAP.md)
+
+</details>
 
 ---
 
@@ -414,7 +417,7 @@ Plans:
 | 46 | v10.0 | 1/1 | Complete | 2026-05-14 |
 | 47 | v11.0 | 3/3 | Complete | 2026-05-14 |
 | 48 | v12.0 | 3/3 | Complete    | 2026-05-14 |
-| 49 | v12.0 | 1/2 | Complete    | 2026-05-14 |
+| 49 | v12.0 | 2/2 | Complete    | 2026-05-14 |
 | 50 | v12.0 | 2/2 | Complete    | 2026-05-14 |
 
 ---
