@@ -36,7 +36,7 @@ export function AdminTenantAuthProvider({ children }: { children: ReactNode }) {
         setState({ isAuthenticated: false, tenantId: null, email: null, role: null, emailVerifiedAt: null, loading: false });
       }
     } catch {
-      setState({ isAuthenticated: false, tenantId: null, email: null, role: null, loading: false });
+      setState({ isAuthenticated: false, tenantId: null, email: null, role: null, emailVerifiedAt: null, loading: false });
     }
   };
 
