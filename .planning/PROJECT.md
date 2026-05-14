@@ -128,9 +128,9 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 ---
-## Current Milestone: v10.0 Tenant Admin Auth
+## Current Milestone: v11.0 Password Reset
 
-**Goal:** Admins provisionados conseguem fazer login no painel `/admin` do seu tenant — o loop de onboarding está completo e a plataforma SaaS é funcional end-to-end.
+**Goal:** Admins de tenant conseguem recuperar o acesso via link enviado por email — sem depender do super-admin para re-provisionar credenciais.
 
 **Target features:**
 - Login endpoint tenant-scoped (`POST /api/auth/tenant-login`) com bcrypt timing-safe

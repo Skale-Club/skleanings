@@ -1,66 +1,55 @@
-# Requirements — v10.0 Tenant Admin Auth
+# Requirements — v11.0 Password Reset
 
-**Milestone:** v10.0 Tenant Admin Auth
-**Goal:** Admins provisionados pela super-admin conseguem fazer login no painel `/admin` do seu tenant usando as credenciais geradas — o loop de onboarding está completo.
+**Milestone:** v11.0 Password Reset
+**Goal:** Tenant admins conseguem recuperar o acesso à conta via link enviado por email — sem depender do super-admin para re-provisionar credenciais.
 **Status:** Active
 
 ---
 
 ## Milestone Requirements
 
-### Tenant Admin Login (Phase 45)
+### Reset Flow (Phase 47)
 
-- [ ] **TA-01**: Tenant admin pode fazer login em `POST /api/auth/tenant-login` com email + senha — session criada com `req.session.adminUser` scoped ao tenantId do tenant atual (via `res.locals.tenant.id`)
-- [ ] **TA-02**: Tentativa de login com senha errada ou email desconhecido retorna 401 timing-safe (bcrypt.compare sempre executa para evitar timing attack)
-- [ ] **TA-03**: Sessão persiste entre refreshes do browser — admin permanece logado sem reautenticar
-- [x] **TA-04**: Admin pode fazer logout via `POST /api/auth/logout` — sessão destruída, redirect para login
+- [ ] **PR-01**: Admin envia seu email em `POST /api/auth/forgot-password` — se o email existe na tabela `users` para o tenant atual, um token de reset é gerado e enviado via Resend; se não existe, responde com 200 mesmo (sem revelar se email existe)
+- [ ] **PR-02**: Token de reset é armazenado na tabela `password_reset_tokens` (userId, token hash, expiresAt, usedAt) — token expira em 1 hora
+- [ ] **PR-03**: Admin clica no link do email → `GET /reset-password?token=...` no frontend — formulário para nova senha
+- [ ] **PR-04**: Admin submete nova senha em `POST /api/auth/reset-password` com o token — token validado (existe, não expirado, não usado), senha atualizada com bcrypt, token marcado como usado
 
-### Session Scoping (Phase 45)
+### Admin Self-Service (Phase 47)
 
-- [ ] **TA-05**: `requireAdmin` middleware valida que `req.session.adminUser.tenantId === res.locals.tenant.id` — admin do tenant 1 não consegue acessar rotas do tenant 2
-- [ ] **TA-06**: O path de login legado (env vars `ADMIN_EMAIL` + `ADMIN_PASSWORD_HASH`) continua funcional para tenant 1 (Skleanings) — compatibilidade backward mantida
-
-### Admin Panel Access (Phase 46)
-
-- [x] **TA-07**: Após login, o admin do tenant 2 consegue acessar `/admin` e vê os dados do seu tenant (bookings, services, staff, company settings) — todos via `res.locals.storage` do tenant correto
-- [x] **TA-08**: Rotas protegidas por `requireAdmin` retornam 401 quando não há sessão ativa — o painel frontend redireciona para login
-- [x] **TA-09**: Admin panel frontend detecta o tenant correto pelo hostname — `useAuth` hook sabe que está num tenant específico, não no tenant 1 hardcoded
+- [ ] **PR-05**: Admin logado pode trocar a própria senha em `POST /api/auth/change-password` (senha atual + nova senha) — sem precisar de reset por email
+- [ ] **PR-06**: Email de reset usa o template Resend existente (`server/lib/email-resend.ts`) com branding do tenant (company name do companySettings)
 
 ---
 
 ## Future Requirements
 
-- Recuperação de senha por email (reset link via Resend) — pós v10.0
-- Perfil do admin (trocar email/senha) — pós v10.0
-- Role-based access control dentro do tenant (admin vs viewer) — pós v10.0
-- OAuth/SSO por tenant — muito posterior
+- Rate limiting no endpoint `/api/auth/forgot-password` para evitar spam de emails
+- Expiração e limpeza automática de tokens expirados via cron
+- Notificação de segurança quando senha é alterada
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Self-serve signup de tenant admins | Requer billing e aprovação do super-admin |
-| Recuperação de senha | Requer Resend config por tenant — v11.0 |
-| 2FA | Não prioritário para MVP multi-tenant |
-| JWT tokens | Session-based é o padrão do projeto — não quebrar |
+| Magic link login (passwordless) | Sessão+bcrypt é o padrão do projeto |
+| SMS reset | Twilio existe mas não é o canal primário |
+| Admin pode ver/gerenciar outros admins | Escopo de IAM — v12.0+ |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TA-01 | Phase 45 | Pending |
-| TA-02 | Phase 45 | Pending |
-| TA-03 | Phase 45 | Pending |
-| TA-04 | Phase 45 | Complete |
-| TA-05 | Phase 45 | Pending |
-| TA-06 | Phase 45 | Pending |
-| TA-07 | Phase 46 | Complete |
-| TA-08 | Phase 46 | Complete |
-| TA-09 | Phase 46 | Complete |
+| PR-01 | Phase 47 | Pending |
+| PR-02 | Phase 47 | Pending |
+| PR-03 | Phase 47 | Pending |
+| PR-04 | Phase 47 | Pending |
+| PR-05 | Phase 47 | Pending |
+| PR-06 | Phase 47 | Pending |
 
 **Coverage:**
-- v1 requirements: 9 total
-- Mapped to phases: 9
+- v1 requirements: 6 total
+- Mapped to phases: 6
 - Unmapped: 0 ✓
 
 ---
