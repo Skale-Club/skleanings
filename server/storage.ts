@@ -121,6 +121,7 @@ import {
   type CalendarSyncJob,
   tenants,
   domains,
+  userTenants,
 } from "@shared/schema";
 type TenantRow = typeof tenants.$inferSelect;
 type DomainRow  = typeof domains.$inferSelect;
@@ -421,6 +422,8 @@ export interface IStorage {
   getTenantDomains(tenantId: number): Promise<DomainRow[]>;
   addDomain(tenantId: number, hostname: string, isPrimary: boolean): Promise<DomainRow>;
   removeDomain(id: number): Promise<void>;
+  provisionTenantAdmin(tenantId: number, email: string, hashedPassword: string): Promise<{ userId: string }>;
+  seedTenantCompanySettings(tenantId: number, companyName: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2376,6 +2379,45 @@ export class DatabaseStorage implements IStorage {
 
   async removeDomain(id: number): Promise<void> {
     await db.delete(domains).where(eq(domains.id, id));
+  }
+
+  async provisionTenantAdmin(
+    tenantId: number,
+    email: string,
+    hashedPassword: string,
+  ): Promise<{ userId: string }> {
+    return await db.transaction(async (tx) => {
+      const userId = crypto.randomUUID();
+      await tx.insert(users).values({
+        id: userId,
+        tenantId,
+        email,
+        password: hashedPassword,
+        role: "admin",
+        isAdmin: true,
+      });
+      await tx.insert(userTenants).values({
+        userId,
+        tenantId,
+        role: "admin",
+      });
+      return { userId };
+    });
+  }
+
+  async seedTenantCompanySettings(
+    tenantId: number,
+    companyName: string,
+  ): Promise<void> {
+    await db
+      .insert(companySettings)
+      .values({
+        tenantId,
+        companyName,
+        timeZone: "America/New_York",
+        language: "en",
+      })
+      .onConflictDoNothing();
   }
 }
 

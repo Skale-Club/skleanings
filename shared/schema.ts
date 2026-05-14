@@ -17,6 +17,7 @@ export const users = pgTable("users", {
   lastName: text("last_name"),
   phone: text("phone"),
   profileImageUrl: text("profile_image_url"),
+  password: text("password"),  // bcrypt hash; null for OAuth-only users
   isAdmin: boolean("is_admin").default(false),
   role: text("role").notNull().default("viewer"), // 'admin' | 'staff' | 'viewer'
   createdAt: timestamp("created_at").defaultNow(),
