@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 51-01-PLAN.md
-last_updated: "2026-05-14T18:01:13.454Z"
+stopped_at: Completed 52-02-PLAN.md
+last_updated: "2026-05-14T18:30:19.947Z"
 last_activity: 2026-05-14
 progress:
   total_phases: 17
   completed_phases: 16
-  total_plans: 39
-  completed_plans: 39
+  total_plans: 41
+  completed_plans: 40
   percent: 100
 ---
 
@@ -143,6 +143,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 51]: signupTenant() is a global registry method (uses db directly, not this.tenantId) matching provisionTenantAdmin pattern
 - [Phase 51]: signupRouter mounted at /api before resolveTenantMiddleware so signup is accessible without a tenant context
 - [Phase 51]: Stripe subscription creation is non-fatal — tenant exists regardless of Stripe API availability
+- [Phase 52]: Reuse handleManageBilling for Add Payment Method — same POST /api/billing/portal endpoint handles both actions
 
 ### Roadmap Evolution
 
@@ -165,7 +166,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-14T17:56:19.710Z
-Stopped at: Completed 51-01-PLAN.md
+Last session: 2026-05-14T18:30:19.940Z
+Stopped at: Completed 52-02-PLAN.md
 Resume file: None
 Next: Plan Phase 51 (Self-Serve Signup Backend) via /gsd:plan-phase 51

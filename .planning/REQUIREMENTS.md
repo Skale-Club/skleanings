@@ -22,8 +22,8 @@
 
 ### Trial Status UI (Phase 52)
 
-- [ ] **SS-07**: `/admin/billing` shows a "Trial" badge and a "X days remaining" countdown when `status = 'trialing'` — the countdown is derived from `currentPeriodEnd`
-- [ ] **SS-08**: `/admin/billing` shows an "Add Payment Method" CTA button when status is `trialing` or `past_due` — clicking opens the Stripe Billing Portal (same `POST /api/billing/portal` endpoint already exists)
+- [x] **SS-07**: `/admin/billing` shows a "Trial" badge and a "X days remaining" countdown when `status = 'trialing'` — the countdown is derived from `currentPeriodEnd`
+- [x] **SS-08**: `/admin/billing` shows an "Add Payment Method" CTA button when status is `trialing` or `past_due` — clicking opens the Stripe Billing Portal (same `POST /api/billing/portal` endpoint already exists)
 
 ### Signup Page UI (Phase 52)
 
@@ -61,8 +61,8 @@
 | SS-04 | Phase 51 | Complete |
 | SS-05 | Phase 51 | Pending |
 | SS-06 | Phase 51 | Pending |
-| SS-07 | Phase 52 | Pending |
-| SS-08 | Phase 52 | Pending |
+| SS-07 | Phase 52 | Complete |
+| SS-08 | Phase 52 | Complete |
 | SS-09 | Phase 52 | Pending |
 | SS-10 | Phase 52 | Pending |
 
