@@ -74,6 +74,38 @@ export async function billingWebhookHandler(req: Request, res: Response): Promis
         break;
       }
 
+      case "customer.subscription.trial_will_end": {
+        const sub = event.data.object as Stripe.Subscription;
+        const stripeCustomerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
+
+        const [subRow] = await db
+          .select()
+          .from(tenantSubscriptions)
+          .where(eq(tenantSubscriptions.stripeCustomerId, stripeCustomerId));
+
+        if (!subRow) {
+          console.warn("[billing/webhook] trial_will_end: no tenant_subscriptions row for customer:", stripeCustomerId);
+          res.status(200).json({ received: true });
+          return;
+        }
+
+        const firstItem = sub.items.data[0];
+        const periodEnd = firstItem?.current_period_end;
+
+        await db
+          .update(tenantSubscriptions)
+          .set({
+            status: sub.status,   // "trialing" — trial hasn't ended yet
+            planId: firstItem?.price.id ?? null,
+            currentPeriodEnd: periodEnd ? new Date(periodEnd * 1000) : null,
+            updatedAt: new Date(),
+          })
+          .where(eq(tenantSubscriptions.tenantId, subRow.tenantId));
+
+        console.warn(`[billing/webhook] trial_will_end: tenant ${subRow.tenantId} trial ending soon`);
+        break;
+      }
+
       default:
         // Unhandled event types — acknowledge without processing
         break;
