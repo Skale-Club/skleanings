@@ -22,6 +22,7 @@ export const users = pgTable("users", {
   role: text("role").notNull().default("viewer"), // 'admin' | 'staff' | 'viewer'
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
 });
 
 export type UpsertUser = typeof users.$inferInsert;
@@ -70,6 +71,21 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
 
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
 export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
+
+// === Email Verification Tokens (Phase 55) ===
+// Raw token never stored — only the SHA-256 hash is persisted.
+// No tenant_id: user_id FK is sufficient scope; tokens are per-user not per-tenant.
+export const emailVerificationTokens = pgTable("email_verification_tokens", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull().unique(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type EmailVerificationToken = typeof emailVerificationTokens.$inferSelect;
+export type InsertEmailVerificationToken = typeof emailVerificationTokens.$inferInsert;
 
 // === Tenant Subscriptions (Phase 48) ===
 // Global registry — one row per tenant. Tracks Stripe customer + subscription state.
