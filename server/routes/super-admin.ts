@@ -287,6 +287,53 @@ router.post("/tenants", requireSuperAdmin, async (req: Request, res: Response): 
 });
 
 // ---------------------------------------------------------------------------
+// POST /tenants/:id/subscribe  — create Stripe Subscription for a tenant (Phase 48)
+// ---------------------------------------------------------------------------
+
+router.post("/tenants/:id/subscribe", requireSuperAdmin, async (req: Request, res: Response): Promise<void> => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) {
+    res.status(400).json({ message: "Invalid tenant id" });
+    return;
+  }
+
+  const priceId = process.env.STRIPE_SAAS_PRICE_ID;
+  if (!priceId) {
+    res.status(500).json({ message: "STRIPE_SAAS_PRICE_ID is not configured" });
+    return;
+  }
+
+  try {
+    const sub = await storage.getTenantSubscription(id);
+    if (!sub) {
+      res.status(404).json({ message: "No subscription record found for this tenant — ensure tenant was created via POST /tenants" });
+      return;
+    }
+
+    const stripeSub = await stripe.subscriptions.create({
+      customer: sub.stripeCustomerId,
+      items: [{ price: priceId }],
+    });
+
+    // Note: Stripe SDK v21 TypeScript types dropped current_period_end from the
+    // Subscription interface (API v2026+ billing model change). The field still
+    // exists at runtime; cast to any to access it without a TS error.
+    const periodEnd = (stripeSub as any).current_period_end as number | undefined;
+    const updated = await storage.upsertTenantSubscription(id, {
+      stripeSubscriptionId: stripeSub.id,
+      status: stripeSub.status,
+      planId: stripeSub.items.data[0]?.price.id ?? priceId,
+      currentPeriodEnd: periodEnd != null ? new Date(periodEnd * 1000) : null,
+    });
+
+    res.status(200).json(updated);
+  } catch (err: unknown) {
+    console.error("[super-admin] /tenants/:id/subscribe error:", err);
+    res.status(500).json({ message: "Failed to create subscription" });
+  }
+});
+
+// ---------------------------------------------------------------------------
 // PATCH /tenants/:id/status  — toggle active/inactive
 // ---------------------------------------------------------------------------
 
