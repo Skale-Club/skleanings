@@ -16,7 +16,7 @@
 
 ### Signup Rate Limiting (Phase 53)
 
-- [ ] **BH-04**: `POST /api/auth/signup` is protected by `express-rate-limit` — max 5 requests per IP per hour; exceeding the limit returns 429 with a `Retry-After` header and JSON body `{ message: 'Too many signup attempts. Try again later.' }`
+- [x] **BH-04**: `POST /api/auth/signup` is protected by `express-rate-limit` — max 5 requests per IP per hour; exceeding the limit returns 429 with a `Retry-After` header and JSON body `{ message: 'Too many signup attempts. Try again later.' }`
 
 ### Invoice History UI (Phase 54)
 
@@ -48,7 +48,7 @@
 | BH-01 | Phase 53 | Pending |
 | BH-02 | Phase 53 | Pending |
 | BH-03 | Phase 53 | Pending |
-| BH-04 | Phase 53 | Pending |
+| BH-04 | Phase 53 | Complete |
 | BH-05 | Phase 54 | Pending |
 | BH-06 | Phase 54 | Pending |
 
