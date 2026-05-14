@@ -178,3 +178,117 @@ export function useSuperAdminSettings(enabled: boolean) {
 
   return { query, mutation };
 }
+
+// =============================================================================
+// Tenant/Domain types (Phase 42)
+// =============================================================================
+
+export interface TenantListItem {
+  id: number;
+  name: string;
+  slug: string;
+  status: string;
+  createdAt: string;
+  primaryDomain: string | null;
+}
+
+export interface DomainRow {
+  id: number;
+  tenantId: number;
+  hostname: string;
+  isPrimary: boolean;
+  createdAt: string;
+}
+
+// =============================================================================
+// useSuperAdminTenants — GET /api/super-admin/tenants + mutations
+// =============================================================================
+
+export function useSuperAdminTenants(enabled: boolean) {
+  const queryClient = useQueryClient();
+
+  const query = useQuery<TenantListItem[]>({
+    queryKey: ["/api/super-admin/tenants"],
+    queryFn: () => superAdminFetch<TenantListItem[]>("/api/super-admin/tenants"),
+    enabled,
+    retry: false,
+  });
+
+  const createTenant = useMutation<
+    TenantListItem,
+    Error,
+    { name: string; slug: string; primaryDomain: string }
+  >({
+    mutationFn: (data) =>
+      superAdminFetch<TenantListItem>("/api/super-admin/tenants", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/tenants"] });
+    },
+  });
+
+  const toggleStatus = useMutation<
+    TenantListItem,
+    Error,
+    { id: number; status: string }
+  >({
+    mutationFn: ({ id, status }) =>
+      superAdminFetch<TenantListItem>(`/api/super-admin/tenants/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/tenants"] });
+    },
+  });
+
+  return { query, createTenant, toggleStatus };
+}
+
+// =============================================================================
+// useSuperAdminTenantDomains — GET + POST + DELETE domains per tenant
+// =============================================================================
+
+export function useSuperAdminTenantDomains(tenantId: number | null, enabled: boolean) {
+  const queryClient = useQueryClient();
+
+  const query = useQuery<DomainRow[]>({
+    queryKey: ["/api/super-admin/tenants", tenantId, "domains"],
+    queryFn: () =>
+      superAdminFetch<DomainRow[]>(`/api/super-admin/tenants/${tenantId}/domains`),
+    enabled: enabled && tenantId !== null,
+    retry: false,
+  });
+
+  const addDomain = useMutation<DomainRow, Error, { hostname: string }>({
+    mutationFn: ({ hostname }) =>
+      superAdminFetch<DomainRow>(`/api/super-admin/tenants/${tenantId}/domains`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hostname }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["/api/super-admin/tenants", tenantId, "domains"],
+      });
+    },
+  });
+
+  const removeDomain = useMutation<void, Error, number>({
+    mutationFn: (domainId) =>
+      superAdminFetch<void>(`/api/super-admin/domains/${domainId}`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["/api/super-admin/tenants", tenantId, "domains"],
+      });
+    },
+  });
+
+  return { query, addDomain, removeDomain };
+}
