@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v10.0
 milestone_name: Tenant Admin Auth
-status: roadmapped
-stopped_at: Roadmap created — Phase 45 not started
-last_updated: "2026-05-14T00:00:00.000Z"
+status: planning
+stopped_at: Completed 45-01-PLAN.md
+last_updated: "2026-05-14T12:17:35.094Z"
 last_activity: 2026-05-14
 progress:
-  total_phases: 2
-  completed_phases: 0
-  total_plans: 4
-  completed_plans: 0
+  total_phases: 11
+  completed_phases: 9
+  total_plans: 24
+  completed_plans: 25
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-05-14)
 ## Current Position
 
 Phase: 45
-Plan: Not started
-Status: Roadmap complete — ready to plan Phase 45
-Last activity: 2026-05-14
+Plan: 01 complete — ready for 45-02
+Status: In progress — Phase 45 Plan 1 complete
+Last activity: 2026-05-13
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██████████] 100%
 
 ## Shipped Milestones
 
@@ -52,7 +52,7 @@ See: .planning/MILESTONES.md
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 45 | Tenant Admin Auth Backend | TA-01, TA-02, TA-03, TA-04, TA-05, TA-06 | Not started |
+| 45 | Tenant Admin Auth Backend | TA-01, TA-02, TA-03, TA-04, TA-05, TA-06 | In progress (1/2 plans) |
 | 46 | Admin Panel Frontend Auth | TA-07, TA-08, TA-09 | Not started |
 
 ## Pending Items
@@ -109,6 +109,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 44]: 503 check placed after hostnameCache.set — single guard covers both cache-hit and DB-hit paths in resolveTenantMiddleware
 - [Phase 44]: Stats aggregation: groupBy aggregates in Promise.all + lookup maps avoids N+1 per-tenant queries in GET /tenants
 - [Phase 44-02]: Three stat columns inserted after Primary Domain and before Created — preserves existing column order without restructuring
+- [Phase 45-01]: adminUser.tenantId is optional — legacy env-var sessions pass cross-tenant guard unchanged
+- [Phase 45-01]: requireAdmin session fast-path placed BEFORE Supabase JWT path — session-authed tenants never hit JWT validation
 
 ### Roadmap Evolution
 
@@ -130,7 +132,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-14
-Stopped at: Roadmap created for v10.0
+Last session: 2026-05-14T12:17:35.081Z
+Stopped at: Completed 45-01-PLAN.md
 Resume file: None
 Next: Plan Phase 45 (Tenant Admin Auth Backend) via /gsd:plan-phase 45
