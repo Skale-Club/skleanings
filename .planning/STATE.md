@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v12.0
-milestone_name: SaaS Billing
-status: milestone_complete
-stopped_at: Completed v12.0 SaaS Billing milestone (phases 48–50)
-last_updated: "2026-05-14T16:00:00.000Z"
+milestone: v13.0
+milestone_name: Self-Serve Signup
+status: milestone_started
+stopped_at: Roadmap created for v13.0 — ready to plan Phase 51
+last_updated: "2026-05-14T16:30:00.000Z"
 last_activity: 2026-05-14
 progress:
-  total_phases: 42
-  completed_phases: 41
-  total_plans: 115
-  completed_plans: 115
+  total_phases: 2
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-14)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 50 — Tenant Billing Self-Service
+**Current focus:** Phase 51 — Self-Serve Signup Backend
 
 ## Current Position
 
-Phase: 50
+Phase: 51
 Plan: Not started
-Status: Phase complete — ready for verification
+Status: Roadmap complete — ready to plan Phase 51
 Last activity: 2026-05-14
 
 Progress: [----------] 0%
@@ -47,16 +47,16 @@ Progress: [----------] 0%
 | v9.0 Tenant Onboarding | 42–44 (3 phases) | 8 | 2026-05-14 |
 | v10.0 Tenant Admin Auth | 45–46 (2 phases) | 3 | 2026-05-14 |
 | v11.0 Password Reset | 47 (1 phase) | 3 | 2026-05-14 |
+| v12.0 SaaS Billing | 48–50 (3 phases) | 7 | 2026-05-14 |
 
 See: .planning/MILESTONES.md
 
-## v12.0 Phases
+## v13.0 Phases
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 48 | Stripe Subscription Infrastructure | SB-01, SB-02, SB-03, SB-04 | Not started |
-| 49 | Subscription Enforcement | SB-05, SB-06 | Not started |
-| 50 | Tenant Billing Self-Service | SB-07, SB-08 | Not started |
+| 51 | Self-Serve Signup Backend | SS-01, SS-02, SS-03, SS-04, SS-05, SS-06 | Not started |
+| 52 | Self-Serve Signup Frontend | SS-07, SS-08, SS-09, SS-10 | Not started |
 
 ## Pending Items
 
@@ -149,10 +149,9 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - v10.0 phases 45–46 derived from TA-01–09 (tenant admin auth)
 - v11.0 phase 47 derived from PR-01–06 (password reset) — single-phase milestone
 - v12.0 phases 48–50 derived from SB-01–08 (SaaS billing) — three phases: infra, enforcement, self-service
-- Phase numbering continues from v11.0 last phase (47); v12.0 starts at Phase 48
-- Phase 48 adds tenant_subscriptions table (Supabase migration), Stripe customer creation on tenant create, subscribe endpoint, and billing webhook
-- Phase 49 adds 402 subscription enforcement in resolveTenantMiddleware with 3-day grace period for past_due, plus super-admin billing columns
-- Phase 50 adds POST /api/billing/portal and /admin/billing frontend page for tenant self-service
+- Phase numbering continues from v12.0 last phase (50); v13.0 starts at Phase 51
+- Phase 51 delivers the atomic signup backend (POST /api/auth/signup), 14-day trial subscription creation, subdomain uniqueness validation, and Stripe webhook handling for trial lifecycle events
+- Phase 52 delivers the public /signup page with live subdomain preview and inline validation, plus trial countdown and Add Payment Method CTA on /admin/billing
 
 ### Blockers/Concerns
 
@@ -163,7 +162,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-14T15:09:31.345Z
-Stopped at: Completed 50-02-PLAN.md (Tenant billing self-service frontend)
+Last session: 2026-05-14T16:30:00.000Z
+Stopped at: v13.0 roadmap created — Phases 51 and 52 defined
 Resume file: None
-Next: Plan Phase 48 (Stripe Subscription Infrastructure) via /gsd:plan-phase 48
+Next: Plan Phase 51 (Self-Serve Signup Backend) via /gsd:plan-phase 51

@@ -14,6 +14,7 @@
 - ✅ **v10.0 Tenant Admin Auth** — Phases 45–46 (shipped 2026-05-14)
 - ✅ **v11.0 Password Reset** — Phase 47 (shipped 2026-05-14)
 - ✅ **v12.0 SaaS Billing** — Phases 48–50 (shipped 2026-05-14)
+- 🔲 **v13.0 Self-Serve Signup** — Phases 51–52
 
 ---
 
@@ -395,6 +396,33 @@ Plans:
 
 ---
 
+### Phase 51: Self-Serve Signup Backend
+**Goal**: Any business can sign up without super-admin involvement — a single POST endpoint atomically provisions the full tenant stack (tenant, domain, admin user, company settings, Stripe customer, trial subscription) and the Stripe webhook keeps trial status in sync
+**Depends on**: Phase 50
+**Requirements**: SS-01, SS-02, SS-03, SS-04, SS-05, SS-06
+**Success Criteria** (what must be TRUE):
+  1. POSTing valid signup data to `POST /api/auth/signup` returns 201 with the tenant subdomain — querying the DB confirms rows exist in tenants, domains, users, user_tenants, companySettings, and tenant_subscriptions for the new tenant, all created atomically in a single transaction
+  2. Posting a duplicate subdomain slug to `POST /api/auth/signup` returns 409 with a field-level error body identifying the subdomain conflict — no partial rows are created in any table
+  3. The newly created `tenant_subscriptions` row has `status = 'trialing'` and `currentPeriodEnd` set to 14 days from signup — Stripe confirms a trial subscription exists for the new Stripe customer
+  4. The `/signup` route is publicly accessible without any session cookie — a request with an active admin session is redirected to `/admin` instead of rendering the form
+  5. A `customer.subscription.trial_will_end` webhook event from Stripe causes the corresponding `tenant_subscriptions` row status to update correctly — a `customer.subscription.updated` event with a valid payment method transitions status to `active`, without a payment method to `past_due`
+**Plans**: TBD
+
+### Phase 52: Self-Serve Signup Frontend
+**Goal**: A business owner can discover the platform, fill in their details on a public signup page, and land in their own admin panel — the /admin/billing page communicates trial status and guides them to add a payment method before the trial ends
+**Depends on**: Phase 51
+**Requirements**: SS-07, SS-08, SS-09, SS-10
+**Success Criteria** (what must be TRUE):
+  1. Visiting `/signup` renders a form with Company Name, Subdomain (with live `.xkedule.com` suffix preview), Email, Password, and Confirm Password fields — all fields use existing shadcn/ui components and brand styling
+  2. Submitting the form with a missing required field, mismatched passwords, or an invalid subdomain format shows an inline validation error on the relevant field — the API is not called until all client-side validation passes
+  3. Submitting a slug that is already taken returns the 409 error from the API and displays it inline on the Subdomain field without a full page reload
+  4. After a successful signup, the browser is redirected to `https://[slug].xkedule.com/admin` automatically
+  5. A tenant admin with `status = 'trialing'` visiting `/admin/billing` sees a "Trial" badge, an "X days remaining" countdown derived from `currentPeriodEnd`, and an "Add Payment Method" button that opens the Stripe Billing Portal
+**Plans**: TBD
+**UI hint**: yes
+
+---
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -419,6 +447,8 @@ Plans:
 | 48 | v12.0 | 3/3 | Complete    | 2026-05-14 |
 | 49 | v12.0 | 2/2 | Complete    | 2026-05-14 |
 | 50 | v12.0 | 2/2 | Complete    | 2026-05-14 |
+| 51 | v13.0 | 0/? | Not started | - |
+| 52 | v13.0 | 0/? | Not started | - |
 
 ---
 
