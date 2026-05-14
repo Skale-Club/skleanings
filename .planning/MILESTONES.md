@@ -1,5 +1,18 @@
 # Milestones
 
+## v11.0 Password Reset (Shipped: 2026-05-14)
+
+**Phases completed:** 1 phase (47), 3 plans, all complete
+
+**Key accomplishments:**
+
+- `password_reset_tokens` table (SHA-256 hash, expiresAt, usedAt) + 4 IStorage methods (`createPasswordResetToken`, `findPasswordResetToken`, `markPasswordResetTokenUsed`, `updateUserPassword`)
+- `POST /api/auth/forgot-password` (always 200 — no enumeration), `POST /api/auth/reset-password` (token validation + bcrypt update + mark used), `POST /api/auth/change-password` (session-guarded, verifies current password)
+- `buildPasswordResetEmail(resetUrl, companyName)` — branded Resend template with tenant company name from companySettings
+- `ForgotPassword.tsx` + `ResetPassword.tsx` pages; "Forgot password?" link in AdminLogin; routes wired in App.tsx
+
+---
+
 ## v10.0 Tenant Admin Auth (Shipped: 2026-05-14)
 
 **Phases completed:** 2 phases (45–46), 3 plans, all complete
