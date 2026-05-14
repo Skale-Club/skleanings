@@ -257,7 +257,7 @@ Plans:
   3. The Tenants list in /superadmin shows a stats column (or inline badge) per tenant displaying total bookings count, total services count, and staff count — values are accurate for each respective tenant
 **Plans**: 2 plans
 Plans:
-- [ ] 44-01-PLAN.md — 503 inactive-tenant guard in resolveTenantMiddleware + per-tenant stats in GET /tenants API + TenantListItem type update
+- [x] 44-01-PLAN.md — 503 inactive-tenant guard in resolveTenantMiddleware + per-tenant stats in GET /tenants API + TenantListItem type update
 - [ ] 44-02-PLAN.md — Frontend: Bookings/Services/Staff columns in TenantsSection table + human verification checkpoint
 
 ---
@@ -279,7 +279,7 @@ Plans:
 | 41 | v8.0 | 2/2 | Complete | 2026-05-13 |
 | 42 | v9.0 | 3/3 | Complete    | 2026-05-14 |
 | 43 | v9.0 | 3/3 | Complete    | 2026-05-14 |
-| 44 | v9.0 | 0/2 | Not started | - |
+| 44 | v9.0 | 1/2 | In Progress|  |
 
 ---
 

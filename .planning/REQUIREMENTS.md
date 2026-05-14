@@ -23,9 +23,9 @@
 
 ### Tenant Isolation Verification (Phase 44)
 
-- [ ] **TO-08**: Admin de tenant 2 faz login em seu domínio e vê apenas os dados do tenant 2 — bookings, services, staff e company settings são isolados
-- [ ] **TO-09**: Request para um domínio de tenant inativo recebe 503 com mensagem "Tenant temporarily unavailable" antes de atingir qualquer rota de negócio
-- [ ] **TO-10**: Super-admin pode visualizar stats por tenant (total bookings, total services, staff count) diretamente no painel de listagem de tenants
+- [x] **TO-08**: Admin de tenant 2 faz login em seu domínio e vê apenas os dados do tenant 2 — bookings, services, staff e company settings são isolados
+- [x] **TO-09**: Request para um domínio de tenant inativo recebe 503 com mensagem "Tenant temporarily unavailable" antes de atingir qualquer rota de negócio
+- [x] **TO-10**: Super-admin pode visualizar stats por tenant (total bookings, total services, staff count) diretamente no painel de listagem de tenants
 
 ---
 
@@ -57,9 +57,9 @@
 | TO-05 | Phase 43 | Complete |
 | TO-06 | Phase 43 | Complete |
 | TO-07 | Phase 43 | Complete |
-| TO-08 | Phase 44 | Pending |
-| TO-09 | Phase 44 | Pending |
-| TO-10 | Phase 44 | Pending |
+| TO-08 | Phase 44 | Complete |
+| TO-09 | Phase 44 | Complete |
+| TO-10 | Phase 44 | Complete |
 
 **Coverage:**
 - v1 requirements: 10 total

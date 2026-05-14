@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v9.0
 milestone_name: Tenant Onboarding
-status: verifying
-stopped_at: Completed 43-03-PLAN.md
-last_updated: "2026-05-14T01:41:25.375Z"
+status: executing
+stopped_at: Completed 44-01-PLAN.md
+last_updated: "2026-05-14T11:43:17.434Z"
 last_activity: 2026-05-14
 progress:
   total_phases: 9
   completed_phases: 8
-  total_plans: 22
-  completed_plans: 22
+  total_plans: 24
+  completed_plans: 23
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-13)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 43 — Tenant Provisioning
+**Current focus:** Phase 44 — Isolation Verification
 
 ## Current Position
 
-Phase: 44
-Plan: Not started
-Status: Phase complete — ready for verification
+Phase: 44 (Isolation Verification) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
 Last activity: 2026-05-14
 
 Progress: [░░░░░░░░░░] 0%
@@ -106,6 +106,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 43-02]: POST /provision returns plaintext password once in response body — never stored after that single response
 - [Phase 43-03]: provision.reset() on dialog close unconditionally wipes password from state — not just on success — any close guarantees credentials gone
 - [Phase 43-03]: ProvisionDialog defined as top-level component (not inside TenantsSection) to avoid re-creation on parent renders
+- [Phase 44]: 503 check placed after hostnameCache.set — single guard covers both cache-hit and DB-hit paths in resolveTenantMiddleware
+- [Phase 44]: Stats aggregation: groupBy aggregates in Promise.all + lookup maps avoids N+1 per-tenant queries in GET /tenants
 
 ### Roadmap Evolution
 
@@ -127,7 +129,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-14T01:37:56.396Z
-Stopped at: Completed 43-03-PLAN.md
+Last session: 2026-05-14T11:43:17.429Z
+Stopped at: Completed 44-01-PLAN.md
 Resume file: None
 Next: Plan Phase 42 (Tenant Management UI) via /gsd:plan-phase 42
