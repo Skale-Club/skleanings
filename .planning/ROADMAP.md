@@ -436,7 +436,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [ ] 56-01-PLAN.md — DB migration + Drizzle schema + adminSetupRouter (GET /setup-status, POST /setup-dismiss)
-- [ ] 56-02-PLAN.md — useSetupStatus hook + SetupChecklist component + Admin.tsx wiring
+- [x] 56-02-PLAN.md — useSetupStatus hook + SetupChecklist component + Admin.tsx wiring
 **UI hint**: yes
 
 ---
@@ -542,7 +542,7 @@ Plans:
 | 53 | v14.0 | 2/2 | Complete    | 2026-05-14 |
 | 54 | v14.0 | 1/2 | Complete    | 2026-05-14 |
 | 55 | v15.0 | 1/3 | Complete    | 2026-05-14 |
-| 56 | v15.0 | 0/TBD | Not started | - |
+| 56 | v15.0 | 1/2 | In Progress|  |
 
 ---
 
