@@ -73,6 +73,72 @@ export async function billingWebhookHandler(req: Request, res: Response): Promis
           .where(eq(tenantSubscriptions.tenantId, subRow.tenantId));
 
         console.log(`[billing/webhook] ${event.type} processed for tenant ${subRow.tenantId}, status=${status}`);
+
+        // BH-02: Send dunning email when subscription becomes past_due (fire-and-forget, non-fatal)
+        if (status === "past_due") {
+          try {
+            const tenantStorage = DatabaseStorage.forTenant(subRow.tenantId);
+
+            const [adminUser] = await db
+              .select({ email: users.email })
+              .from(users)
+              .where(and(eq(users.tenantId, subRow.tenantId), eq(users.role, "admin")))
+              .limit(1);
+
+            const [companySetting] = await db
+              .select({ companyName: companySettings.companyName })
+              .from(companySettings)
+              .where(eq(companySettings.tenantId, subRow.tenantId))
+              .limit(1);
+
+            if (adminUser?.email) {
+              const siteUrl = process.env.SITE_URL ?? "https://app.xkedule.com";
+              const billingUrl = `${siteUrl}/admin/billing`;
+              const companyName = companySetting?.companyName || "Your account";
+
+              const subject = "Payment failed — your subscription is past due";
+              const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8" /></head>
+<body style="font-family: Inter, sans-serif; background: #f8fafc; padding: 32px;">
+  <div style="max-width: 480px; margin: 0 auto; background: #fff; border-radius: 8px; padding: 32px; border: 1px solid #e2e8f0;">
+    <h2 style="font-family: Outfit, sans-serif; color: #1C53A3; margin-top: 0;">Payment failed</h2>
+    <p style="color: #374151;">Hi there,</p>
+    <p style="color: #374151;">We were unable to process the payment for your <strong>${companyName}</strong> subscription. Your account is currently <strong>past due</strong>.</p>
+    <p style="color: #dc2626; font-weight: 600;">If payment is not updated within 3 days, your account will be suspended and your booking flow will become unavailable to customers.</p>
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="${billingUrl}"
+         style="background: #FFFF01; color: #000; font-weight: 700; font-family: Outfit, sans-serif;
+                padding: 14px 32px; border-radius: 9999px; text-decoration: none; display: inline-block;">
+        Update Payment Method
+      </a>
+    </div>
+    <p style="color: #6b7280; font-size: 13px;">
+      Or copy this link into your browser:<br />
+      <a href="${billingUrl}" style="color: #1C53A3; word-break: break-all;">${billingUrl}</a>
+    </p>
+  </div>
+</body>
+</html>`;
+              const text = `Payment failed for ${companyName}.\n\nUpdate your payment method to avoid service suspension: ${billingUrl}`;
+
+              await sendResendEmail(
+                tenantStorage,
+                adminUser.email,
+                subject,
+                html,
+                text,
+                undefined,
+                "past_due_dunning"
+              );
+              console.log(`[billing/webhook] past_due dunning email sent to ${adminUser.email} for tenant ${subRow.tenantId}`);
+            }
+          } catch (emailErr) {
+            // Non-fatal — log and continue, webhook must still return 200
+            console.error("[billing/webhook] past_due: failed to send dunning email:", emailErr);
+          }
+        }
         break;
       }
 
