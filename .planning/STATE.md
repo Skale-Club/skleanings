@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: completed
-stopped_at: Completed 52-01-PLAN.md
-last_updated: "2026-05-14T18:36:03.428Z"
+milestone: v14.0
+milestone_name: Billing Hardening
+status: active
+stopped_at: Roadmap created — no plans started yet
+last_updated: "2026-05-14T00:00:00.000Z"
 last_activity: 2026-05-14
 progress:
-  total_phases: 17
-  completed_phases: 17
-  total_plans: 41
-  completed_plans: 41
-  percent: 100
+  total_phases: 2
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-14)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 51 — Self-Serve Signup Backend
+**Current focus:** Phase 53 — Billing Email Notifications + Signup Rate Limit
 
 ## Current Position
 
-Phase: 52
+Phase: 53
 Plan: Not started
-Status: Phase 51 Plan 01 complete — self-serve signup backend shipped
+Status: v14.0 roadmap created — Phase 53 is next
 Last activity: 2026-05-14
 
-Progress: [==========] 100%
+Progress: [          ] 0%
 
 ## Shipped Milestones
 
@@ -48,15 +48,16 @@ Progress: [==========] 100%
 | v10.0 Tenant Admin Auth | 45–46 (2 phases) | 3 | 2026-05-14 |
 | v11.0 Password Reset | 47 (1 phase) | 3 | 2026-05-14 |
 | v12.0 SaaS Billing | 48–50 (3 phases) | 7 | 2026-05-14 |
+| v13.0 Self-Serve Signup | 51–52 (2 phases) | 4 | 2026-05-14 |
 
 See: .planning/MILESTONES.md
 
-## v13.0 Phases
+## v14.0 Phases
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 51 | Self-Serve Signup Backend | SS-01, SS-02, SS-03, SS-04, SS-05, SS-06 | Not started |
-| 52 | Self-Serve Signup Frontend | SS-07, SS-08, SS-09, SS-10 | Not started |
+| 53 | Billing Email Notifications + Signup Rate Limit | BH-01, BH-02, BH-03, BH-04 | Not started |
+| 54 | Invoice History | BH-05, BH-06 | Not started |
 
 ## Pending Items
 
@@ -153,9 +154,9 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - v10.0 phases 45–46 derived from TA-01–09 (tenant admin auth)
 - v11.0 phase 47 derived from PR-01–06 (password reset) — single-phase milestone
 - v12.0 phases 48–50 derived from SB-01–08 (SaaS billing) — three phases: infra, enforcement, self-service
-- Phase numbering continues from v12.0 last phase (50); v13.0 starts at Phase 51
-- Phase 51 delivers the atomic signup backend (POST /api/auth/signup), 14-day trial subscription creation, subdomain uniqueness validation, and Stripe webhook handling for trial lifecycle events
-- Phase 52 delivers the public /signup page with live subdomain preview and inline validation, plus trial countdown and Add Payment Method CTA on /admin/billing
+- Phase numbering continues from v13.0 last phase (52); v14.0 starts at Phase 53
+- Phase 53 delivers billing email notifications (trial_will_end + past_due Resend emails) and signup rate limiting (express-rate-limit 5/hr per IP)
+- Phase 54 delivers invoice history: GET /api/billing/invoices server endpoint + Invoice History table in /admin/billing
 
 ### Blockers/Concerns
 
@@ -166,7 +167,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-14T18:30:49.229Z
-Stopped at: Completed 52-01-PLAN.md
+Last session: 2026-05-14T00:00:00.000Z
+Stopped at: v14.0 roadmap created
 Resume file: None
-Next: Plan Phase 51 (Self-Serve Signup Backend) via /gsd:plan-phase 51
+Next: Plan Phase 53 (Billing Email Notifications + Signup Rate Limit) via /gsd:plan-phase 53

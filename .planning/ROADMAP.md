@@ -15,6 +15,7 @@
 - ✅ **v11.0 Password Reset** — Phase 47 (shipped 2026-05-14)
 - ✅ **v12.0 SaaS Billing** — Phases 48–50 (shipped 2026-05-14)
 - ✅ **v13.0 Self-Serve Signup** — Phases 51–52 (shipped 2026-05-14)
+- 🔲 **v14.0 Billing Hardening** — Phases 53–54
 
 ---
 
@@ -436,6 +437,31 @@ Plans:
 
 ---
 
+### Phase 53: Billing Email Notifications + Signup Rate Limit
+**Goal**: The billing lifecycle sends automated email warnings to tenants at critical subscription events, and the public signup endpoint is protected against abuse via IP-based rate limiting
+**Depends on**: Phase 52
+**Requirements**: BH-01, BH-02, BH-03, BH-04
+**Success Criteria** (what must be TRUE):
+  1. When Stripe delivers a `customer.subscription.trial_will_end` webhook event, the tenant admin receives a Resend email warning that their trial ends in 3 days and including the Stripe Billing Portal URL
+  2. When Stripe delivers a `customer.subscription.updated` webhook event with `status = 'past_due'`, the tenant admin receives a Resend email notifying them of payment failure and the risk of service suspension — including the Stripe Billing Portal URL
+  3. Both billing emails use `sendResendEmail()` and render the tenant's company name and brand colors from `companySettings` and `emailSettings` — they are visually consistent with the existing transactional email templates
+  4. POSTing to `POST /api/auth/signup` more than 5 times from the same IP within one hour returns 429 with a `Retry-After` header and JSON body `{ message: 'Too many signup attempts. Try again later.' }` — the 6th attempt is blocked without creating any DB rows
+**Plans**: TBD
+
+### Phase 54: Invoice History
+**Goal**: Tenant admins can view their complete invoice history directly within the billing page — the last 10 Stripe invoices are fetched server-side and displayed with status and download links
+**Depends on**: Phase 53
+**Requirements**: BH-05, BH-06
+**Success Criteria** (what must be TRUE):
+  1. An authenticated tenant admin visiting `/admin/billing` sees an "Invoice History" section listing up to 10 invoices — each row shows the invoice date, amount (formatted with currency), status (paid / open / void), and a "Download" link
+  2. Clicking "Download" on any invoice row opens the Stripe-hosted invoice PDF in a new browser tab
+  3. The invoice list is populated via `GET /api/billing/invoices` which is guarded by `requireAdmin` — an unauthenticated request returns 401 and no invoice data is exposed
+  4. The invoice table renders with a loading skeleton while the React Query fetch is in flight and shows an empty state message when the tenant has no invoices yet
+**Plans**: TBD
+**UI hint**: yes
+
+---
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -462,6 +488,8 @@ Plans:
 | 50 | v12.0 | 2/2 | Complete    | 2026-05-14 |
 | 51 | v13.0 | 2/2 | Complete    | 2026-05-14 |
 | 52 | v13.0 | 1/2 | Complete    | 2026-05-14 |
+| 53 | v14.0 | 0/? | Not started | - |
+| 54 | v14.0 | 0/? | Not started | - |
 
 ---
 
