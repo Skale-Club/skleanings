@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v11.0
-milestone_name: Password Reset
+milestone: v12.0
+milestone_name: SaaS Billing
 status: planning
-stopped_at: Completed 47-03-PLAN.md
-last_updated: "2026-05-14T13:53:31.458Z"
+stopped_at: Roadmap created — Phase 48 not started
+last_updated: "2026-05-14T00:00:00.000Z"
 last_activity: 2026-05-14
 progress:
-  total_phases: 12
-  completed_phases: 12
-  total_plans: 30
-  completed_plans: 30
+  total_phases: 3
+  completed_phases: 0
+  total_plans: 7
+  completed_plans: 0
   percent: 0
 ---
 
@@ -21,11 +21,11 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-14)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 47 — Password Reset
+**Current focus:** Phase 48 — Stripe Subscription Infrastructure
 
 ## Current Position
 
-Phase: 47
+Phase: 48
 Plan: Not started
 Status: Roadmap created — ready for planning
 Last activity: 2026-05-14
@@ -46,20 +46,25 @@ Progress: [----------] 0%
 | v8.0 Multi-Tenant Architecture | 38–41 (4 phases) | 10 | 2026-05-13 |
 | v9.0 Tenant Onboarding | 42–44 (3 phases) | 8 | 2026-05-14 |
 | v10.0 Tenant Admin Auth | 45–46 (2 phases) | 3 | 2026-05-14 |
+| v11.0 Password Reset | 47 (1 phase) | 3 | 2026-05-14 |
 
 See: .planning/MILESTONES.md
 
-## v11.0 Phases
+## v12.0 Phases
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 47 | Password Reset | PR-01, PR-02, PR-03, PR-04, PR-05, PR-06 | Not started |
+| 48 | Stripe Subscription Infrastructure | SB-01, SB-02, SB-03, SB-04 | Not started |
+| 49 | Subscription Enforcement | SB-05, SB-06 | Not started |
+| 50 | Tenant Billing Self-Service | SB-07, SB-08 | Not started |
 
 ## Pending Items
 
 - **Phase 19 UAT** — 5 human browser checks in `.planning/phases/19-receptionist-booking-flow-multi-staff-view/19-HUMAN-UAT.md`
 - **Phase 35** — `supabase db push` (drop system_heartbeats) + add `BLOG_CRON_TOKEN` to GitHub Secrets
 - **Phase 38** — `supabase db push` for multi-tenant schema migrations
+- **Phase 47** — `supabase db push` for password_reset_tokens table migration
+- **Phase 48** — New env var `STRIPE_SAAS_PRICE_ID` must be added to .env (Stripe price ID for the monthly SaaS plan)
 
 ## Accumulated Context
 
@@ -119,6 +124,11 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 47-02]: reset-password checks usedAt before expiresAt — used token rejected even within time window
 - [Phase 47-03]: ForgotPassword always shows success state — mirrors backend no-enumeration policy at UX layer
 - [Phase 47-03]: /reset-password is in public Switch — token links arrive via email with no session
+- [Phase 48 arch]: SaaS billing is a separate Stripe flow from customer booking payments — both reuse STRIPE_SECRET_KEY but operate on different Stripe objects (B2B subscriptions vs. B2C payment intents)
+- [Phase 48 arch]: POST /api/billing/webhook MUST be mounted before express.json() body-parser — raw body required for stripe.webhooks.constructEvent() signature verification
+- [Phase 48 arch]: tenant_subscriptions is a global registry table (one row per tenant, no tenantId self-reference) — getTenantSubscription/upsertTenantSubscription use db directly, not this.tenantId
+- [Phase 49 arch]: 402 enforcement placed after the existing 503 inactive-tenant guard in resolveTenantMiddleware; grace period: past_due AND currentPeriodEnd < now() - 3 days
+- [Phase 50 arch]: POST /api/billing/portal is a tenant-facing route guarded by requireAdmin — reads tenant's stripeCustomerId from tenant_subscriptions then creates Stripe Billing Portal session
 
 ### Roadmap Evolution
 
@@ -127,19 +137,22 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - v9.0 phases 42–44 derived from TO-01–10 (tenant onboarding)
 - v10.0 phases 45–46 derived from TA-01–09 (tenant admin auth)
 - v11.0 phase 47 derived from PR-01–06 (password reset) — single-phase milestone
-- Phase numbering continues from v10.0 last phase (46); v11.0 starts at Phase 47
-- Phase 47 adds password_reset_tokens table (new Supabase migration), two new API endpoints (forgot-password, reset-password), change-password for logged-in admins, and /reset-password frontend page
-- forgot-password always returns 200 regardless of email existence — prevents email enumeration
+- v12.0 phases 48–50 derived from SB-01–08 (SaaS billing) — three phases: infra, enforcement, self-service
+- Phase numbering continues from v11.0 last phase (47); v12.0 starts at Phase 48
+- Phase 48 adds tenant_subscriptions table (Supabase migration), Stripe customer creation on tenant create, subscribe endpoint, and billing webhook
+- Phase 49 adds 402 subscription enforcement in resolveTenantMiddleware with 3-day grace period for past_due, plus super-admin billing columns
+- Phase 50 adds POST /api/billing/portal and /admin/billing frontend page for tenant self-service
 
 ### Blockers/Concerns
 
 - **MIGRATION PENDING** — Phase 35 requires `supabase db push` (drop system_heartbeats) + add `BLOG_CRON_TOKEN` to GitHub Secrets
 - **MIGRATION PENDING** — Phase 38 requires `supabase db push` for multi-tenant schema
-- Phase 47 requires new `password_reset_tokens` table migration via Supabase CLI
+- **MIGRATION PENDING** — Phase 47 requires `supabase db push` for password_reset_tokens table
+- **ENV VAR NEEDED** — `STRIPE_SAAS_PRICE_ID` must be added to .env before Phase 48-02 (subscribe endpoint)
 
 ## Session Continuity
 
-Last session: 2026-05-14T13:48:33.568Z
-Stopped at: Completed 47-03-PLAN.md
+Last session: 2026-05-14T00:00:00.000Z
+Stopped at: Roadmap created for v12.0 SaaS Billing
 Resume file: None
-Next: Plan Phase 47 (Password Reset) via /gsd:plan-phase 47
+Next: Plan Phase 48 (Stripe Subscription Infrastructure) via /gsd:plan-phase 48

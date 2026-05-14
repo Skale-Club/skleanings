@@ -12,7 +12,8 @@
 - ✅ **v8.0 Multi-Tenant Architecture** — Phases 38–41 (shipped 2026-05-13)
 - ✅ **v9.0 Tenant Onboarding** — Phases 42–44 (shipped 2026-05-14)
 - ✅ **v10.0 Tenant Admin Auth** — Phases 45–46 (shipped 2026-05-14)
-- 🔲 **v11.0 Password Reset** — Phase 47
+- ✅ **v11.0 Password Reset** — Phase 47 (shipped 2026-05-14)
+- 🔲 **v12.0 SaaS Billing** — Phases 48–50
 
 ---
 
@@ -143,6 +144,14 @@ Full details: [milestones/v10.0-ROADMAP.md](milestones/v10.0-ROADMAP.md)
 ### v11.0 Password Reset
 
 - [x] **Phase 47: Password Reset** - Forgot-password token flow, reset-password frontend page, change-password for logged-in admins, tenant-branded Resend email template (completed 2026-05-14)
+
+---
+
+### v12.0 SaaS Billing
+
+- [ ] **Phase 48: Stripe Subscription Infrastructure** - tenant_subscriptions table migration + IStorage methods, Stripe customer creation on tenant create, subscribe endpoint, billing webhook handler
+- [ ] **Phase 49: Subscription Enforcement** - 402 middleware guard for canceled/past_due tenants, super-admin billing status columns in tenant list
+- [ ] **Phase 50: Tenant Billing Self-Service** - Billing portal API endpoint, /admin/billing page for tenant admins
 
 ---
 
@@ -338,6 +347,51 @@ Plans:
 
 ---
 
+### Phase 48: Stripe Subscription Infrastructure
+**Goal**: The platform can create and track Stripe subscriptions per tenant — the database table exists, Stripe customers are created automatically on tenant creation, super-admin can start a subscription, and the webhook keeps subscription status in sync
+**Depends on**: Phase 47
+**Requirements**: SB-01, SB-02, SB-03, SB-04
+**Success Criteria** (what must be TRUE):
+  1. A `tenant_subscriptions` row exists for every tenant with at minimum a `stripeCustomerId` — the row is created atomically when the tenant is created via `POST /api/super-admin/tenants`
+  2. Super-admin calling `POST /api/super-admin/tenants/:id/subscribe` creates a Stripe Subscription using `STRIPE_SAAS_PRICE_ID` and the row in `tenant_subscriptions` updates with `stripeSubscriptionId`, `status`, and `currentPeriodEnd`
+  3. A Stripe `customer.subscription.updated` webhook event causes the corresponding `tenant_subscriptions` row to reflect the new status and `currentPeriodEnd` within the same HTTP request
+  4. `POST /api/billing/webhook` is mounted before any body-parser middleware — the raw request body is available for Stripe signature verification, and an invalid signature returns 400
+**Plans**: 3 plans
+Plans:
+- [ ] 48-01-PLAN.md — Supabase migration (tenant_subscriptions table) + Drizzle schema + IStorage methods (getTenantSubscription, upsertTenantSubscription)
+- [ ] 48-02-PLAN.md — Stripe customer creation wired into POST /api/super-admin/tenants + POST /api/super-admin/tenants/:id/subscribe endpoint
+- [ ] 48-03-PLAN.md — POST /api/billing/webhook handler (raw body, signature verify, subscription.updated + subscription.deleted events)
+
+### Phase 49: Subscription Enforcement
+**Goal**: Tenants with lapsed subscriptions are blocked from all business API routes, and super-admin can see each tenant's billing status without leaving the panel
+**Depends on**: Phase 48
+**Requirements**: SB-05, SB-06
+**Success Criteria** (what must be TRUE):
+  1. A tenant with `status = 'canceled'` in `tenant_subscriptions` receives a 402 response on any business API request — the block fires inside `resolveTenantMiddleware` before any route handler executes
+  2. A tenant with `status = 'past_due'` and `currentPeriodEnd` more than 3 days in the past receives the same 402 block — a tenant that is past_due but within the 3-day grace period passes through normally
+  3. The super-admin Tenants table shows a Billing Status column per tenant displaying status, planId, and currentPeriodEnd — values read live from `tenant_subscriptions`
+**Plans**: 2 plans
+Plans:
+- [ ] 49-01-PLAN.md — 402 subscription enforcement guard in resolveTenantMiddleware (query tenant_subscriptions, canceled/past_due+grace logic)
+- [ ] 49-02-PLAN.md — GET /api/super-admin/tenants returns billing columns + frontend TenantsSection Billing Status column
+**UI hint**: yes
+
+### Phase 50: Tenant Billing Self-Service
+**Goal**: Tenant admins can view their own subscription status and manage their billing details directly through the Stripe Customer Portal — no super-admin involvement required for payment method updates or cancellations
+**Depends on**: Phase 49
+**Requirements**: SB-07, SB-08
+**Success Criteria** (what must be TRUE):
+  1. An authenticated tenant admin visiting `/admin/billing` sees their current subscription status, plan ID, and renewal date — the data matches what is in `tenant_subscriptions` for their tenant
+  2. Clicking "Manage Billing" on the `/admin/billing` page calls `POST /api/billing/portal`, receives a Stripe Customer Portal URL, and the browser navigates to that URL
+  3. The `/admin/billing` page is inaccessible to unauthenticated users — it redirects to the admin login page under the same `requireAdmin` guard used by all other admin routes
+**Plans**: 2 plans
+Plans:
+- [ ] 50-01-PLAN.md — POST /api/billing/portal (Stripe billingPortal.sessions.create, returns URL, guarded by requireAdmin + tenant subscription lookup)
+- [ ] 50-02-PLAN.md — /admin/billing page (BillingPage.tsx): status card, renewal date, Manage Billing button wired to portal endpoint
+**UI hint**: yes
+
+---
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -358,7 +412,10 @@ Plans:
 | 44 | v9.0 | 2/2 | Complete | 2026-05-14 |
 | 45 | v10.0 | 2/2 | Complete | 2026-05-14 |
 | 46 | v10.0 | 1/1 | Complete | 2026-05-14 |
-| 47 | v11.0 | 3/3 | Complete    | 2026-05-14 |
+| 47 | v11.0 | 3/3 | Complete | 2026-05-14 |
+| 48 | v12.0 | 0/3 | Not started | - |
+| 49 | v12.0 | 0/2 | Not started | - |
+| 50 | v12.0 | 0/2 | Not started | - |
 
 ---
 
