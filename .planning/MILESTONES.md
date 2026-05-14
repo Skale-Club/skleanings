@@ -1,5 +1,18 @@
 # Milestones
 
+## v10.0 Tenant Admin Auth (Shipped: 2026-05-14)
+
+**Phases completed:** 2 phases (45–46), 3 plans, all complete
+
+**Key accomplishments:**
+
+- `SessionData.adminUser` extended with optional `tenantId` field; `requireAdmin` adds cross-tenant 403 guard — session.tenantId must match res.locals.tenant.id
+- `POST /api/auth/tenant-login` — timing-safe bcrypt with DUMMY_HASH fallback, stores tenantId in session; `GET /api/auth/admin-me` returns session identity; `POST /api/auth/logout` destroys session
+- `AdminTenantAuthContext` — calls GET /api/auth/admin-me on mount, stores `{ isAuthenticated, tenantId, email, role }` with no hardcoded tenant references
+- `AdminLogin.tsx` rewritten to POST /api/auth/tenant-login (Supabase removed); `Admin.tsx` redirect guard via `useAdminTenantAuth`; `App.tsx` wraps admin routes in `AdminTenantAuthProvider`
+
+---
+
 ## v9.0 Tenant Onboarding (Shipped: 2026-05-14)
 
 **Phases completed:** 3 phases (42–44), 8 plans, all complete
