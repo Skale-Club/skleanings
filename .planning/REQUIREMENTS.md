@@ -12,7 +12,7 @@
 
 - [ ] **OB-01**: On successful signup, the system sends a verification email via Resend containing a unique time-limited token (24h expiry) — the email includes the tenant's company name and a "Verify Email" CTA button linking to `/verify-email?token=...`
 - [ ] **OB-02**: `GET /api/auth/verify-email?token=...` validates the token, sets `users.emailVerifiedAt` timestamp, and redirects to `/admin` — an expired or already-used token returns a clear error page
-- [ ] **OB-03**: A `email_verification_tokens` table (Supabase migration + Drizzle schema) stores SHA-256 token hash, userId, expiresAt, usedAt — same pattern as `password_reset_tokens` from Phase 47
+- [x] **OB-03**: A `email_verification_tokens` table (Supabase migration + Drizzle schema) stores SHA-256 token hash, userId, expiresAt, usedAt — same pattern as `password_reset_tokens` from Phase 47
 - [ ] **OB-04**: Admin pages show a dismissible yellow banner "Please verify your email — check your inbox" when `emailVerifiedAt` is null — the banner includes a "Resend verification email" link that calls `POST /api/auth/resend-verification`
 
 ### Welcome Email (Phase 55)
@@ -49,7 +49,7 @@
 |-------------|-------|--------|
 | OB-01 | Phase 55 | Pending |
 | OB-02 | Phase 55 | Pending |
-| OB-03 | Phase 55 | Pending |
+| OB-03 | Phase 55 | Complete |
 | OB-04 | Phase 55 | Pending |
 | OB-05 | Phase 55 | Pending |
 | OB-06 | Phase 56 | Pending |
