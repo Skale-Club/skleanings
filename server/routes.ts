@@ -25,6 +25,7 @@ import notificationLogsRouter from "./routes/notification-logs";
 import recurringBookingsRouter, { adminRecurringRouter, publicRecurringRouter } from "./routes/recurring-bookings";
 import { superAdminRouter } from "./routes/super-admin";
 import { calendarSyncRouter } from "./routes/calendar-sync";
+import { billingRouter } from "./routes/billing";
 import { resolveTenantMiddleware } from "./middleware/tenant";
 
 export async function registerRoutes(server: Server, app: Express) {
@@ -93,5 +94,9 @@ export async function registerRoutes(server: Server, app: Express) {
   // Phase 29: admin and public recurring subscription routes
   app.use("/api/admin/recurring-bookings", adminRecurringRouter);
   app.use("/api/subscriptions/manage", publicRecurringRouter);
+
+  // Billing routes (GET /api/billing/status, POST /api/billing/portal)
+  // guarded by requireAdmin inside the router — per SB-07, SB-08
+  app.use("/api/billing", billingRouter);
 
 }
