@@ -306,3 +306,37 @@ billingRouter.post("/portal", requireAdmin, async (req, res) => {
     return res.status(500).json({ message: "Failed to create billing portal session" });
   }
 });
+
+// GET /api/billing/invoices — returns last 10 Stripe invoices for this tenant
+// Protected by requireAdmin
+billingRouter.get("/invoices", requireAdmin, async (req, res) => {
+  const tenant = res.locals.tenant;
+  if (!tenant) return res.status(503).json({ message: "Tenant not resolved" });
+
+  try {
+    const sub = await res.locals.storage!.getTenantSubscription(tenant.id);
+    if (!sub?.stripeCustomerId) {
+      // Non-fatal: new tenant with no Stripe customer yet
+      return res.json({ invoices: [] });
+    }
+
+    const invoiceList = await stripe.invoices.list({
+      customer: sub.stripeCustomerId,
+      limit: 10,
+    });
+
+    const invoices = invoiceList.data.map((inv) => ({
+      id: inv.id,
+      date: new Date(inv.created * 1000).toISOString(),
+      amount: inv.amount_paid ?? inv.amount_due,
+      currency: inv.currency,
+      status: inv.status,   // "paid" | "open" | "void" | "draft" | "uncollectible"
+      invoiceUrl: inv.hosted_invoice_url ?? null,
+    }));
+
+    return res.json({ invoices });
+  } catch (err) {
+    console.error("[billing/invoices] Error:", err);
+    return res.status(500).json({ message: "Failed to fetch invoices" });
+  }
+});
