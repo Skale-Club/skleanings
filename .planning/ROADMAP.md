@@ -493,7 +493,7 @@ Plans:
 Plans:
 - [ ] 55-01-PLAN.md — DB migration + Drizzle schema + IStorage methods (OB-03)
 - [ ] 55-02-PLAN.md — Email builders + signup fire-and-forget + verify-email and resend routes (OB-01, OB-02, OB-05)
-- [ ] 55-03-PLAN.md — VerifyEmail page + admin-me extension + AdminTenantAuthContext + verification banner (OB-04)
+- [x] 55-03-PLAN.md — VerifyEmail page + admin-me extension + AdminTenantAuthContext + verification banner (OB-04)
 **UI hint**: yes
 
 ### Phase 56: Setup Checklist
@@ -538,7 +538,7 @@ Plans:
 | 52 | v13.0 | 1/2 | Complete    | 2026-05-14 |
 | 53 | v14.0 | 2/2 | Complete    | 2026-05-14 |
 | 54 | v14.0 | 1/2 | Complete    | 2026-05-14 |
-| 55 | v15.0 | 0/3 | Not started | - |
+| 55 | v15.0 | 1/3 | In Progress|  |
 | 56 | v15.0 | 0/TBD | Not started | - |
 
 ---
