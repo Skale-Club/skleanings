@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, Link } from 'wouter';
-import { supabase } from '@/lib/supabase';
-import { useAdminAuth } from '@/context/AuthContext';
+import { useAdminTenantAuth } from '@/context/AdminTenantAuthContext';
 import { useCompanySettings } from '@/context/CompanySettingsContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,144 +8,46 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Lock, Mail, ArrowLeft } from 'lucide-react';
 
-type AuthMeResponse = {
-  role: 'admin' | 'user' | 'staff' | 'client';
-};
-
-const AUTH_ME_RETRY_DELAYS_MS = [0, 400, 1000];
-
-function wait(ms: number) {
-  return new Promise<void>((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
-
-async function fetchRoleForSession(accessToken: string) {
-  let shouldClearLocalSession = false;
-
-  for (const delay of AUTH_ME_RETRY_DELAYS_MS) {
-    if (delay > 0) {
-      await wait(delay);
-    }
-
-    const meRes = await fetch('/api/auth/me', {
-      headers: { Authorization: `Bearer ${accessToken}` },
-      signal: AbortSignal.timeout(8000),
-    });
-
-    if (meRes.ok) {
-      return meRes.json() as Promise<AuthMeResponse>;
-    }
-
-    if (meRes.status === 401 || meRes.status === 403) {
-      shouldClearLocalSession = true;
-      continue;
-    }
-
-    shouldClearLocalSession = false;
-  }
-
-  if (shouldClearLocalSession) {
-    const {
-      data: { session: freshSession },
-    } = await supabase.auth.getSession();
-
-    const hasSameToken =
-      !freshSession?.access_token || freshSession.access_token === accessToken;
-
-    if (hasSameToken) {
-      await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
-    }
-
-    throw new Error('Session validation failed. Please try again.');
-  }
-
-  throw new Error('Unable to validate the session right now. Please try again.');
-}
-
 export default function AdminLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { isAdmin, role, loading: authLoading } = useAdminAuth();
+  const { isAuthenticated, loading: authLoading, refetch } = useAdminTenantAuth();
   const { settings: companySettings } = useCompanySettings();
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (!authLoading && role === 'staff') {
-      setLocation('/staff/settings');
-    } else if (!authLoading && role === 'client') {
-      setLocation('/account');
-    } else if (!authLoading && isAdmin) {
+    if (!authLoading && isAuthenticated) {
       setLocation('/admin');
-    } else if (!authLoading && role === 'user') {
-      setLocation('/');
     }
-  }, [role, isAdmin, authLoading, setLocation]);
+  }, [isAuthenticated, authLoading, setLocation]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const res = await fetch('/api/auth/tenant-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, password }),
       });
 
-      if (error) throw error;
-
-      const accessToken = data.session?.access_token;
-      if (!accessToken) {
-        throw new Error('Session was not created. Please try again.');
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { message?: string }).message || 'Invalid email or password');
       }
 
-      const me = await fetchRoleForSession(accessToken);
-
-      toast({
-        title: 'Login successful',
-        description: 'Welcome to the admin dashboard',
-      });
-
-      if (me.role === 'staff') {
-        setLocation('/staff/settings');
-      } else if (me.role === 'client') {
-        setLocation('/account');
-      } else if (me.role === 'admin') {
-        setLocation('/admin');
-      } else {
-        setLocation('/');
-      }
-    } catch (error: any) {
-      toast({
-        title: 'Login failed',
-        description: error.message || 'Invalid email or password',
-        variant: 'destructive',
-      });
+      await refetch();
+      setLocation('/admin');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Invalid email or password';
+      toast({ title: 'Login failed', description: message, variant: 'destructive' });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    const siteUrl = window.location.origin || import.meta.env.VITE_SITE_URL || '';
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${siteUrl}/admin/login`,
-        },
-      });
-
-      if (error) throw error;
-    } catch (error: any) {
-      toast({
-        title: 'Login failed',
-        description: error.message,
-        variant: 'destructive',
-      });
     }
   };
 
@@ -173,9 +74,9 @@ export default function AdminLogin() {
           <CardHeader className="space-y-3 text-center pb-4">
             <div className="flex justify-center">
               <div className="w-12 h-12 bg-primary/10 rounded-md flex items-center justify-center overflow-hidden">
-                <img 
-                  src="/favicon.png" 
-                  alt="Logo" 
+                <img
+                  src="/favicon.png"
+                  alt="Logo"
                   className="w-12 h-12 object-cover"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
@@ -193,31 +94,6 @@ export default function AdminLogin() {
           </CardHeader>
 
           <CardContent className="space-y-4">
-            {/* Google Sign In */}
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
-              onClick={handleGoogleLogin}
-            >
-              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-              </svg>
-              Continue with Google
-            </Button>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-slate-200" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-slate-500">Or continue with</span>
-              </div>
-            </div>
-
             {/* Email/Password Form */}
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
@@ -258,21 +134,9 @@ export default function AdminLogin() {
                 {loading ? 'Signing in...' : 'Sign In'}
               </Button>
             </form>
-
-            <p className="text-center text-sm text-slate-500">
-              Don't have an account?{' '}
-              <button
-                type="button"
-                className="text-primary hover:underline font-medium"
-                onClick={handleGoogleLogin}
-              >
-                Sign up
-              </button>
-            </p>
           </CardContent>
         </Card>
       </div>
     </div>
   );
 }
-
