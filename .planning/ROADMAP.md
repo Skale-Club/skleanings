@@ -243,7 +243,7 @@ Plans:
   3. After a domain is added or removed, the next HTTP request to that hostname resolves correctly without restarting the server — the LRU cache entry for that hostname is deleted at write time
 **Plans**: 3 plans
 Plans:
-- [ ] 43-01-PLAN.md — DB migration (password column) + schema.ts update + IStorage provisionTenantAdmin + seedTenantCompanySettings
+- [x] 43-01-PLAN.md — DB migration (password column) + schema.ts update + IStorage provisionTenantAdmin + seedTenantCompanySettings
 - [ ] 43-02-PLAN.md — invalidateTenantCache export + provision endpoint + cache invalidation in domain routes + settings seed in POST /tenants
 - [ ] 43-03-PLAN.md — Frontend: useSuperAdminProvision hook + ProvisionDialog + Provision Admin button in TenantsSection
 
@@ -275,7 +275,7 @@ Plans:
 | 40 | v8.0 | 3/3 | Complete | 2026-05-13 |
 | 41 | v8.0 | 2/2 | Complete | 2026-05-13 |
 | 42 | v9.0 | 3/3 | Complete    | 2026-05-14 |
-| 43 | v9.0 | 0/3 | Not started | - |
+| 43 | v9.0 | 1/3 | In Progress|  |
 | 44 | v9.0 | 0/TBD | Not started | - |
 
 ---

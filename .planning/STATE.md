@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v9.0
 milestone_name: Tenant Onboarding
 status: executing
-stopped_at: Completed 42-03-PLAN.md
-last_updated: "2026-05-14T00:56:36.612Z"
+stopped_at: Completed 43-01-PLAN.md
+last_updated: "2026-05-14T01:22:07.878Z"
 last_activity: 2026-05-14
 progress:
   total_phases: 9
   completed_phases: 7
-  total_plans: 19
-  completed_plans: 19
+  total_plans: 22
+  completed_plans: 20
   percent: 0
 ---
 
@@ -21,12 +21,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-13)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 42 — Tenant Management UI
+**Current focus:** Phase 43 — Tenant Provisioning
 
 ## Current Position
 
-Phase: 43
-Plan: Not started
+Phase: 43 (Tenant Provisioning) — EXECUTING
+Plan: 2 of 3
 Status: Ready to execute
 Last activity: 2026-05-14
 
@@ -100,6 +100,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 42-01]: TenantRow/DomainRow type aliases derived via $inferSelect — no separate type definitions needed
 - [Phase 42]: useSuperAdminTenants takes enabled boolean matching existing hook pattern
 - [Phase 42]: ManageDomainsDialog driven by domainsTarget state (TenantListItem | null) — single state drives both open and which tenant
+- [Phase 43]: password column is nullable — OAuth-only users never have a password; only provisioned tenant admins do
+- [Phase 43]: provisionTenantAdmin uses db.transaction directly (not this.tenantId) — global registry operation, cross-tenant by design
 
 ### Roadmap Evolution
 
@@ -121,7 +123,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-14T00:52:15.162Z
-Stopped at: Completed 42-03-PLAN.md
+Last session: 2026-05-14T01:22:07.873Z
+Stopped at: Completed 43-01-PLAN.md
 Resume file: None
 Next: Plan Phase 42 (Tenant Management UI) via /gsd:plan-phase 42

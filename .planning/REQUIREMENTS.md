@@ -17,8 +17,8 @@
 
 ### Tenant Provisioning (Phase 43)
 
-- [ ] **TO-05**: Super-admin pode provisionar o admin inicial de um tenant — criar um usuário na tabela `users` com email e senha bcrypt e inserir na `user_tenants` com role='admin'
-- [ ] **TO-06**: Ao criar um tenant, company settings padrão são inseridos automaticamente (nome do tenant, fuso horário padrão, locale padrão) para que o booking flow funcione imediatamente
+- [x] **TO-05**: Super-admin pode provisionar o admin inicial de um tenant — criar um usuário na tabela `users` com email e senha bcrypt e inserir na `user_tenants` com role='admin'
+- [x] **TO-06**: Ao criar um tenant, company settings padrão são inseridos automaticamente (nome do tenant, fuso horário padrão, locale padrão) para que o booking flow funcione imediatamente
 - [ ] **TO-07**: O cache LRU do middleware de resolução é invalidado quando um domínio é adicionado ou removido — nova request resolve o domínio atualizado sem restart do servidor
 
 ### Tenant Isolation Verification (Phase 44)
@@ -54,8 +54,8 @@
 | TO-02 | Phase 42 | Complete |
 | TO-03 | Phase 42 | Complete |
 | TO-04 | Phase 42 | Complete |
-| TO-05 | Phase 43 | Pending |
-| TO-06 | Phase 43 | Pending |
+| TO-05 | Phase 43 | Complete |
+| TO-06 | Phase 43 | Complete |
 | TO-07 | Phase 43 | Pending |
 | TO-08 | Phase 44 | Pending |
 | TO-09 | Phase 44 | Pending |
