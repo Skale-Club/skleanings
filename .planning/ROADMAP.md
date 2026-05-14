@@ -16,6 +16,7 @@
 - ✅ **v12.0 SaaS Billing** — Phases 48–50 (shipped 2026-05-14)
 - ✅ **v13.0 Self-Serve Signup** — Phases 51–52 (shipped 2026-05-14)
 - ✅ **v14.0 Billing Hardening** — Phases 53–54 (shipped 2026-05-14)
+- 🔲 **v15.0 Tenant Onboarding Experience** — Phases 55–56
 
 ---
 
@@ -478,6 +479,33 @@ Plans:
 
 ---
 
+### Phase 55: Email Verification + Welcome Email
+**Goal**: New tenants receive a verification email immediately after signup and a welcome email with first-steps guidance — unverified admins see a persistent banner in the admin panel until they verify their email address
+**Depends on**: Phase 54
+**Requirements**: OB-01, OB-02, OB-03, OB-04, OB-05
+**Success Criteria** (what must be TRUE):
+  1. Within seconds of completing signup, the new admin's inbox receives two emails: a "Verify Email" email with a time-limited CTA link and a welcome email containing their admin URL and a "3 next steps" guide
+  2. Clicking the verification link in the email navigates to `/verify-email?token=...`, sets `users.emailVerifiedAt` to the current timestamp, and redirects to `/admin` — the yellow verification banner is no longer shown after the redirect
+  3. Submitting an expired or already-used token to `GET /api/auth/verify-email` renders a clear error page — the user is not silently redirected to `/admin`
+  4. An admin with `emailVerifiedAt = null` sees a dismissible yellow banner on every admin page reading "Please verify your email — check your inbox" with a "Resend verification email" link — clicking the link calls `POST /api/auth/resend-verification` and shows a confirmation toast
+  5. The `email_verification_tokens` table (Supabase migration + Drizzle schema) stores SHA-256 token hash, userId, expiresAt, and usedAt — following the identical pattern as `password_reset_tokens` from Phase 47
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 56: Setup Checklist
+**Goal**: New tenant admins see a live setup checklist in their dashboard that tracks the three minimum actions needed to go live — the checklist is driven by real DB state and can be dismissed once complete or manually by the admin
+**Depends on**: Phase 55
+**Requirements**: OB-06, OB-07, OB-08
+**Success Criteria** (what must be TRUE):
+  1. A freshly provisioned tenant visiting `/admin` sees a "Setup Checklist" card with three items — each item shows a check or incomplete indicator reflecting the tenant's real DB state: (1) at least 1 service exists, (2) at least 1 staff member exists, (3) at least 1 availability window exists
+  2. Completing any checklist item (e.g. adding a service) causes that item's indicator to update on the next page visit or React Query refetch — the checklist reflects live DB state, not a hardcoded flag
+  3. Clicking "Dismiss" on the checklist card calls `POST /api/admin/setup-dismiss`, saves `setupDismissedAt` on the tenant's `companySettings` row, and permanently hides the card — the checklist never reappears even if items are later removed
+  4. `GET /api/admin/setup-status` returns `{ hasService, hasStaff, hasAvailability, dismissed }` — guarded by `requireAdmin` and reading from `res.locals.storage`; a dismissed tenant receives `dismissed: true` regardless of item completion state
+**Plans**: TBD
+**UI hint**: yes
+
+---
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -506,6 +534,8 @@ Plans:
 | 52 | v13.0 | 1/2 | Complete    | 2026-05-14 |
 | 53 | v14.0 | 2/2 | Complete    | 2026-05-14 |
 | 54 | v14.0 | 1/2 | Complete    | 2026-05-14 |
+| 55 | v15.0 | 0/TBD | Not started | - |
+| 56 | v15.0 | 0/TBD | Not started | - |
 
 ---
 
