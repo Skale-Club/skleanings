@@ -114,7 +114,7 @@ Full details: [milestones/v8.0-ROADMAP.md](milestones/v8.0-ROADMAP.md)
 
 ### v9.0 Tenant Onboarding (Phases 42–44) — ACTIVE
 
-- [ ] **Phase 42: Tenant Management UI** - Super-admin CRUD for tenants and domains in /superadmin panel
+- [x] **Phase 42: Tenant Management UI** - Super-admin CRUD for tenants and domains in /superadmin panel (completed 2026-05-14)
 - [ ] **Phase 43: Tenant Provisioning** - Admin user creation, company settings seed, and LRU cache invalidation
 - [ ] **Phase 44: Isolation Verification** - 503 for inactive tenants, per-tenant stats, and E2E data isolation
 
@@ -229,8 +229,8 @@ Plans:
 **Plans**: 3 plans
 Plans:
 - [x] 42-01-PLAN.md — IStorage extension: six global registry methods (getTenants/createTenant/updateTenantStatus/getTenantDomains/addDomain/removeDomain)
-- [ ] 42-02-PLAN.md — API routes: GET/POST tenants, PATCH status, GET/POST domains, DELETE domain (all guarded by requireSuperAdmin)
-- [ ] 42-03-PLAN.md — Frontend: useSuperAdminTenants + useSuperAdminTenantDomains hooks + TenantsSection UI wired into SuperAdmin dashboard
+- [x] 42-02-PLAN.md — API routes: GET/POST tenants, PATCH status, GET/POST domains, DELETE domain (all guarded by requireSuperAdmin)
+- [x] 42-03-PLAN.md — Frontend: useSuperAdminTenants + useSuperAdminTenantDomains hooks + TenantsSection UI wired into SuperAdmin dashboard
 **UI hint**: yes
 
 ### Phase 43: Tenant Provisioning
@@ -270,7 +270,7 @@ Plans:
 | 39 | v8.0 | 3/3 | Complete | 2026-05-13 |
 | 40 | v8.0 | 3/3 | Complete | 2026-05-13 |
 | 41 | v8.0 | 2/2 | Complete | 2026-05-13 |
-| 42 | v9.0 | 1/3 | In Progress|  |
+| 42 | v9.0 | 3/3 | Complete   | 2026-05-14 |
 | 43 | v9.0 | 0/TBD | Not started | - |
 | 44 | v9.0 | 0/TBD | Not started | - |
 

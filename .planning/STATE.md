@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v9.0
 milestone_name: Tenant Onboarding
 status: executing
-stopped_at: Completed 42-01-PLAN.md
-last_updated: "2026-05-14T00:41:47.670Z"
+stopped_at: Completed 42-03-PLAN.md
+last_updated: "2026-05-14T00:52:15.166Z"
 last_activity: 2026-05-14
 progress:
   total_phases: 9
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 19
-  completed_plans: 17
+  completed_plans: 19
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-05-13)
 ## Current Position
 
 Phase: 42 (Tenant Management UI) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-05-14
 
@@ -98,6 +98,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 41]: infra/README.md documents NodeSource apt install for Node.js (not nvm) — systemd ExecStart requires absolute /usr/bin/node path
 - [Phase 42]: Global registry methods on DatabaseStorage use db directly (no this.tenantId) — registry ops are cross-tenant by design
 - [Phase 42-01]: TenantRow/DomainRow type aliases derived via $inferSelect — no separate type definitions needed
+- [Phase 42]: useSuperAdminTenants takes enabled boolean matching existing hook pattern
+- [Phase 42]: ManageDomainsDialog driven by domainsTarget state (TenantListItem | null) — single state drives both open and which tenant
 
 ### Roadmap Evolution
 
@@ -119,7 +121,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-14T00:41:47.666Z
-Stopped at: Completed 42-01-PLAN.md
+Last session: 2026-05-14T00:52:15.162Z
+Stopped at: Completed 42-03-PLAN.md
 Resume file: None
 Next: Plan Phase 42 (Tenant Management UI) via /gsd:plan-phase 42
