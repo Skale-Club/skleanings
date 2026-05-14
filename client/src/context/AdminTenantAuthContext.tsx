@@ -5,6 +5,7 @@ interface AdminTenantAuthState {
   tenantId: number | null;
   email: string | null;
   role: string | null;
+  emailVerifiedAt: string | null;
   loading: boolean;
 }
 
@@ -21,6 +22,7 @@ export function AdminTenantAuthProvider({ children }: { children: ReactNode }) {
     tenantId: null,
     email: null,
     role: null,
+    emailVerifiedAt: null,
     loading: true,
   });
 
@@ -29,9 +31,9 @@ export function AdminTenantAuthProvider({ children }: { children: ReactNode }) {
       const res = await fetch('/api/auth/admin-me', { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
-        setState({ isAuthenticated: true, tenantId: data.tenantId, email: data.email, role: data.role, loading: false });
+        setState({ isAuthenticated: true, tenantId: data.tenantId, email: data.email, role: data.role, emailVerifiedAt: data.emailVerifiedAt ?? null, loading: false });
       } else {
-        setState({ isAuthenticated: false, tenantId: null, email: null, role: null, loading: false });
+        setState({ isAuthenticated: false, tenantId: null, email: null, role: null, emailVerifiedAt: null, loading: false });
       }
     } catch {
       setState({ isAuthenticated: false, tenantId: null, email: null, role: null, loading: false });
@@ -42,7 +44,7 @@ export function AdminTenantAuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
-    setState({ isAuthenticated: false, tenantId: null, email: null, role: null, loading: false });
+    setState({ isAuthenticated: false, tenantId: null, email: null, role: null, emailVerifiedAt: null, loading: false });
   };
 
   const refetch = async () => {
