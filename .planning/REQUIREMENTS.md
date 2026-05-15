@@ -11,10 +11,10 @@
 ### Custom Domain Backend (Phase 61)
 
 - [x] **CD-01**: `domains` table extended with `verified BOOLEAN DEFAULT false`, `verifiedAt TIMESTAMPTZ`, and `verificationToken TEXT` columns (Supabase migration + Drizzle schema)
-- [ ] **CD-02**: `POST /api/admin/domains` (requireAdmin) accepts `{ hostname }`, validates format, generates a random 32-byte hex verification token, inserts `domains` row with `verified=false, isPrimary=false` for the current tenant — returns `{ id, hostname, verificationToken, instructions }` where `instructions` describes the required TXT record at `_xkedule.<hostname>`
-- [ ] **CD-03**: `POST /api/admin/domains/:id/verify` (requireAdmin) performs a DNS TXT lookup at `_xkedule.<hostname>` (via Node `dns.promises.resolveTxt`), compares against the stored `verificationToken`, sets `verified=true` and `verifiedAt=now()` on match — returns 200 `{ verified: true }`; mismatch returns 400 `{ verified: false, message }`
-- [ ] **CD-04**: `DELETE /api/admin/domains/:id` (requireAdmin) removes a domain — refuses with 409 if `isPrimary=true` (protects the auto-generated subdomain); also invalidates the LRU tenant cache for that hostname
-- [ ] **CD-05**: `GET /api/admin/domains` (requireAdmin) returns the current tenant's `domains` rows (id, hostname, isPrimary, verified, verifiedAt, createdAt) — only domains for `res.locals.tenant.id`
+- [x] **CD-02**: `POST /api/admin/domains` (requireAdmin) accepts `{ hostname }`, validates format, generates a random 32-byte hex verification token, inserts `domains` row with `verified=false, isPrimary=false` for the current tenant — returns `{ id, hostname, verificationToken, instructions }` where `instructions` describes the required TXT record at `_xkedule.<hostname>`
+- [x] **CD-03**: `POST /api/admin/domains/:id/verify` (requireAdmin) performs a DNS TXT lookup at `_xkedule.<hostname>` (via Node `dns.promises.resolveTxt`), compares against the stored `verificationToken`, sets `verified=true` and `verifiedAt=now()` on match — returns 200 `{ verified: true }`; mismatch returns 400 `{ verified: false, message }`
+- [x] **CD-04**: `DELETE /api/admin/domains/:id` (requireAdmin) removes a domain — refuses with 409 if `isPrimary=true` (protects the auto-generated subdomain); also invalidates the LRU tenant cache for that hostname
+- [x] **CD-05**: `GET /api/admin/domains` (requireAdmin) returns the current tenant's `domains` rows (id, hostname, isPrimary, verified, verifiedAt, createdAt) — only domains for `res.locals.tenant.id`
 - [x] **CD-06**: `resolveTenantMiddleware` is updated to only accept verified domains for non-primary entries — an unverified custom hostname returns 404 (just like an unknown hostname); the `*.xkedule.com` primary domain bypasses the verification check
 
 ### Custom Domain Frontend (Phase 62)
@@ -46,10 +46,10 @@
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | CD-01 | Phase 61 | Complete |
-| CD-02 | Phase 61 | Pending |
-| CD-03 | Phase 61 | Pending |
-| CD-04 | Phase 61 | Pending |
-| CD-05 | Phase 61 | Pending |
+| CD-02 | Phase 61 | Complete |
+| CD-03 | Phase 61 | Complete |
+| CD-04 | Phase 61 | Complete |
+| CD-05 | Phase 61 | Complete |
 | CD-06 | Phase 61 | Complete |
 | CD-07 | Phase 62 | Pending |
 | CD-08 | Phase 62 | Pending |
