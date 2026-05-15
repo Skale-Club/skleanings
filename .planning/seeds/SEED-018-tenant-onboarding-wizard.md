@@ -1,8 +1,10 @@
 ---
 id: SEED-018
-status: dormant
+status: shipped
 planted: 2026-05-10
 planted_during: v3.0 / Phase 20 (calendar-timeline-structure-audit)
+shipped_in: v9.0 Tenant Onboarding (Phases 42–44) + v13.0 Self-Serve Signup (Phases 51–52) + v15.0 Tenant Onboarding Experience (Phases 55–56) + v16.0 Staff Invitation Flow (Phases 57–58)
+shipped_at: 2026-05-14
 trigger_when: when launching self-serve sale of the product (no manual onboarding)
 scope: Large
 ---
