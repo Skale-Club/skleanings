@@ -117,6 +117,7 @@ export const tenantSubscriptions = pgTable("tenant_subscriptions", {
   currentPeriodEnd: timestamp("current_period_end", { mode: "date" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  planTier: text("plan_tier").notNull().default("basic"),
 });
 
 export type TenantSubscription = typeof tenantSubscriptions.$inferSelect;
