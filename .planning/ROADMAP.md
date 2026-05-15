@@ -549,7 +549,10 @@ Plans:
   2. Submitting the accept-invite form calls `POST /api/auth/accept-invite` and on success redirects the browser to the tenant's `/admin` URL — the staff member is logged in immediately without a separate login step
   3. The `/admin/staff` page has a "Pending Invitations" section listing all invitations where `acceptedAt` is null — each row shows email, role, expiry date, and a "Revoke" button; clicking Revoke calls `DELETE /api/admin/staff/invite/:id` and removes the row from the list without a page reload
   4. An "Invite Staff Member" button on `/admin/staff` opens a dialog with email and role fields — submitting the dialog calls `POST /api/admin/staff/invite`, shows a success toast, and the new invitation appears in the Pending Invitations list
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 58-01-PLAN.md — AcceptInvite.tsx public page + /accept-invite route (SF-06)
+- [ ] 58-02-PLAN.md — PendingInvitationsSection in admin Users/Team view (SF-07)
 **UI hint**: yes
 
 ---
@@ -585,7 +588,7 @@ Plans:
 | 55 | v15.0 | 3/3 | Complete    | 2026-05-14 |
 | 56 | v15.0 | 1/2 | Complete    | 2026-05-14 |
 | 57 | v16.0 | 2/3 | Complete    | 2026-05-15 |
-| 58 | v16.0 | 0/TBD | Not started | - |
+| 58 | v16.0 | 0/2 | Not started | - |
 
 ---
 
