@@ -723,7 +723,9 @@ Plans:
   2. Visiting `/admin/payments` (requireAdmin) renders a "Recent Payments" card directly below the existing Connect status card containing a Table with columns Date, Customer, Service, Total, Platform Fee, Net to Tenant — currency values are formatted with the tenant's locale
   3. The Recent Payments card shows an empty state reading "No payments yet" when the endpoint returns an empty array — the table header and rows are hidden in that case
   4. The Recent Payments card invalidates via React Query when the Refresh Status button is clicked so the table reflects newly completed payments without a page reload
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] 66-01-PLAN.md — Backend: getRecentPaidBookings storage method + GET /api/admin/payments/recent endpoint (PF-07)
+- [ ] 66-02-PLAN.md — Frontend: Recent Payments Card + Table in PaymentsSection.tsx with refresh wiring (PF-08)
 **UI hint**: yes
 
 ---
