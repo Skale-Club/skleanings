@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v17.0
-milestone_name: Plan Tiers
-status: active
-stopped_at: Roadmap created for v17.0
-last_updated: "2026-05-15T12:00:00.000Z"
+milestone: v1.0
+milestone_name: milestone
+status: executing
+stopped_at: Completed 59-01-PLAN.md (plan tier foundation)
+last_updated: "2026-05-15T13:07:05.540Z"
 last_activity: 2026-05-15
 progress:
-  total_phases: 2
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_phases: 25
+  completed_phases: 23
+  total_plans: 58
+  completed_plans: 56
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-15)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** v17.0 Plan Tiers — Phase 59 (Plan Tier Foundation + Super-Admin Plan Management)
+**Current focus:** Phase 59 — Plan Tier Foundation + Super-Admin Plan Management
 
 ## Current Position
 
-Phase: 59
-Plan: Not started
-Status: Roadmap created — ready to plan Phase 59
+Phase: 59 (Plan Tier Foundation + Super-Admin Plan Management) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
 Last activity: 2026-05-15
 
 Progress: [          ] 0%
@@ -107,6 +107,9 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 57-staff-invitation-backend]: Phase 57-01: staff_invitations uses global-registry pattern (tenant_id FK, db direct queries) so accept-invite can resolve cross-tenant tokens; tokenHash not .unique() (256-bit randomness sufficient); hard-delete on revoke
 - [Phase 57-03]: validate-invite + accept-invite: atomic db.transaction creates users + user_tenants; markInvitationAccepted called AFTER tx commit so invitations only mark used when user actually exists; cross-tenant companyName fallback via direct db query on companySettings when storage scope mismatches invitation.tenantId; adminUrl resolved from domains.isPrimary inside the transaction
 - [Phase 58-staff-invitation-frontend]: Phase 58-01: AcceptInvite.tsx uses single 'status' union (loading|invalid|ready|submitting); reads token via URLSearchParams to mirror VerifyEmail.tsx; mounted in public Switch outside AdminTenantAuthProvider so accept-invite skips /api/auth/admin-me preflight
+- [Phase 59]: [Phase 59-01]: tenant_subscriptions.plan_tier uses TEXT + CHECK constraint (not pgEnum) matching Phase 48 status column pattern; allows forward compat
+- [Phase 59]: [Phase 59-01]: stripe-plans helpers read process.env at call-time (not module load) for test friendliness; empty-string priceId guard prevents false matches against unset env vars
+- [Phase 59]: [Phase 59-01]: IStorage.upsertTenantSubscription signature unchanged — Partial<Omit<InsertTenantSubscription>> auto-widens to include planTier? once Drizzle table gains column (verified via npm run check)
 
 ### Roadmap Evolution
 
@@ -131,7 +134,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-15T12:00:00.000Z
-Stopped at: Roadmap created for v17.0 Plan Tiers
+Last session: 2026-05-15T13:07:05.522Z
+Stopped at: Completed 59-01-PLAN.md (plan tier foundation)
 Resume file: None
 Next: Plan Phase 59 (Plan Tier Foundation + Super-Admin Plan Management) via /gsd:plan-phase 59

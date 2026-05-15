@@ -580,7 +580,7 @@ Plans:
   5. A super-admin calling `PATCH /api/super-admin/tenants/:id/plan` with `{ planTier: pro }` (guarded by `requireSuperAdmin`) calls `stripe.subscriptions.update(subId, { items: [{ id, price: newPriceId }] })` with the Pro price ID and updates `tenant_subscriptions.planTier` to `pro` — a request without a super-admin session returns 403
 **Plans**: 3 plans
 Plans:
-- [ ] 59-01-PLAN.md — DB migration + Drizzle schema + getPriceIdForTier helper + .env.example (PT-01, PT-02)
+- [x] 59-01-PLAN.md — DB migration + Drizzle schema + getPriceIdForTier helper + .env.example (PT-01, PT-02)
 - [ ] 59-02-PLAN.md — Feature catalog + tenantHasFeature helper (PT-03)
 - [ ] 59-03-PLAN.md — Webhook tier mapping + PATCH /tenants/:id/plan endpoint (PT-04, PT-05)
 
@@ -630,7 +630,7 @@ Plans:
 | 56 | v15.0 | 1/2 | Complete    | 2026-05-14 |
 | 57 | v16.0 | 2/3 | Complete    | 2026-05-15 |
 | 58 | v16.0 | 2/2 | Complete    | 2026-05-15 |
-| 59 | v17.0 | 0/3 | Planned     | - |
+| 59 | v17.0 | 1/3 | In Progress|  |
 | 60 | v17.0 | 0/0 | Not started | - |
 
 ---
