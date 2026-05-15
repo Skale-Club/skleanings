@@ -11,6 +11,7 @@ import { collectRuntimeEnvDiagnostics } from "../lib/runtime-env";
 import { getRecentErrors } from "../lib/error-log";
 import { storage } from "../storage";
 import { invalidateTenantCache } from "../middleware/tenant";
+import { getPriceIdForTier, isPlanTier, type PlanTier } from "../lib/stripe-plans";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -335,6 +336,75 @@ router.post("/tenants/:id/subscribe", requireSuperAdmin, async (req: Request, re
   } catch (err: unknown) {
     console.error("[super-admin] /tenants/:id/subscribe error:", err);
     res.status(500).json({ message: "Failed to create subscription" });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// PATCH /tenants/:id/plan  — change a tenant's plan tier (Phase 59, PT-05)
+// ---------------------------------------------------------------------------
+// 1. Validate planTier via isPlanTier (basic | pro | enterprise)
+// 2. Resolve target Stripe Price ID via getPriceIdForTier (500 if unset)
+// 3. Look up tenant's subscription row (404 if missing stripeSubscriptionId)
+// 4. Update the subscription item to the new price, with create_prorations
+// 5. Persist planTier + planId in tenant_subscriptions (optimistic — the
+//    customer.subscription.updated webhook will eventually arrive and
+//    confirm the same state, which is idempotent thanks to the where-tenant_id filter)
+// ---------------------------------------------------------------------------
+
+router.patch("/tenants/:id/plan", requireSuperAdmin, async (req: Request, res: Response): Promise<void> => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) {
+    res.status(400).json({ message: "Invalid tenant id" });
+    return;
+  }
+
+  const { planTier } = req.body as { planTier?: unknown };
+  if (!isPlanTier(planTier)) {
+    res.status(400).json({ message: "Invalid plan tier — must be 'basic', 'pro', or 'enterprise'" });
+    return;
+  }
+
+  const newPriceId = getPriceIdForTier(planTier);
+  if (!newPriceId) {
+    res.status(500).json({ message: `Price ID for ${planTier} tier is not configured (set STRIPE_SAAS_PRICE_ID_${planTier.toUpperCase()})` });
+    return;
+  }
+
+  try {
+    const subRow = await storage.getTenantSubscription(id);
+    if (!subRow?.stripeSubscriptionId) {
+      res.status(404).json({ message: "Tenant has no active Stripe subscription — call POST /tenants/:id/subscribe first" });
+      return;
+    }
+
+    // Fetch current subscription to find the item id we need to swap
+    const stripeSub = await stripe.subscriptions.retrieve(subRow.stripeSubscriptionId);
+    const itemId = stripeSub.items.data[0]?.id;
+    if (!itemId) {
+      res.status(500).json({ message: "Stripe subscription has no items — manual intervention required" });
+      return;
+    }
+
+    // Swap the price with prorations enabled so the tenant is charged/credited
+    // the difference for the remaining billing period.
+    await stripe.subscriptions.update(subRow.stripeSubscriptionId, {
+      items: [{ id: itemId, price: newPriceId }],
+      proration_behavior: "create_prorations",
+    });
+
+    // Optimistic DB update — webhook will arrive and confirm the same state.
+    // We update both planTier and planId so the row is consistent immediately;
+    // currentPeriodEnd/status will be refreshed by the eventual webhook.
+    const updated = await storage.upsertTenantSubscription(id, {
+      planTier,
+      planId: newPriceId,
+    });
+
+    res.status(200).json({ message: "Plan updated", planTier, subscription: updated });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    console.error("[super-admin] PATCH /tenants/:id/plan error:", message);
+    res.status(500).json({ message: "Failed to update plan tier" });
   }
 });
 
