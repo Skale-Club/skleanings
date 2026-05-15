@@ -9,7 +9,7 @@
 import { type Request, type Response, Router } from "express";
 import Stripe from "stripe";
 import { db } from "../db";
-import { tenantSubscriptions, users, companySettings } from "@shared/schema";
+import { tenantSubscriptions, tenantStripeAccounts, users, companySettings } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAdmin } from "../lib/auth";
 import { DatabaseStorage } from "../storage";
@@ -251,6 +251,70 @@ export async function billingWebhookHandler(req: Request, res: Response): Promis
         } catch (emailErr) {
           // Non-fatal — log and continue, webhook must still return 200
           console.error("[billing/webhook] trial_will_end: failed to send warning email:", emailErr);
+        }
+        break;
+      }
+
+      case "account.updated": {
+        const account = event.data.object as Stripe.Account;
+        // Look up by stripe_account_id — global registry, db directly (matches Phase 48 pattern).
+        const [row] = await db
+          .select()
+          .from(tenantStripeAccounts)
+          .where(eq(tenantStripeAccounts.stripeAccountId, account.id));
+
+        if (!row) {
+          // Unknown account — ack to Stripe but log. Avoids retry storms for accounts
+          // belonging to other platforms or to tenants whose row was already deleted.
+          console.warn("[billing/webhook] account.updated: no tenant_stripe_accounts row for account:", account.id);
+          break;
+        }
+
+        await db
+          .update(tenantStripeAccounts)
+          .set({
+            chargesEnabled: account.charges_enabled ?? false,
+            payoutsEnabled: account.payouts_enabled ?? false,
+            detailsSubmitted: account.details_submitted ?? false,
+            updatedAt: new Date(),
+          })
+          .where(eq(tenantStripeAccounts.stripeAccountId, account.id));
+
+        console.log(
+          `[billing/webhook] account.updated processed for tenant ${row.tenantId}: ` +
+            `charges=${account.charges_enabled} payouts=${account.payouts_enabled} details=${account.details_submitted}`,
+        );
+        break;
+      }
+
+      case "account.application.deauthorized": {
+        // For account.application.deauthorized, event.data.object is a Stripe.Application
+        // (the platform's OAuth app), NOT the connected account. The connected account ID
+        // that revoked access lives on the top-level event.account field.
+        const connectedAccountId = event.account;
+        if (!connectedAccountId) {
+          console.warn(
+            "[billing/webhook] account.application.deauthorized: missing event.account — cannot resolve connected account",
+          );
+          break;
+        }
+        // Hard-delete the row — admin has revoked the platform's access. On reconnect they get
+        // a brand new Express account (no resume). Matches Phase 57 invitation revoke hard-delete:
+        // irreversible action -> remove the record.
+        const result = await db
+          .delete(tenantStripeAccounts)
+          .where(eq(tenantStripeAccounts.stripeAccountId, connectedAccountId))
+          .returning({ tenantId: tenantStripeAccounts.tenantId });
+
+        if (result.length === 0) {
+          console.warn(
+            "[billing/webhook] account.application.deauthorized: no tenant_stripe_accounts row for account:",
+            connectedAccountId,
+          );
+        } else {
+          console.log(
+            `[billing/webhook] account.application.deauthorized processed for tenant ${result[0].tenantId}`,
+          );
         }
         break;
       }
