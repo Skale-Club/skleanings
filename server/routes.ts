@@ -28,6 +28,7 @@ import { calendarSyncRouter } from "./routes/calendar-sync";
 import { billingRouter } from "./routes/billing";
 import signupRouter from "./routes/signup";
 import { adminSetupRouter } from "./routes/admin-setup";
+import { staffInvitationRouter } from "./routes/staff-invitations";
 import { resolveTenantMiddleware } from "./middleware/tenant";
 
 export async function registerRoutes(server: Server, app: Express) {
@@ -106,5 +107,8 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // Setup checklist routes (GET /api/admin/setup-status, POST /api/admin/setup-dismiss) — Phase 56
   app.use("/api/admin", adminSetupRouter);
+
+  // Staff invitation routes (POST /api/admin/staff/invite, DELETE /:id, GET /staff/invitations) — Phase 57
+  app.use("/api/admin", staffInvitationRouter);
 
 }
