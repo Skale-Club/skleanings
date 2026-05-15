@@ -10,7 +10,7 @@ Customers can discover, book, and pay for cleaning services online without calli
 
 ## Current State
 
-**Eighteen milestones shipped:**
+**Nineteen milestones shipped:**
 
 - **v1.0 Marketing Attribution** — First-party UTM tracking, booking flow attribution, marketing dashboard, GoHighLevel CRM UTM sync, admin calendar create-booking-from-slot
 - **v2.0 White Label** — Hardcoded brand removed, DB-driven SEO/favicon/legal pages, receptionist multi-staff calendar view with drag-to-reassign and QuickBook walk-in flow
@@ -30,6 +30,7 @@ Customers can discover, book, and pay for cleaning services online without calli
 - **v16.0 Staff Invitation Flow** — staff_invitations table, branded invite email, public /accept-invite page, pending invitations admin section with invite dialog and revoke
 - **v17.0 Plan Tiers** — planTier on tenant_subscriptions, stripe-plans helpers, feature-flags catalog, webhook reverse-mapping, PATCH /super-admin/tenants/:id/plan, tier badge + feature list on /admin/billing, super-admin tier Select
 - **v18.0 Custom Domain Routing** — domains.verified + DNS TXT verification at _xkedule.<hostname>, admin-domains router (GET/POST/verify/DELETE), middleware verification gate, DomainsSection tenant UI, super-admin Status column
+- **v19.0 Stripe Connect Onboarding** — tenant_stripe_accounts + Stripe Express account creation, AccountLink onboarding, account.updated + account.application.deauthorized webhooks, /admin Payments page, super-admin Connect column
 
 
 **Pending human UAT:** Phase 19 (5 items), Phase 20 (4 CAL-FIX items), Phases 25–29 (browser-only checks), Phase 31 (4 Resend email delivery checks), Phase 34 (booking flow smoke test) — deferred to live session.
@@ -139,18 +140,10 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-## Current Milestone: v19.0 Stripe Connect Onboarding
+## Current Milestone: v19.0 Stripe Connect Onboarding ✅ SHIPPED
 
-**Goal:** Tenants can connect their own Stripe Express account so future booking payments flow directly to them (minus a platform fee). This milestone ships the connection/onboarding foundation — actually routing customer payments through the tenant account is deferred to v20.0 because it requires migrating the existing customer payment flow.
-
-**Target features:**
-- `tenant_stripe_accounts` table tracking `stripeAccountId`, `chargesEnabled`, `payoutsEnabled`, `detailsSubmitted`
-- `POST /api/admin/stripe/connect/onboard` creates Stripe Express account + returns hosted onboarding URL
-- `GET /api/admin/stripe/status` returns connection state + capabilities
-- Webhook `account.updated` + `account.application.deauthorized` keeps capabilities in sync
-- `/admin/payments` page with Connect button + status card + refresh
-- Super-admin Tenants table shows Connect status
+**Status:** Complete — all 7 requirements (SC-01–SC-07) shipped. Payment flow integration deferred to v20.0.
 
 ---
 
-*Last updated: 2026-05-15 — v19.0 Stripe Connect Onboarding started*
+*Last updated: 2026-05-15 — v19.0 Stripe Connect Onboarding shipped*

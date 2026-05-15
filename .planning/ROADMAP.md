@@ -20,7 +20,7 @@
 - ✅ **v16.0 Staff Invitation Flow** — Phases 57–58 (shipped 2026-05-15)
 - ✅ **v17.0 Plan Tiers** — Phases 59–60 (shipped 2026-05-15)
 - ✅ **v18.0 Custom Domain Routing** — Phases 61–62 (shipped 2026-05-15)
-- 🔲 **v19.0 Stripe Connect Onboarding** — Phases 63–64
+- ✅ **v19.0 Stripe Connect Onboarding** — Phases 63–64 (shipped 2026-05-15)
 
 ---
 
@@ -653,6 +653,16 @@ Full details: [milestones/v18.0-ROADMAP.md](milestones/v18.0-ROADMAP.md)
 **UI hint**: yes
 
 ---
+
+<details>
+<summary>✅ v19.0 Stripe Connect Onboarding (Phases 63–64) — SHIPPED 2026-05-15</summary>
+
+- [x] Phase 63: Stripe Connect Backend (3/3 plans) — completed 2026-05-15
+- [x] Phase 64: Stripe Connect Frontend (2/2 plans) — completed 2026-05-15
+
+Full details: [milestones/v19.0-ROADMAP.md](milestones/v19.0-ROADMAP.md)
+
+</details>
 
 ### Phase 63: Stripe Connect Backend
 **Goal**: Tenants can create a Stripe Express account, persist its connection state, and have capability flags stay in sync via webhook — the backend foundation for routing customer payments to the tenant in v20.0

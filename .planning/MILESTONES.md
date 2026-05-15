@@ -1,5 +1,21 @@
 # Milestones
 
+## v19.0 Stripe Connect Onboarding (Shipped: 2026-05-15)
+
+**Phases completed:** 2 phases (63–64), 5 plans, all complete
+
+**Key accomplishments:**
+
+- `tenant_stripe_accounts` table (Supabase migration + Drizzle schema, UNIQUE on tenantId and stripeAccountId, capability flags) + 5 IStorage methods (`createTenantStripeAccount`, `getTenantStripeAccount`, `getTenantStripeAccountByAccountId`, `updateTenantStripeAccount`, `deleteTenantStripeAccount`)
+- `server/routes/admin-stripe-connect.ts` with 3 endpoints (`POST /stripe/connect/onboard`, `GET /stripe/status`, `POST /stripe/refresh`) — creates Stripe Express account, persists ID BEFORE generating AccountLink (orphan prevention), all guarded by `requireAdmin`
+- `billingWebhookHandler` extended with `account.updated` (syncs charges_enabled/payouts_enabled/details_submitted via `db.update`) and `account.application.deauthorized` (`db.delete` row, uses `event.account` not `event.data.object`)
+- `PaymentsSection.tsx` in /admin with status card (Connected/Not Connected badge + Charges/Payouts/Details Submitted Check/X badges) + stateful primary CTA (Connect/Continue/Update Stripe Account) + Refresh Status button + `?status=success` URL handler that auto-refreshes and strips query
+- Admin.tsx Payments sidebar entry with Wallet icon; super-admin GET /tenants LEFT JOINs tenant_stripe_accounts and TenantsSection table shows Connect column with badge + capability subtext
+
+**Note:** Customer payment flow integration (routing booking payments through tenant accounts with `application_fee_amount`) intentionally deferred to v20.0.
+
+---
+
 ## v18.0 Custom Domain Routing (Shipped: 2026-05-15)
 
 **Phases completed:** 2 phases (61–62), 5 plans, all complete
