@@ -11,7 +11,7 @@
 ### Invitation Backend (Phase 57)
 
 - [ ] **SF-01**: Tenant admin calls `POST /api/admin/staff/invite` with `{ email, role }` — the system creates a `staff_invitations` row with SHA-256 token hash (48h expiry) and sends a branded Resend email with an "Accept Invitation" CTA linking to `/accept-invite?token=...`
-- [ ] **SF-02**: `staff_invitations` table (Supabase migration + Drizzle schema) stores: `id`, `tenantId`, `email`, `role`, `tokenHash`, `expiresAt`, `acceptedAt`, `createdAt`
+- [x] **SF-02**: `staff_invitations` table (Supabase migration + Drizzle schema) stores: `id`, `tenantId`, `email`, `role`, `tokenHash`, `expiresAt`, `acceptedAt`, `createdAt`
 - [ ] **SF-03**: `GET /api/auth/validate-invite?token=...` (public) validates the token hash, returns `{ email, tenantId, companyName, role }` if valid — returns 410 Gone for expired/used tokens
 - [ ] **SF-04**: `POST /api/auth/accept-invite` (public) validates token, creates a `users` row + `user_tenants` row atomically, marks `acceptedAt`, creates an admin session, returns `{ adminUrl }` for redirect — returns 410 if token invalid/expired
 - [ ] **SF-05**: `DELETE /api/admin/staff/invite/:id` (requireAdmin) revokes a pending invitation — only works if `acceptedAt` is null; returns 409 if already accepted
@@ -44,7 +44,7 @@
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | SF-01 | Phase 57 | Pending |
-| SF-02 | Phase 57 | Pending |
+| SF-02 | Phase 57 | Complete |
 | SF-03 | Phase 57 | Pending |
 | SF-04 | Phase 57 | Pending |
 | SF-05 | Phase 57 | Pending |
