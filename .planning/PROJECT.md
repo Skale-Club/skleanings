@@ -10,7 +10,7 @@ Customers can discover, book, and pay for cleaning services online without calli
 
 ## Current State
 
-**Sixteen milestones shipped:**
+**Seventeen milestones shipped:**
 
 - **v1.0 Marketing Attribution** — First-party UTM tracking, booking flow attribution, marketing dashboard, GoHighLevel CRM UTM sync, admin calendar create-booking-from-slot
 - **v2.0 White Label** — Hardcoded brand removed, DB-driven SEO/favicon/legal pages, receptionist multi-staff calendar view with drag-to-reassign and QuickBook walk-in flow
@@ -28,6 +28,7 @@ Customers can discover, book, and pay for cleaning services online without calli
 - **v14.0 Billing Hardening** — Resend emails on trial_will_end + past_due webhook events, signup rate limiting (5/hr), GET /api/billing/invoices + Invoice History card with React Query
 - **v15.0 Tenant Onboarding Experience** — Email verification token flow, welcome email, admin verification banner, setup checklist with live DB state + dismiss
 - **v16.0 Staff Invitation Flow** — staff_invitations table, branded invite email, public /accept-invite page, pending invitations admin section with invite dialog and revoke
+- **v17.0 Plan Tiers** — planTier on tenant_subscriptions, stripe-plans helpers, feature-flags catalog, webhook reverse-mapping, PATCH /super-admin/tenants/:id/plan, tier badge + feature list on /admin/billing, super-admin tier Select
 
 
 **Pending human UAT:** Phase 19 (5 items), Phase 20 (4 CAL-FIX items), Phases 25–29 (browser-only checks), Phase 31 (4 Resend email delivery checks), Phase 34 (booking flow smoke test) — deferred to live session.
@@ -137,18 +138,10 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-## Current Milestone: v17.0 Plan Tiers
+## Current Milestone: v17.0 Plan Tiers ✅ SHIPPED
 
-**Goal:** Tenants can be assigned to one of three Stripe plan tiers (Basic, Pro, Enterprise) with different price IDs and feature gates. Super-admin sets the plan on the tenant; tenant admin sees their tier on /admin/billing; backend enforces feature limits via a single tenantHasFeature() helper.
-
-**Target features:**
-- planTier column on tenant_subscriptions ('basic' | 'pro' | 'enterprise', default 'basic')
-- STRIPE_SAAS_PRICE_ID_BASIC / _PRO / _ENTERPRISE env vars
-- tenantHasFeature(tier, feature) helper with feature catalog (e.g. maxStaff, customBranding, prioritySupport)
-- Super-admin can change a tenant's plan (PATCH /api/super-admin/tenants/:id/plan)
-- Stripe webhook updates planTier when subscription priceId changes
-- /admin/billing shows current plan + feature list
+**Status:** Complete — all 7 requirements (PT-01–PT-07) shipped.
 
 ---
 
-*Last updated: 2026-05-15 — v17.0 Plan Tiers started*
+*Last updated: 2026-05-15 — v17.0 Plan Tiers shipped*

@@ -18,7 +18,7 @@
 - ✅ **v14.0 Billing Hardening** — Phases 53–54 (shipped 2026-05-14)
 - ✅ **v15.0 Tenant Onboarding Experience** — Phases 55–56 (shipped 2026-05-14)
 - ✅ **v16.0 Staff Invitation Flow** — Phases 57–58 (shipped 2026-05-15)
-- 🔲 **v17.0 Plan Tiers** — Phases 59–60
+- ✅ **v17.0 Plan Tiers** — Phases 59–60 (shipped 2026-05-15)
 
 ---
 
@@ -567,6 +567,16 @@ Plans:
 **UI hint**: yes
 
 ---
+
+<details>
+<summary>✅ v17.0 Plan Tiers (Phases 59–60) — SHIPPED 2026-05-15</summary>
+
+- [x] Phase 59: Plan Tier Foundation + Super-Admin Plan Management (3/3 plans) — completed 2026-05-15
+- [x] Phase 60: Plan Display UI (2/2 plans) — completed 2026-05-15
+
+Full details: [milestones/v17.0-ROADMAP.md](milestones/v17.0-ROADMAP.md)
+
+</details>
 
 ### Phase 59: Plan Tier Foundation + Super-Admin Plan Management
 **Goal**: The database, env config, feature catalog, Stripe webhook, and super-admin API are all in place to assign and persist a plan tier per tenant — the entire backend is plan-tier aware

@@ -1,5 +1,18 @@
 # Milestones
 
+## v17.0 Plan Tiers (Shipped: 2026-05-15)
+
+**Phases completed:** 2 phases (59–60), 5 plans, all complete
+
+**Key accomplishments:**
+
+- `planTier` TEXT column on `tenant_subscriptions` (Supabase migration + Drizzle schema, default `'basic'`); `server/lib/stripe-plans.ts` with `PLAN_TIERS`, `isPlanTier`, `getPriceIdForTier`, `getTierForPriceId` reading from 3 new env vars (`STRIPE_SAAS_PRICE_ID_BASIC`, `_PRO`, `_ENTERPRISE`)
+- `server/lib/feature-flags.ts` with hardcoded `FEATURE_CATALOG` (basic/pro/enterprise × maxStaff/maxBookingsPerMonth/customBranding/prioritySupport, `-1` = unlimited) + `tenantHasFeature()` + `getFeatureCatalog()` helpers
+- `billingWebhookHandler` `customer.subscription.updated` case reverse-maps `sub.items.data[0].price.id` → tier via `getTierForPriceId` and updates `planTier`; `PATCH /api/super-admin/tenants/:id/plan` (requireSuperAdmin) swaps the Stripe subscription item price (with `proration_behavior: create_prorations`) then updates the DB optimistically
+- `/admin/billing` BillingPage shows tier badge + Features card with Check/X icons and `Unlimited` for `-1`; super-admin Tenants table has a Plan column with Select dropdown (basic/pro/enterprise) that triggers `useUpdateTenantPlan` mutation + React Query invalidation
+
+---
+
 ## v16.0 Staff Invitation Flow (Shipped: 2026-05-15)
 
 **Phases completed:** 2 phases (57–58), 5 plans, all complete
