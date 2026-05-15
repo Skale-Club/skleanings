@@ -137,10 +137,18 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-## Current Milestone: v16.0 Staff Invitation Flow ✅ SHIPPED
+## Current Milestone: v17.0 Plan Tiers
 
-**Status:** Complete — all 7 requirements (SF-01–SF-07) shipped.
+**Goal:** Tenants can be assigned to one of three Stripe plan tiers (Basic, Pro, Enterprise) with different price IDs and feature gates. Super-admin sets the plan on the tenant; tenant admin sees their tier on /admin/billing; backend enforces feature limits via a single tenantHasFeature() helper.
+
+**Target features:**
+- planTier column on tenant_subscriptions ('basic' | 'pro' | 'enterprise', default 'basic')
+- STRIPE_SAAS_PRICE_ID_BASIC / _PRO / _ENTERPRISE env vars
+- tenantHasFeature(tier, feature) helper with feature catalog (e.g. maxStaff, customBranding, prioritySupport)
+- Super-admin can change a tenant's plan (PATCH /api/super-admin/tenants/:id/plan)
+- Stripe webhook updates planTier when subscription priceId changes
+- /admin/billing shows current plan + feature list
 
 ---
 
-*Last updated: 2026-05-15 — v16.0 Staff Invitation Flow shipped*
+*Last updated: 2026-05-15 — v17.0 Plan Tiers started*
