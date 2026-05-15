@@ -14,7 +14,7 @@
 - [x] **SC-02**: `POST /api/admin/stripe/connect/onboard` (requireAdmin) creates a new Stripe Express `Account` if none exists for the tenant, persists `stripeAccountId`, generates an `AccountLink` (type `account_onboarding`, return_url + refresh_url to `/admin/payments`), and returns `{ url }`
 - [x] **SC-03**: `GET /api/admin/stripe/status` (requireAdmin) returns `{ connected: boolean, stripeAccountId, chargesEnabled, payoutsEnabled, detailsSubmitted }` for the current tenant
 - [x] **SC-04**: `POST /api/admin/stripe/refresh` (requireAdmin) calls `stripe.accounts.retrieve(stripeAccountId)`, updates the DB row with current capability flags — useful when admin returns from onboarding before webhook fires
-- [ ] **SC-05**: Webhook handler extended to process `account.updated` and `account.application.deauthorized` events — updates `chargesEnabled`/`payoutsEnabled`/`detailsSubmitted` (or removes the row on deauthorize)
+- [x] **SC-05**: Webhook handler extended to process `account.updated` and `account.application.deauthorized` events — updates `chargesEnabled`/`payoutsEnabled`/`detailsSubmitted` (or removes the row on deauthorize)
 
 ### Connect Frontend (Phase 64)
 
