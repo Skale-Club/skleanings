@@ -132,6 +132,9 @@ import {
   tenantSubscriptions,
   type TenantSubscription,
   type InsertTenantSubscription,
+  staffInvitations,
+  type StaffInvitation,
+  type InsertStaffInvitation,
 } from "@shared/schema";
 type TenantRow = typeof tenants.$inferSelect;
 type DomainRow  = typeof domains.$inferSelect;
@@ -459,6 +462,13 @@ export interface IStorage {
     email: string;
     hashedPassword: string;
   }): Promise<{ tenantId: number; userId: string; subdomain: string }>;
+
+  // Staff Invitations — Phase 57 (global registry, uses db directly)
+  createStaffInvitation(tenantId: number, email: string, role: string): Promise<string>; // returns raw token
+  findStaffInvitation(tokenHash: string): Promise<StaffInvitation | null>;
+  markInvitationAccepted(id: number): Promise<void>;
+  revokeStaffInvitation(id: number): Promise<void>;
+  getPendingInvitations(tenantId: number): Promise<StaffInvitation[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2620,6 +2630,52 @@ export class DatabaseStorage implements IStorage {
     });
 
     return { tenantId, userId, subdomain: hostname };
+  }
+
+  // Staff Invitations — Phase 57
+  // NOTE: uses db directly (global registry — tokens cross tenant boundaries during accept flow)
+  async createStaffInvitation(tenantId: number, email: string, role: string): Promise<string> {
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48 hours
+    await db.insert(staffInvitations).values({ tenantId, email, role, tokenHash, expiresAt });
+    return rawToken;
+  }
+
+  async findStaffInvitation(tokenHash: string): Promise<StaffInvitation | null> {
+    const [row] = await db.select()
+      .from(staffInvitations)
+      .where(
+        and(
+          eq(staffInvitations.tokenHash, tokenHash),
+          isNull(staffInvitations.acceptedAt),
+          gte(staffInvitations.expiresAt, new Date())
+        )
+      )
+      .limit(1);
+    return row ?? null;
+  }
+
+  async markInvitationAccepted(id: number): Promise<void> {
+    await db.update(staffInvitations)
+      .set({ acceptedAt: new Date() })
+      .where(eq(staffInvitations.id, id));
+  }
+
+  async revokeStaffInvitation(id: number): Promise<void> {
+    await db.delete(staffInvitations).where(eq(staffInvitations.id, id));
+  }
+
+  async getPendingInvitations(tenantId: number): Promise<StaffInvitation[]> {
+    return await db.select()
+      .from(staffInvitations)
+      .where(
+        and(
+          eq(staffInvitations.tenantId, tenantId),
+          isNull(staffInvitations.acceptedAt)
+        )
+      )
+      .orderBy(desc(staffInvitations.createdAt));
   }
 }
 
