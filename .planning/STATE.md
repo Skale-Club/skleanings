@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: executing
-stopped_at: Completed 64-01-PLAN.md
-last_updated: "2026-05-15T16:39:23.388Z"
+milestone: v20.0
+milestone_name: Connect Payment Routing
+status: planning
+stopped_at: Roadmap created for v20.0
+last_updated: "2026-05-15T17:30:00.000Z"
 last_activity: 2026-05-15
 progress:
-  total_phases: 29
-  completed_phases: 29
-  total_plans: 70
-  completed_plans: 70
+  total_phases: 2
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-15)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 63 — Stripe Connect Backend
+**Current focus:** Phase 65 — Connect-Aware Checkout + Webhook Routing
 
 ## Current Position
 
-Phase: 64
+Phase: 65
 Plan: Not started
-Status: Ready to execute
+Status: Ready to plan
 Last activity: 2026-05-15
 
 Progress: [          ] 0%
@@ -54,15 +54,16 @@ Progress: [          ] 0%
 | v16.0 Staff Invitation Flow | 57–58 (2 phases) | 5 | 2026-05-15 |
 | v17.0 Plan Tiers | 59–60 (2 phases) | 5 | 2026-05-15 |
 | v18.0 Custom Domain Routing | 61–62 (2 phases) | 5 | 2026-05-15 |
+| v19.0 Stripe Connect Onboarding | 63–64 (2 phases) | 5 | 2026-05-15 |
 
 See: .planning/MILESTONES.md
 
-## v19.0 Phases
+## v20.0 Phases
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 63 | Stripe Connect Backend | SC-01, SC-02, SC-03, SC-04, SC-05 | Not started |
-| 64 | Stripe Connect Frontend | SC-06, SC-07 | Not started |
+| 65 | Connect-Aware Checkout + Webhook Routing | PF-01, PF-02, PF-03, PF-04, PF-05, PF-06 | Not started |
+| 66 | Payments Dashboard UI | PF-07, PF-08 | Not started |
 
 ## Pending Items
 
@@ -78,6 +79,9 @@ See: .planning/MILESTONES.md
 - **Phase 63 (v19.0)** — `supabase db push` for `tenant_stripe_accounts` table migration
 - **Phase 63 (v19.0)** — `STRIPE_CONNECT_CLIENT_ID` and Stripe Connect platform configuration (Express accounts enabled) must exist in the Stripe Dashboard before onboarding can succeed
 - **Phase 63 (v19.0)** — Stripe webhook endpoint must be configured to deliver `account.updated` and `account.application.deauthorized` events (in addition to existing billing events)
+- **Phase 65 (v20.0)** — `supabase db push` for `bookings.platform_fee_amount` + `bookings.tenant_net_amount` columns migration
+- **Phase 65 (v20.0)** — Two new env vars: `STRIPE_PLATFORM_FEE_PERCENT` (default 5) and `STRIPE_WEBHOOK_SECRET_CONNECT` must be added to `.env`
+- **Phase 65 (v20.0)** — Stripe Dashboard Connect webhook endpoint must be configured to deliver `checkout.session.completed` events at the platform level (separate from the per-tenant webhook used by legacy flow)
 
 ## Accumulated Context
 
@@ -147,6 +151,9 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - v19.0 phases 63–64 derived from SC-01–07 (Stripe Connect onboarding)
 - Phase 63 delivers `tenant_stripe_accounts` table + Drizzle schema + IStorage methods (createTenantStripeAccount, getTenantStripeAccount, updateTenantStripeAccount, deleteTenantStripeAccount) + `server/routes/admin-stripe-connect.ts` (POST /onboard, GET /status, POST /refresh) + webhook handler extension for `account.updated` + `account.application.deauthorized` events
 - Phase 64 delivers `/admin/payments` page (status card + Connect/Continue Onboarding + Refresh) + Admin.tsx sidebar Payments entry (Wallet icon) + super-admin Tenants table Connect Status column
+- v20.0 phases 65–66 derived from PF-01–08 (Connect payment routing)
+- Phase 65 delivers `bookings.platform_fee_amount` + `bookings.tenant_net_amount` columns (Supabase migration + Drizzle) + `server/lib/stripe.ts` `getStripeContextForTenant(tenant, storage)` helper returning `{ stripe, stripeAccount?, useConnect }` + Connect-aware `POST /api/payments/checkout` (legacy fallback when no Connect row, 402 guard when Connect row has `chargesEnabled = false`, `application_fee_amount` from `STRIPE_PLATFORM_FEE_PERCENT`) + webhook handler routing Connect events via `STRIPE_WEBHOOK_SECRET_CONNECT` and `event.account` + `checkout.session.completed` populates fee/net columns from `payment_intent.application_fee_amount`
+- Phase 66 delivers `GET /api/admin/payments/recent` endpoint (last 20 paid bookings, requireAdmin) + Recent Payments table card below the Connect status card on `/admin/payments` with Date/Customer/Service/Total/Platform Fee/Net columns and empty state
 
 ### Blockers/Concerns
 
@@ -161,10 +168,12 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - **MIGRATION PENDING (v19.0)** — Phase 63 requires `supabase db push` to create `tenant_stripe_accounts` table
 - **STRIPE CONFIG (v19.0)** — Stripe Connect platform settings (Express accounts enabled, branding, redirect URLs) must be configured in the Stripe Dashboard before onboarding completes successfully
 - **WEBHOOK CONFIG (v19.0)** — Existing Stripe webhook endpoint must be extended to deliver `account.updated` and `account.application.deauthorized` events alongside the billing events
+- **MIGRATION PENDING (v20.0)** — Phase 65 requires `supabase db push` to add `platform_fee_amount` + `tenant_net_amount` INTEGER columns to `bookings`
+- **ENV VARS NEEDED (v20.0)** — `STRIPE_PLATFORM_FEE_PERCENT` (default 5) and `STRIPE_WEBHOOK_SECRET_CONNECT` must be added to `.env`; Stripe Dashboard Connect webhook endpoint must deliver `checkout.session.completed` events at the platform level
 
 ## Session Continuity
 
-Last session: 2026-05-15T16:30:28.856Z
-Stopped at: Completed 64-01-PLAN.md
+Last session: 2026-05-15T17:30:00.000Z
+Stopped at: Roadmap created for v20.0
 Resume file: None
-Next: Plan Phase 63 (Stripe Connect Backend) via /gsd:plan-phase 63
+Next: Plan Phase 65 (Connect-Aware Checkout + Webhook Routing) via /gsd:plan-phase 65

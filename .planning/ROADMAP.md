@@ -21,6 +21,7 @@
 - ✅ **v17.0 Plan Tiers** — Phases 59–60 (shipped 2026-05-15)
 - ✅ **v18.0 Custom Domain Routing** — Phases 61–62 (shipped 2026-05-15)
 - ✅ **v19.0 Stripe Connect Onboarding** — Phases 63–64 (shipped 2026-05-15)
+- 🔲 **v20.0 Connect Payment Routing** — Phases 65–66
 
 ---
 
@@ -697,6 +698,33 @@ Plans:
 
 ---
 
+### Phase 65: Connect-Aware Checkout + Webhook Routing
+**Goal**: Customer booking payments are routed through the tenant's connected Stripe Express account using the platform Stripe key plus `Stripe-Account` header with an `application_fee_amount` skimmed by the platform; tenants without a Connect row continue on the legacy per-tenant Stripe API key flow; the webhook handler routes Connect events correctly and persists fee breakdown on completion
+**Depends on**: Phase 64
+**Requirements**: PF-01, PF-02, PF-03, PF-04, PF-05, PF-06
+**Success Criteria** (what must be TRUE):
+  1. A booking checkout on a tenant whose `tenant_stripe_accounts` row has `chargesEnabled = true` calls `stripe.checkout.sessions.create(params, { stripeAccount: tenant.stripeAccountId })` using the platform `STRIPE_SECRET_KEY` and includes `payment_intent_data.application_fee_amount` computed as `Math.max(1, Math.round(amountTotal * (STRIPE_PLATFORM_FEE_PERCENT / 100)))` in integer cents
+  2. A booking checkout on a tenant whose Connect row has `chargesEnabled = false` returns 402 with body `{ message: "Stripe Connect onboarding incomplete. Finish onboarding in Admin → Payments." }` and no `stripe.checkout.sessions.create` call is attempted
+  3. A booking checkout on a tenant with NO `tenant_stripe_accounts` row uses the existing legacy per-tenant `integrationSettings.stripe.apiKey` code path unchanged — the request succeeds and produces a Checkout session on the tenant's own Stripe account
+  4. The `bookings` table has new `platform_fee_amount INTEGER` and `tenant_net_amount INTEGER` columns (Supabase migration + Drizzle schema); on `checkout.session.completed` webhook delivery for a Connect event, both columns are populated for the matching booking — `platform_fee_amount` equals `payment_intent.application_fee_amount` and `tenant_net_amount` equals `amount_total - application_fee_amount`
+  5. The webhook handler verifies the signature using `STRIPE_WEBHOOK_SECRET_CONNECT` when `event.account` is present and falls back to the legacy per-tenant secret otherwise — for Connect events the handler retrieves the session via `stripe.checkout.sessions.retrieve(sessionId, { stripeAccount: event.account })` to access `payment_intent.application_fee_amount`
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 66: Payments Dashboard UI
+**Goal**: Tenant admins can see a list of recent customer payments with platform fee and net-to-tenant breakdown directly in the existing `/admin/payments` page — no DB inspection required to audit revenue routing
+**Depends on**: Phase 65
+**Requirements**: PF-07, PF-08
+**Success Criteria** (what must be TRUE):
+  1. `GET /api/admin/payments/recent` (requireAdmin) returns the last 20 paid bookings for the current tenant as `[{ id, customerName, serviceName, amountTotal, platformFeeAmount, tenantNetAmount, paidAt }]` ordered by `paidAt DESC` — bookings without a paid payment are excluded
+  2. Visiting `/admin/payments` (requireAdmin) renders a "Recent Payments" card directly below the existing Connect status card containing a Table with columns Date, Customer, Service, Total, Platform Fee, Net to Tenant — currency values are formatted with the tenant's locale
+  3. The Recent Payments card shows an empty state reading "No payments yet" when the endpoint returns an empty array — the table header and rows are hidden in that case
+  4. The Recent Payments card invalidates via React Query when the Refresh Status button is clicked so the table reflects newly completed payments without a page reload
+**Plans**: TBD
+**UI hint**: yes
+
+---
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -735,6 +763,8 @@ Plans:
 | 62 | v18.0 | 1/2 | Complete    | 2026-05-15 |
 | 63 | v19.0 | 2/3 | Complete    | 2026-05-15 |
 | 64 | v19.0 | 1/2 | Complete    | 2026-05-15 |
+| 65 | v20.0 | 0/? | Not started | - |
+| 66 | v20.0 | 0/? | Not started | - |
 
 ---
 
