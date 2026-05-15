@@ -679,7 +679,10 @@ Plans:
   2. The same page exposes a "Refresh Status" button that POSTs to `/api/admin/stripe/refresh` and triggers a React Query invalidation so the status card reflects the live Stripe capability flags without a page reload
   3. `Admin.tsx` sidebar shows a new "Payments" entry with a Wallet icon that routes to `/admin/payments` — admin-only, hidden for non-admin staff roles
   4. The super-admin `/superadmin` Tenants table shows a "Connect Status" column with a Connected / Not Connected badge per tenant — values derived from a join on `tenant_stripe_accounts` returned by the existing `GET /api/super-admin/tenants` aggregate endpoint
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 64-01-PLAN.md — /admin Payments section + Wallet sidebar entry (SC-06)
+- [ ] 64-02-PLAN.md — Super-admin Tenants Connect Status column (SC-07)
 **UI hint**: yes
 
 ---
@@ -721,7 +724,7 @@ Plans:
 | 61 | v18.0 | 1/3 | Complete    | 2026-05-15 |
 | 62 | v18.0 | 1/2 | Complete    | 2026-05-15 |
 | 63 | v19.0 | 2/3 | Complete    | 2026-05-15 |
-| 64 | v19.0 | 0/? | Not started | -          |
+| 64 | v19.0 | 0/2 | Not started | -          |
 
 ---
 
