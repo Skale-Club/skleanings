@@ -195,6 +195,7 @@ router.get("/tenants", requireSuperAdmin, async (_req: Request, res: Response): 
         billingStatus: tenantSubscriptions.status,
         billingPlanId: tenantSubscriptions.planId,
         billingCurrentPeriodEnd: tenantSubscriptions.currentPeriodEnd,
+        planTier: tenantSubscriptions.planTier, // Phase 60 PT-07 — surface tier for super-admin Plan column
       })
       .from(tenants)
       .leftJoin(domains, and(eq(domains.tenantId, tenants.id), eq(domains.isPrimary, true)))
