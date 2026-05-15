@@ -30,6 +30,7 @@ import signupRouter from "./routes/signup";
 import { adminSetupRouter } from "./routes/admin-setup";
 import { staffInvitationRouter } from "./routes/staff-invitations";
 import { adminDomainsRouter } from "./routes/admin-domains";
+import { adminStripeConnectRouter } from "./routes/admin-stripe-connect";
 import { resolveTenantMiddleware } from "./middleware/tenant";
 
 export async function registerRoutes(server: Server, app: Express) {
@@ -114,5 +115,8 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // Custom domain routes (GET /api/admin/domains, POST /api/admin/domains, POST /:id/verify, DELETE /:id) — Phase 61
   app.use("/api/admin", adminDomainsRouter);
+
+  // Stripe Connect routes (POST /api/admin/stripe/connect/onboard, GET /api/admin/stripe/status, POST /api/admin/stripe/refresh) — Phase 63
+  app.use("/api/admin", adminStripeConnectRouter);
 
 }
