@@ -14,11 +14,18 @@ import {
   TableBody,
   TableCell,
 } from '@/components/ui/table';
-import { CreditCard, ExternalLink } from 'lucide-react';
+import { CreditCard, ExternalLink, Check, X } from 'lucide-react';
 
 interface BillingStatus {
   status: string;
   planId: string | null;
+  planTier?: 'basic' | 'pro' | 'enterprise'; // optional — absent when status === 'none'
+  features?: {
+    maxStaff: number;
+    maxBookingsPerMonth: number;
+    customBranding: boolean;
+    prioritySupport: boolean;
+  };
   currentPeriodEnd: string | null;
   stripeCustomerId: string | null;
 }
@@ -142,6 +149,14 @@ export default function BillingPage() {
 
           {billingStatus && (
             <div className="space-y-3">
+              {billingStatus.planTier && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground w-32">Plan</span>
+                  <Badge className="bg-purple-100 text-purple-800 capitalize">
+                    {billingStatus.planTier}
+                  </Badge>
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground w-32">Status</span>
                 <Badge className={statusBadgeClass(billingStatus.status)}>
@@ -206,6 +221,45 @@ export default function BillingPage() {
           </div>
         </CardContent>
       </Card>
+
+      {billingStatus?.features && (
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle>Features</CardTitle>
+            <CardDescription>What's included in your current plan.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-center gap-2">
+                <span className="text-muted-foreground w-44">Max staff</span>
+                <span className="font-medium">
+                  {billingStatus.features.maxStaff === -1 ? 'Unlimited' : billingStatus.features.maxStaff}
+                </span>
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-muted-foreground w-44">Max bookings / month</span>
+                <span className="font-medium">
+                  {billingStatus.features.maxBookingsPerMonth === -1
+                    ? 'Unlimited'
+                    : billingStatus.features.maxBookingsPerMonth}
+                </span>
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-muted-foreground w-44">Custom branding</span>
+                {billingStatus.features.customBranding
+                  ? <Check className="w-4 h-4 text-green-600" aria-label="included" />
+                  : <X className="w-4 h-4 text-gray-400" aria-label="not included" />}
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-muted-foreground w-44">Priority support</span>
+                {billingStatus.features.prioritySupport
+                  ? <Check className="w-4 h-4 text-green-600" aria-label="included" />
+                  : <X className="w-4 h-4 text-gray-400" aria-label="not included" />}
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="mt-4">
         <CardHeader>
