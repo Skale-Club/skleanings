@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 59-02-PLAN.md
-last_updated: "2026-05-15T13:10:41.234Z"
+status: verifying
+stopped_at: Completed 59-03-PLAN.md (webhook reverse-lookup + super-admin plan PATCH)
+last_updated: "2026-05-15T13:14:06.918Z"
 last_activity: 2026-05-15
 progress:
   total_phases: 25
-  completed_phases: 23
+  completed_phases: 24
   total_plans: 58
-  completed_plans: 57
+  completed_plans: 58
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-05-15)
 
 Phase: 59 (Plan Tier Foundation + Super-Admin Plan Management) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-05-15
 
 Progress: [          ] 0%
@@ -111,6 +111,9 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 59]: [Phase 59-01]: stripe-plans helpers read process.env at call-time (not module load) for test friendliness; empty-string priceId guard prevents false matches against unset env vars
 - [Phase 59]: [Phase 59-01]: IStorage.upsertTenantSubscription signature unchanged — Partial<Omit<InsertTenantSubscription>> auto-widens to include planTier? once Drizzle table gains column (verified via npm run check)
 - [Phase 59]: Phase 59-02: Used Record<PlanTier, FeatureLimits> over  to enforce exhaustive tier coverage without over-narrowing numeric literals.
+- [Phase 59]: [Phase 59-03]: Webhook reverse-lookup uses conditional spread (...newTier ? { planTier: newTier } : {}) to avoid overwriting valid planTier with null on unrecognized priceIds; warn-log surfaces the unrecognized priceId for operator debugging
+- [Phase 59]: [Phase 59-03]: PATCH /super-admin/tenants/:id/plan does NOT auto-subscribe; returns 404 when stripeSubscriptionId missing, pointing operator to POST /subscribe — keeps responsibilities split (subscribe = create, plan = change)
+- [Phase 59]: [Phase 59-03]: PATCH endpoint uses optimistic DB write (planTier + planId) + webhook reconciliation; both paths converge idempotently via where(tenant_id) filter, giving super-admin UI immediate feedback without waiting for Stripe webhook
 
 ### Roadmap Evolution
 
@@ -135,7 +138,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-15T13:10:41.218Z
-Stopped at: Completed 59-02-PLAN.md
+Last session: 2026-05-15T13:14:06.911Z
+Stopped at: Completed 59-03-PLAN.md (webhook reverse-lookup + super-admin plan PATCH)
 Resume file: None
 Next: Plan Phase 59 (Plan Tier Foundation + Super-Admin Plan Management) via /gsd:plan-phase 59
