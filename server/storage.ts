@@ -214,6 +214,8 @@ export interface IStorage {
   getBookingsByUserId(userId: string): Promise<Booking[]>;
   getClientBookings(userId: string, email: string): Promise<Booking[]>;
   updateBookingStripeFields(bookingId: number, stripeSessionId: string, stripePaymentStatus?: string): Promise<void>;
+  // Phase 65 — persist Connect platform fee + tenant net split after checkout.session.completed.
+  setBookingPaymentBreakdown(bookingId: number, platformFeeAmount: number, tenantNetAmount: number): Promise<void>;
   updateBooking(
     id: number,
     updates: Partial<{
@@ -1060,6 +1062,17 @@ export class DatabaseStorage implements IStorage {
         stripeSessionId,
         ...(stripePaymentStatus ? { stripePaymentStatus } : {}),
       })
+      .where(and(eq(bookings.tenantId, this.tenantId), eq(bookings.id, bookingId)));
+  }
+
+  async setBookingPaymentBreakdown(
+    bookingId: number,
+    platformFeeAmount: number,
+    tenantNetAmount: number,
+  ): Promise<void> {
+    await db
+      .update(bookings)
+      .set({ platformFeeAmount, tenantNetAmount })
       .where(and(eq(bookings.tenantId, this.tenantId), eq(bookings.id, bookingId)));
   }
 
