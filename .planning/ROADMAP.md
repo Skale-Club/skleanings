@@ -593,7 +593,9 @@ Plans:
   2. A tenant admin visiting `/admin/billing` sees a colored Tier badge (Basic / Pro / Enterprise) and a feature list rendering each catalog entry — numeric limits show as Max staff: 5; booleans show as a check or X glyph
   3. The super-admin `/superadmin` Tenants table shows a planTier badge column per tenant — values are read from `tenant_subscriptions` via the existing `GET /api/super-admin/tenants` aggregate endpoint
   4. Each row in the super-admin Tenants table has a Select dropdown with Basic/Pro/Enterprise options — changing the selection fires `PATCH /api/super-admin/tenants/:id/plan`, shows a success toast, and the table refreshes (React Query invalidation) so the badge reflects the new tier without a page reload
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] 60-01-PLAN.md — /admin/billing tier badge + features list (PT-06)
+- [ ] 60-02-PLAN.md — Super-admin Tenants plan column + Select dropdown (PT-07)
 **UI hint**: yes
 
 ---
