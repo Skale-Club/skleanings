@@ -20,6 +20,7 @@
 - ✅ **v16.0 Staff Invitation Flow** — Phases 57–58 (shipped 2026-05-15)
 - ✅ **v17.0 Plan Tiers** — Phases 59–60 (shipped 2026-05-15)
 - ✅ **v18.0 Custom Domain Routing** — Phases 61–62 (shipped 2026-05-15)
+- 🔲 **v19.0 Stripe Connect Onboarding** — Phases 63–64
 
 ---
 
@@ -653,6 +654,32 @@ Full details: [milestones/v18.0-ROADMAP.md](milestones/v18.0-ROADMAP.md)
 
 ---
 
+### Phase 63: Stripe Connect Backend
+**Goal**: Tenants can create a Stripe Express account, persist its connection state, and have capability flags stay in sync via webhook — the backend foundation for routing customer payments to the tenant in v20.0
+**Depends on**: Phase 62
+**Requirements**: SC-01, SC-02, SC-03, SC-04, SC-05
+**Success Criteria** (what must be TRUE):
+  1. The `tenant_stripe_accounts` table exists via Supabase CLI migration with `id`, `tenantId UNIQUE`, `stripeAccountId TEXT UNIQUE`, `chargesEnabled BOOLEAN DEFAULT false`, `payoutsEnabled BOOLEAN DEFAULT false`, `detailsSubmitted BOOLEAN DEFAULT false`, `createdAt`, `updatedAt` columns — reflected in Drizzle schema with matching types
+  2. A tenant admin POSTing to `POST /api/admin/stripe/connect/onboard` (requireAdmin) creates a new Stripe Express `Account` if none exists for the tenant, persists `stripeAccountId` to `tenant_stripe_accounts`, generates a hosted onboarding `AccountLink` (type `account_onboarding` with return_url + refresh_url pointing to `/admin/payments`), and returns `{ url }`
+  3. A tenant admin calling `GET /api/admin/stripe/status` (requireAdmin) receives `{ connected, stripeAccountId, chargesEnabled, payoutsEnabled, detailsSubmitted }` for the current tenant — `connected` is `false` and the row is absent when no Stripe account has been created
+  4. A tenant admin calling `POST /api/admin/stripe/refresh` (requireAdmin) triggers `stripe.accounts.retrieve(stripeAccountId)` and writes the live `charges_enabled` / `payouts_enabled` / `details_submitted` flags back to the DB row — useful when the admin returns from Stripe-hosted onboarding before the webhook fires
+  5. A Stripe `account.updated` webhook event updates the corresponding `tenant_stripe_accounts` row's capability flags in the same HTTP request; an `account.application.deauthorized` event removes the row (or marks it disconnected) so the tenant can re-onboard cleanly
+**Plans**: TBD
+
+### Phase 64: Stripe Connect Frontend
+**Goal**: Tenant admins can connect, monitor, and re-verify their Stripe account from a dedicated `/admin/payments` page, and super-admin can audit every tenant's connection status from the Tenants table — no DB inspection required
+**Depends on**: Phase 63
+**Requirements**: SC-06, SC-07
+**Success Criteria** (what must be TRUE):
+  1. Visiting `/admin/payments` (requireAdmin) renders a status card showing a connection state badge (Connected / Not Connected), capability badges (Charges Enabled, Payouts Enabled), and either a "Connect Stripe Account" button (when no account exists) or a "Continue Onboarding" button (when an account exists but `detailsSubmitted = false`) — clicking either button POSTs to `/api/admin/stripe/connect/onboard` and redirects the browser to the returned Stripe URL
+  2. The same page exposes a "Refresh Status" button that POSTs to `/api/admin/stripe/refresh` and triggers a React Query invalidation so the status card reflects the live Stripe capability flags without a page reload
+  3. `Admin.tsx` sidebar shows a new "Payments" entry with a Wallet icon that routes to `/admin/payments` — admin-only, hidden for non-admin staff roles
+  4. The super-admin `/superadmin` Tenants table shows a "Connect Status" column with a Connected / Not Connected badge per tenant — values derived from a join on `tenant_stripe_accounts` returned by the existing `GET /api/super-admin/tenants` aggregate endpoint
+**Plans**: TBD
+**UI hint**: yes
+
+---
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -689,6 +716,8 @@ Full details: [milestones/v18.0-ROADMAP.md](milestones/v18.0-ROADMAP.md)
 | 60 | v17.0 | 1/2 | Complete    | 2026-05-15 |
 | 61 | v18.0 | 1/3 | Complete    | 2026-05-15 |
 | 62 | v18.0 | 1/2 | Complete    | 2026-05-15 |
+| 63 | v19.0 | 0/? | Not started | -          |
+| 64 | v19.0 | 0/? | Not started | -          |
 
 ---
 

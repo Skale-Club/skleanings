@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: executing
-stopped_at: Completed 62-02-PLAN.md
-last_updated: "2026-05-15T15:10:51.172Z"
+milestone: v19.0
+milestone_name: Stripe Connect Onboarding
+status: planning
+stopped_at: Roadmap created for v19.0
+last_updated: "2026-05-15T16:00:00.000Z"
 last_activity: 2026-05-15
 progress:
-  total_phases: 27
-  completed_phases: 27
-  total_plans: 65
-  completed_plans: 65
+  total_phases: 2
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-15)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 62 — Custom Domain Frontend
+**Current focus:** Phase 63 — Stripe Connect Backend
 
 ## Current Position
 
-Phase: 62
+Phase: 63
 Plan: Not started
-Status: Ready to execute
+Status: Ready to plan
 Last activity: 2026-05-15
 
 Progress: [          ] 0%
@@ -53,15 +53,16 @@ Progress: [          ] 0%
 | v15.0 Tenant Onboarding Experience | 55–56 (2 phases) | 5 | 2026-05-14 |
 | v16.0 Staff Invitation Flow | 57–58 (2 phases) | 5 | 2026-05-15 |
 | v17.0 Plan Tiers | 59–60 (2 phases) | 5 | 2026-05-15 |
+| v18.0 Custom Domain Routing | 61–62 (2 phases) | 5 | 2026-05-15 |
 
 See: .planning/MILESTONES.md
 
-## v18.0 Phases
+## v19.0 Phases
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 61 | Custom Domain Backend + Middleware | CD-01, CD-02, CD-03, CD-04, CD-05, CD-06 | Not started |
-| 62 | Custom Domain Frontend | CD-07, CD-08, CD-09 | Not started |
+| 63 | Stripe Connect Backend | SC-01, SC-02, SC-03, SC-04, SC-05 | Not started |
+| 64 | Stripe Connect Frontend | SC-06, SC-07 | Not started |
 
 ## Pending Items
 
@@ -74,6 +75,9 @@ See: .planning/MILESTONES.md
 - **Phase 59 (v17.0)** — Three new env vars: `STRIPE_SAAS_PRICE_ID_BASIC`, `STRIPE_SAAS_PRICE_ID_PRO`, `STRIPE_SAAS_PRICE_ID_ENTERPRISE` must be added to `.env` and Stripe Dashboard must have matching Price IDs
 - **Phase 61 (v18.0)** — `supabase db push` will be required for `domains.verified / verifiedAt / verificationToken` migration; existing primary domains should be backfilled to `verified = true`
 - **Phase 61 (v18.0)** — Caddy on-demand TLS configuration must be enabled in `infra/Caddyfile` so custom domains receive auto-issued certificates after DNS verification
+- **Phase 63 (v19.0)** — `supabase db push` for `tenant_stripe_accounts` table migration
+- **Phase 63 (v19.0)** — `STRIPE_CONNECT_CLIENT_ID` and Stripe Connect platform configuration (Express accounts enabled) must exist in the Stripe Dashboard before onboarding can succeed
+- **Phase 63 (v19.0)** — Stripe webhook endpoint must be configured to deliver `account.updated` and `account.application.deauthorized` events (in addition to existing billing events)
 
 ## Accumulated Context
 
@@ -134,6 +138,9 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - v18.0 phases 61–62 derived from CD-01–09 (custom domain routing)
 - Phase 61 delivers `domains` schema extension (verified / verifiedAt / verificationToken) + IStorage methods (addDomainWithVerification, verifyDomain, removeDomain extended, getDomainsForTenant) + admin domain routes (POST add, POST verify, DELETE, GET list) + resolveTenantMiddleware verification gate + DNS TXT lookup via dns.promises.resolveTxt
 - Phase 62 delivers `/admin/settings/domains` page (list + Add dialog + Verify + Remove) with DNS instructions panel showing exact TXT record + super-admin Tenants ManageDomainsDialog extended with verification status
+- v19.0 phases 63–64 derived from SC-01–07 (Stripe Connect onboarding)
+- Phase 63 delivers `tenant_stripe_accounts` table + Drizzle schema + IStorage methods (createTenantStripeAccount, getTenantStripeAccount, updateTenantStripeAccount, deleteTenantStripeAccount) + `server/routes/admin-stripe-connect.ts` (POST /onboard, GET /status, POST /refresh) + webhook handler extension for `account.updated` + `account.application.deauthorized` events
+- Phase 64 delivers `/admin/payments` page (status card + Connect/Continue Onboarding + Refresh) + Admin.tsx sidebar Payments entry (Wallet icon) + super-admin Tenants table Connect Status column
 
 ### Blockers/Concerns
 
@@ -145,10 +152,13 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - **ENV VARS NEEDED (v17.0)** — `STRIPE_SAAS_PRICE_ID_BASIC`, `STRIPE_SAAS_PRICE_ID_PRO`, `STRIPE_SAAS_PRICE_ID_ENTERPRISE` must be set with valid Stripe Price IDs before webhook reverse-lookup can map subscriptions to tiers
 - **MIGRATION PENDING (v18.0)** — Phase 61 requires `supabase db push` to add `verified / verifiedAt / verificationToken` columns to `domains`; existing primary domains must be backfilled to `verified = true` to avoid 404-ing live tenants
 - **INFRA CHANGE (v18.0)** — Caddy on-demand TLS must be enabled in `infra/Caddyfile` so verified custom domains receive auto-issued Let's Encrypt certs on first request
+- **MIGRATION PENDING (v19.0)** — Phase 63 requires `supabase db push` to create `tenant_stripe_accounts` table
+- **STRIPE CONFIG (v19.0)** — Stripe Connect platform settings (Express accounts enabled, branding, redirect URLs) must be configured in the Stripe Dashboard before onboarding completes successfully
+- **WEBHOOK CONFIG (v19.0)** — Existing Stripe webhook endpoint must be extended to deliver `account.updated` and `account.application.deauthorized` events alongside the billing events
 
 ## Session Continuity
 
-Last session: 2026-05-15T14:59:38.553Z
-Stopped at: Completed 62-02-PLAN.md
+Last session: 2026-05-15T16:00:00.000Z
+Stopped at: Roadmap created for v19.0 Stripe Connect Onboarding
 Resume file: None
-Next: Plan Phase 61 (Custom Domain Backend + Middleware) via /gsd:plan-phase 61
+Next: Plan Phase 63 (Stripe Connect Backend) via /gsd:plan-phase 63
