@@ -139,10 +139,18 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-## Current Milestone: v18.0 Custom Domain Routing ✅ SHIPPED
+## Current Milestone: v19.0 Stripe Connect Onboarding
 
-**Status:** Complete — all 9 requirements (CD-01–CD-09) shipped.
+**Goal:** Tenants can connect their own Stripe Express account so future booking payments flow directly to them (minus a platform fee). This milestone ships the connection/onboarding foundation — actually routing customer payments through the tenant account is deferred to v20.0 because it requires migrating the existing customer payment flow.
+
+**Target features:**
+- `tenant_stripe_accounts` table tracking `stripeAccountId`, `chargesEnabled`, `payoutsEnabled`, `detailsSubmitted`
+- `POST /api/admin/stripe/connect/onboard` creates Stripe Express account + returns hosted onboarding URL
+- `GET /api/admin/stripe/status` returns connection state + capabilities
+- Webhook `account.updated` + `account.application.deauthorized` keeps capabilities in sync
+- `/admin/payments` page with Connect button + status card + refresh
+- Super-admin Tenants table shows Connect status
 
 ---
 
-*Last updated: 2026-05-15 — v18.0 Custom Domain Routing shipped*
+*Last updated: 2026-05-15 — v19.0 Stripe Connect Onboarding started*
