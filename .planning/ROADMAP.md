@@ -17,7 +17,7 @@
 - ✅ **v13.0 Self-Serve Signup** — Phases 51–52 (shipped 2026-05-14)
 - ✅ **v14.0 Billing Hardening** — Phases 53–54 (shipped 2026-05-14)
 - ✅ **v15.0 Tenant Onboarding Experience** — Phases 55–56 (shipped 2026-05-14)
-- 🔲 **v16.0 Staff Invitation Flow** — Phases 57–58
+- ✅ **v16.0 Staff Invitation Flow** — Phases 57–58 (shipped 2026-05-15)
 
 ---
 
@@ -523,6 +523,16 @@ Plans:
 **UI hint**: yes
 
 ---
+
+<details>
+<summary>✅ v16.0 Staff Invitation Flow (Phases 57–58) — SHIPPED 2026-05-15</summary>
+
+- [x] Phase 57: Staff Invitation Backend (3/3 plans) — completed 2026-05-15
+- [x] Phase 58: Staff Invitation Frontend (2/2 plans) — completed 2026-05-15
+
+Full details: [milestones/v16.0-ROADMAP.md](milestones/v16.0-ROADMAP.md)
+
+</details>
 
 ### Phase 57: Staff Invitation Backend
 **Goal**: Tenant admins can invite staff members by email via a token-secured flow — the invitation is persisted, a branded email is sent, and all token lifecycle operations (validate, accept, revoke) are exposed as API endpoints

@@ -1,5 +1,18 @@
 # Milestones
 
+## v16.0 Staff Invitation Flow (Shipped: 2026-05-15)
+
+**Phases completed:** 2 phases (57–58), 5 plans, all complete
+
+**Key accomplishments:**
+
+- `staff_invitations` Supabase migration + Drizzle schema + 5 global registry IStorage methods (`createStaffInvitation`, `findStaffInvitation`, `markInvitationAccepted`, `revokeStaffInvitation`, `getPendingInvitations`); SHA-256 token hash with 48h expiry
+- `buildInviteEmail()` branded Resend template + `POST /api/admin/staff/invite` (requireAdmin, fire-and-forget email) + `DELETE /api/admin/staff/invite/:id` (409 if accepted) + `GET /api/admin/staff/invitations` listing endpoint
+- `GET /api/auth/validate-invite` (public, returns company name + email + role or 410) + `POST /api/auth/accept-invite` (public, atomic `db.transaction` creating `users` + `user_tenants`, sets admin session, returns adminUrl for cross-subdomain redirect)
+- `AcceptInvite.tsx` public page with 3-state machine (validating/expired/form) + `/accept-invite` route in App.tsx; `PendingInvitationsSection` React Query component (Invite dialog with email + role Select, AlertDialog Revoke confirm) mounted in `UnifiedUsersSection`
+
+---
+
 ## v15.0 Tenant Onboarding Experience (Shipped: 2026-05-14)
 
 **Phases completed:** 2 phases (55–56), 5 plans, all complete

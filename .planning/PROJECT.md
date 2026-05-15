@@ -10,7 +10,7 @@ Customers can discover, book, and pay for cleaning services online without calli
 
 ## Current State
 
-**Fifteen milestones shipped:**
+**Sixteen milestones shipped:**
 
 - **v1.0 Marketing Attribution** — First-party UTM tracking, booking flow attribution, marketing dashboard, GoHighLevel CRM UTM sync, admin calendar create-booking-from-slot
 - **v2.0 White Label** — Hardcoded brand removed, DB-driven SEO/favicon/legal pages, receptionist multi-staff calendar view with drag-to-reassign and QuickBook walk-in flow
@@ -27,6 +27,7 @@ Customers can discover, book, and pay for cleaning services online without calli
 - **v13.0 Self-Serve Signup** — POST /api/auth/signup atomic provisioning (db.transaction), Stripe 14-day trial, public /signup page with live subdomain preview, trial badge + countdown + Add Payment Method CTA in /admin/billing
 - **v14.0 Billing Hardening** — Resend emails on trial_will_end + past_due webhook events, signup rate limiting (5/hr), GET /api/billing/invoices + Invoice History card with React Query
 - **v15.0 Tenant Onboarding Experience** — Email verification token flow, welcome email, admin verification banner, setup checklist with live DB state + dismiss
+- **v16.0 Staff Invitation Flow** — staff_invitations table, branded invite email, public /accept-invite page, pending invitations admin section with invite dialog and revoke
 
 
 **Pending human UAT:** Phase 19 (5 items), Phase 20 (4 CAL-FIX items), Phases 25–29 (browser-only checks), Phase 31 (4 Resend email delivery checks), Phase 34 (booking flow smoke test) — deferred to live session.
@@ -136,17 +137,10 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-## Current Milestone: v16.0 Staff Invitation Flow
+## Current Milestone: v16.0 Staff Invitation Flow ✅ SHIPPED
 
-**Goal:** Tenant admins can invite staff members by email — no super-admin intervention required. Staff accept the invite, set their password, and are immediately logged in and associated with the tenant.
-
-**Target features:**
-- POST /api/admin/staff/invite — creates staff_invitations row + sends branded invite email with 48h token
-- GET /validate-invite?token= + POST /accept-invite — validates token, creates user+user_tenants, marks accepted, logs in
-- /accept-invite public page — company name, pre-filled email, name + password form
-- Pending invitations list in /admin/staff with Revoke button
-- DELETE /api/admin/staff/invite/:id — revokes pending invitation
+**Status:** Complete — all 7 requirements (SF-01–SF-07) shipped.
 
 ---
 
-*Last updated: 2026-05-14 — v16.0 Staff Invitation Flow started*
+*Last updated: 2026-05-15 — v16.0 Staff Invitation Flow shipped*
