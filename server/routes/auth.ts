@@ -4,6 +4,9 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { getAuthenticatedUser } from "../lib/auth";
 import { buildPasswordResetEmail, buildVerificationEmail, sendResendEmail } from "../lib/email-resend";
+import { db } from "../db";
+import { users, userTenants, domains, companySettings } from "@shared/schema";
+import { eq, and } from "drizzle-orm";
 
 const router = Router();
 
@@ -270,6 +273,143 @@ router.post('/auth/resend-verification', async (req, res) => {
   }
 
   return res.json({ ok: true });
+});
+
+// GET /api/auth/validate-invite?token=
+// Public — no session required. Returns invitation metadata for the accept-invite form.
+// Returns 410 Gone if token is expired, already accepted, or not found.
+router.get('/auth/validate-invite', async (req, res) => {
+  const rawToken = req.query.token;
+  if (!rawToken || typeof rawToken !== 'string') {
+    return res.status(400).json({ message: "Token required" });
+  }
+
+  const storage = res.locals.storage!;
+
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+  const invitation = await storage.findStaffInvitation(tokenHash);
+
+  if (!invitation) {
+    return res.status(410).json({ message: "Invitation expired or already used" });
+  }
+
+  // Resolve company name for the invitation's tenant.
+  // validate-invite may be hit on the platform domain (not the invitation's tenant subdomain),
+  // so res.locals.storage may be scoped to a different tenant. Fall back to a direct db lookup
+  // when the storage-scoped lookup doesn't match the invitation's tenant.
+  let companyName = "Your Company";
+  try {
+    const settings = await storage.getCompanySettings();
+    if (settings?.companyName) {
+      companyName = settings.companyName;
+    } else {
+      const [row] = await db.select({ companyName: companySettings.companyName })
+        .from(companySettings)
+        .where(eq(companySettings.tenantId, invitation.tenantId))
+        .limit(1);
+      if (row?.companyName) companyName = row.companyName;
+    }
+  } catch {
+    // Non-fatal — fallback to "Your Company"
+  }
+
+  return res.json({
+    email: invitation.email,
+    role: invitation.role,
+    companyName,
+    tenantId: invitation.tenantId,
+  });
+});
+
+// POST /api/auth/accept-invite
+// Public — no session required. Atomically creates user + user_tenants, marks invitation accepted,
+// establishes session, returns { adminUrl } for client redirect.
+// Returns 410 Gone if token is invalid/expired/already used.
+router.post('/auth/accept-invite', async (req, res) => {
+  const { token, name, password } = req.body as { token?: string; name?: string; password?: string };
+
+  if (!token || typeof token !== 'string') {
+    return res.status(400).json({ message: "Token required" });
+  }
+  if (!password || password.length < 8) {
+    return res.status(400).json({ message: "Password must be at least 8 characters" });
+  }
+
+  const storage = res.locals.storage!;
+
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  const invitation = await storage.findStaffInvitation(tokenHash);
+
+  if (!invitation) {
+    return res.status(410).json({ message: "Invitation expired or already used" });
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 12);
+
+  // Split name into firstName/lastName (best-effort — lastName may be empty)
+  const nameParts = (name ?? '').trim().split(/\s+/).filter(Boolean);
+  const firstName = nameParts[0] ?? null;
+  const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
+
+  // Atomic transaction: insert user + user_tenants + resolve primary domain
+  let newUserId: string;
+  let adminHostname: string | null = null;
+
+  try {
+    const result = await db.transaction(async (tx) => {
+      // Insert user — let DB generate UUID via gen_random_uuid() default
+      const [newUser] = await tx.insert(users).values({
+        tenantId: invitation.tenantId,
+        email: invitation.email,
+        password: hashedPassword,
+        role: invitation.role,
+        firstName,
+        lastName,
+      }).returning({ id: users.id });
+
+      // Insert user_tenants join row
+      await tx.insert(userTenants).values({
+        userId: newUser.id,
+        tenantId: invitation.tenantId,
+        role: invitation.role,
+      });
+
+      // Resolve primary domain for this tenant (for adminUrl)
+      const [domain] = await tx.select({ hostname: domains.hostname })
+        .from(domains)
+        .where(and(
+          eq(domains.tenantId, invitation.tenantId),
+          eq(domains.isPrimary, true)
+        ))
+        .limit(1);
+
+      return { userId: newUser.id, hostname: domain?.hostname ?? null };
+    });
+
+    newUserId = result.userId;
+    adminHostname = result.hostname;
+  } catch (err) {
+    console.error('[auth/accept-invite] Transaction failed:', err);
+    return res.status(500).json({ message: "Failed to create account. Please try again." });
+  }
+
+  // Mark invitation accepted AFTER transaction succeeds
+  await storage.markInvitationAccepted(invitation.id);
+
+  // Establish session
+  req.session.adminUser = {
+    id: newUserId,
+    email: invitation.email,
+    role: invitation.role,
+    tenantId: invitation.tenantId,
+  };
+
+  // Build admin redirect URL
+  const adminUrl = adminHostname
+    ? `https://${adminHostname}/admin`
+    : `${req.protocol}://${req.hostname}/admin`;
+
+  return res.status(201).json({ adminUrl });
 });
 
 export default router;
