@@ -198,6 +198,11 @@ export interface TenantListItem {
   billingPlanId: string | null;
   billingCurrentPeriodEnd: string | null;
   planTier: string | null; // Phase 60 — "basic" | "pro" | "enterprise" | null when no sub row
+  stripeConnect: {          // Phase 64 — SC-07
+    connected: boolean;
+    chargesEnabled: boolean;
+    payoutsEnabled: boolean;
+  };
 }
 
 export interface DomainRow {
