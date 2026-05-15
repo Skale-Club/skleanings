@@ -581,7 +581,7 @@ Plans:
 **Plans**: 3 plans
 Plans:
 - [x] 59-01-PLAN.md — DB migration + Drizzle schema + getPriceIdForTier helper + .env.example (PT-01, PT-02)
-- [ ] 59-02-PLAN.md — Feature catalog + tenantHasFeature helper (PT-03)
+- [x] 59-02-PLAN.md — Feature catalog + tenantHasFeature helper (PT-03)
 - [ ] 59-03-PLAN.md — Webhook tier mapping + PATCH /tenants/:id/plan endpoint (PT-04, PT-05)
 
 ### Phase 60: Plan Display UI
@@ -630,7 +630,7 @@ Plans:
 | 56 | v15.0 | 1/2 | Complete    | 2026-05-14 |
 | 57 | v16.0 | 2/3 | Complete    | 2026-05-15 |
 | 58 | v16.0 | 2/2 | Complete    | 2026-05-15 |
-| 59 | v17.0 | 1/3 | In Progress|  |
+| 59 | v17.0 | 2/3 | In Progress|  |
 | 60 | v17.0 | 0/0 | Not started | - |
 
 ---

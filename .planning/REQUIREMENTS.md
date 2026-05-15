@@ -12,7 +12,7 @@
 
 - [x] **PT-01**: `tenant_subscriptions` table has a `planTier` column with values `'basic' | 'pro' | 'enterprise'`, default `'basic'` (Supabase migration + Drizzle schema)
 - [x] **PT-02**: Three environment variables `STRIPE_SAAS_PRICE_ID_BASIC`, `STRIPE_SAAS_PRICE_ID_PRO`, `STRIPE_SAAS_PRICE_ID_ENTERPRISE` map plan tiers to Stripe Price IDs; a helper `getPriceIdForTier(tier)` returns the correct ID
-- [ ] **PT-03**: `server/lib/feature-flags.ts` exports a feature catalog (`{ maxStaff: number, maxBookingsPerMonth: number, customBranding: boolean, prioritySupport: boolean }` per tier) and a `tenantHasFeature(tier, feature)` helper returning the limit/boolean
+- [x] **PT-03**: `server/lib/feature-flags.ts` exports a feature catalog (`{ maxStaff: number, maxBookingsPerMonth: number, customBranding: boolean, prioritySupport: boolean }` per tier) and a `tenantHasFeature(tier, feature)` helper returning the limit/boolean
 - [ ] **PT-04**: Stripe webhook (`customer.subscription.updated`) reads the new `priceId` from `sub.items.data[0].price.id` and maps it back to a tier via reverse lookup of the 3 env vars — updates `tenant_subscriptions.planTier`
 
 ### Super-Admin Plan Management (Phase 59)
@@ -48,7 +48,7 @@
 |-------------|-------|--------|
 | PT-01 | Phase 59 | Complete |
 | PT-02 | Phase 59 | Complete |
-| PT-03 | Phase 59 | Pending |
+| PT-03 | Phase 59 | Complete |
 | PT-04 | Phase 59 | Pending |
 | PT-05 | Phase 59 | Pending |
 | PT-06 | Phase 60 | Pending |
