@@ -14,7 +14,8 @@ import { eq, and } from "drizzle-orm";
 import { requireAdmin } from "../lib/auth";
 import { DatabaseStorage } from "../storage";
 import { sendResendEmail } from "../lib/email-resend";
-import { getTierForPriceId } from "../lib/stripe-plans";
+import { getTierForPriceId, isPlanTier, type PlanTier } from "../lib/stripe-plans";
+import { getFeatureCatalog } from "../lib/feature-flags";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -284,9 +285,14 @@ billingRouter.get("/status", requireAdmin, async (req, res) => {
       // New tenant — no subscription row yet
       return res.json({ status: "none", planId: null, currentPeriodEnd: null, stripeCustomerId: null });
     }
+    // Normalize planTier: column is text + CHECK constraint, but be defensive.
+    // Unrecognized / null values default to "basic" so the UI always has something to render.
+    const tier: PlanTier = isPlanTier(sub.planTier) ? sub.planTier : "basic";
     return res.json({
       status: sub.status,
       planId: sub.planId,
+      planTier: tier,
+      features: getFeatureCatalog(tier),
       currentPeriodEnd: sub.currentPeriodEnd,
       stripeCustomerId: sub.stripeCustomerId,
     });
