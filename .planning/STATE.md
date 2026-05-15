@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 66-02-PLAN.md
-last_updated: "2026-05-15T17:35:51.765Z"
+status: verifying
+stopped_at: Completed 66-01-PLAN.md
+last_updated: "2026-05-15T17:36:55.509Z"
 last_activity: 2026-05-15
 progress:
   total_phases: 31
-  completed_phases: 30
+  completed_phases: 31
   total_plans: 75
-  completed_plans: 74
+  completed_plans: 75
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-05-15)
 
 Phase: 66 (Payments Dashboard UI) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-05-15
 
 Progress: [          ] 0%
@@ -138,6 +138,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 65]: Keep none and connect-incomplete as separate switch branches (different HTTP codes and remediation messages)
 - [Phase 65]: Recompute totalCents from lineItems (source of truth) instead of validatedData.totalPrice (string/number coercion risk)
 - [Phase 66-payments-dashboard-ui]: Recent Payments admin UI co-located types and formatCents helper inside PaymentsSection.tsx; multi-key invalidation pattern (Refresh Status invalidates both stripe/status and payments/recent)
+- [Phase 66-payments-dashboard-ui]: paidAt uses bookings.createdAt as proxy (no paid_at column); correlated subquery for first booking_items.serviceName
 
 ### Roadmap Evolution
 
@@ -178,7 +179,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-15T17:35:47.196Z
-Stopped at: Completed 66-02-PLAN.md
+Last session: 2026-05-15T17:36:55.500Z
+Stopped at: Completed 66-01-PLAN.md
 Resume file: None
 Next: Plan Phase 65 (Connect-Aware Checkout + Webhook Routing) via /gsd:plan-phase 65
