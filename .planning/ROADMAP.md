@@ -636,7 +636,9 @@ Plans:
   2. Clicking "Add Custom Domain" opens a dialog with a hostname input — submitting it calls `POST /api/admin/domains` and reveals a DNS instructions panel showing the exact TXT record name (`_xkedule.<hostname>`) and value to add at the user's DNS provider, plus a Verify button
   3. Clicking Verify in the dialog calls `POST /api/admin/domains/:id/verify` — on success the row's status badge flips to Verified and the dialog closes with a success toast; on failure a specific DNS error message (mismatch, missing record, lookup failed) renders inline without dismissing the dialog
   4. The super-admin Tenants table "Manage Domains" dialog lists every custom domain per tenant with hostname, isPrimary flag, and verification status (Verified / Pending) — the super-admin can remove any non-primary domain (including unverified ones) and the row disappears from the list without a page reload
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] 62-01-PLAN.md — Tenant-facing /admin/domains UI (list + Add dialog with DNS instructions + Verify + Remove) (CD-07, CD-08)
+- [ ] 62-02-PLAN.md — Super-admin ManageDomainsDialog: Status column + destructive confirm for unverified domains (CD-09)
 **UI hint**: yes
 
 ---
