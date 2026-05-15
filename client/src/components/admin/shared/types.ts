@@ -18,7 +18,8 @@ export type AdminSection =
   | 'blog'
   | 'marketing' // Phase 12 — per D-05
   | 'billing' // Phase 50 — tenant billing self-service
-  | 'domains'; // Phase 62 — custom domain management (CD-07)
+  | 'domains' // Phase 62 — custom domain management (CD-07)
+  | 'payments'; // Phase 64 — Stripe Connect (SC-06)
 
 export interface DayHours {
   isOpen: boolean;
