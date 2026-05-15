@@ -87,6 +87,24 @@ export const emailVerificationTokens = pgTable("email_verification_tokens", {
 export type EmailVerificationToken = typeof emailVerificationTokens.$inferSelect;
 export type InsertEmailVerificationToken = typeof emailVerificationTokens.$inferInsert;
 
+// === Staff Invitations (Phase 57) ===
+// Global registry — tenant_id FK, no per-tenant scope column.
+// Raw token never stored — only SHA-256 hash is persisted.
+// acceptedAt = null means pending; non-null means accepted (one-time use).
+export const staffInvitations = pgTable("staff_invitations", {
+  id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  role: text("role").notNull().default("staff"),
+  tokenHash: text("token_hash").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type StaffInvitation = typeof staffInvitations.$inferSelect;
+export type InsertStaffInvitation = typeof staffInvitations.$inferInsert;
+
 // === Tenant Subscriptions (Phase 48) ===
 // Global registry — one row per tenant. Tracks Stripe customer + subscription state.
 export const tenantSubscriptions = pgTable("tenant_subscriptions", {
