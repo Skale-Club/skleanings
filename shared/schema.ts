@@ -126,6 +126,23 @@ export const tenantSubscriptions = pgTable("tenant_subscriptions", {
 export type TenantSubscription = typeof tenantSubscriptions.$inferSelect;
 export type InsertTenantSubscription = typeof tenantSubscriptions.$inferInsert;
 
+// === Tenant Stripe Accounts (Phase 63 — Stripe Connect) ===
+// Global registry — one row per tenant. Tracks tenant's Stripe Express Account ID + capability flags.
+// Mirrors tenantSubscriptions pattern: tenant_id FK + UNIQUE, no per-row scope column, db direct in storage.
+export const tenantStripeAccounts = pgTable("tenant_stripe_accounts", {
+  id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().unique().references(() => tenants.id, { onDelete: "cascade" }),
+  stripeAccountId: text("stripe_account_id").notNull().unique(),
+  chargesEnabled: boolean("charges_enabled").notNull().default(false),
+  payoutsEnabled: boolean("payouts_enabled").notNull().default(false),
+  detailsSubmitted: boolean("details_submitted").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type TenantStripeAccount = typeof tenantStripeAccounts.$inferSelect;
+export type InsertTenantStripeAccount = typeof tenantStripeAccounts.$inferInsert;
+
 export const categories = pgTable("categories", {
   id: serial("id").primaryKey(),
   tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
