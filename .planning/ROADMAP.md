@@ -708,7 +708,10 @@ Plans:
   3. A booking checkout on a tenant with NO `tenant_stripe_accounts` row uses the existing legacy per-tenant `integrationSettings.stripe.apiKey` code path unchanged — the request succeeds and produces a Checkout session on the tenant's own Stripe account
   4. The `bookings` table has new `platform_fee_amount INTEGER` and `tenant_net_amount INTEGER` columns (Supabase migration + Drizzle schema); on `checkout.session.completed` webhook delivery for a Connect event, both columns are populated for the matching booking — `platform_fee_amount` equals `payment_intent.application_fee_amount` and `tenant_net_amount` equals `amount_total - application_fee_amount`
   5. The webhook handler verifies the signature using `STRIPE_WEBHOOK_SECRET_CONNECT` when `event.account` is present and falls back to the legacy per-tenant secret otherwise — for Connect events the handler retrieves the session via `stripe.checkout.sessions.retrieve(sessionId, { stripeAccount: event.account })` to access `payment_intent.application_fee_amount`
-**Plans**: TBD
+**Plans**: 3 plans
+  - [ ] 65-01-PLAN.md — DB migration + Stripe context helper (PF-04, PF-05)
+  - [ ] 65-02-PLAN.md — Checkout endpoint Connect routing (PF-01, PF-02, PF-03)
+  - [ ] 65-03-PLAN.md — Webhook Connect routing + fee breakdown persistence (PF-05, PF-06)
 **UI hint**: no
 
 ### Phase 66: Payments Dashboard UI
