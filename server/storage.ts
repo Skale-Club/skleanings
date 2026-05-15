@@ -435,6 +435,12 @@ export interface IStorage {
   getTenantDomains(tenantId: number): Promise<DomainRow[]>;
   addDomain(tenantId: number, hostname: string, isPrimary: boolean): Promise<DomainRow>;
   removeDomain(id: number): Promise<void>;
+  // Domain verification (Phase 61) — global registry, uses db directly
+  addDomainWithVerification(tenantId: number, hostname: string): Promise<{ id: number; verificationToken: string }>;
+  verifyDomain(id: number, tenantId: number): Promise<boolean>;
+  removeDomainForTenant(id: number, tenantId: number): Promise<{ removed: boolean; isPrimary: boolean; hostname: string }>;
+  getDomainsForTenant(tenantId: number): Promise<DomainRow[]>;
+  findDomainById(id: number, tenantId: number): Promise<DomainRow | null>;
   provisionTenantAdmin(tenantId: number, email: string, hashedPassword: string): Promise<{ userId: string }>;
   seedTenantCompanySettings(tenantId: number, companyName: string): Promise<void>;
 
@@ -2491,6 +2497,68 @@ export class DatabaseStorage implements IStorage {
 
   async removeDomain(id: number): Promise<void> {
     await db.delete(domains).where(eq(domains.id, id));
+  }
+
+  // === Domain verification (Phase 61) — global registry, uses db directly ===
+
+  async addDomainWithVerification(
+    tenantId: number,
+    hostname: string,
+  ): Promise<{ id: number; verificationToken: string }> {
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const [row] = await db
+      .insert(domains)
+      .values({
+        tenantId,
+        hostname,
+        isPrimary: false,
+        verified: false,
+        verificationToken,
+      })
+      .returning({ id: domains.id });
+    return { id: row.id, verificationToken };
+  }
+
+  async verifyDomain(id: number, tenantId: number): Promise<boolean> {
+    const result = await db
+      .update(domains)
+      .set({ verified: true, verifiedAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(domains.id, id), eq(domains.tenantId, tenantId)))
+      .returning({ id: domains.id });
+    return result.length > 0;
+  }
+
+  async removeDomainForTenant(
+    id: number,
+    tenantId: number,
+  ): Promise<{ removed: boolean; isPrimary: boolean; hostname: string }> {
+    // Fetch first so caller can distinguish "not found" from "primary, refused"
+    const [domain] = await db
+      .select({ isPrimary: domains.isPrimary, hostname: domains.hostname })
+      .from(domains)
+      .where(and(eq(domains.id, id), eq(domains.tenantId, tenantId)))
+      .limit(1);
+    if (!domain) return { removed: false, isPrimary: false, hostname: "" };
+    if (domain.isPrimary) return { removed: false, isPrimary: true, hostname: domain.hostname };
+    await db.delete(domains).where(and(eq(domains.id, id), eq(domains.tenantId, tenantId)));
+    return { removed: true, isPrimary: false, hostname: domain.hostname };
+  }
+
+  async getDomainsForTenant(tenantId: number): Promise<DomainRow[]> {
+    return await db
+      .select()
+      .from(domains)
+      .where(eq(domains.tenantId, tenantId))
+      .orderBy(asc(domains.createdAt));
+  }
+
+  async findDomainById(id: number, tenantId: number): Promise<DomainRow | null> {
+    const [row] = await db
+      .select()
+      .from(domains)
+      .where(and(eq(domains.id, id), eq(domains.tenantId, tenantId)))
+      .limit(1);
+    return row ?? null;
   }
 
   async provisionTenantAdmin(
