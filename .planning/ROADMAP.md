@@ -667,7 +667,7 @@ Full details: [milestones/v18.0-ROADMAP.md](milestones/v18.0-ROADMAP.md)
 **Plans**: 3 plans
 Plans:
 - [x] 63-01-PLAN.md — DB migration + Drizzle schema + IStorage methods (SC-01)
-- [ ] 63-02-PLAN.md — Connect routes: onboard, status, refresh (SC-02, SC-03, SC-04)
+- [x] 63-02-PLAN.md — Connect routes: onboard, status, refresh (SC-02, SC-03, SC-04)
 - [ ] 63-03-PLAN.md — Webhook account.updated + account.application.deauthorized (SC-05)
 
 ### Phase 64: Stripe Connect Frontend
@@ -720,7 +720,7 @@ Plans:
 | 60 | v17.0 | 1/2 | Complete    | 2026-05-15 |
 | 61 | v18.0 | 1/3 | Complete    | 2026-05-15 |
 | 62 | v18.0 | 1/2 | Complete    | 2026-05-15 |
-| 63 | v19.0 | 1/3 | In Progress|  |
+| 63 | v19.0 | 2/3 | In Progress|  |
 | 64 | v19.0 | 0/? | Not started | -          |
 
 ---
