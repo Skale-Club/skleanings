@@ -11,6 +11,7 @@ import {
   CreditCard,
   FileText,
   FolderOpen,
+  Globe,
   HelpCircle,
   Image,
   LayoutDashboard,
@@ -38,6 +39,7 @@ import { ServicesSection } from '@/components/admin/ServicesSection';
 import { BookingsSection } from '@/components/admin/BookingsSection';
 import { HeroSettingsSection } from '@/components/admin/HeroSettingsSection';
 import { CompanySettingsSection } from '@/components/admin/CompanySettingsSection';
+import { DomainsSection } from '@/components/admin/DomainsSection';
 import { SEOSection } from '@/components/admin/SEOSection';
 import { FaqsSection } from '@/components/admin/FaqsSection';
 import { UnifiedUsersSection } from '@/components/admin/UnifiedUsersSection';
@@ -56,6 +58,7 @@ const menuItems: AdminMenuItem[] = [
   { id: 'calendar', title: 'Calendar', icon: CalendarDays },
   { id: 'contacts', title: 'Contacts', icon: BookUser },
   { id: 'company', title: 'Company Infos', icon: Building2 },
+  { id: 'domains', title: 'Domains', icon: Globe },
   { id: 'hero', title: 'Website', icon: Image },
   { id: 'categories', title: 'Categories', icon: FolderOpen },
   { id: 'services', title: 'Services', icon: Package },
@@ -218,6 +221,7 @@ function AdminContent() {
           {activeSection === 'bookings' && <BookingsSection getAccessToken={getAccessToken} />}
           {activeSection === 'hero' && <HeroSettingsSection getAccessToken={getAccessToken} />}
           {activeSection === 'company' && <CompanySettingsSection getAccessToken={getAccessToken} />}
+          {activeSection === 'domains' && <DomainsSection />}
           {activeSection === 'seo' && <SEOSection getAccessToken={getAccessToken} />}
           {activeSection === 'faqs' && <FaqsSection />}
           {activeSection === 'users' && <UnifiedUsersSection />}
