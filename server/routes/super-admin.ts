@@ -6,7 +6,7 @@ import path from "path";
 import Stripe from "stripe";
 import { and, asc, count, eq } from "drizzle-orm";
 import { db, ensureDatabaseReady } from "../db";
-import { bookings, contacts, domains, services, staffMembers, tenantSubscriptions, tenants } from "@shared/schema";
+import { bookings, contacts, domains, services, staffMembers, tenantStripeAccounts, tenantSubscriptions, tenants } from "@shared/schema";
 import { collectRuntimeEnvDiagnostics } from "../lib/runtime-env";
 import { getRecentErrors } from "../lib/error-log";
 import { storage } from "../storage";
@@ -196,10 +196,15 @@ router.get("/tenants", requireSuperAdmin, async (_req: Request, res: Response): 
         billingPlanId: tenantSubscriptions.planId,
         billingCurrentPeriodEnd: tenantSubscriptions.currentPeriodEnd,
         planTier: tenantSubscriptions.planTier, // Phase 60 PT-07 — surface tier for super-admin Plan column
+        // Phase 64 SC-07 — stripe connect status via LEFT JOIN to tenant_stripe_accounts
+        stripeConnected: tenantStripeAccounts.tenantId,
+        stripeChargesEnabled: tenantStripeAccounts.chargesEnabled,
+        stripePayoutsEnabled: tenantStripeAccounts.payoutsEnabled,
       })
       .from(tenants)
       .leftJoin(domains, and(eq(domains.tenantId, tenants.id), eq(domains.isPrimary, true)))
       .leftJoin(tenantSubscriptions, eq(tenantSubscriptions.tenantId, tenants.id))
+      .leftJoin(tenantStripeAccounts, eq(tenantStripeAccounts.tenantId, tenants.id))
       .orderBy(asc(tenants.createdAt));
 
     const [bookingCounts, serviceCounts, staffCounts] = await Promise.all([
@@ -223,11 +228,16 @@ router.get("/tenants", requireSuperAdmin, async (_req: Request, res: Response): 
     const sMap = Object.fromEntries(serviceCounts.map(r => [r.tenantId, Number(r.cnt)]));
     const stMap = Object.fromEntries(staffCounts.map(r => [r.tenantId, Number(r.cnt)]));
 
-    const result = rows.map(t => ({
-      ...t,
-      bookingCount: bMap[t.id] ?? 0,
-      serviceCount: sMap[t.id] ?? 0,
-      staffCount: stMap[t.id] ?? 0,
+    const result = rows.map(({ stripeConnected, stripeChargesEnabled, stripePayoutsEnabled, ...rest }) => ({
+      ...rest,
+      bookingCount: bMap[rest.id] ?? 0,
+      serviceCount: sMap[rest.id] ?? 0,
+      staffCount: stMap[rest.id] ?? 0,
+      stripeConnect: {
+        connected: stripeConnected !== null,
+        chargesEnabled: stripeChargesEnabled ?? false,
+        payoutsEnabled: stripePayoutsEnabled ?? false,
+      },
     }));
 
     res.json(result);
