@@ -664,7 +664,11 @@ Full details: [milestones/v18.0-ROADMAP.md](milestones/v18.0-ROADMAP.md)
   3. A tenant admin calling `GET /api/admin/stripe/status` (requireAdmin) receives `{ connected, stripeAccountId, chargesEnabled, payoutsEnabled, detailsSubmitted }` for the current tenant — `connected` is `false` and the row is absent when no Stripe account has been created
   4. A tenant admin calling `POST /api/admin/stripe/refresh` (requireAdmin) triggers `stripe.accounts.retrieve(stripeAccountId)` and writes the live `charges_enabled` / `payouts_enabled` / `details_submitted` flags back to the DB row — useful when the admin returns from Stripe-hosted onboarding before the webhook fires
   5. A Stripe `account.updated` webhook event updates the corresponding `tenant_stripe_accounts` row's capability flags in the same HTTP request; an `account.application.deauthorized` event removes the row (or marks it disconnected) so the tenant can re-onboard cleanly
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [x] 63-01-PLAN.md — DB migration + Drizzle schema + IStorage methods (SC-01)
+- [ ] 63-02-PLAN.md — Connect routes: onboard, status, refresh (SC-02, SC-03, SC-04)
+- [ ] 63-03-PLAN.md — Webhook account.updated + account.application.deauthorized (SC-05)
 
 ### Phase 64: Stripe Connect Frontend
 **Goal**: Tenant admins can connect, monitor, and re-verify their Stripe account from a dedicated `/admin/payments` page, and super-admin can audit every tenant's connection status from the Tenants table — no DB inspection required
@@ -716,7 +720,7 @@ Full details: [milestones/v18.0-ROADMAP.md](milestones/v18.0-ROADMAP.md)
 | 60 | v17.0 | 1/2 | Complete    | 2026-05-15 |
 | 61 | v18.0 | 1/3 | Complete    | 2026-05-15 |
 | 62 | v18.0 | 1/2 | Complete    | 2026-05-15 |
-| 63 | v19.0 | 0/? | Not started | -          |
+| 63 | v19.0 | 1/3 | In Progress|  |
 | 64 | v19.0 | 0/? | Not started | -          |
 
 ---

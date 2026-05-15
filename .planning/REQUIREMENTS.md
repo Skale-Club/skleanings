@@ -10,7 +10,7 @@
 
 ### Connect Backend (Phase 63)
 
-- [ ] **SC-01**: `tenant_stripe_accounts` table (Supabase migration + Drizzle schema) with columns: `id`, `tenantId UNIQUE`, `stripeAccountId TEXT UNIQUE`, `chargesEnabled BOOLEAN DEFAULT false`, `payoutsEnabled BOOLEAN DEFAULT false`, `detailsSubmitted BOOLEAN DEFAULT false`, `createdAt`, `updatedAt`
+- [x] **SC-01**: `tenant_stripe_accounts` table (Supabase migration + Drizzle schema) with columns: `id`, `tenantId UNIQUE`, `stripeAccountId TEXT UNIQUE`, `chargesEnabled BOOLEAN DEFAULT false`, `payoutsEnabled BOOLEAN DEFAULT false`, `detailsSubmitted BOOLEAN DEFAULT false`, `createdAt`, `updatedAt`
 - [ ] **SC-02**: `POST /api/admin/stripe/connect/onboard` (requireAdmin) creates a new Stripe Express `Account` if none exists for the tenant, persists `stripeAccountId`, generates an `AccountLink` (type `account_onboarding`, return_url + refresh_url to `/admin/payments`), and returns `{ url }`
 - [ ] **SC-03**: `GET /api/admin/stripe/status` (requireAdmin) returns `{ connected: boolean, stripeAccountId, chargesEnabled, payoutsEnabled, detailsSubmitted }` for the current tenant
 - [ ] **SC-04**: `POST /api/admin/stripe/refresh` (requireAdmin) calls `stripe.accounts.retrieve(stripeAccountId)`, updates the DB row with current capability flags — useful when admin returns from onboarding before webhook fires
@@ -43,7 +43,7 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SC-01 | Phase 63 | Pending |
+| SC-01 | Phase 63 | Complete |
 | SC-02 | Phase 63 | Pending |
 | SC-03 | Phase 63 | Pending |
 | SC-04 | Phase 63 | Pending |

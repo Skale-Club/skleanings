@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v19.0
-milestone_name: Stripe Connect Onboarding
-status: planning
-stopped_at: Roadmap created for v19.0
-last_updated: "2026-05-15T16:00:00.000Z"
+milestone: v1.0
+milestone_name: milestone
+status: executing
+stopped_at: Completed 63-01-PLAN.md
+last_updated: "2026-05-15T15:40:40.769Z"
 last_activity: 2026-05-15
 progress:
-  total_phases: 2
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_phases: 29
+  completed_phases: 27
+  total_plans: 68
+  completed_plans: 66
   percent: 0
 ---
 
@@ -25,9 +25,9 @@ See: .planning/PROJECT.md (updated 2026-05-15)
 
 ## Current Position
 
-Phase: 63
-Plan: Not started
-Status: Ready to plan
+Phase: 63 (Stripe Connect Backend) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
 Last activity: 2026-05-15
 
 Progress: [          ] 0%
@@ -123,6 +123,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 59]: [Phase 59-03]: PATCH endpoint uses optimistic DB write (planTier + planId) + webhook reconciliation; both paths converge idempotently via where(tenant_id) filter, giving super-admin UI immediate feedback without waiting for Stripe webhook
 - [Phase 60]: Default unrecognized/null planTier to 'basic' server-side so the UI always renders a tier badge + features list (defensive fallback in GET /api/billing/status)
 - [Phase 61]: verifiedAt uses TIMESTAMPTZ withTimezone to match migration; no verification_token index since lookups always scope by (id,tenantId); getDomainsForTenant added alongside getTenantDomains for tenant-admin vs super-admin semantic split
+- [Phase 63-stripe-connect-backend]: Phase 63 storage getters return | null (not | undefined) for unambiguous absence semantics in downstream Connect webhooks
+- [Phase 63-stripe-connect-backend]: updateTenantStripeAccount uses inline Partial<{chargesEnabled;payoutsEnabled;detailsSubmitted}> shape to prevent callers from mutating identity columns
 
 ### Roadmap Evolution
 
@@ -158,7 +160,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-15T16:00:00.000Z
-Stopped at: Roadmap created for v19.0 Stripe Connect Onboarding
+Last session: 2026-05-15T15:40:33.236Z
+Stopped at: Completed 63-01-PLAN.md
 Resume file: None
 Next: Plan Phase 63 (Stripe Connect Backend) via /gsd:plan-phase 63
