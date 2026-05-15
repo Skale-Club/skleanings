@@ -45,6 +45,9 @@ export const domains = pgTable("domains", {
   tenantId: integer("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
   hostname: text("hostname").notNull().unique(),
   isPrimary: boolean("is_primary").notNull().default(false),
+  verified: boolean("verified").notNull().default(false),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }),
+  verificationToken: text("verification_token"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
