@@ -19,7 +19,7 @@
 ### Invitation Frontend (Phase 58)
 
 - [x] **SF-06**: `/accept-invite` public page — fetches `GET /api/auth/validate-invite?token=...` on load; shows company name + pre-filled email + Name + Password + Confirm Password form; submits `POST /api/auth/accept-invite`; on success redirects to the tenant's `/admin` URL; on 410 shows "Invitation expired or already used" error
-- [ ] **SF-07**: Pending invitations section in `/admin/staff` — lists invitations where `acceptedAt` is null, showing email + role + expiry + Revoke button that calls `DELETE /api/admin/staff/invite/:id` and removes the row; also shows "Invite Staff Member" button that opens a dialog with email + role fields
+- [x] **SF-07**: Pending invitations section in `/admin/staff` — lists invitations where `acceptedAt` is null, showing email + role + expiry + Revoke button that calls `DELETE /api/admin/staff/invite/:id` and removes the row; also shows "Invite Staff Member" button that opens a dialog with email + role fields
 
 ---
 
@@ -49,7 +49,7 @@
 | SF-04 | Phase 57 | Complete |
 | SF-05 | Phase 57 | Complete |
 | SF-06 | Phase 58 | Complete |
-| SF-07 | Phase 58 | Pending |
+| SF-07 | Phase 58 | Complete |
 
 **Coverage:**
 - v1 requirements: 7 total
