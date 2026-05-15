@@ -10,6 +10,7 @@ import {
   useSuperAdminTenants,
   useSuperAdminTenantDomains,
   useSuperAdminProvision,
+  useUpdateTenantPlan,
   type TenantListItem,
   type DomainRow,
   type ProvisionResult,
@@ -35,6 +36,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // =============================================================================
 // Helpers
@@ -353,6 +361,7 @@ function ProvisionDialog({ tenantId, open, onOpenChange }: {
 
 function TenantsSection() {
   const { query, createTenant, toggleStatus } = useSuperAdminTenants(true);
+  const updatePlan = useUpdateTenantPlan();
   const [createOpen, setCreateOpen] = useState(false);
   const [domainsTarget, setDomainsTarget] = useState<TenantListItem | null>(null);
   const [provisionTarget, setProvisionTarget] = useState<TenantListItem | null>(null);
@@ -465,6 +474,7 @@ function TenantsSection() {
                   <TableHead>Name</TableHead>
                   <TableHead>Slug</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Plan</TableHead>
                   <TableHead>Primary Domain</TableHead>
                   <TableHead className="text-right">Bookings</TableHead>
                   <TableHead className="text-right">Services</TableHead>
@@ -489,6 +499,31 @@ function TenantsSection() {
                       >
                         {tenant.status}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {tenant.planTier ? (
+                        <Select
+                          value={tenant.planTier}
+                          onValueChange={(value) =>
+                            updatePlan.mutate(
+                              { tenantId: tenant.id, planTier: value },
+                              { onError: (err) => alert(err.message) },
+                            )
+                          }
+                          disabled={updatePlan.isPending}
+                        >
+                          <SelectTrigger className="w-32 h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="basic">Basic</SelectItem>
+                            <SelectItem value="pro">Pro</SelectItem>
+                            <SelectItem value="enterprise">Enterprise</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <span className="text-gray-400 text-sm">—</span>
+                      )}
                     </TableCell>
                     <TableCell className="font-mono text-sm">
                       {tenant.primaryDomain ?? <span className="text-gray-400">—</span>}
