@@ -492,6 +492,7 @@ function TenantsSection() {
                   <TableHead className="text-right">Services</TableHead>
                   <TableHead className="text-right">Staff</TableHead>
                   <TableHead>Billing</TableHead>
+                  <TableHead>Connect</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
@@ -577,6 +578,29 @@ function TenantsSection() {
                       ) : (
                         <span className="text-gray-400 text-sm">—</span>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-0.5">
+                        <Badge
+                          className={
+                            tenant.stripeConnect.connected
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-600"
+                          }
+                        >
+                          {tenant.stripeConnect.connected ? "Connected" : "Not Connected"}
+                        </Badge>
+                        {tenant.stripeConnect.connected && (
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <span>
+                              {tenant.stripeConnect.chargesEnabled ? "✓" : "✗"} Charges
+                            </span>
+                            <span>
+                              {tenant.stripeConnect.payoutsEnabled ? "✓" : "✗"} Payouts
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-sm text-gray-500">
                       {new Date(tenant.createdAt).toLocaleDateString()}
