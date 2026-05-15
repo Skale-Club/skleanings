@@ -681,7 +681,7 @@ Plans:
   4. The super-admin `/superadmin` Tenants table shows a "Connect Status" column with a Connected / Not Connected badge per tenant — values derived from a join on `tenant_stripe_accounts` returned by the existing `GET /api/super-admin/tenants` aggregate endpoint
 **Plans**: 2 plans
 Plans:
-- [ ] 64-01-PLAN.md — /admin Payments section + Wallet sidebar entry (SC-06)
+- [x] 64-01-PLAN.md — /admin Payments section + Wallet sidebar entry (SC-06)
 - [ ] 64-02-PLAN.md — Super-admin Tenants Connect Status column (SC-07)
 **UI hint**: yes
 
@@ -724,7 +724,7 @@ Plans:
 | 61 | v18.0 | 1/3 | Complete    | 2026-05-15 |
 | 62 | v18.0 | 1/2 | Complete    | 2026-05-15 |
 | 63 | v19.0 | 2/3 | Complete    | 2026-05-15 |
-| 64 | v19.0 | 0/2 | Not started | -          |
+| 64 | v19.0 | 1/2 | In Progress|  |
 
 ---
 
