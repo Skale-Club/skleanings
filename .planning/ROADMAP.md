@@ -711,7 +711,7 @@ Plans:
 **Plans**: 3 plans
   - [x] 65-01-PLAN.md — DB migration + Stripe context helper (PF-04, PF-05)
   - [ ] 65-02-PLAN.md — Checkout endpoint Connect routing (PF-01, PF-02, PF-03)
-  - [ ] 65-03-PLAN.md — Webhook Connect routing + fee breakdown persistence (PF-05, PF-06)
+  - [x] 65-03-PLAN.md — Webhook Connect routing + fee breakdown persistence (PF-05, PF-06)
 **UI hint**: no
 
 ### Phase 66: Payments Dashboard UI
@@ -766,7 +766,7 @@ Plans:
 | 62 | v18.0 | 1/2 | Complete    | 2026-05-15 |
 | 63 | v19.0 | 2/3 | Complete    | 2026-05-15 |
 | 64 | v19.0 | 1/2 | Complete    | 2026-05-15 |
-| 65 | v20.0 | 1/3 | In Progress|  |
+| 65 | v20.0 | 2/3 | In Progress|  |
 | 66 | v20.0 | 0/? | Not started | - |
 
 ---

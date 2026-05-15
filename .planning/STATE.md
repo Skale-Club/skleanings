@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 65-01-PLAN.md
-last_updated: "2026-05-15T17:12:56.618Z"
+stopped_at: Completed 65-03-PLAN.md
+last_updated: "2026-05-15T17:22:17.611Z"
 last_activity: 2026-05-15
 progress:
   total_phases: 31
   completed_phases: 29
   total_plans: 73
-  completed_plans: 71
+  completed_plans: 72
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-05-15)
 ## Current Position
 
 Phase: 65 (Connect-Aware Checkout + Webhook Routing) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-05-15
 
@@ -135,6 +135,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 64-stripe-connect-frontend]: Mount-time URL param handler with window.history.replaceState prevents re-fire on remount for ?status=success return-from-Stripe UX
 - [Phase 65]: Discriminated 4-kind union (connect/legacy/connect-incomplete/none) chosen over nullable result so compiler enforces PF-03 connect-incomplete handling at every call site
 - [Phase 65]: Connect path takes precedence over legacy when a tenant has both — auto-migrates tenants who complete Connect onboarding without explicit cleanup of legacy integrationSettings.stripe rows
+- [Phase 65-connect-aware-checkout-webhook-routing]: Two-pass webhook signature verification: try STRIPE_WEBHOOK_SECRET_CONNECT first, fall back to legacy per-tenant secret — never parse unverified payload
+- [Phase 65-connect-aware-checkout-webhook-routing]: setBookingPaymentBreakdown is a separate IStorage method, not an extension of updateBookingStripeFields — different write lifecycle (session ID at checkout-creation, fee breakdown only at paid-confirmation)
 
 ### Roadmap Evolution
 
@@ -175,7 +177,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-15T17:12:50.177Z
-Stopped at: Completed 65-01-PLAN.md
+Last session: 2026-05-15T17:22:17.602Z
+Stopped at: Completed 65-03-PLAN.md
 Resume file: None
 Next: Plan Phase 65 (Connect-Aware Checkout + Webhook Routing) via /gsd:plan-phase 65
