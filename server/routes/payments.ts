@@ -9,6 +9,10 @@ import {
   retrieveCheckoutSession,
   verifyWebhookEvent,
 } from "../lib/stripe";
+import {
+  getStripeContextForTenant,
+  calculateApplicationFee,
+} from "../lib/stripe-context";
 
 const router = Router();
 
@@ -17,14 +21,25 @@ const router = Router();
 // Returns { sessionUrl, bookingId } — client redirects to sessionUrl.
 router.post("/checkout", async (req, res) => {
   const storage = res.locals.storage!;
+  const tenant = res.locals.tenant;
+  if (!tenant) return res.status(503).json({ message: "Tenant not resolved" });
+
   try {
-    // Check Stripe is connected + enabled
-    const stripeCreds = await storage.getIntegrationSettings("stripe");
-    if (!stripeCreds?.apiKey || !stripeCreds?.isEnabled) {
+    // Phase 65 (PF-01/PF-03/PF-04): resolve which Stripe path to use for this tenant.
+    const result = await getStripeContextForTenant(tenant.id, storage);
+    if (result.kind === "none") {
       return res.status(501).json({
         message: "Stripe not connected. Connect your Stripe account in Admin → Integrations.",
       });
     }
+    if (result.kind === "connect-incomplete") {
+      // PF-03 — exact message wording required by spec.
+      return res.status(402).json({
+        message: "Stripe Connect onboarding incomplete. Finish onboarding in Admin → Payments.",
+      });
+    }
+    // result.kind is "connect" or "legacy" — both have result.ctx
+    const ctx = result.ctx;
 
     // Validate booking data (same schema as POST /api/bookings)
     const validatedData = insertBookingSchema.parse(req.body);
@@ -97,7 +112,14 @@ router.post("/checkout", async (req, res) => {
       console.error("Checkout attribution error:", attrErr);
     }
 
-    // Create Stripe Checkout session
+    // PF-02: compute application_fee_amount from total line-item cents (Connect path only).
+    const totalCents = lineItems.reduce((sum, li) => sum + li.amountCents * li.quantity, 0);
+    const applicationFeeAmount =
+      result.kind === "connect"
+        ? calculateApplicationFee(totalCents, ctx.applicationFeePercent)
+        : 0;
+
+    // Create Stripe Checkout session — context drives Connect vs legacy routing.
     const origin = `${req.protocol}://${req.get("host")}`;
     const session = await createCheckoutSession(storage, {
       bookingId: booking.id,
@@ -105,6 +127,8 @@ router.post("/checkout", async (req, res) => {
       lineItems,
       successUrl: `${origin}/confirmation?session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${origin}/booking?cancelled=1`,
+      context: ctx,
+      applicationFeeAmount,
     });
 
     // Store session ID on booking
