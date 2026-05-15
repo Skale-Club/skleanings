@@ -7,6 +7,7 @@ import { calculateCartItemPrice } from "../lib/pricing";
 import {
   createCheckoutSession,
   retrieveCheckoutSession,
+  retrieveCheckoutSessionForAccount,
   verifyWebhookEvent,
 } from "../lib/stripe";
 
@@ -134,6 +135,9 @@ router.post("/webhook", async (req, res) => {
     return res.status(400).send(`Webhook signature verification failed: ${(err as Error).message}`);
   }
 
+  // PF-06: Connect events have event.account set; legacy per-tenant events do not.
+  const connectAccount = event.account ?? undefined;
+
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as any;
     const bookingId = session.metadata?.bookingId ? Number(session.metadata.bookingId) : null;
@@ -151,6 +155,25 @@ router.post("/webhook", async (req, res) => {
             });
           } catch (convErr) {
             console.error("Webhook conversion event error:", convErr);
+          }
+
+          // PF-05: persist fee breakdown for Connect-routed bookings.
+          // Legacy bookings (no event.account) leave platformFeeAmount + tenantNetAmount NULL.
+          if (connectAccount) {
+            try {
+              const fullSession = await retrieveCheckoutSessionForAccount(session.id, connectAccount);
+              const paymentIntent = fullSession.payment_intent;
+              const platformFeeAmount =
+                paymentIntent && typeof paymentIntent === "object"
+                  ? paymentIntent.application_fee_amount ?? 0
+                  : 0;
+              const amountTotal = fullSession.amount_total ?? 0;
+              const tenantNetAmount = amountTotal - platformFeeAmount;
+              await storage.setBookingPaymentBreakdown(bookingId, platformFeeAmount, tenantNetAmount);
+            } catch (feeErr) {
+              // Non-fatal: log and continue. Webhook must still return 200 so Stripe doesn't retry.
+              console.error("Webhook fee breakdown persist error:", feeErr);
+            }
           }
         }
       } catch (err) {
