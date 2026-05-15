@@ -17,7 +17,8 @@ export type AdminSection =
   | 'integrations'
   | 'blog'
   | 'marketing' // Phase 12 — per D-05
-  | 'billing'; // Phase 50 — tenant billing self-service
+  | 'billing' // Phase 50 — tenant billing self-service
+  | 'domains'; // Phase 62 — custom domain management (CD-07)
 
 export interface DayHours {
   isOpen: boolean;
