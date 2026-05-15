@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 57-01-PLAN.md
-last_updated: "2026-05-15T02:10:22.905Z"
+stopped_at: Completed 57-03-PLAN.md
+last_updated: "2026-05-15T02:14:58.311Z"
 last_activity: 2026-05-15
 progress:
   total_phases: 23
   completed_phases: 21
   total_plans: 53
-  completed_plans: 51
+  completed_plans: 52
   percent: 0
 ---
 
@@ -102,6 +102,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 55]: createEmailVerificationToken returns raw token — only hash stored in DB
 - [Phase 56]: setupDismissedAt has no default — null means not dismissed; GET /setup-status includes hidden services for admin count accuracy
 - [Phase 57-staff-invitation-backend]: Phase 57-01: staff_invitations uses global-registry pattern (tenant_id FK, db direct queries) so accept-invite can resolve cross-tenant tokens; tokenHash not .unique() (256-bit randomness sufficient); hard-delete on revoke
+- [Phase 57-03]: validate-invite + accept-invite: atomic db.transaction creates users + user_tenants; markInvitationAccepted called AFTER tx commit so invitations only mark used when user actually exists; cross-tenant companyName fallback via direct db query on companySettings when storage scope mismatches invitation.tenantId; adminUrl resolved from domains.isPrimary inside the transaction
 
 ### Roadmap Evolution
 
@@ -121,7 +122,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-15T02:10:16.057Z
-Stopped at: Completed 57-01-PLAN.md
+Last session: 2026-05-15T02:14:58.274Z
+Stopped at: Completed 57-03-PLAN.md
 Resume file: None
 Next: Plan Phase 57 (Staff Invitation Backend) via /gsd:plan-phase 57

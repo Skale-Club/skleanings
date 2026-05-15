@@ -538,7 +538,7 @@ Plans:
 Plans:
 - [x] 57-01-PLAN.md -- DB migration + Drizzle schema + IStorage methods (SF-02)
 - [ ] 57-02-PLAN.md -- buildInviteEmail() + POST /api/admin/staff/invite + DELETE invite/:id (SF-01, SF-05)
-- [ ] 57-03-PLAN.md -- GET /auth/validate-invite + POST /auth/accept-invite (SF-03, SF-04)
+- [x] 57-03-PLAN.md -- GET /auth/validate-invite + POST /auth/accept-invite (SF-03, SF-04)
 
 ### Phase 58: Staff Invitation Frontend
 **Goal**: Staff can complete account setup via a public accept-invite page, and tenant admins can send and manage pending invitations directly within the existing /admin/staff page
@@ -584,7 +584,7 @@ Plans:
 | 54 | v14.0 | 1/2 | Complete    | 2026-05-14 |
 | 55 | v15.0 | 3/3 | Complete    | 2026-05-14 |
 | 56 | v15.0 | 1/2 | Complete    | 2026-05-14 |
-| 57 | v16.0 | 1/3 | In Progress|  |
+| 57 | v16.0 | 2/3 | In Progress|  |
 | 58 | v16.0 | 0/TBD | Not started | - |
 
 ---
