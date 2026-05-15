@@ -14,6 +14,7 @@ import { eq, and } from "drizzle-orm";
 import { requireAdmin } from "../lib/auth";
 import { DatabaseStorage } from "../storage";
 import { sendResendEmail } from "../lib/email-resend";
+import { getTierForPriceId } from "../lib/stripe-plans";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -61,14 +62,27 @@ export async function billingWebhookHandler(req: Request, res: Response): Promis
         // In Stripe SDK v21, current_period_end lives on SubscriptionItem, not Subscription
         const firstItem = sub.items.data[0];
         const periodEnd = firstItem?.current_period_end;
+        const newPriceId = firstItem?.price.id ?? null;
+
+        // PT-04: Reverse-lookup priceId -> planTier. If the price is unrecognized
+        // (e.g. legacy STRIPE_SAAS_PRICE_ID not yet aliased to a tier env var),
+        // we leave planTier untouched so we never overwrite valid state with null.
+        const newTier = newPriceId ? getTierForPriceId(newPriceId) : null;
+        if (newPriceId && !newTier) {
+          console.warn(
+            `[billing/webhook] Unrecognized price ID '${newPriceId}' for tenant ${subRow.tenantId} — planTier left unchanged`,
+          );
+        }
+
         await db
           .update(tenantSubscriptions)
           .set({
             stripeSubscriptionId: sub.id,
             status,
-            planId: firstItem?.price.id ?? null,
+            planId: newPriceId,
             currentPeriodEnd: periodEnd ? new Date(periodEnd * 1000) : null,
             updatedAt: new Date(),
+            ...(newTier ? { planTier: newTier } : {}),
           })
           .where(eq(tenantSubscriptions.tenantId, subRow.tenantId));
 
