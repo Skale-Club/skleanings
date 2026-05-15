@@ -19,9 +19,15 @@
 
 ### Custom Domain Frontend (Phase 62)
 
+<<<<<<< HEAD
 - [ ] **CD-07**: `/admin/settings/domains` page lists the tenant's domains with hostname, status badge (Primary / Verified / Pending Verification), and Remove button — non-primary domains can be removed
 - [ ] **CD-08**: "Add Custom Domain" button opens a dialog with a hostname input + DNS instructions panel showing the exact TXT record to add — after the user clicks "Verify", calls `POST /:id/verify` and shows success or specific DNS error
 - [x] **CD-09**: Super-admin Tenants table "Manage Domains" dialog shows all custom domains per tenant with verification status — super-admin can manually remove any domain (including unverified ones)
+=======
+- [x] **CD-07**: `/admin/settings/domains` page lists the tenant's domains with hostname, status badge (Primary / Verified / Pending Verification), and Remove button — non-primary domains can be removed
+- [x] **CD-08**: "Add Custom Domain" button opens a dialog with a hostname input + DNS instructions panel showing the exact TXT record to add — after the user clicks "Verify", calls `POST /:id/verify` and shows success or specific DNS error
+- [ ] **CD-09**: Super-admin Tenants table "Manage Domains" dialog shows all custom domains per tenant with verification status — super-admin can manually remove any domain (including unverified ones)
+>>>>>>> worktree-agent-adba3e643b8da6762
 
 ---
 
@@ -51,9 +57,15 @@
 | CD-04 | Phase 61 | Complete |
 | CD-05 | Phase 61 | Complete |
 | CD-06 | Phase 61 | Complete |
+<<<<<<< HEAD
 | CD-07 | Phase 62 | Pending |
 | CD-08 | Phase 62 | Pending |
 | CD-09 | Phase 62 | Complete |
+=======
+| CD-07 | Phase 62 | Complete |
+| CD-08 | Phase 62 | Complete |
+| CD-09 | Phase 62 | Pending |
+>>>>>>> worktree-agent-adba3e643b8da6762
 
 **Coverage:**
 - v1 requirements: 9 total
