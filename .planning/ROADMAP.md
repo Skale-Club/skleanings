@@ -622,7 +622,10 @@ Plans:
   4. `DELETE /api/admin/domains/:id` removes a non-primary domain owned by the current tenant and calls `invalidateTenantCache(hostname)` — attempting to delete an `isPrimary = true` domain returns 409 and the row is preserved
   5. `GET /api/admin/domains` returns the current tenant's domain rows (id, hostname, isPrimary, verified, verifiedAt, createdAt) — domains belonging to other tenants are absent from the response
   6. A request to a custom hostname whose `domains` row has `verified = false` receives a 404 from `resolveTenantMiddleware` before any route handler executes — a request to the same hostname after verification resolves to the correct tenant and reaches business routes; the primary `*.xkedule.com` subdomain bypasses the verification check entirely
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] 61-01-PLAN.md — DB migration + Drizzle schema + IStorage verification methods (CD-01)
+- [ ] 61-02-PLAN.md — Admin domains router (GET/POST/verify/DELETE) + DNS TXT lookup (CD-02, CD-03, CD-04, CD-05)
+- [ ] 61-03-PLAN.md — resolveTenantMiddleware verification gate (CD-06)
 
 ### Phase 62: Custom Domain Frontend
 **Goal**: Tenant admins can add, verify, and remove custom domains from a dedicated settings page with clear DNS instructions, and super-admin can audit and manually manage every tenant's custom domains including unverified ones
