@@ -584,7 +584,7 @@ Plans:
 | 54 | v14.0 | 1/2 | Complete    | 2026-05-14 |
 | 55 | v15.0 | 3/3 | Complete    | 2026-05-14 |
 | 56 | v15.0 | 1/2 | Complete    | 2026-05-14 |
-| 57 | v16.0 | 2/3 | In Progress|  |
+| 57 | v16.0 | 2/3 | Complete    | 2026-05-15 |
 | 58 | v16.0 | 0/TBD | Not started | - |
 
 ---
