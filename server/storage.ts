@@ -132,6 +132,8 @@ import {
   tenantSubscriptions,
   type TenantSubscription,
   type InsertTenantSubscription,
+  tenantStripeAccounts,
+  type TenantStripeAccount,
   staffInvitations,
   type StaffInvitation,
   type InsertStaffInvitation,
@@ -460,6 +462,13 @@ export interface IStorage {
   createTenantSubscription(tenantId: number, stripeCustomerId: string): Promise<TenantSubscription>;
   getTenantSubscription(tenantId: number): Promise<TenantSubscription | undefined>;
   upsertTenantSubscription(tenantId: number, data: Partial<Omit<InsertTenantSubscription, 'tenantId' | 'stripeCustomerId'>>): Promise<TenantSubscription>;
+
+  // Tenant Stripe Accounts — Phase 63 (global registry, uses db directly)
+  createTenantStripeAccount(tenantId: number, stripeAccountId: string): Promise<TenantStripeAccount>;
+  getTenantStripeAccount(tenantId: number): Promise<TenantStripeAccount | null>;
+  getTenantStripeAccountByAccountId(stripeAccountId: string): Promise<TenantStripeAccount | null>;
+  updateTenantStripeAccount(tenantId: number, data: Partial<{ chargesEnabled: boolean; payoutsEnabled: boolean; detailsSubmitted: boolean }>): Promise<void>;
+  deleteTenantStripeAccount(tenantId: number): Promise<void>;
 
   // Self-serve signup — Phase 51 (global registry, uses db directly)
   signupTenant(data: {
@@ -2629,6 +2638,49 @@ export class DatabaseStorage implements IStorage {
       .where(eq(tenantSubscriptions.tenantId, tenantId))
       .returning();
     return row;
+  }
+
+  // Tenant Stripe Accounts — Phase 63
+  // NOTE: Global registry — uses db directly, NOT this.tenantId.
+
+  async createTenantStripeAccount(tenantId: number, stripeAccountId: string): Promise<TenantStripeAccount> {
+    const [row] = await db
+      .insert(tenantStripeAccounts)
+      .values({ tenantId, stripeAccountId })
+      .returning();
+    return row;
+  }
+
+  async getTenantStripeAccount(tenantId: number): Promise<TenantStripeAccount | null> {
+    const [row] = await db
+      .select()
+      .from(tenantStripeAccounts)
+      .where(eq(tenantStripeAccounts.tenantId, tenantId));
+    return row ?? null;
+  }
+
+  async getTenantStripeAccountByAccountId(stripeAccountId: string): Promise<TenantStripeAccount | null> {
+    const [row] = await db
+      .select()
+      .from(tenantStripeAccounts)
+      .where(eq(tenantStripeAccounts.stripeAccountId, stripeAccountId));
+    return row ?? null;
+  }
+
+  async updateTenantStripeAccount(
+    tenantId: number,
+    data: Partial<{ chargesEnabled: boolean; payoutsEnabled: boolean; detailsSubmitted: boolean }>,
+  ): Promise<void> {
+    await db
+      .update(tenantStripeAccounts)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(tenantStripeAccounts.tenantId, tenantId));
+  }
+
+  async deleteTenantStripeAccount(tenantId: number): Promise<void> {
+    await db
+      .delete(tenantStripeAccounts)
+      .where(eq(tenantStripeAccounts.tenantId, tenantId));
   }
 
   // Self-serve signup — Phase 51 (global registry, uses db directly)
