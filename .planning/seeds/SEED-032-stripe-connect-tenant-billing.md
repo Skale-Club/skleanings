@@ -1,6 +1,8 @@
 ---
 id: SEED-032
-status: dormant
+status: shipped
+shipped_in: v19.0 Stripe Connect Onboarding (Phases 63–64, payment routing deferred to v20.0)
+shipped_at: 2026-05-15
 planted: 2026-05-10
 planted_during: v3.0 / Phase 20 (calendar-timeline-structure-audit)
 trigger_when: when migrating to Xkedule multi-tenant — first tenant that needs to receive online payments from their own customers
