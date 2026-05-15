@@ -10,7 +10,7 @@ Customers can discover, book, and pay for cleaning services online without calli
 
 ## Current State
 
-**Seventeen milestones shipped:**
+**Eighteen milestones shipped:**
 
 - **v1.0 Marketing Attribution** — First-party UTM tracking, booking flow attribution, marketing dashboard, GoHighLevel CRM UTM sync, admin calendar create-booking-from-slot
 - **v2.0 White Label** — Hardcoded brand removed, DB-driven SEO/favicon/legal pages, receptionist multi-staff calendar view with drag-to-reassign and QuickBook walk-in flow
@@ -29,6 +29,7 @@ Customers can discover, book, and pay for cleaning services online without calli
 - **v15.0 Tenant Onboarding Experience** — Email verification token flow, welcome email, admin verification banner, setup checklist with live DB state + dismiss
 - **v16.0 Staff Invitation Flow** — staff_invitations table, branded invite email, public /accept-invite page, pending invitations admin section with invite dialog and revoke
 - **v17.0 Plan Tiers** — planTier on tenant_subscriptions, stripe-plans helpers, feature-flags catalog, webhook reverse-mapping, PATCH /super-admin/tenants/:id/plan, tier badge + feature list on /admin/billing, super-admin tier Select
+- **v18.0 Custom Domain Routing** — domains.verified + DNS TXT verification at _xkedule.<hostname>, admin-domains router (GET/POST/verify/DELETE), middleware verification gate, DomainsSection tenant UI, super-admin Status column
 
 
 **Pending human UAT:** Phase 19 (5 items), Phase 20 (4 CAL-FIX items), Phases 25–29 (browser-only checks), Phase 31 (4 Resend email delivery checks), Phase 34 (booking flow smoke test) — deferred to live session.
@@ -138,17 +139,10 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-## Current Milestone: v18.0 Custom Domain Routing
+## Current Milestone: v18.0 Custom Domain Routing ✅ SHIPPED
 
-**Goal:** Tenant admins can register their own custom domain (e.g. `agendar.minhalimpeza.com`) instead of being limited to `*.xkedule.com` subdomains. DNS verification via TXT record before activation; Caddy on-demand TLS handles certificate issuance automatically.
-
-**Target features:**
-- `/admin/settings/domains` page where tenant adds custom hostname
-- DNS verification: system generates random token, instructs admin to add TXT record at `_xkedule.<domain>`, then checks via Node DNS module
-- `domains.verified` column + `verifiedAt` timestamp
-- `POST /api/admin/domains` (add), `POST /:id/verify` (check DNS), `DELETE /:id` (remove non-primary)
-- Super-admin Tenants table shows custom domains alongside auto-generated subdomain
+**Status:** Complete — all 9 requirements (CD-01–CD-09) shipped.
 
 ---
 
-*Last updated: 2026-05-15 — v18.0 Custom Domain Routing started*
+*Last updated: 2026-05-15 — v18.0 Custom Domain Routing shipped*

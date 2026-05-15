@@ -19,7 +19,7 @@
 - ✅ **v15.0 Tenant Onboarding Experience** — Phases 55–56 (shipped 2026-05-14)
 - ✅ **v16.0 Staff Invitation Flow** — Phases 57–58 (shipped 2026-05-15)
 - ✅ **v17.0 Plan Tiers** — Phases 59–60 (shipped 2026-05-15)
-- 🔲 **v18.0 Custom Domain Routing** — Phases 61–62
+- ✅ **v18.0 Custom Domain Routing** — Phases 61–62 (shipped 2026-05-15)
 
 ---
 
@@ -610,6 +610,16 @@ Plans:
 **UI hint**: yes
 
 ---
+
+<details>
+<summary>✅ v18.0 Custom Domain Routing (Phases 61–62) — SHIPPED 2026-05-15</summary>
+
+- [x] Phase 61: Custom Domain Backend + Middleware (3/3 plans) — completed 2026-05-15
+- [x] Phase 62: Custom Domain Frontend (2/2 plans) — completed 2026-05-15
+
+Full details: [milestones/v18.0-ROADMAP.md](milestones/v18.0-ROADMAP.md)
+
+</details>
 
 ### Phase 61: Custom Domain Backend + Middleware
 **Goal**: Tenants can register, verify, list, and remove custom domains via authenticated API endpoints, and the tenant resolution middleware blocks requests to unverified custom domains while continuing to serve the primary `*.xkedule.com` subdomain

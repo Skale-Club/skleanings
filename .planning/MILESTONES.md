@@ -1,5 +1,18 @@
 # Milestones
 
+## v18.0 Custom Domain Routing (Shipped: 2026-05-15)
+
+**Phases completed:** 2 phases (61–62), 5 plans, all complete
+
+**Key accomplishments:**
+
+- `domains` table extended with `verified BOOLEAN`, `verifiedAt TIMESTAMPTZ`, `verificationToken TEXT` (Supabase migration + Drizzle); 5 new IStorage methods (`addDomainWithVerification`, `verifyDomain`, `removeDomainForTenant`, `getDomainsForTenant`, `findDomainById`) using global registry `db` pattern
+- `server/routes/admin-domains.ts` with 4 endpoints (`GET /api/admin/domains`, `POST /domains`, `POST /:id/verify`, `DELETE /:id`) — DNS TXT lookup via `dns.promises.resolveTxt(_xkedule.<hostname>)`, rejects `*.xkedule.com`, strips `verificationToken` from GET, invalidates LRU cache on verify success + delete
+- `resolveTenantMiddleware` JOIN extended with `verified` + `isPrimary`; 404 gate for non-primary unverified domains (anti-enumeration "Unknown tenant" message); LRU cache invariant preserved — only servable (primary OR verified) entries reach `hostnameCache.set`
+- `DomainsSection.tsx` tenant UI with Add dialog (DNS instructions panel, copy-to-clipboard token), inline Verify, AlertDialog Remove + Admin.tsx sidebar Domains entry (Globe icon, admin-only); super-admin `ManageDomainsDialog` extended with Status column (Primary/Verified/Pending badges) + destructive confirm copy for unverified domains
+
+---
+
 ## v17.0 Plan Tiers (Shipped: 2026-05-15)
 
 **Phases completed:** 2 phases (59–60), 5 plans, all complete
