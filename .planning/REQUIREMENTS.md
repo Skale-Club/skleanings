@@ -23,7 +23,7 @@
 ### Payments Dashboard (Phase 66)
 
 - [ ] **PF-07**: `GET /api/admin/payments/recent` (requireAdmin) returns the last 20 paid bookings for the current tenant with `{ id, customerName, serviceName, amountTotal, platformFeeAmount, tenantNetAmount, paidAt }`
-- [ ] **PF-08**: `/admin/payments` PaymentsSection adds a "Recent Payments" card below the Connect status card — Table with date, customer, service, total, platform fee, net to tenant — empty state "No payments yet"
+- [x] **PF-08**: `/admin/payments` PaymentsSection adds a "Recent Payments" card below the Connect status card — Table with date, customer, service, total, platform fee, net to tenant — empty state "No payments yet"
 
 ---
 
@@ -54,7 +54,7 @@
 | PF-05 | Phase 65 | Complete |
 | PF-06 | Phase 65 | Complete |
 | PF-07 | Phase 66 | Pending |
-| PF-08 | Phase 66 | Pending |
+| PF-08 | Phase 66 | Complete |
 
 **Coverage:**
 - v1 requirements: 8 total

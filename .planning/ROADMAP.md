@@ -725,7 +725,7 @@ Plans:
   4. The Recent Payments card invalidates via React Query when the Refresh Status button is clicked so the table reflects newly completed payments without a page reload
 **Plans**: 2 plans
 - [ ] 66-01-PLAN.md — Backend: getRecentPaidBookings storage method + GET /api/admin/payments/recent endpoint (PF-07)
-- [ ] 66-02-PLAN.md — Frontend: Recent Payments Card + Table in PaymentsSection.tsx with refresh wiring (PF-08)
+- [x] 66-02-PLAN.md — Frontend: Recent Payments Card + Table in PaymentsSection.tsx with refresh wiring (PF-08)
 **UI hint**: yes
 
 ---
@@ -769,7 +769,7 @@ Plans:
 | 63 | v19.0 | 2/3 | Complete    | 2026-05-15 |
 | 64 | v19.0 | 1/2 | Complete    | 2026-05-15 |
 | 65 | v20.0 | 2/3 | Complete    | 2026-05-15 |
-| 66 | v20.0 | 0/? | Not started | - |
+| 66 | v20.0 | 1/2 | In Progress|  |
 
 ---
 

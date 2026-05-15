@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 65-02-PLAN.md
-last_updated: "2026-05-15T17:26:55.872Z"
+stopped_at: Completed 66-02-PLAN.md
+last_updated: "2026-05-15T17:35:51.765Z"
 last_activity: 2026-05-15
 progress:
   total_phases: 31
   completed_phases: 30
-  total_plans: 73
-  completed_plans: 73
+  total_plans: 75
+  completed_plans: 74
   percent: 0
 ---
 
@@ -21,12 +21,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-15)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 65 — Connect-Aware Checkout + Webhook Routing
+**Current focus:** Phase 66 — Payments Dashboard UI
 
 ## Current Position
 
-Phase: 66
-Plan: Not started
+Phase: 66 (Payments Dashboard UI) — EXECUTING
+Plan: 2 of 2
 Status: Ready to execute
 Last activity: 2026-05-15
 
@@ -137,6 +137,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 65]: Connect path takes precedence over legacy when a tenant has both — auto-migrates tenants who complete Connect onboarding without explicit cleanup of legacy integrationSettings.stripe rows
 - [Phase 65]: Keep none and connect-incomplete as separate switch branches (different HTTP codes and remediation messages)
 - [Phase 65]: Recompute totalCents from lineItems (source of truth) instead of validatedData.totalPrice (string/number coercion risk)
+- [Phase 66-payments-dashboard-ui]: Recent Payments admin UI co-located types and formatCents helper inside PaymentsSection.tsx; multi-key invalidation pattern (Refresh Status invalidates both stripe/status and payments/recent)
 
 ### Roadmap Evolution
 
@@ -177,7 +178,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-15T17:17:59.246Z
-Stopped at: Completed 65-02-PLAN.md
+Last session: 2026-05-15T17:35:47.196Z
+Stopped at: Completed 66-02-PLAN.md
 Resume file: None
 Next: Plan Phase 65 (Connect-Aware Checkout + Webhook Routing) via /gsd:plan-phase 65
