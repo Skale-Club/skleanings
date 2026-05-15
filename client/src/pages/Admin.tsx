@@ -22,6 +22,7 @@ import {
   Puzzle,
   Search,
   Users,
+  Wallet,
   X,
 } from 'lucide-react';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -48,6 +49,7 @@ import { AdminChatLayout } from '@/components/chat/admin/AdminChatLayout';
 import { IntegrationsSection } from '@/components/admin/IntegrationsSection';
 import { BlogSection } from '@/components/admin/BlogSection';
 import { MarketingSection } from '@/components/admin/MarketingSection';
+import PaymentsSection from '@/components/admin/PaymentsSection';
 import { AppointmentsCalendarSection } from '@/components/admin/AppointmentsCalendarSection';
 import { ContactsSection } from '@/components/admin/ContactsSection';
 import { useMe } from '@/hooks/useMe';
@@ -72,6 +74,7 @@ const menuItems: AdminMenuItem[] = [
   { id: 'seo', title: 'SEO', icon: Search },
   { id: 'integrations', title: 'Integrations', icon: Puzzle },
   { id: 'billing', title: 'Billing', icon: CreditCard },
+  { id: 'payments', title: 'Payments', icon: Wallet },
 ];
 
 function AdminContent() {
@@ -237,6 +240,7 @@ function AdminContent() {
               </p>
             </div>
           )}
+          {activeSection === 'payments' && <PaymentsSection />}
         </div>
       </main>
     </div>
