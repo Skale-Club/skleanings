@@ -638,7 +638,7 @@ Plans:
   4. The super-admin Tenants table "Manage Domains" dialog lists every custom domain per tenant with hostname, isPrimary flag, and verification status (Verified / Pending) — the super-admin can remove any non-primary domain (including unverified ones) and the row disappears from the list without a page reload
 **Plans**: 2 plans
 - [ ] 62-01-PLAN.md — Tenant-facing /admin/domains UI (list + Add dialog with DNS instructions + Verify + Remove) (CD-07, CD-08)
-- [ ] 62-02-PLAN.md — Super-admin ManageDomainsDialog: Status column + destructive confirm for unverified domains (CD-09)
+- [x] 62-02-PLAN.md — Super-admin ManageDomainsDialog: Status column + destructive confirm for unverified domains (CD-09)
 **UI hint**: yes
 
 ---
@@ -678,7 +678,7 @@ Plans:
 | 59 | v17.0 | 3/3 | Complete    | 2026-05-15 |
 | 60 | v17.0 | 1/2 | Complete    | 2026-05-15 |
 | 61 | v18.0 | 1/3 | Complete    | 2026-05-15 |
-| 62 | v18.0 | 0/? | Not started | - |
+| 62 | v18.0 | 1/2 | In Progress|  |
 
 ---
 
