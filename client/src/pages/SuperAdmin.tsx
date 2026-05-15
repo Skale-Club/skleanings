@@ -143,6 +143,16 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
 // ManageDomainsDialog — list + add + remove domains for one tenant
 // =============================================================================
 
+function StatusBadge({ domain }: { domain: DomainRow }) {
+  if (domain.isPrimary) {
+    return <Badge className="bg-purple-100 text-purple-800 text-xs">Primary</Badge>;
+  }
+  if (domain.verified) {
+    return <Badge className="bg-green-100 text-green-800 text-xs">Verified</Badge>;
+  }
+  return <Badge className="bg-yellow-100 text-yellow-800 text-xs">Pending Verification</Badge>;
+}
+
 function ManageDomainsDialog({ tenant, open, onOpenChange }: {
   tenant: TenantListItem | null;
   open: boolean;
@@ -165,9 +175,13 @@ function ManageDomainsDialog({ tenant, open, onOpenChange }: {
     );
   }
 
-  function handleRemove(domainId: number) {
-    if (!confirm("Remove this domain?")) return;
-    removeDomain.mutate(domainId, {
+  function handleRemove(domain: DomainRow) {
+    const stateLabel = domain.verified ? "verified" : "UNVERIFIED";
+    const ok = confirm(
+      `Remove ${stateLabel} domain "${domain.hostname}"?\n\nThis is irreversible. Customers reaching this hostname will see a 404 until it is re-added and re-verified.`
+    );
+    if (!ok) return;
+    removeDomain.mutate(domain.id, {
       onError: (err) => alert(err.message),
     });
   }
@@ -189,7 +203,7 @@ function ManageDomainsDialog({ tenant, open, onOpenChange }: {
             <TableHeader>
               <TableRow>
                 <TableHead>Hostname</TableHead>
-                <TableHead>Primary</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead></TableHead>
               </TableRow>
             </TableHeader>
@@ -198,16 +212,14 @@ function ManageDomainsDialog({ tenant, open, onOpenChange }: {
                 <TableRow key={d.id}>
                   <TableCell className="font-mono text-sm">{d.hostname}</TableCell>
                   <TableCell>
-                    {d.isPrimary && (
-                      <Badge className="bg-blue-100 text-blue-800 text-xs">Primary</Badge>
-                    )}
+                    <StatusBadge domain={d} />
                   </TableCell>
                   <TableCell>
                     <Button
                       variant="ghost"
                       size="sm"
                       disabled={d.isPrimary || removeDomain.isPending}
-                      onClick={() => handleRemove(d.id)}
+                      onClick={() => handleRemove(d)}
                       className="text-red-600 hover:text-red-800 disabled:opacity-30"
                     >
                       Remove
