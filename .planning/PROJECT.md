@@ -138,10 +138,17 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-## Current Milestone: v17.0 Plan Tiers ✅ SHIPPED
+## Current Milestone: v18.0 Custom Domain Routing
 
-**Status:** Complete — all 7 requirements (PT-01–PT-07) shipped.
+**Goal:** Tenant admins can register their own custom domain (e.g. `agendar.minhalimpeza.com`) instead of being limited to `*.xkedule.com` subdomains. DNS verification via TXT record before activation; Caddy on-demand TLS handles certificate issuance automatically.
+
+**Target features:**
+- `/admin/settings/domains` page where tenant adds custom hostname
+- DNS verification: system generates random token, instructs admin to add TXT record at `_xkedule.<domain>`, then checks via Node DNS module
+- `domains.verified` column + `verifiedAt` timestamp
+- `POST /api/admin/domains` (add), `POST /:id/verify` (check DNS), `DELETE /:id` (remove non-primary)
+- Super-admin Tenants table shows custom domains alongside auto-generated subdomain
 
 ---
 
-*Last updated: 2026-05-15 — v17.0 Plan Tiers shipped*
+*Last updated: 2026-05-15 — v18.0 Custom Domain Routing started*
