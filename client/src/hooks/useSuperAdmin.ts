@@ -197,6 +197,7 @@ export interface TenantListItem {
   billingStatus: string | null;
   billingPlanId: string | null;
   billingCurrentPeriodEnd: string | null;
+  planTier: string | null; // Phase 60 — "basic" | "pro" | "enterprise" | null when no sub row
 }
 
 export interface DomainRow {
@@ -254,6 +255,32 @@ export function useSuperAdminTenants(enabled: boolean) {
   });
 
   return { query, createTenant, toggleStatus };
+}
+
+// =============================================================================
+// useUpdateTenantPlan — PATCH /api/super-admin/tenants/:id/plan (Phase 60, PT-07)
+// =============================================================================
+
+export function useUpdateTenantPlan() {
+  const queryClient = useQueryClient();
+  return useMutation<
+    { message: string; planTier: string; subscription: unknown },
+    Error,
+    { tenantId: number; planTier: string }
+  >({
+    mutationFn: ({ tenantId, planTier }) =>
+      superAdminFetch<{ message: string; planTier: string; subscription: unknown }>(
+        `/api/super-admin/tenants/${tenantId}/plan`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ planTier }),
+        },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/tenants"] });
+    },
+  });
 }
 
 // =============================================================================
