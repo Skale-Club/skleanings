@@ -578,7 +578,11 @@ Plans:
   3. Calling `tenantHasFeature(pro, maxStaff)` returns the numeric Pro limit and `tenantHasFeature(basic, customBranding)` returns the catalog boolean — the feature catalog covers `maxStaff`, `maxBookingsPerMonth`, `customBranding`, and `prioritySupport` for all three tiers
   4. A Stripe `customer.subscription.updated` webhook event whose `price.id` matches one of the three configured env vars updates `tenant_subscriptions.planTier` to the corresponding tier via reverse env-var lookup — an unrecognized price ID leaves `planTier` unchanged
   5. A super-admin calling `PATCH /api/super-admin/tenants/:id/plan` with `{ planTier: pro }` (guarded by `requireSuperAdmin`) calls `stripe.subscriptions.update(subId, { items: [{ id, price: newPriceId }] })` with the Pro price ID and updates `tenant_subscriptions.planTier` to `pro` — a request without a super-admin session returns 403
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 59-01-PLAN.md — DB migration + Drizzle schema + getPriceIdForTier helper + .env.example (PT-01, PT-02)
+- [ ] 59-02-PLAN.md — Feature catalog + tenantHasFeature helper (PT-03)
+- [ ] 59-03-PLAN.md — Webhook tier mapping + PATCH /tenants/:id/plan endpoint (PT-04, PT-05)
 
 ### Phase 60: Plan Display UI
 **Goal**: Both the tenant admin (/admin/billing) and the super-admin (/superadmin Tenants table) can see and act on plan tier — tenant admin sees their current tier badge and feature list; super-admin sees a badge per tenant and can change the tier via a dropdown
@@ -626,7 +630,7 @@ Plans:
 | 56 | v15.0 | 1/2 | Complete    | 2026-05-14 |
 | 57 | v16.0 | 2/3 | Complete    | 2026-05-15 |
 | 58 | v16.0 | 2/2 | Complete    | 2026-05-15 |
-| 59 | v17.0 | 0/0 | Not started | - |
+| 59 | v17.0 | 0/3 | Planned     | - |
 | 60 | v17.0 | 0/0 | Not started | - |
 
 ---
