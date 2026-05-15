@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 57-03-PLAN.md
-last_updated: "2026-05-15T02:23:00.242Z"
+stopped_at: Completed 58-01-PLAN.md
+last_updated: "2026-05-15T11:19:38.502Z"
 last_activity: 2026-05-15
 progress:
   total_phases: 23
-  completed_phases: 22
-  total_plans: 53
-  completed_plans: 53
+  completed_phases: 23
+  total_plans: 55
+  completed_plans: 55
   percent: 0
 ---
 
@@ -21,12 +21,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-14)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 57 — Staff Invitation Backend
+**Current focus:** Phase 58 — Staff Invitation Frontend
 
 ## Current Position
 
-Phase: 58
-Plan: Not started
+Phase: 58 (Staff Invitation Frontend) — EXECUTING
+Plan: 2 of 2
 Status: Ready to execute
 Last activity: 2026-05-15
 
@@ -103,6 +103,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 56]: setupDismissedAt has no default — null means not dismissed; GET /setup-status includes hidden services for admin count accuracy
 - [Phase 57-staff-invitation-backend]: Phase 57-01: staff_invitations uses global-registry pattern (tenant_id FK, db direct queries) so accept-invite can resolve cross-tenant tokens; tokenHash not .unique() (256-bit randomness sufficient); hard-delete on revoke
 - [Phase 57-03]: validate-invite + accept-invite: atomic db.transaction creates users + user_tenants; markInvitationAccepted called AFTER tx commit so invitations only mark used when user actually exists; cross-tenant companyName fallback via direct db query on companySettings when storage scope mismatches invitation.tenantId; adminUrl resolved from domains.isPrimary inside the transaction
+- [Phase 58-staff-invitation-frontend]: Phase 58-01: AcceptInvite.tsx uses single 'status' union (loading|invalid|ready|submitting); reads token via URLSearchParams to mirror VerifyEmail.tsx; mounted in public Switch outside AdminTenantAuthProvider so accept-invite skips /api/auth/admin-me preflight
 
 ### Roadmap Evolution
 
@@ -122,7 +123,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-15T02:14:58.274Z
-Stopped at: Completed 57-03-PLAN.md
+Last session: 2026-05-15T11:19:32.423Z
+Stopped at: Completed 58-01-PLAN.md
 Resume file: None
 Next: Plan Phase 57 (Staff Invitation Backend) via /gsd:plan-phase 57

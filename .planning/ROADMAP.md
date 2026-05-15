@@ -551,8 +551,8 @@ Plans:
   4. An "Invite Staff Member" button on `/admin/staff` opens a dialog with email and role fields — submitting the dialog calls `POST /api/admin/staff/invite`, shows a success toast, and the new invitation appears in the Pending Invitations list
 **Plans**: 2 plans
 Plans:
-- [ ] 58-01-PLAN.md — AcceptInvite.tsx public page + /accept-invite route (SF-06)
-- [ ] 58-02-PLAN.md — PendingInvitationsSection in admin Users/Team view (SF-07)
+- [x] 58-01-PLAN.md — AcceptInvite.tsx public page + /accept-invite route (SF-06)
+- [x] 58-02-PLAN.md — PendingInvitationsSection in admin Users/Team view (SF-07)
 **UI hint**: yes
 
 ---
@@ -588,7 +588,7 @@ Plans:
 | 55 | v15.0 | 3/3 | Complete    | 2026-05-14 |
 | 56 | v15.0 | 1/2 | Complete    | 2026-05-14 |
 | 57 | v16.0 | 2/3 | Complete    | 2026-05-15 |
-| 58 | v16.0 | 0/2 | Not started | - |
+| 58 | v16.0 | 2/2 | Complete   | 2026-05-15 |
 
 ---
 
