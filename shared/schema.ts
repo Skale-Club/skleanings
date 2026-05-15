@@ -398,6 +398,9 @@ export const bookings = pgTable("bookings", {
   // Stripe payment fields (nullable — only set for online payments)
   stripeSessionId: text("stripe_session_id"),
   stripePaymentStatus: text("stripe_payment_status"), // paid, unpaid, no_payment_required
+  // Phase 65: Connect platform fee breakdown (nullable — only set for Connect-routed payments after webhook)
+  platformFeeAmount: integer("platform_fee_amount"),
+  tenantNetAmount: integer("tenant_net_amount"),
   // Contact link (nullable — backfilled from existing bookings via migration)
   contactId: integer("contact_id").references(() => contacts.id, { onDelete: "set null" }),
   // UTM attribution FK (Phase 10 — nullable; populated by analytics hook)
