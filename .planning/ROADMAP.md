@@ -682,7 +682,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [ ] 64-01-PLAN.md — /admin Payments section + Wallet sidebar entry (SC-06)
-- [ ] 64-02-PLAN.md — Super-admin Tenants Connect Status column (SC-07)
+- [x] 64-02-PLAN.md — Super-admin Tenants Connect Status column (SC-07)
 **UI hint**: yes
 
 ---
@@ -724,7 +724,7 @@ Plans:
 | 61 | v18.0 | 1/3 | Complete    | 2026-05-15 |
 | 62 | v18.0 | 1/2 | Complete    | 2026-05-15 |
 | 63 | v19.0 | 2/3 | Complete    | 2026-05-15 |
-| 64 | v19.0 | 0/2 | Not started | -          |
+| 64 | v19.0 | 1/2 | In Progress|  |
 
 ---
 
