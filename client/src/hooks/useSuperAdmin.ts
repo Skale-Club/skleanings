@@ -205,6 +205,8 @@ export interface DomainRow {
   tenantId: number;
   hostname: string;
   isPrimary: boolean;
+  verified: boolean;                // Phase 62 — CD-09
+  verifiedAt: string | null;        // Phase 62 — CD-09 (ISO timestamp or null)
   createdAt: string;
 }
 
