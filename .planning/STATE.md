@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 61-01-PLAN.md
-last_updated: "2026-05-15T14:46:47.840Z"
+stopped_at: Completed 62-01-PLAN.md
+last_updated: "2026-05-15T15:05:30.076Z"
 last_activity: 2026-05-15
 progress:
   total_phases: 27
   completed_phases: 26
-  total_plans: 63
-  completed_plans: 63
+  total_plans: 65
+  completed_plans: 64
   percent: 0
 ---
 
@@ -119,6 +119,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 59]: [Phase 59-03]: PATCH endpoint uses optimistic DB write (planTier + planId) + webhook reconciliation; both paths converge idempotently via where(tenant_id) filter, giving super-admin UI immediate feedback without waiting for Stripe webhook
 - [Phase 60]: Default unrecognized/null planTier to 'basic' server-side so the UI always renders a tier badge + features list (defensive fallback in GET /api/billing/status)
 - [Phase 61]: verifiedAt uses TIMESTAMPTZ withTimezone to match migration; no verification_token index since lookups always scope by (id,tenantId); getDomainsForTenant added alongside getTenantDomains for tenant-admin vs super-admin semantic split
+- [Phase 62]: Custom Domains admin UI: token-once display, explicit Verify, AlertDialog Remove, admin-only (excluded from STAFF_ALLOWED_SECTIONS)
 
 ### Roadmap Evolution
 
@@ -148,7 +149,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-15T14:19:37.285Z
-Stopped at: Completed 61-01-PLAN.md
+Last session: 2026-05-15T15:05:21.529Z
+Stopped at: Completed 62-01-PLAN.md
 Resume file: None
 Next: Plan Phase 61 (Custom Domain Backend + Middleware) via /gsd:plan-phase 61
