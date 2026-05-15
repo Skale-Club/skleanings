@@ -31,7 +31,11 @@ export async function resolveTenantMiddleware(
     if (!tenant) {
       // DB lookup: JOIN domains -> tenants on cache miss
       const [row] = await db
-        .select({ tenant: tenants })
+        .select({
+          tenant: tenants,
+          isPrimary: domains.isPrimary,
+          verified: domains.verified,
+        })
         .from(domains)
         .innerJoin(tenants, eq(domains.tenantId, tenants.id))
         .where(eq(domains.hostname, hostname))
@@ -40,6 +44,17 @@ export async function resolveTenantMiddleware(
       if (!row) {
         res.status(404).json({ message: "Unknown tenant" });
         return;
+      }
+
+      // Phase 61 CD-06: non-primary domains must be DNS-verified to resolve.
+      // Primary *.xkedule.com subdomains bypass this check (the 61-01 backfill set
+      // verified=true for all existing primaries, and new signups create primaries
+      // via storage.signupTenant — which still uses addDomain(..., isPrimary=true)
+      // without a verification token; those rows would be verified=false, so we
+      // special-case isPrimary here rather than tightening signupTenant).
+      if (!row.isPrimary && !row.verified) {
+        res.status(404).json({ message: "Unknown tenant" });
+        return; // do NOT cache — unverified entries are not servable
       }
 
       tenant = row.tenant;
