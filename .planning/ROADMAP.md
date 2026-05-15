@@ -534,7 +534,11 @@ Plans:
   3. `POST /api/auth/accept-invite` with a valid token atomically creates a `users` row and a `user_tenants` row (role from invitation), marks `acceptedAt` on the invitation, establishes an admin session, and returns `{ adminUrl }` for redirect — an invalid or expired token returns 410
   4. `DELETE /api/admin/staff/invite/:id` revokes a pending invitation (null acceptedAt) — attempting to revoke an already-accepted invitation returns 409 Conflict
   5. All invite management endpoints (`POST /invite`, `DELETE /invite/:id`) are guarded by `requireAdmin`; validate and accept endpoints are public and use `res.locals.storage` via tenant resolution
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 57-01-PLAN.md -- DB migration + Drizzle schema + IStorage methods (SF-02)
+- [ ] 57-02-PLAN.md -- buildInviteEmail() + POST /api/admin/staff/invite + DELETE invite/:id (SF-01, SF-05)
+- [ ] 57-03-PLAN.md -- GET /auth/validate-invite + POST /auth/accept-invite (SF-03, SF-04)
 
 ### Phase 58: Staff Invitation Frontend
 **Goal**: Staff can complete account setup via a public accept-invite page, and tenant admins can send and manage pending invitations directly within the existing /admin/staff page
