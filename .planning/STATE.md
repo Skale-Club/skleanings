@@ -1,13 +1,13 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: executing
-stopped_at: Completed 60-01-PLAN.md (plan display UI)
-last_updated: "2026-05-15T13:39:32.994Z"
+milestone: v18.0
+milestone_name: Custom Domain Routing
+status: roadmapped
+stopped_at: Roadmap created for v18.0 (Phases 61–62)
+last_updated: "2026-05-15T14:00:00.000Z"
 last_activity: 2026-05-15
 progress:
-  total_phases: 25
+  total_phases: 27
   completed_phases: 25
   total_plans: 60
   completed_plans: 60
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-15)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 59 — Plan Tier Foundation + Super-Admin Plan Management
+**Current focus:** v18.0 Custom Domain Routing — Phase 61 (Custom Domain Backend + Middleware) ready to plan
 
 ## Current Position
 
-Phase: 60
+Phase: 61
 Plan: Not started
-Status: In progress — 60-01 done, 60-02 pending
+Status: Roadmap created — ready for /gsd:plan-phase 61
 Last activity: 2026-05-15
 
 Progress: [          ] 0%
@@ -52,15 +52,16 @@ Progress: [          ] 0%
 | v14.0 Billing Hardening | 53–54 (2 phases) | 4 | 2026-05-14 |
 | v15.0 Tenant Onboarding Experience | 55–56 (2 phases) | 5 | 2026-05-14 |
 | v16.0 Staff Invitation Flow | 57–58 (2 phases) | 5 | 2026-05-15 |
+| v17.0 Plan Tiers | 59–60 (2 phases) | 5 | 2026-05-15 |
 
 See: .planning/MILESTONES.md
 
-## v17.0 Phases
+## v18.0 Phases
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 59 | Plan Tier Foundation + Super-Admin Plan Management | PT-01, PT-02, PT-03, PT-04, PT-05 | Not started |
-| 60 | Plan Display UI | PT-06, PT-07 | Not started |
+| 61 | Custom Domain Backend + Middleware | CD-01, CD-02, CD-03, CD-04, CD-05, CD-06 | Not started |
+| 62 | Custom Domain Frontend | CD-07, CD-08, CD-09 | Not started |
 
 ## Pending Items
 
@@ -71,6 +72,8 @@ See: .planning/MILESTONES.md
 - **Phase 48** — `STRIPE_SAAS_PRICE_ID` env var (legacy single-plan; superseded by 3 tier-specific vars in v17.0)
 - **Phase 59 (v17.0)** — `supabase db push` for `tenant_subscriptions.plan_tier` migration
 - **Phase 59 (v17.0)** — Three new env vars: `STRIPE_SAAS_PRICE_ID_BASIC`, `STRIPE_SAAS_PRICE_ID_PRO`, `STRIPE_SAAS_PRICE_ID_ENTERPRISE` must be added to `.env` and Stripe Dashboard must have matching Price IDs
+- **Phase 61 (v18.0)** — `supabase db push` will be required for `domains.verified / verifiedAt / verificationToken` migration; existing primary domains should be backfilled to `verified = true`
+- **Phase 61 (v18.0)** — Caddy on-demand TLS configuration must be enabled in `infra/Caddyfile` so custom domains receive auto-issued certificates after DNS verification
 
 ## Accumulated Context
 
@@ -127,6 +130,9 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - v17.0 phases 59–60 derived from PT-01–07 (plan tiers)
 - Phase 59 delivers planTier column + 3 tier-specific Stripe Price ID env vars + feature catalog/`tenantHasFeature()` helper + webhook reverse-lookup mapping + `PATCH /api/super-admin/tenants/:id/plan` endpoint
 - Phase 60 delivers `features` field on `GET /api/billing/status` + tier badge & feature list on `/admin/billing` + tier badge & Select dropdown column in super-admin Tenants table
+- v18.0 phases 61–62 derived from CD-01–09 (custom domain routing)
+- Phase 61 delivers `domains` schema extension (verified / verifiedAt / verificationToken) + IStorage methods (addDomainWithVerification, verifyDomain, removeDomain extended, getDomainsForTenant) + admin domain routes (POST add, POST verify, DELETE, GET list) + resolveTenantMiddleware verification gate + DNS TXT lookup via dns.promises.resolveTxt
+- Phase 62 delivers `/admin/settings/domains` page (list + Add dialog + Verify + Remove) with DNS instructions panel showing exact TXT record + super-admin Tenants ManageDomainsDialog extended with verification status
 
 ### Blockers/Concerns
 
@@ -136,10 +142,12 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - **ENV VAR NEEDED** — `STRIPE_SAAS_PRICE_ID` must be added to .env before Phase 48-02 (subscribe endpoint)
 - **MIGRATION PENDING (v17.0)** — Phase 59 requires `supabase db push` to add `plan_tier` column to `tenant_subscriptions`
 - **ENV VARS NEEDED (v17.0)** — `STRIPE_SAAS_PRICE_ID_BASIC`, `STRIPE_SAAS_PRICE_ID_PRO`, `STRIPE_SAAS_PRICE_ID_ENTERPRISE` must be set with valid Stripe Price IDs before webhook reverse-lookup can map subscriptions to tiers
+- **MIGRATION PENDING (v18.0)** — Phase 61 requires `supabase db push` to add `verified / verifiedAt / verificationToken` columns to `domains`; existing primary domains must be backfilled to `verified = true` to avoid 404-ing live tenants
+- **INFRA CHANGE (v18.0)** — Caddy on-demand TLS must be enabled in `infra/Caddyfile` so verified custom domains receive auto-issued Let's Encrypt certs on first request
 
 ## Session Continuity
 
-Last session: 2026-05-15T13:33:52.850Z
-Stopped at: Completed 60-01-PLAN.md (plan display UI)
+Last session: 2026-05-15T14:00:00.000Z
+Stopped at: Roadmap created for v18.0 (Phases 61–62)
 Resume file: None
-Next: Plan Phase 59 (Plan Tier Foundation + Super-Admin Plan Management) via /gsd:plan-phase 59
+Next: Plan Phase 61 (Custom Domain Backend + Middleware) via /gsd:plan-phase 61

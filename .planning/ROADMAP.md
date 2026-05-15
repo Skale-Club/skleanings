@@ -19,6 +19,7 @@
 - ✅ **v15.0 Tenant Onboarding Experience** — Phases 55–56 (shipped 2026-05-14)
 - ✅ **v16.0 Staff Invitation Flow** — Phases 57–58 (shipped 2026-05-15)
 - ✅ **v17.0 Plan Tiers** — Phases 59–60 (shipped 2026-05-15)
+- 🔲 **v18.0 Custom Domain Routing** — Phases 61–62
 
 ---
 
@@ -610,6 +611,33 @@ Plans:
 
 ---
 
+### Phase 61: Custom Domain Backend + Middleware
+**Goal**: Tenants can register, verify, list, and remove custom domains via authenticated API endpoints, and the tenant resolution middleware blocks requests to unverified custom domains while continuing to serve the primary `*.xkedule.com` subdomain
+**Depends on**: Phase 60
+**Requirements**: CD-01, CD-02, CD-03, CD-04, CD-05, CD-06
+**Success Criteria** (what must be TRUE):
+  1. The `domains` table has new columns `verified BOOLEAN DEFAULT false`, `verifiedAt TIMESTAMPTZ`, and `verificationToken TEXT` applied via Supabase CLI migration and reflected in the Drizzle schema — existing primary domains receive `verified = true` so they continue to resolve
+  2. A tenant admin POSTing `{ hostname }` to `POST /api/admin/domains` (requireAdmin) receives 201 with `{ id, hostname, verificationToken, instructions }` — a row exists in `domains` with `tenantId = res.locals.tenant.id`, `verified = false`, `isPrimary = false`, and a 32-byte hex `verificationToken`; the response body describes the required TXT record at `_xkedule.<hostname>`
+  3. POSTing to `POST /api/admin/domains/:id/verify` triggers a `dns.promises.resolveTxt` lookup at `_xkedule.<hostname>` — a match against the stored token sets `verified = true` and `verifiedAt = now()` and returns 200 `{ verified: true }`; a mismatch or missing record returns 400 `{ verified: false, message }` with `verified` still false in the DB
+  4. `DELETE /api/admin/domains/:id` removes a non-primary domain owned by the current tenant and calls `invalidateTenantCache(hostname)` — attempting to delete an `isPrimary = true` domain returns 409 and the row is preserved
+  5. `GET /api/admin/domains` returns the current tenant's domain rows (id, hostname, isPrimary, verified, verifiedAt, createdAt) — domains belonging to other tenants are absent from the response
+  6. A request to a custom hostname whose `domains` row has `verified = false` receives a 404 from `resolveTenantMiddleware` before any route handler executes — a request to the same hostname after verification resolves to the correct tenant and reaches business routes; the primary `*.xkedule.com` subdomain bypasses the verification check entirely
+**Plans**: TBD
+
+### Phase 62: Custom Domain Frontend
+**Goal**: Tenant admins can add, verify, and remove custom domains from a dedicated settings page with clear DNS instructions, and super-admin can audit and manually manage every tenant's custom domains including unverified ones
+**Depends on**: Phase 61
+**Requirements**: CD-07, CD-08, CD-09
+**Success Criteria** (what must be TRUE):
+  1. Visiting `/admin/settings/domains` (requireAdmin) renders a list of the tenant's domains — each row shows hostname, a status badge (Primary / Verified / Pending Verification), and a Remove button; the primary domain has no Remove button while non-primary domains can be removed
+  2. Clicking "Add Custom Domain" opens a dialog with a hostname input — submitting it calls `POST /api/admin/domains` and reveals a DNS instructions panel showing the exact TXT record name (`_xkedule.<hostname>`) and value to add at the user's DNS provider, plus a Verify button
+  3. Clicking Verify in the dialog calls `POST /api/admin/domains/:id/verify` — on success the row's status badge flips to Verified and the dialog closes with a success toast; on failure a specific DNS error message (mismatch, missing record, lookup failed) renders inline without dismissing the dialog
+  4. The super-admin Tenants table "Manage Domains" dialog lists every custom domain per tenant with hostname, isPrimary flag, and verification status (Verified / Pending) — the super-admin can remove any non-primary domain (including unverified ones) and the row disappears from the list without a page reload
+**Plans**: TBD
+**UI hint**: yes
+
+---
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -644,6 +672,8 @@ Plans:
 | 58 | v16.0 | 2/2 | Complete    | 2026-05-15 |
 | 59 | v17.0 | 3/3 | Complete    | 2026-05-15 |
 | 60 | v17.0 | 1/2 | Complete    | 2026-05-15 |
+| 61 | v18.0 | 0/? | Not started | - |
+| 62 | v18.0 | 0/? | Not started | - |
 
 ---
 
