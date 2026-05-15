@@ -10,7 +10,7 @@
 
 ### Custom Domain Backend (Phase 61)
 
-- [ ] **CD-01**: `domains` table extended with `verified BOOLEAN DEFAULT false`, `verifiedAt TIMESTAMPTZ`, and `verificationToken TEXT` columns (Supabase migration + Drizzle schema)
+- [x] **CD-01**: `domains` table extended with `verified BOOLEAN DEFAULT false`, `verifiedAt TIMESTAMPTZ`, and `verificationToken TEXT` columns (Supabase migration + Drizzle schema)
 - [ ] **CD-02**: `POST /api/admin/domains` (requireAdmin) accepts `{ hostname }`, validates format, generates a random 32-byte hex verification token, inserts `domains` row with `verified=false, isPrimary=false` for the current tenant — returns `{ id, hostname, verificationToken, instructions }` where `instructions` describes the required TXT record at `_xkedule.<hostname>`
 - [ ] **CD-03**: `POST /api/admin/domains/:id/verify` (requireAdmin) performs a DNS TXT lookup at `_xkedule.<hostname>` (via Node `dns.promises.resolveTxt`), compares against the stored `verificationToken`, sets `verified=true` and `verifiedAt=now()` on match — returns 200 `{ verified: true }`; mismatch returns 400 `{ verified: false, message }`
 - [ ] **CD-04**: `DELETE /api/admin/domains/:id` (requireAdmin) removes a domain — refuses with 409 if `isPrimary=true` (protects the auto-generated subdomain); also invalidates the LRU tenant cache for that hostname
@@ -45,7 +45,7 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CD-01 | Phase 61 | Pending |
+| CD-01 | Phase 61 | Complete |
 | CD-02 | Phase 61 | Pending |
 | CD-03 | Phase 61 | Pending |
 | CD-04 | Phase 61 | Pending |

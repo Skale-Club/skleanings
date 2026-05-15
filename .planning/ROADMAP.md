@@ -623,7 +623,7 @@ Plans:
   5. `GET /api/admin/domains` returns the current tenant's domain rows (id, hostname, isPrimary, verified, verifiedAt, createdAt) — domains belonging to other tenants are absent from the response
   6. A request to a custom hostname whose `domains` row has `verified = false` receives a 404 from `resolveTenantMiddleware` before any route handler executes — a request to the same hostname after verification resolves to the correct tenant and reaches business routes; the primary `*.xkedule.com` subdomain bypasses the verification check entirely
 **Plans**: 3 plans
-- [ ] 61-01-PLAN.md — DB migration + Drizzle schema + IStorage verification methods (CD-01)
+- [x] 61-01-PLAN.md — DB migration + Drizzle schema + IStorage verification methods (CD-01)
 - [ ] 61-02-PLAN.md — Admin domains router (GET/POST/verify/DELETE) + DNS TXT lookup (CD-02, CD-03, CD-04, CD-05)
 - [ ] 61-03-PLAN.md — resolveTenantMiddleware verification gate (CD-06)
 
@@ -675,7 +675,7 @@ Plans:
 | 58 | v16.0 | 2/2 | Complete    | 2026-05-15 |
 | 59 | v17.0 | 3/3 | Complete    | 2026-05-15 |
 | 60 | v17.0 | 1/2 | Complete    | 2026-05-15 |
-| 61 | v18.0 | 0/? | Not started | - |
+| 61 | v18.0 | 1/3 | In Progress|  |
 | 62 | v18.0 | 0/? | Not started | - |
 
 ---

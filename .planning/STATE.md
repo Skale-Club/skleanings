@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v18.0
-milestone_name: Custom Domain Routing
-status: roadmapped
-stopped_at: Roadmap created for v18.0 (Phases 61–62)
-last_updated: "2026-05-15T14:00:00.000Z"
+milestone: v1.0
+milestone_name: milestone
+status: executing
+stopped_at: Completed 61-01-PLAN.md
+last_updated: "2026-05-15T14:19:37.299Z"
 last_activity: 2026-05-15
 progress:
   total_phases: 27
   completed_phases: 25
-  total_plans: 60
-  completed_plans: 60
+  total_plans: 63
+  completed_plans: 61
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-15)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** v18.0 Custom Domain Routing — Phase 61 (Custom Domain Backend + Middleware) ready to plan
+**Current focus:** Phase 61 — Custom Domain Backend + Middleware
 
 ## Current Position
 
-Phase: 61
-Plan: Not started
-Status: Roadmap created — ready for /gsd:plan-phase 61
+Phase: 61 (Custom Domain Backend + Middleware) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
 Last activity: 2026-05-15
 
 Progress: [          ] 0%
@@ -118,6 +118,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 59]: [Phase 59-03]: PATCH /super-admin/tenants/:id/plan does NOT auto-subscribe; returns 404 when stripeSubscriptionId missing, pointing operator to POST /subscribe — keeps responsibilities split (subscribe = create, plan = change)
 - [Phase 59]: [Phase 59-03]: PATCH endpoint uses optimistic DB write (planTier + planId) + webhook reconciliation; both paths converge idempotently via where(tenant_id) filter, giving super-admin UI immediate feedback without waiting for Stripe webhook
 - [Phase 60]: Default unrecognized/null planTier to 'basic' server-side so the UI always renders a tier badge + features list (defensive fallback in GET /api/billing/status)
+- [Phase 61]: verifiedAt uses TIMESTAMPTZ withTimezone to match migration; no verification_token index since lookups always scope by (id,tenantId); getDomainsForTenant added alongside getTenantDomains for tenant-admin vs super-admin semantic split
 
 ### Roadmap Evolution
 
@@ -147,7 +148,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-15T14:00:00.000Z
-Stopped at: Roadmap created for v18.0 (Phases 61–62)
+Last session: 2026-05-15T14:19:37.285Z
+Stopped at: Completed 61-01-PLAN.md
 Resume file: None
 Next: Plan Phase 61 (Custom Domain Backend + Middleware) via /gsd:plan-phase 61
