@@ -29,6 +29,7 @@ import { billingRouter } from "./routes/billing";
 import signupRouter from "./routes/signup";
 import { adminSetupRouter } from "./routes/admin-setup";
 import { staffInvitationRouter } from "./routes/staff-invitations";
+import { adminDomainsRouter } from "./routes/admin-domains";
 import { resolveTenantMiddleware } from "./middleware/tenant";
 
 export async function registerRoutes(server: Server, app: Express) {
@@ -110,5 +111,8 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // Staff invitation routes (POST /api/admin/staff/invite, DELETE /:id, GET /staff/invitations) — Phase 57
   app.use("/api/admin", staffInvitationRouter);
+
+  // Custom domain routes (GET /api/admin/domains, POST /api/admin/domains, POST /:id/verify, DELETE /:id) — Phase 61
+  app.use("/api/admin", adminDomainsRouter);
 
 }
