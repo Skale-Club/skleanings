@@ -18,7 +18,7 @@
 
 ### Webhook Routing (Phase 65)
 
-- [ ] **PF-06**: `paymentsWebhookHandler` (existing handler in `server/routes/payments.ts`) verifies the Stripe signature using `STRIPE_WEBHOOK_SECRET_CONNECT` env var when `event.account` is present (Connect event), falls back to legacy per-tenant secret otherwise — Connect events also call `stripe.checkout.sessions.retrieve(sessionId, { stripeAccount: event.account })` to fetch payment_intent details
+- [x] **PF-06**: `paymentsWebhookHandler` (existing handler in `server/routes/payments.ts`) verifies the Stripe signature using `STRIPE_WEBHOOK_SECRET_CONNECT` env var when `event.account` is present (Connect event), falls back to legacy per-tenant secret otherwise — Connect events also call `stripe.checkout.sessions.retrieve(sessionId, { stripeAccount: event.account })` to fetch payment_intent details
 
 ### Payments Dashboard (Phase 66)
 
@@ -52,7 +52,7 @@
 | PF-03 | Phase 65 | Complete |
 | PF-04 | Phase 65 | Complete |
 | PF-05 | Phase 65 | Complete |
-| PF-06 | Phase 65 | Pending |
+| PF-06 | Phase 65 | Complete |
 | PF-07 | Phase 66 | Pending |
 | PF-08 | Phase 66 | Pending |
 
