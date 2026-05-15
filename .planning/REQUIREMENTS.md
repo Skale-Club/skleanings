@@ -18,7 +18,7 @@
 
 ### Connect Frontend (Phase 64)
 
-- [ ] **SC-06**: `/admin/payments` page shows a status card with: connection state badge (Connected / Not Connected), capability badges (Charges Enabled, Payouts Enabled), "Connect Stripe Account" or "Continue Onboarding" button (POSTs to onboard endpoint, redirects to Stripe URL), and a "Refresh Status" button
+- [x] **SC-06**: `/admin/payments` page shows a status card with: connection state badge (Connected / Not Connected), capability badges (Charges Enabled, Payouts Enabled), "Connect Stripe Account" or "Continue Onboarding" button (POSTs to onboard endpoint, redirects to Stripe URL), and a "Refresh Status" button
 - [ ] **SC-07**: Super-admin Tenants table shows a Stripe Connect Status column with Connected/Not Connected badge per tenant — column derived from a join on `tenant_stripe_accounts`
 
 ---
@@ -48,7 +48,7 @@
 | SC-03 | Phase 63 | Complete |
 | SC-04 | Phase 63 | Complete |
 | SC-05 | Phase 63 | Pending |
-| SC-06 | Phase 64 | Pending |
+| SC-06 | Phase 64 | Complete |
 | SC-07 | Phase 64 | Pending |
 
 **Coverage:**
