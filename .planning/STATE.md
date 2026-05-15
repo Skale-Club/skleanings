@@ -1,36 +1,36 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: completed
-stopped_at: Completed 58-01-PLAN.md
-last_updated: "2026-05-15T11:24:07.287Z"
+milestone: v17.0
+milestone_name: Plan Tiers
+status: active
+stopped_at: Roadmap created for v17.0
+last_updated: "2026-05-15T12:00:00.000Z"
 last_activity: 2026-05-15
 progress:
-  total_phases: 23
-  completed_phases: 23
-  total_plans: 55
-  completed_plans: 55
-  percent: 100
+  total_phases: 2
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-05-14)
+See: .planning/PROJECT.md (updated 2026-05-15)
 
 **Core value:** Customers can discover, book, and pay for cleaning services online without calling — and the business can manage everything from one admin panel.
-**Current focus:** Phase 58 — Staff Invitation Frontend
+**Current focus:** v17.0 Plan Tiers — Phase 59 (Plan Tier Foundation + Super-Admin Plan Management)
 
 ## Current Position
 
-Phase: 58
+Phase: 59
 Plan: Not started
-Status: Completed Plan 58-02
+Status: Roadmap created — ready to plan Phase 59
 Last activity: 2026-05-15
 
-Progress: [██████████] 100%
+Progress: [          ] 0%
 
 ## Shipped Milestones
 
@@ -51,15 +51,16 @@ Progress: [██████████] 100%
 | v13.0 Self-Serve Signup | 51–52 (2 phases) | 4 | 2026-05-14 |
 | v14.0 Billing Hardening | 53–54 (2 phases) | 4 | 2026-05-14 |
 | v15.0 Tenant Onboarding Experience | 55–56 (2 phases) | 5 | 2026-05-14 |
+| v16.0 Staff Invitation Flow | 57–58 (2 phases) | 5 | 2026-05-15 |
 
 See: .planning/MILESTONES.md
 
-## v16.0 Phases
+## v17.0 Phases
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 57 | Staff Invitation Backend | SF-01, SF-02, SF-03, SF-04, SF-05 | Not started |
-| 58 | Staff Invitation Frontend | SF-06, SF-07 | Not started |
+| 59 | Plan Tier Foundation + Super-Admin Plan Management | PT-01, PT-02, PT-03, PT-04, PT-05 | Not started |
+| 60 | Plan Display UI | PT-06, PT-07 | Not started |
 
 ## Pending Items
 
@@ -67,7 +68,9 @@ See: .planning/MILESTONES.md
 - **Phase 35** — `supabase db push` (drop system_heartbeats) + add `BLOG_CRON_TOKEN` to GitHub Secrets
 - **Phase 38** — `supabase db push` for multi-tenant schema migrations
 - **Phase 47** — `supabase db push` for password_reset_tokens table migration
-- **Phase 48** — New env var `STRIPE_SAAS_PRICE_ID` must be added to .env (Stripe price ID for the monthly SaaS plan)
+- **Phase 48** — `STRIPE_SAAS_PRICE_ID` env var (legacy single-plan; superseded by 3 tier-specific vars in v17.0)
+- **Phase 59 (v17.0)** — `supabase db push` for `tenant_subscriptions.plan_tier` migration
+- **Phase 59 (v17.0)** — Three new env vars: `STRIPE_SAAS_PRICE_ID_BASIC`, `STRIPE_SAAS_PRICE_ID_PRO`, `STRIPE_SAAS_PRICE_ID_ENTERPRISE` must be added to `.env` and Stripe Dashboard must have matching Price IDs
 
 ## Accumulated Context
 
@@ -113,6 +116,9 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - v16.0 phases 57–58 derived from SF-01–07 (staff invitation flow)
 - Phase 57 delivers staff_invitations table + IStorage methods + buildInviteEmail() + 3 API endpoints (invite, validate-invite, accept-invite, revoke)
 - Phase 58 delivers /accept-invite public page + pending invitations section in /admin/staff with Invite button/dialog
+- v17.0 phases 59–60 derived from PT-01–07 (plan tiers)
+- Phase 59 delivers planTier column + 3 tier-specific Stripe Price ID env vars + feature catalog/`tenantHasFeature()` helper + webhook reverse-lookup mapping + `PATCH /api/super-admin/tenants/:id/plan` endpoint
+- Phase 60 delivers `features` field on `GET /api/billing/status` + tier badge & feature list on `/admin/billing` + tier badge & Select dropdown column in super-admin Tenants table
 
 ### Blockers/Concerns
 
@@ -120,10 +126,12 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - **MIGRATION PENDING** — Phase 38 requires `supabase db push` for multi-tenant schema
 - **MIGRATION PENDING** — Phase 47 requires `supabase db push` for password_reset_tokens table
 - **ENV VAR NEEDED** — `STRIPE_SAAS_PRICE_ID` must be added to .env before Phase 48-02 (subscribe endpoint)
+- **MIGRATION PENDING (v17.0)** — Phase 59 requires `supabase db push` to add `plan_tier` column to `tenant_subscriptions`
+- **ENV VARS NEEDED (v17.0)** — `STRIPE_SAAS_PRICE_ID_BASIC`, `STRIPE_SAAS_PRICE_ID_PRO`, `STRIPE_SAAS_PRICE_ID_ENTERPRISE` must be set with valid Stripe Price IDs before webhook reverse-lookup can map subscriptions to tiers
 
 ## Session Continuity
 
-Last session: 2026-05-15T11:19:32.423Z
-Stopped at: Completed 58-01-PLAN.md
+Last session: 2026-05-15T12:00:00.000Z
+Stopped at: Roadmap created for v17.0 Plan Tiers
 Resume file: None
-Next: Plan Phase 57 (Staff Invitation Backend) via /gsd:plan-phase 57
+Next: Plan Phase 59 (Plan Tier Foundation + Super-Admin Plan Management) via /gsd:plan-phase 59

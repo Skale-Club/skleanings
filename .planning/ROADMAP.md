@@ -18,6 +18,7 @@
 - ✅ **v14.0 Billing Hardening** — Phases 53–54 (shipped 2026-05-14)
 - ✅ **v15.0 Tenant Onboarding Experience** — Phases 55–56 (shipped 2026-05-14)
 - ✅ **v16.0 Staff Invitation Flow** — Phases 57–58 (shipped 2026-05-15)
+- 🔲 **v17.0 Plan Tiers** — Phases 59–60
 
 ---
 
@@ -567,6 +568,32 @@ Plans:
 
 ---
 
+### Phase 59: Plan Tier Foundation + Super-Admin Plan Management
+**Goal**: The database, env config, feature catalog, Stripe webhook, and super-admin API are all in place to assign and persist a plan tier per tenant — the entire backend is plan-tier aware
+**Depends on**: Phase 58
+**Requirements**: PT-01, PT-02, PT-03, PT-04, PT-05
+**Success Criteria** (what must be TRUE):
+  1. The `tenant_subscriptions` table has a `planTier` column with values `basic | pro | enterprise` and default `basic` — applied via Supabase CLI migration and reflected in the Drizzle schema; every existing row has `planTier = basic`
+  2. Setting `STRIPE_SAAS_PRICE_ID_BASIC`, `STRIPE_SAAS_PRICE_ID_PRO`, and `STRIPE_SAAS_PRICE_ID_ENTERPRISE` in `.env` and calling `getPriceIdForTier(pro)` from `server/lib/feature-flags.ts` returns the configured Pro price ID — unknown tier throws
+  3. Calling `tenantHasFeature(pro, maxStaff)` returns the numeric Pro limit and `tenantHasFeature(basic, customBranding)` returns the catalog boolean — the feature catalog covers `maxStaff`, `maxBookingsPerMonth`, `customBranding`, and `prioritySupport` for all three tiers
+  4. A Stripe `customer.subscription.updated` webhook event whose `price.id` matches one of the three configured env vars updates `tenant_subscriptions.planTier` to the corresponding tier via reverse env-var lookup — an unrecognized price ID leaves `planTier` unchanged
+  5. A super-admin calling `PATCH /api/super-admin/tenants/:id/plan` with `{ planTier: pro }` (guarded by `requireSuperAdmin`) calls `stripe.subscriptions.update(subId, { items: [{ id, price: newPriceId }] })` with the Pro price ID and updates `tenant_subscriptions.planTier` to `pro` — a request without a super-admin session returns 403
+**Plans**: TBD
+
+### Phase 60: Plan Display UI
+**Goal**: Both the tenant admin (/admin/billing) and the super-admin (/superadmin Tenants table) can see and act on plan tier — tenant admin sees their current tier badge and feature list; super-admin sees a badge per tenant and can change the tier via a dropdown
+**Depends on**: Phase 59
+**Requirements**: PT-06, PT-07
+**Success Criteria** (what must be TRUE):
+  1. `GET /api/billing/status` returns a `features` field shaped as `{ maxStaff, maxBookingsPerMonth, customBranding, prioritySupport }` derived from `tenantHasFeature(planTier, ...)` — values match the catalog for the tenant current planTier
+  2. A tenant admin visiting `/admin/billing` sees a colored Tier badge (Basic / Pro / Enterprise) and a feature list rendering each catalog entry — numeric limits show as Max staff: 5; booleans show as a check or X glyph
+  3. The super-admin `/superadmin` Tenants table shows a planTier badge column per tenant — values are read from `tenant_subscriptions` via the existing `GET /api/super-admin/tenants` aggregate endpoint
+  4. Each row in the super-admin Tenants table has a Select dropdown with Basic/Pro/Enterprise options — changing the selection fires `PATCH /api/super-admin/tenants/:id/plan`, shows a success toast, and the table refreshes (React Query invalidation) so the badge reflects the new tier without a page reload
+**Plans**: TBD
+**UI hint**: yes
+
+---
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -599,6 +626,8 @@ Plans:
 | 56 | v15.0 | 1/2 | Complete    | 2026-05-14 |
 | 57 | v16.0 | 2/3 | Complete    | 2026-05-15 |
 | 58 | v16.0 | 2/2 | Complete    | 2026-05-15 |
+| 59 | v17.0 | 0/0 | Not started | - |
+| 60 | v17.0 | 0/0 | Not started | - |
 
 ---
 
