@@ -250,3 +250,50 @@ export function buildWelcomeEmail(
 
   return { subject, html, text };
 }
+
+/**
+ * Build the staff invitation email content.
+ * Pure function — no side effects, no DB calls.
+ *
+ * @param inviteUrl   Full URL: ${SITE_URL}/accept-invite?token=${rawToken}
+ * @param companyName Tenant company name from companySettings
+ * @param inviteeEmail The email address being invited (used in body copy)
+ */
+export function buildInviteEmail(
+  inviteUrl: string,
+  companyName: string,
+  inviteeEmail: string
+): { subject: string; html: string; text: string } {
+  const subject = `You've been invited to join ${companyName}`;
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8" /></head>
+<body style="font-family: Inter, sans-serif; background: #f8fafc; padding: 32px;">
+  <div style="max-width: 480px; margin: 0 auto; background: #fff; border-radius: 8px; padding: 32px; border: 1px solid #e2e8f0;">
+    <h2 style="font-family: Outfit, sans-serif; color: #1C53A3; margin-top: 0;">You're invited!</h2>
+    <p style="color: #374151;">You've been invited to join <strong>${companyName}</strong> as a staff member.</p>
+    <p style="color: #374151;">Click the button below to accept your invitation and set up your account. This link expires in <strong>48 hours</strong>.</p>
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="${inviteUrl}"
+         style="background: #FFFF01; color: #000; font-weight: 700; font-family: Outfit, sans-serif;
+                padding: 14px 32px; border-radius: 9999px; text-decoration: none; display: inline-block;">
+        Accept Invitation
+      </a>
+    </div>
+    <p style="color: #6b7280; font-size: 13px;">
+      This invitation was sent to ${inviteeEmail}. If you were not expecting this, you can safely ignore this email.
+    </p>
+    <p style="color: #6b7280; font-size: 13px;">
+      Or copy this link into your browser:<br />
+      <a href="${inviteUrl}" style="color: #1C53A3; word-break: break-all;">${inviteUrl}</a>
+    </p>
+  </div>
+</body>
+</html>`;
+
+  const text = `You've been invited to join ${companyName}\n\nAccept your invitation (expires in 48 hours):\n${inviteUrl}\n\nIf you were not expecting this invitation, ignore this email.`;
+
+  return { subject, html, text };
+}
