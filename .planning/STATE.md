@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 59-03-PLAN.md (webhook reverse-lookup + super-admin plan PATCH)
-last_updated: "2026-05-15T13:18:22.766Z"
+stopped_at: Completed 60-plan-display-ui-02-PLAN.md
+last_updated: "2026-05-15T13:32:45.994Z"
 last_activity: 2026-05-15
 progress:
   total_phases: 25
   completed_phases: 24
-  total_plans: 58
-  completed_plans: 58
+  total_plans: 60
+  completed_plans: 59
   percent: 0
 ---
 
@@ -114,6 +114,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 59]: [Phase 59-03]: Webhook reverse-lookup uses conditional spread (...newTier ? { planTier: newTier } : {}) to avoid overwriting valid planTier with null on unrecognized priceIds; warn-log surfaces the unrecognized priceId for operator debugging
 - [Phase 59]: [Phase 59-03]: PATCH /super-admin/tenants/:id/plan does NOT auto-subscribe; returns 404 when stripeSubscriptionId missing, pointing operator to POST /subscribe — keeps responsibilities split (subscribe = create, plan = change)
 - [Phase 59]: [Phase 59-03]: PATCH endpoint uses optimistic DB write (planTier + planId) + webhook reconciliation; both paths converge idempotently via where(tenant_id) filter, giving super-admin UI immediate feedback without waiting for Stripe webhook
+- [Phase 60-plan-display-ui]: Hide Plan Select when tenant has no Stripe subscription row (planTier === null) to avoid triggering 404 from PATCH /api/super-admin/tenants/:id/plan
 
 ### Roadmap Evolution
 
@@ -138,7 +139,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-15T13:14:06.911Z
-Stopped at: Completed 59-03-PLAN.md (webhook reverse-lookup + super-admin plan PATCH)
+Last session: 2026-05-15T13:32:40.464Z
+Stopped at: Completed 60-plan-display-ui-02-PLAN.md
 Resume file: None
 Next: Plan Phase 59 (Plan Tier Foundation + Super-Admin Plan Management) via /gsd:plan-phase 59

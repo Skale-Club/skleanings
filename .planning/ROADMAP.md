@@ -595,7 +595,7 @@ Plans:
   4. Each row in the super-admin Tenants table has a Select dropdown with Basic/Pro/Enterprise options — changing the selection fires `PATCH /api/super-admin/tenants/:id/plan`, shows a success toast, and the table refreshes (React Query invalidation) so the badge reflects the new tier without a page reload
 **Plans**: 2 plans
 - [ ] 60-01-PLAN.md — /admin/billing tier badge + features list (PT-06)
-- [ ] 60-02-PLAN.md — Super-admin Tenants plan column + Select dropdown (PT-07)
+- [x] 60-02-PLAN.md — Super-admin Tenants plan column + Select dropdown (PT-07)
 **UI hint**: yes
 
 ---
@@ -633,7 +633,7 @@ Plans:
 | 57 | v16.0 | 2/3 | Complete    | 2026-05-15 |
 | 58 | v16.0 | 2/2 | Complete    | 2026-05-15 |
 | 59 | v17.0 | 3/3 | Complete    | 2026-05-15 |
-| 60 | v17.0 | 0/0 | Not started | - |
+| 60 | v17.0 | 1/2 | In Progress|  |
 
 ---
 

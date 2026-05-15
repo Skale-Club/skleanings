@@ -22,7 +22,7 @@
 ### Plan Display UI (Phase 60)
 
 - [ ] **PT-06**: `/admin/billing` shows the current `planTier` (Basic/Pro/Enterprise badge) and a feature list derived from `tenantHasFeature()` rendered server-side via a new field on `GET /api/billing/status` — e.g. "Max staff: 5", "Custom branding: ✓", "Priority support: ✗"
-- [ ] **PT-07**: Super-admin `/superadmin` Tenants table shows the current `planTier` badge per tenant and provides a Select dropdown to change it — change triggers `PATCH /api/super-admin/tenants/:id/plan` and refreshes the table
+- [x] **PT-07**: Super-admin `/superadmin` Tenants table shows the current `planTier` badge per tenant and provides a Select dropdown to change it — change triggers `PATCH /api/super-admin/tenants/:id/plan` and refreshes the table
 
 ---
 
@@ -52,7 +52,7 @@
 | PT-04 | Phase 59 | Complete |
 | PT-05 | Phase 59 | Complete |
 | PT-06 | Phase 60 | Pending |
-| PT-07 | Phase 60 | Pending |
+| PT-07 | Phase 60 | Complete |
 
 **Coverage:**
 - v1 requirements: 7 total
