@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v20.0
-milestone_name: Connect Payment Routing
-status: planning
-stopped_at: Roadmap created for v20.0
-last_updated: "2026-05-15T17:30:00.000Z"
+milestone: v1.0
+milestone_name: milestone
+status: executing
+stopped_at: Completed 65-01-PLAN.md
+last_updated: "2026-05-15T17:12:56.618Z"
 last_activity: 2026-05-15
 progress:
-  total_phases: 2
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_phases: 31
+  completed_phases: 29
+  total_plans: 73
+  completed_plans: 71
   percent: 0
 ---
 
@@ -25,9 +25,9 @@ See: .planning/PROJECT.md (updated 2026-05-15)
 
 ## Current Position
 
-Phase: 65
-Plan: Not started
-Status: Ready to plan
+Phase: 65 (Connect-Aware Checkout + Webhook Routing) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
 Last activity: 2026-05-15
 
 Progress: [          ] 0%
@@ -133,6 +133,8 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 - [Phase 63-stripe-connect-backend]: /stripe/status returns 200/connected:false vs /stripe/refresh returns 404 when no row — semantic split between UI state probe and explicit rehydrate action
 - [Phase 64-stripe-connect-frontend]: Stripe Connect onboard URL handoff pattern: POST returns { url }, client sets window.location.href to redirect to Stripe-hosted onboarding
 - [Phase 64-stripe-connect-frontend]: Mount-time URL param handler with window.history.replaceState prevents re-fire on remount for ?status=success return-from-Stripe UX
+- [Phase 65]: Discriminated 4-kind union (connect/legacy/connect-incomplete/none) chosen over nullable result so compiler enforces PF-03 connect-incomplete handling at every call site
+- [Phase 65]: Connect path takes precedence over legacy when a tenant has both — auto-migrates tenants who complete Connect onboarding without explicit cleanup of legacy integrationSettings.stripe rows
 
 ### Roadmap Evolution
 
@@ -173,7 +175,7 @@ All milestone decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-15T17:30:00.000Z
-Stopped at: Roadmap created for v20.0
+Last session: 2026-05-15T17:12:50.177Z
+Stopped at: Completed 65-01-PLAN.md
 Resume file: None
 Next: Plan Phase 65 (Connect-Aware Checkout + Webhook Routing) via /gsd:plan-phase 65

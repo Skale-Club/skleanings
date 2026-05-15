@@ -13,8 +13,8 @@
 - [ ] **PF-01**: When the current tenant has a `tenant_stripe_accounts` row with `chargesEnabled = true`, `POST /api/payments/checkout` creates the Stripe Checkout session using the platform `STRIPE_SECRET_KEY` + `{ stripeAccount: tenant.stripeAccountId }` request options (Stripe-Account header) — payment funds land in the tenant's connected balance
 - [ ] **PF-02**: The Checkout session includes `payment_intent_data.application_fee_amount` calculated from `STRIPE_PLATFORM_FEE_PERCENT` env var (default `5`) applied to the booking total — minimum 1 cent, fee math uses integer cents
 - [ ] **PF-03**: When the tenant has a Connect account row but `chargesEnabled = false`, `POST /api/payments/checkout` returns 402 with `{ message: "Stripe Connect onboarding incomplete. Finish onboarding in Admin → Payments." }` — no Stripe API call attempted
-- [ ] **PF-04**: When the tenant has NO Connect row, the existing legacy flow (per-tenant `integrationSettings.stripe.apiKey`) is used unchanged — backward compatible for current tenants
-- [ ] **PF-05**: `bookings` table gets `platform_fee_amount INTEGER` and `tenant_net_amount INTEGER` columns (Supabase migration + Drizzle) — populated on `checkout.session.completed` webhook from `payment_intent.application_fee_amount` and `(amount_total - application_fee_amount)`
+- [x] **PF-04**: When the tenant has NO Connect row, the existing legacy flow (per-tenant `integrationSettings.stripe.apiKey`) is used unchanged — backward compatible for current tenants
+- [x] **PF-05**: `bookings` table gets `platform_fee_amount INTEGER` and `tenant_net_amount INTEGER` columns (Supabase migration + Drizzle) — populated on `checkout.session.completed` webhook from `payment_intent.application_fee_amount` and `(amount_total - application_fee_amount)`
 
 ### Webhook Routing (Phase 65)
 
@@ -50,8 +50,8 @@
 | PF-01 | Phase 65 | Pending |
 | PF-02 | Phase 65 | Pending |
 | PF-03 | Phase 65 | Pending |
-| PF-04 | Phase 65 | Pending |
-| PF-05 | Phase 65 | Pending |
+| PF-04 | Phase 65 | Complete |
+| PF-05 | Phase 65 | Complete |
 | PF-06 | Phase 65 | Pending |
 | PF-07 | Phase 66 | Pending |
 | PF-08 | Phase 66 | Pending |
