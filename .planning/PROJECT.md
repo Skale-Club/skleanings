@@ -140,10 +140,18 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-## Current Milestone: v19.0 Stripe Connect Onboarding ✅ SHIPPED
+## Current Milestone: v20.0 Connect Payment Routing
 
-**Status:** Complete — all 7 requirements (SC-01–SC-07) shipped. Payment flow integration deferred to v20.0.
+**Goal:** When a tenant has a connected Stripe Express account with `chargesEnabled`, customer booking payments are routed through that account using the platform Stripe key + `Stripe-Account` header, with an `application_fee_amount` skimmed by the platform. Legacy per-tenant Stripe API key flow continues to work for tenants not yet on Connect.
+
+**Target features:**
+- Booking checkout (`POST /api/payments/checkout`) detects Connect status and creates session via `stripe.checkout.sessions.create({ ... }, { stripeAccount })` with `application_fee_amount`
+- Platform fee percentage configurable via `STRIPE_PLATFORM_FEE_PERCENT` env var (default 5%)
+- Booking checkout returns 402 when tenant has Connect account but `chargesEnabled = false`
+- `bookingPayments` table (or extend bookings) tracks `platformFeeAmount` + `tenantNetAmount` on completed payments
+- Webhook `checkout.session.completed` handles both Connect (`event.account`) and legacy events
+- `/admin/payments` shows recent payments with platform fee breakdown
 
 ---
 
-*Last updated: 2026-05-15 — v19.0 Stripe Connect Onboarding shipped*
+*Last updated: 2026-05-15 — v20.0 Connect Payment Routing started*
