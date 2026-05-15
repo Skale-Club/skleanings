@@ -207,6 +207,16 @@ export interface IStorage {
   // Bookings
   createBooking(booking: InsertBooking & { totalPrice: string, totalDurationMinutes: number, endTime: string, bookingItemsData?: any[], userId?: string | null }): Promise<Booking>;
   getBookings(limit?: number): Promise<Booking[]>;
+  // Phase 66 PF-07 — recent paid bookings for the Admin Payments dashboard (tenant-scoped).
+  getRecentPaidBookings(limit?: number): Promise<Array<{
+    id: number;
+    customerName: string;
+    serviceName: string;
+    amountTotal: number;        // integer cents
+    platformFeeAmount: number | null;
+    tenantNetAmount: number | null;
+    paidAt: Date;               // sourced from bookings.createdAt (no paid_at column today)
+  }>>;
   getBookingsByDate(date: string): Promise<Booking[]>;
   getBookingsByDateAndStaff(date: string, staffMemberId: number): Promise<Booking[]>;
   getBooking(id: number): Promise<Booking | undefined>;
@@ -1000,6 +1010,67 @@ export class DatabaseStorage implements IStorage {
 
   async getBookings(limit: number = 50): Promise<Booking[]> {
     return await db.select().from(bookings).where(eq(bookings.tenantId, this.tenantId)).orderBy(desc(bookings.bookingDate)).limit(limit);
+  }
+
+  // Phase 66 PF-07 — recent paid bookings for the Admin Payments dashboard.
+  // Tenant-scoped via this.tenantId (mandatory — never omit). Filters paymentStatus='paid'
+  // AND status IN ('confirmed','completed'). Ordered newest-first by bookings.createdAt
+  // (no dedicated paid_at column exists today; createdAt is the closest proxy and is what
+  // the `paidAt` field in the return shape represents).
+  async getRecentPaidBookings(limit: number = 20): Promise<Array<{
+    id: number;
+    customerName: string;
+    serviceName: string;
+    amountTotal: number;
+    platformFeeAmount: number | null;
+    tenantNetAmount: number | null;
+    paidAt: Date;
+  }>> {
+    // Clamp limit to [1, 100], default 20.
+    const safeLimit = Math.min(Math.max(Number.isFinite(limit) ? limit : 20, 1), 100);
+
+    // Subquery: first bookingItems.serviceName per booking (deterministic via min(id) tie-break).
+    const firstServiceName = sql<string | null>`(
+      SELECT ${bookingItems.serviceName}
+      FROM ${bookingItems}
+      WHERE ${bookingItems.bookingId} = ${bookings.id}
+      ORDER BY ${bookingItems.id} ASC
+      LIMIT 1
+    )`;
+
+    const rows = await db
+      .select({
+        id: bookings.id,
+        customerName: bookings.customerName,
+        serviceName: firstServiceName,
+        totalPrice: bookings.totalPrice,
+        platformFeeAmount: bookings.platformFeeAmount,
+        tenantNetAmount: bookings.tenantNetAmount,
+        createdAt: bookings.createdAt,
+      })
+      .from(bookings)
+      .where(
+        and(
+          eq(bookings.tenantId, this.tenantId),
+          eq(bookings.paymentStatus, "paid"),
+          inArray(bookings.status, ["confirmed", "completed"]),
+        ),
+      )
+      .orderBy(desc(bookings.createdAt))
+      .limit(safeLimit);
+
+    return rows.map((row) => ({
+      id: row.id,
+      customerName: row.customerName,
+      serviceName: row.serviceName ?? "",
+      // bookings.totalPrice is a numeric(10,2) column — Drizzle deserializes it as a string
+      // (e.g. "149.99"). Convert to integer cents so the client divides by 100 uniformly
+      // with platformFeeAmount / tenantNetAmount (already stored as integer cents).
+      amountTotal: Math.round(parseFloat(row.totalPrice) * 100),
+      platformFeeAmount: row.platformFeeAmount,
+      tenantNetAmount: row.tenantNetAmount,
+      paidAt: row.createdAt ?? new Date(0),
+    }));
   }
 
   async getBookingsByDate(date: string): Promise<Booking[]> {
