@@ -10,7 +10,7 @@ Customers can discover, book, and pay for cleaning services online without calli
 
 ## Current State
 
-**Nineteen milestones shipped:**
+**Twenty milestones shipped:**
 
 - **v1.0 Marketing Attribution** — First-party UTM tracking, booking flow attribution, marketing dashboard, GoHighLevel CRM UTM sync, admin calendar create-booking-from-slot
 - **v2.0 White Label** — Hardcoded brand removed, DB-driven SEO/favicon/legal pages, receptionist multi-staff calendar view with drag-to-reassign and QuickBook walk-in flow
@@ -31,6 +31,7 @@ Customers can discover, book, and pay for cleaning services online without calli
 - **v17.0 Plan Tiers** — planTier on tenant_subscriptions, stripe-plans helpers, feature-flags catalog, webhook reverse-mapping, PATCH /super-admin/tenants/:id/plan, tier badge + feature list on /admin/billing, super-admin tier Select
 - **v18.0 Custom Domain Routing** — domains.verified + DNS TXT verification at _xkedule.<hostname>, admin-domains router (GET/POST/verify/DELETE), middleware verification gate, DomainsSection tenant UI, super-admin Status column
 - **v19.0 Stripe Connect Onboarding** — tenant_stripe_accounts + Stripe Express account creation, AccountLink onboarding, account.updated + account.application.deauthorized webhooks, /admin Payments page, super-admin Connect column
+- **v20.0 Connect Payment Routing** — Connect-aware POST /payments/checkout with application_fee_amount, dual-secret webhook routing, bookings.platformFeeAmount + tenantNetAmount columns, Recent Payments dashboard
 
 
 **Pending human UAT:** Phase 19 (5 items), Phase 20 (4 CAL-FIX items), Phases 25–29 (browser-only checks), Phase 31 (4 Resend email delivery checks), Phase 34 (booking flow smoke test) — deferred to live session.
@@ -140,18 +141,10 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-## Current Milestone: v20.0 Connect Payment Routing
+## Current Milestone: v20.0 Connect Payment Routing ✅ SHIPPED
 
-**Goal:** When a tenant has a connected Stripe Express account with `chargesEnabled`, customer booking payments are routed through that account using the platform Stripe key + `Stripe-Account` header, with an `application_fee_amount` skimmed by the platform. Legacy per-tenant Stripe API key flow continues to work for tenants not yet on Connect.
-
-**Target features:**
-- Booking checkout (`POST /api/payments/checkout`) detects Connect status and creates session via `stripe.checkout.sessions.create({ ... }, { stripeAccount })` with `application_fee_amount`
-- Platform fee percentage configurable via `STRIPE_PLATFORM_FEE_PERCENT` env var (default 5%)
-- Booking checkout returns 402 when tenant has Connect account but `chargesEnabled = false`
-- `bookingPayments` table (or extend bookings) tracks `platformFeeAmount` + `tenantNetAmount` on completed payments
-- Webhook `checkout.session.completed` handles both Connect (`event.account`) and legacy events
-- `/admin/payments` shows recent payments with platform fee breakdown
+**Status:** Complete — all 8 requirements (PF-01–PF-08) shipped.
 
 ---
 
-*Last updated: 2026-05-15 — v20.0 Connect Payment Routing started*
+*Last updated: 2026-05-15 — v20.0 Connect Payment Routing shipped*

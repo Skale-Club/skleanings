@@ -21,7 +21,7 @@
 - ✅ **v17.0 Plan Tiers** — Phases 59–60 (shipped 2026-05-15)
 - ✅ **v18.0 Custom Domain Routing** — Phases 61–62 (shipped 2026-05-15)
 - ✅ **v19.0 Stripe Connect Onboarding** — Phases 63–64 (shipped 2026-05-15)
-- 🔲 **v20.0 Connect Payment Routing** — Phases 65–66
+- ✅ **v20.0 Connect Payment Routing** — Phases 65–66 (shipped 2026-05-15)
 
 ---
 
@@ -697,6 +697,16 @@ Plans:
 **UI hint**: yes
 
 ---
+
+<details>
+<summary>✅ v20.0 Connect Payment Routing (Phases 65–66) — SHIPPED 2026-05-15</summary>
+
+- [x] Phase 65: Connect-Aware Checkout + Webhook Routing (3/3 plans) — completed 2026-05-15
+- [x] Phase 66: Payments Dashboard UI (2/2 plans) — completed 2026-05-15
+
+Full details: [milestones/v20.0-ROADMAP.md](milestones/v20.0-ROADMAP.md)
+
+</details>
 
 ### Phase 65: Connect-Aware Checkout + Webhook Routing
 **Goal**: Customer booking payments are routed through the tenant's connected Stripe Express account using the platform Stripe key plus `Stripe-Account` header with an `application_fee_amount` skimmed by the platform; tenants without a Connect row continue on the legacy per-tenant Stripe API key flow; the webhook handler routes Connect events correctly and persists fee breakdown on completion

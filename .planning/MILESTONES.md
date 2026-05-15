@@ -1,5 +1,18 @@
 # Milestones
 
+## v20.0 Connect Payment Routing (Shipped: 2026-05-15)
+
+**Phases completed:** 2 phases (65–66), 5 plans, all complete
+
+**Key accomplishments:**
+
+- `bookings.platform_fee_amount` + `tenant_net_amount` Supabase migration + Drizzle schema; `server/lib/stripe-context.ts` with 4-kind `StripeContextResult` discriminated union (`connect` / `legacy` / `connect-incomplete` / `none`) + `calculateApplicationFee` helper
+- `POST /api/payments/checkout` switches on context kind — Connect path uses platform `STRIPE_SECRET_KEY` + `{ stripeAccount }` request options with `payment_intent_data.application_fee_amount`; `connect-incomplete` returns 402 with onboarding message; legacy per-tenant API key flow preserved unchanged
+- `paymentsWebhookHandler` extended with dual-secret verification (`STRIPE_WEBHOOK_SECRET_CONNECT` first, legacy fallback) without parsing unverified payload; Connect events use new `retrieveCheckoutSessionForAccount` helper with `{ stripeAccount: event.account }`; `setBookingPaymentBreakdown` IStorage method persists `platformFeeAmount` + `tenantNetAmount` on `checkout.session.completed`
+- `getRecentPaidBookings` IStorage method (tenant-scoped, last 20 paid bookings) + `GET /api/admin/payments/recent` endpoint; Recent Payments Card added to PaymentsSection with Date/Customer/Service/Total/Platform Fee (red) / Net (green) columns + Refresh Status co-invalidation of both query keys
+
+---
+
 ## v19.0 Stripe Connect Onboarding (Shipped: 2026-05-15)
 
 **Phases completed:** 2 phases (63–64), 5 plans, all complete
