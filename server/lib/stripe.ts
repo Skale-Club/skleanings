@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import type { IStorage } from "../storage";
+import type { StripeContext } from "./stripe-context";
 
 /**
  * Returns a Stripe client initialized with the connected account's access_token.
@@ -79,14 +80,21 @@ export interface CheckoutSessionParams {
   lineItems: CheckoutLineItem[];
   successUrl: string; // include {CHECKOUT_SESSION_ID} placeholder
   cancelUrl: string;
+  // Phase 65 — when provided, use this Stripe client + stripeAccount header instead of getStripeClient(storage).
+  context?: StripeContext;
+  // Phase 65 — when > 0 AND context.stripeAccount set, attaches application_fee_amount to payment_intent_data.
+  applicationFeeAmount?: number;
 }
 
 export async function createCheckoutSession(
   storage: IStorage,
   params: CheckoutSessionParams
 ): Promise<Stripe.Checkout.Session> {
-  const stripe = await getStripeClient(storage);
-  return stripe.checkout.sessions.create({
+  // Phase 65: prefer provided context (Connect-aware path); fall back to legacy getStripeClient when not supplied.
+  const stripe = params.context ? params.context.stripe : await getStripeClient(storage);
+  const stripeAccount = params.context?.stripeAccount;
+
+  const sessionParams: Stripe.Checkout.SessionCreateParams = {
     payment_method_types: ["card"],
     mode: "payment",
     customer_email: params.customerEmail || undefined,
@@ -101,7 +109,19 @@ export async function createCheckoutSession(
     metadata: { bookingId: String(params.bookingId) },
     success_url: params.successUrl,
     cancel_url: params.cancelUrl,
-  });
+  };
+
+  // PF-02: application_fee_amount only on Connect-routed charges (requires stripeAccount header).
+  if (stripeAccount && params.applicationFeeAmount && params.applicationFeeAmount > 0) {
+    sessionParams.payment_intent_data = {
+      application_fee_amount: params.applicationFeeAmount,
+    };
+  }
+
+  // PF-01: pass { stripeAccount } as request options ONLY when set — legacy path must not send it.
+  return stripeAccount
+    ? stripe.checkout.sessions.create(sessionParams, { stripeAccount })
+    : stripe.checkout.sessions.create(sessionParams);
 }
 
 export async function retrieveCheckoutSession(
