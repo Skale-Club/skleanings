@@ -15,7 +15,7 @@
 - [ ] **CD-03**: `POST /api/admin/domains/:id/verify` (requireAdmin) performs a DNS TXT lookup at `_xkedule.<hostname>` (via Node `dns.promises.resolveTxt`), compares against the stored `verificationToken`, sets `verified=true` and `verifiedAt=now()` on match — returns 200 `{ verified: true }`; mismatch returns 400 `{ verified: false, message }`
 - [ ] **CD-04**: `DELETE /api/admin/domains/:id` (requireAdmin) removes a domain — refuses with 409 if `isPrimary=true` (protects the auto-generated subdomain); also invalidates the LRU tenant cache for that hostname
 - [ ] **CD-05**: `GET /api/admin/domains` (requireAdmin) returns the current tenant's `domains` rows (id, hostname, isPrimary, verified, verifiedAt, createdAt) — only domains for `res.locals.tenant.id`
-- [ ] **CD-06**: `resolveTenantMiddleware` is updated to only accept verified domains for non-primary entries — an unverified custom hostname returns 404 (just like an unknown hostname); the `*.xkedule.com` primary domain bypasses the verification check
+- [x] **CD-06**: `resolveTenantMiddleware` is updated to only accept verified domains for non-primary entries — an unverified custom hostname returns 404 (just like an unknown hostname); the `*.xkedule.com` primary domain bypasses the verification check
 
 ### Custom Domain Frontend (Phase 62)
 
@@ -50,7 +50,7 @@
 | CD-03 | Phase 61 | Pending |
 | CD-04 | Phase 61 | Pending |
 | CD-05 | Phase 61 | Pending |
-| CD-06 | Phase 61 | Pending |
+| CD-06 | Phase 61 | Complete |
 | CD-07 | Phase 62 | Pending |
 | CD-08 | Phase 62 | Pending |
 | CD-09 | Phase 62 | Pending |

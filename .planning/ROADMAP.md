@@ -625,7 +625,7 @@ Plans:
 **Plans**: 3 plans
 - [ ] 61-01-PLAN.md — DB migration + Drizzle schema + IStorage verification methods (CD-01)
 - [ ] 61-02-PLAN.md — Admin domains router (GET/POST/verify/DELETE) + DNS TXT lookup (CD-02, CD-03, CD-04, CD-05)
-- [ ] 61-03-PLAN.md — resolveTenantMiddleware verification gate (CD-06)
+- [x] 61-03-PLAN.md — resolveTenantMiddleware verification gate (CD-06)
 
 ### Phase 62: Custom Domain Frontend
 **Goal**: Tenant admins can add, verify, and remove custom domains from a dedicated settings page with clear DNS instructions, and super-admin can audit and manually manage every tenant's custom domains including unverified ones
@@ -675,7 +675,7 @@ Plans:
 | 58 | v16.0 | 2/2 | Complete    | 2026-05-15 |
 | 59 | v17.0 | 3/3 | Complete    | 2026-05-15 |
 | 60 | v17.0 | 1/2 | Complete    | 2026-05-15 |
-| 61 | v18.0 | 0/? | Not started | - |
+| 61 | v18.0 | 1/3 | In Progress|  |
 | 62 | v18.0 | 0/? | Not started | - |
 
 ---
