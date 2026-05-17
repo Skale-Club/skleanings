@@ -10,6 +10,8 @@ import session from "express-session";
 import MemoryStore from "memorystore";
 import { storage } from "./storage";
 import { assertRuntimeEnv } from "./lib/runtime-env";
+import { patchConsoleError } from "./lib/error-log";
+import { billingWebhookHandler } from "./routes/billing";
 
 if (process.env.NODE_ENV === "production") {
   process.noDeprecation = true;
@@ -29,6 +31,10 @@ declare module "http" {
     rawBody: unknown;
   }
 }
+
+// Phase 48: Billing webhook — MUST be mounted before express.json() body-parser.
+// express.raw() preserves the raw body Buffer required for Stripe signature verification.
+app.post("/api/billing/webhook", express.raw({ type: "application/json" }), billingWebhookHandler);
 
 app.use(
   express.json({
@@ -119,6 +125,7 @@ app.use((req, res, next) => {
   // Schema migrations should be done via `npm run db:push` during deployment
   // await storage.initializeRuntimeState();
   await initializeSeedData();
+  patchConsoleError();
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

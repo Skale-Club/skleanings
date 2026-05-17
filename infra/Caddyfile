@@ -1,0 +1,33 @@
+# /etc/caddy/Caddyfile
+# Caddy reverse proxy configuration for Skleanings multi-tenant platform
+#
+# IMPORTANT: This file requires a custom Caddy binary built with the Cloudflare DNS module.
+# Standard 'apt install caddy' cannot issue wildcard certificates.
+# Build with: xcaddy build --with github.com/caddy-dns/cloudflare
+# Then: sudo cp caddy /usr/bin/caddy
+#
+# See infra/README.md for full setup instructions.
+
+{
+    email admin@xkedule.com
+}
+
+# Wildcard subdomain block — covers *.xkedule.com
+# DNS-01 challenge via Cloudflare API (works with Cloudflare proxy enabled)
+# Requires CLOUDFLARE_API_TOKEN env var with Zone > DNS > Edit permission
+*.xkedule.com {
+    tls {
+        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+    }
+    reverse_proxy localhost:5000
+}
+
+# Custom tenant domains — add one block per custom domain
+# Caddy issues HTTP-01 certificates automatically (no DNS plugin needed for non-wildcard domains)
+# Requires port 80 accessible from the internet for HTTP-01 challenge
+# After adding a new block: sudo caddy reload --config /etc/caddy/Caddyfile
+#
+# Example:
+# cleaning.tenantcustomdomain.com {
+#     reverse_proxy localhost:5000
+# }

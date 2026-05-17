@@ -16,7 +16,10 @@ export type AdminSection =
   | 'chat'
   | 'integrations'
   | 'blog'
-  | 'marketing'; // Phase 12 — per D-05
+  | 'marketing' // Phase 12 — per D-05
+  | 'billing' // Phase 50 — tenant billing self-service
+  | 'domains' // Phase 62 — custom domain management (CD-07)
+  | 'payments'; // Phase 64 — Stripe Connect (SC-06)
 
 export interface DayHours {
   isOpen: boolean;
@@ -56,6 +59,9 @@ export interface CompanySettingsData {
   homepageContent: HomepageContent | null;
   timeFormat: string | null;
   timeZone: string | null;
+  language: string | null;
+  startOfWeek: string | null;
+  dateFormat: string | null;
   businessHours: BusinessHours | null;
   minimumBookingValue: string | null;
   faviconUrl: string | null;

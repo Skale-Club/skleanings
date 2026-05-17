@@ -1,4 +1,5 @@
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, isSameMonth, isSameDay, addDays } from 'date-fns';
+import { enUS, ptBR } from 'date-fns/locale';
 import { clsx } from 'clsx';
 import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -24,6 +25,8 @@ interface StepTimeSlotProps {
   staffBySlot: Map<string, StaffMember[]>;
   staffCount: number;
   timeFormat: string;
+  language?: string;
+  dateFormat?: string;
   itemsWithDurations: any[];
   selectedDurations: Record<number, any>;
   allDurationsSelected: boolean;
@@ -45,6 +48,8 @@ export function StepTimeSlot({
   staffBySlot,
   staffCount,
   timeFormat,
+  language,
+  dateFormat,
   itemsWithDurations,
   selectedDurations,
   allDurationsSelected,
@@ -54,6 +59,7 @@ export function StepTimeSlot({
   onDurationSelect,
   onApplyDurations,
 }: StepTimeSlotProps): JSX.Element {
+  const dateFnsLocale = language === 'pt-BR' ? ptBR : enUS;
   return (
     <>
       {/* DURATION SELECTOR — rendered before calendar when services have durations */}
@@ -110,7 +116,7 @@ export function StepTimeSlot({
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
-                <h3 className="text-lg font-bold text-slate-900">{format(viewDate, "MMMM yyyy")}</h3>
+                <h3 className="text-lg font-bold text-slate-900">{format(viewDate, "MMMM yyyy", { locale: dateFnsLocale })}</h3>
                 <button
                   onClick={() => onViewDateChange(addMonths(viewDate, 1))}
                   className="p-2 hover:bg-slate-50 rounded-full text-slate-400 transition-colors border border-gray-100"

@@ -80,6 +80,7 @@ export const suggestBookingDatesHandler: ToolHandler<SuggestBookingDatesInput> =
 
     try {
         const availabilityMap = await getAvailabilityRange(
+            chatDeps.storage,
             startDate,
             endDate,
             durationMinutes,

@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { z } from "zod";
-import { storage } from "../../storage";
 import { requireAdmin } from "../../lib/auth";
 import { getOpenAIClient, setRuntimeOpenAiKey, DEFAULT_CHAT_MODEL, getRuntimeOpenAiKey } from "../../lib/openai";
 import { getGeminiClient, setRuntimeGeminiKey, DEFAULT_GEMINI_CHAT_MODEL, getRuntimeGeminiKey } from "../../lib/gemini";
@@ -12,6 +11,7 @@ const router = Router();
 // ─── OpenAI ───────────────────────────────────────────────────────────────────
 
 router.get("/openai", requireAdmin, async (_req, res) => {
+    const storage = res.locals.storage!;
     try {
         const integration = await storage.getChatIntegration("openai");
         res.json({
@@ -26,6 +26,7 @@ router.get("/openai", requireAdmin, async (_req, res) => {
 });
 
 router.put("/openai", requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const existing = await storage.getChatIntegration("openai");
         const payload = insertChatIntegrationsSchema.partial().extend({ apiKey: z.string().min(10).optional() })
@@ -54,6 +55,7 @@ router.put("/openai", requireAdmin, async (req, res) => {
 });
 
 router.post("/openai/test", requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const { apiKey, model } = z.object({ apiKey: z.string().min(10).optional(), model: z.string().optional() }).parse(req.body);
         const existing = await storage.getChatIntegration("openai");
@@ -82,6 +84,7 @@ router.post("/openai/test", requireAdmin, async (req, res) => {
 // ─── Gemini ───────────────────────────────────────────────────────────────────
 
 router.get("/gemini", requireAdmin, async (_req, res) => {
+    const storage = res.locals.storage!;
     try {
         const integration = await storage.getChatIntegration("gemini");
         res.json({
@@ -96,6 +99,7 @@ router.get("/gemini", requireAdmin, async (_req, res) => {
 });
 
 router.put("/gemini", requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const existing = await storage.getChatIntegration("gemini");
         const payload = insertChatIntegrationsSchema.partial().extend({ apiKey: z.string().min(10).optional() })
@@ -124,6 +128,7 @@ router.put("/gemini", requireAdmin, async (req, res) => {
 });
 
 router.post("/gemini/test", requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const { apiKey, model } = z.object({ apiKey: z.string().min(10).optional(), model: z.string().optional() }).parse(req.body);
         const existing = await storage.getChatIntegration("gemini");
@@ -152,6 +157,7 @@ router.post("/gemini/test", requireAdmin, async (req, res) => {
 // ─── OpenRouter ───────────────────────────────────────────────────────────────
 
 router.get("/openrouter", requireAdmin, async (_req, res) => {
+    const storage = res.locals.storage!;
     try {
         const integration = await storage.getChatIntegration("openrouter");
         res.json({
@@ -166,6 +172,7 @@ router.get("/openrouter", requireAdmin, async (_req, res) => {
 });
 
 router.put("/openrouter", requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const existing = await storage.getChatIntegration("openrouter");
         const payload = insertChatIntegrationsSchema.partial().extend({ apiKey: z.string().min(10).optional() })
@@ -194,6 +201,7 @@ router.put("/openrouter", requireAdmin, async (req, res) => {
 });
 
 router.post("/openrouter/test", requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const { apiKey, model } = z.object({ apiKey: z.string().min(10).optional(), model: z.string().optional() }).parse(req.body);
         const existing = await storage.getChatIntegration("openrouter");
@@ -221,6 +229,7 @@ router.post("/openrouter/test", requireAdmin, async (req, res) => {
 });
 
 router.get("/openrouter/models", requireAdmin, async (_req, res) => {
+    const storage = res.locals.storage!;
     try {
         const existing = await storage.getChatIntegration("openrouter");
         const keyToUse = getRuntimeOpenRouterKey() || process.env.OPENROUTER_API_KEY || existing?.apiKey;

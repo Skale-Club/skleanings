@@ -1,6 +1,6 @@
 ---
 id: SEED-004
-status: dormant
+status: shipped
 planted: 2026-05-10
 planted_during: v1.0 / Phase 15 (schema-foundation-detokenization)
 trigger_when: when any phase needs to modify BookingPage or AppointmentsCalendarSection

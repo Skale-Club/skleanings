@@ -1,5 +1,207 @@
 # Milestones
 
+## v20.0 Connect Payment Routing (Shipped: 2026-05-15)
+
+**Phases completed:** 2 phases (65–66), 5 plans, all complete
+
+**Key accomplishments:**
+
+- `bookings.platform_fee_amount` + `tenant_net_amount` Supabase migration + Drizzle schema; `server/lib/stripe-context.ts` with 4-kind `StripeContextResult` discriminated union (`connect` / `legacy` / `connect-incomplete` / `none`) + `calculateApplicationFee` helper
+- `POST /api/payments/checkout` switches on context kind — Connect path uses platform `STRIPE_SECRET_KEY` + `{ stripeAccount }` request options with `payment_intent_data.application_fee_amount`; `connect-incomplete` returns 402 with onboarding message; legacy per-tenant API key flow preserved unchanged
+- `paymentsWebhookHandler` extended with dual-secret verification (`STRIPE_WEBHOOK_SECRET_CONNECT` first, legacy fallback) without parsing unverified payload; Connect events use new `retrieveCheckoutSessionForAccount` helper with `{ stripeAccount: event.account }`; `setBookingPaymentBreakdown` IStorage method persists `platformFeeAmount` + `tenantNetAmount` on `checkout.session.completed`
+- `getRecentPaidBookings` IStorage method (tenant-scoped, last 20 paid bookings) + `GET /api/admin/payments/recent` endpoint; Recent Payments Card added to PaymentsSection with Date/Customer/Service/Total/Platform Fee (red) / Net (green) columns + Refresh Status co-invalidation of both query keys
+
+---
+
+## v19.0 Stripe Connect Onboarding (Shipped: 2026-05-15)
+
+**Phases completed:** 2 phases (63–64), 5 plans, all complete
+
+**Key accomplishments:**
+
+- `tenant_stripe_accounts` table (Supabase migration + Drizzle schema, UNIQUE on tenantId and stripeAccountId, capability flags) + 5 IStorage methods (`createTenantStripeAccount`, `getTenantStripeAccount`, `getTenantStripeAccountByAccountId`, `updateTenantStripeAccount`, `deleteTenantStripeAccount`)
+- `server/routes/admin-stripe-connect.ts` with 3 endpoints (`POST /stripe/connect/onboard`, `GET /stripe/status`, `POST /stripe/refresh`) — creates Stripe Express account, persists ID BEFORE generating AccountLink (orphan prevention), all guarded by `requireAdmin`
+- `billingWebhookHandler` extended with `account.updated` (syncs charges_enabled/payouts_enabled/details_submitted via `db.update`) and `account.application.deauthorized` (`db.delete` row, uses `event.account` not `event.data.object`)
+- `PaymentsSection.tsx` in /admin with status card (Connected/Not Connected badge + Charges/Payouts/Details Submitted Check/X badges) + stateful primary CTA (Connect/Continue/Update Stripe Account) + Refresh Status button + `?status=success` URL handler that auto-refreshes and strips query
+- Admin.tsx Payments sidebar entry with Wallet icon; super-admin GET /tenants LEFT JOINs tenant_stripe_accounts and TenantsSection table shows Connect column with badge + capability subtext
+
+**Note:** Customer payment flow integration (routing booking payments through tenant accounts with `application_fee_amount`) intentionally deferred to v20.0.
+
+---
+
+## v18.0 Custom Domain Routing (Shipped: 2026-05-15)
+
+**Phases completed:** 2 phases (61–62), 5 plans, all complete
+
+**Key accomplishments:**
+
+- `domains` table extended with `verified BOOLEAN`, `verifiedAt TIMESTAMPTZ`, `verificationToken TEXT` (Supabase migration + Drizzle); 5 new IStorage methods (`addDomainWithVerification`, `verifyDomain`, `removeDomainForTenant`, `getDomainsForTenant`, `findDomainById`) using global registry `db` pattern
+- `server/routes/admin-domains.ts` with 4 endpoints (`GET /api/admin/domains`, `POST /domains`, `POST /:id/verify`, `DELETE /:id`) — DNS TXT lookup via `dns.promises.resolveTxt(_xkedule.<hostname>)`, rejects `*.xkedule.com`, strips `verificationToken` from GET, invalidates LRU cache on verify success + delete
+- `resolveTenantMiddleware` JOIN extended with `verified` + `isPrimary`; 404 gate for non-primary unverified domains (anti-enumeration "Unknown tenant" message); LRU cache invariant preserved — only servable (primary OR verified) entries reach `hostnameCache.set`
+- `DomainsSection.tsx` tenant UI with Add dialog (DNS instructions panel, copy-to-clipboard token), inline Verify, AlertDialog Remove + Admin.tsx sidebar Domains entry (Globe icon, admin-only); super-admin `ManageDomainsDialog` extended with Status column (Primary/Verified/Pending badges) + destructive confirm copy for unverified domains
+
+---
+
+## v17.0 Plan Tiers (Shipped: 2026-05-15)
+
+**Phases completed:** 2 phases (59–60), 5 plans, all complete
+
+**Key accomplishments:**
+
+- `planTier` TEXT column on `tenant_subscriptions` (Supabase migration + Drizzle schema, default `'basic'`); `server/lib/stripe-plans.ts` with `PLAN_TIERS`, `isPlanTier`, `getPriceIdForTier`, `getTierForPriceId` reading from 3 new env vars (`STRIPE_SAAS_PRICE_ID_BASIC`, `_PRO`, `_ENTERPRISE`)
+- `server/lib/feature-flags.ts` with hardcoded `FEATURE_CATALOG` (basic/pro/enterprise × maxStaff/maxBookingsPerMonth/customBranding/prioritySupport, `-1` = unlimited) + `tenantHasFeature()` + `getFeatureCatalog()` helpers
+- `billingWebhookHandler` `customer.subscription.updated` case reverse-maps `sub.items.data[0].price.id` → tier via `getTierForPriceId` and updates `planTier`; `PATCH /api/super-admin/tenants/:id/plan` (requireSuperAdmin) swaps the Stripe subscription item price (with `proration_behavior: create_prorations`) then updates the DB optimistically
+- `/admin/billing` BillingPage shows tier badge + Features card with Check/X icons and `Unlimited` for `-1`; super-admin Tenants table has a Plan column with Select dropdown (basic/pro/enterprise) that triggers `useUpdateTenantPlan` mutation + React Query invalidation
+
+---
+
+## v16.0 Staff Invitation Flow (Shipped: 2026-05-15)
+
+**Phases completed:** 2 phases (57–58), 5 plans, all complete
+
+**Key accomplishments:**
+
+- `staff_invitations` Supabase migration + Drizzle schema + 5 global registry IStorage methods (`createStaffInvitation`, `findStaffInvitation`, `markInvitationAccepted`, `revokeStaffInvitation`, `getPendingInvitations`); SHA-256 token hash with 48h expiry
+- `buildInviteEmail()` branded Resend template + `POST /api/admin/staff/invite` (requireAdmin, fire-and-forget email) + `DELETE /api/admin/staff/invite/:id` (409 if accepted) + `GET /api/admin/staff/invitations` listing endpoint
+- `GET /api/auth/validate-invite` (public, returns company name + email + role or 410) + `POST /api/auth/accept-invite` (public, atomic `db.transaction` creating `users` + `user_tenants`, sets admin session, returns adminUrl for cross-subdomain redirect)
+- `AcceptInvite.tsx` public page with 3-state machine (validating/expired/form) + `/accept-invite` route in App.tsx; `PendingInvitationsSection` React Query component (Invite dialog with email + role Select, AlertDialog Revoke confirm) mounted in `UnifiedUsersSection`
+
+---
+
+## v15.0 Tenant Onboarding Experience (Shipped: 2026-05-14)
+
+**Phases completed:** 2 phases (55–56), 5 plans, all complete
+
+**Key accomplishments:**
+
+- `email_verification_tokens` Supabase migration + 4 IStorage methods + fire-and-forget verification + welcome email sends in `signup.ts`; `GET /api/auth/verify-email` server-side redirect route; `POST /api/auth/resend-verification` session-guarded
+- `VerifyEmail.tsx` public error page + `/verify-email` App.tsx route; `admin-me` made async to return `emailVerifiedAt`; `AdminTenantAuthContext` extended with `emailVerifiedAt`; dismissible yellow banner in `Admin.tsx`
+- `setup_dismissed_at` Supabase migration + `setupDismissedAt` on Drizzle `companySettings`; `server/routes/admin-setup.ts` with `GET /api/admin/setup-status` + `POST /api/admin/setup-dismiss` (both `requireAdmin`, `res.locals.storage` only)
+- `useSetupStatus` React Query hook + `SetupChecklist.tsx` component (CheckCircle/Circle per live DB state, dismiss button, hides when all complete or dismissed) wired into `Admin.tsx` dashboard section
+
+---
+
+## v14.0 Billing Hardening (Shipped: 2026-05-14)
+
+**Phases completed:** 2 phases (53–54), 4 plans, all complete
+
+**Key accomplishments:**
+
+- `customer.subscription.trial_will_end` and `customer.subscription.updated` (past_due) webhook cases extended with non-fatal Resend email sends — branded HTML using `sendResendEmail()` with company name from `companySettings` and Billing Portal URL CTA
+- `POST /api/auth/signup` protected with `express-rate-limit` — 5 requests per IP per hour, 429 + RFC 6585 `Retry-After` header
+- `GET /api/billing/invoices` (guarded by `requireAdmin`) — fetches last 10 Stripe invoices via `stripe.invoices.list`, maps to `{ id, date, amount, currency, status, invoiceUrl }`, returns `[]` gracefully when no Stripe customer
+- Invoice History card in `BillingPage.tsx` — React Query fetch, 3-row Skeleton loading state, empty state, Table with date/amount/status Badge/Download anchor
+
+---
+
+## v13.0 Self-Serve Signup (Shipped: 2026-05-14)
+
+**Phases completed:** 2 phases (51–52), 4 plans, all complete
+
+**Key accomplishments:**
+
+- `signupTenant()` global registry IStorage method — single `db.transaction` atomically provisions tenant + domain + admin user + user_tenants + companySettings; `POST /api/auth/signup` mounted before `resolveTenantMiddleware` (platform-level, no tenant required)
+- Stripe 14-day trial subscription created automatically on signup; `customer.subscription.trial_will_end` webhook case added to `billingWebhookHandler` to keep `tenant_subscriptions` status in sync
+- `Signup.tsx` public page — 5-field form (Company Name, Subdomain with live .xkedule.com preview, Email, Password, Confirm Password), inline validation, 409 field-level errors without page reload, cross-subdomain redirect on 201
+- `BillingPage.tsx` trial UI — blue Trial badge, days-remaining countdown from `currentPeriodEnd`, brand-yellow pill "Add Payment Method" CTA for trialing/past_due states reusing existing `POST /api/billing/portal` flow
+
+---
+
+## v12.0 SaaS Billing (Shipped: 2026-05-14)
+
+**Phases completed:** 3 phases (48–50), 7 plans, all complete
+
+**Key accomplishments:**
+
+- `tenant_subscriptions` table via Supabase migration, Drizzle schema export, and three IStorage methods (getTenantSubscription, createTenantSubscription, upsertTenantSubscription) implemented using the global registry db-direct pattern
+- Stripe customer created automatically on tenant creation (POST /api/super-admin/tenants); POST /api/super-admin/tenants/:id/subscribe activates a Stripe Subscription via STRIPE_SAAS_PRICE_ID; POST /api/billing/webhook (raw body, signature verify) handles customer.subscription.updated/deleted events
+- 402 subscription enforcement guard in resolveTenantMiddleware — canceled tenants blocked immediately, past_due tenants blocked after 3-day grace period; super-admin Tenants table shows Billing Status (status badge + planId + renewal date) per tenant
+- GET /api/billing/status and POST /api/billing/portal endpoints + BillingPage.tsx at /admin/billing — tenant admin sees subscription status card and clicks "Manage Billing" to redirect to Stripe Customer Portal
+
+---
+
+## v11.0 Password Reset (Shipped: 2026-05-14)
+
+**Phases completed:** 1 phase (47), 3 plans, all complete
+
+**Key accomplishments:**
+
+- `password_reset_tokens` table (SHA-256 hash, expiresAt, usedAt) + 4 IStorage methods (`createPasswordResetToken`, `findPasswordResetToken`, `markPasswordResetTokenUsed`, `updateUserPassword`)
+- `POST /api/auth/forgot-password` (always 200 — no enumeration), `POST /api/auth/reset-password` (token validation + bcrypt update + mark used), `POST /api/auth/change-password` (session-guarded, verifies current password)
+- `buildPasswordResetEmail(resetUrl, companyName)` — branded Resend template with tenant company name from companySettings
+- `ForgotPassword.tsx` + `ResetPassword.tsx` pages; "Forgot password?" link in AdminLogin; routes wired in App.tsx
+
+---
+
+## v10.0 Tenant Admin Auth (Shipped: 2026-05-14)
+
+**Phases completed:** 2 phases (45–46), 3 plans, all complete
+
+**Key accomplishments:**
+
+- `SessionData.adminUser` extended with optional `tenantId` field; `requireAdmin` adds cross-tenant 403 guard — session.tenantId must match res.locals.tenant.id
+- `POST /api/auth/tenant-login` — timing-safe bcrypt with DUMMY_HASH fallback, stores tenantId in session; `GET /api/auth/admin-me` returns session identity; `POST /api/auth/logout` destroys session
+- `AdminTenantAuthContext` — calls GET /api/auth/admin-me on mount, stores `{ isAuthenticated, tenantId, email, role }` with no hardcoded tenant references
+- `AdminLogin.tsx` rewritten to POST /api/auth/tenant-login (Supabase removed); `Admin.tsx` redirect guard via `useAdminTenantAuth`; `App.tsx` wraps admin routes in `AdminTenantAuthProvider`
+
+---
+
+## v9.0 Tenant Onboarding (Shipped: 2026-05-14)
+
+**Phases completed:** 3 phases (42–44), 8 plans, all complete
+
+**Key accomplishments:**
+
+- IStorage extended with 6 global-registry methods (getTenants, createTenant, updateTenantStatus, getTenantDomains, addDomain, removeDomain) — all use `db` directly, no tenantId scoping
+- 6 super-admin API routes (GET/POST /tenants, PATCH status, GET/POST/DELETE /domains) with 409 conflict guards, hostname normalization, isPrimary delete protection
+- React Query hooks + `TenantsSection` + `ManageDomainsDialog` in SuperAdmin.tsx — full tenant/domain CRUD without page reloads
+- `users.password` migration + `provisionTenantAdmin` (db.transaction) + `seedTenantCompanySettings` (onConflictDoNothing) storage methods
+- `POST /api/super-admin/tenants/:id/provision` — bcrypt hash + randomBytes credential, one-time display in ProvisionDialog, companySettings auto-seeded on tenant creation
+- `invalidateTenantCache(hostname)` exported from tenant.ts — called on domain add/remove so LRU reflects changes without server restart
+- 503 guard in `resolveTenantMiddleware` for inactive tenants — fires before any route handler
+- Per-tenant stats (bookings/services/staff) via `Promise.all` aggregates in GET /tenants — rendered as 3 columns in TenantsSection table
+
+---
+
+## v8.0 Multi-Tenant Architecture (Shipped: 2026-05-13)
+
+**Phases completed:** 4 phases (38–41), 10 plans, all complete
+**Files changed:** 81 files, +5969 / -457 lines
+
+**Key accomplishments:**
+
+- Multi-tenant schema: tenants, domains, user_tenants registry tables + tenant_id INTEGER NOT NULL DEFAULT 1 on all 40 business tables via idempotent Supabase CLI migration; Skleanings seeded as tenant id=1
+- Drizzle schema updated with tenants/domains/userTenants declarations and tenantId field on all 40 business tables — full TypeScript type coverage for multi-tenant queries
+- `DatabaseStorage.forTenant(tenantId)` static factory pattern — 220 `this.tenantId` references across all 23 method groups; `export const storage = DatabaseStorage.forTenant(1)` singleton preserves zero route breakage
+- `server/middleware/tenant.ts` with LRU cache (500 entries, 5-min TTL) resolves hostname → tenant → scoped storage instance; unknown hostnames return 404; super-admin routes bypass entirely
+- All 11 `server/lib/` files refactored to accept `IStorage` as explicit parameter; all 24 business route files migrated from global `import { storage }` to `res.locals.storage`
+- `infra/` directory: Caddyfile (wildcard `*.xkedule.com` TLS via xcaddy cloudflare plugin), app.service (systemd, Restart=always), deploy.yml (workflow_dispatch SSH to Hetzner), README.md (8-step CX23 setup guide)
+
+---
+
+## v7.0 Xkedule Foundation (Shipped: 2026-05-13)
+
+**Phases completed:** 2 phases, 6 plans, 5 tasks
+
+**Key accomplishments:**
+
+- Locale settings (language, startOfWeek, dateFormat) added to companySettings — admin selects in General tab, dateFnsLocalizer moved to useMemo for reactive week-start, toDateFnsFormat() utility applies tenant format to BookingSummary date display
+- Super-admin panel at /superadmin — separate session namespace (req.session.superAdmin), bcrypt timing-safe login, error ring buffer (patchConsoleError), stats/health/settings/error-logs API + standalone React page isolated from Navbar/Footer/AuthContext
+
+---
+
+## v6.0 Platform Quality (Shipped: 2026-05-13)
+
+**Phases completed:** 3 phases, 7 plans, 2 tasks
+
+**Key accomplishments:**
+
+- express-rate-limit corrected on 3 public endpoints (analytics/session, analytics/events, chat/message) — max values fixed (10/10/20) and standardHeaders enabled for Retry-After on 429
+- BookingPage.tsx (948→~120 lines) and AppointmentsCalendarSection.tsx (~49KB→thin shell) split into focused sub-components: StepStaffSelector, StepTimeSlot, StepCustomerDetails, StepPaymentMethod, BookingSummary, CreateBookingModal, useDragToReschedule
+- blog-autopost.yml (hourly) replaced by blog-cron.yml (daily 09:00 UTC) with BLOG_CRON_TOKEN bearer auth; systemHeartbeats table removed from schema and Supabase migration queued
+
+---
+
 ## v5.0 Booking Experience (Shipped: 2026-05-13)
 
 **Phases completed:** 3 phases, 9 plans, 6 tasks
@@ -31,7 +233,7 @@
 
 ## v3.0 Calendar Polish (Shipped: 2026-05-11)
 
-**Phases completed:** 1 phases, 4 plans, 6 tasks
+**Phases completed:** 1 phase, 4 plans, 6 tasks
 
 **Key accomplishments:**
 
@@ -64,5 +266,3 @@
 - Marketing Dashboard UI — Overview KPIs, Sources and Campaigns performance tables, Conversions tab, Visitor Journey slide-over, date range filter with 7 presets, polished empty states
 - GoHighLevel CRM UTM sync — first-touch and last-touch source/campaign written to GHL contact custom fields fire-and-forget on booking completion
 - Admin calendar create-booking-from-slot — pre-filled form with customer type-ahead, computed end time + estimated price, full submit mutation with status confirmation and calendar refresh
-
----

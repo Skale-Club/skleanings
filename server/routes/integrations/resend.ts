@@ -1,11 +1,11 @@
 import { Router } from "express";
-import { storage } from "../../storage";
 import { requireAdmin } from "../../lib/auth";
 
 const router = Router();
 
 // GET /api/integrations/resend — returns settings with masked API key
 router.get("/resend", requireAdmin, async (_req, res) => {
+  const storage = res.locals.storage!;
   try {
     const settings = await storage.getEmailSettings();
     if (!settings) {
@@ -19,6 +19,7 @@ router.get("/resend", requireAdmin, async (_req, res) => {
 
 // PUT /api/integrations/resend — upserts settings; preserves existing key if "********" submitted
 router.put("/resend", requireAdmin, async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const { resendApiKey, fromAddress, enabled } = req.body;
     const existingSettings = await storage.getEmailSettings();
@@ -43,6 +44,7 @@ router.put("/resend", requireAdmin, async (req, res) => {
 
 // POST /api/integrations/resend/test — sends a test email to the configured fromAddress
 router.post("/resend/test", requireAdmin, async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const { resendApiKey, fromAddress } = req.body;
 

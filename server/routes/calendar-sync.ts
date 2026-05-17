@@ -8,7 +8,6 @@
  */
 import { Router } from "express";
 import { requireAdmin } from "../lib/auth";
-import { storage } from "../storage";
 import { runCalendarSyncWorker } from "../services/calendar-sync-worker";
 import {
   getBearerOrBodySecret,
@@ -52,6 +51,7 @@ calendarSyncRouter.post("/cron/run", async (req, res) => {
  * Auth: admin session
  */
 calendarSyncRouter.get("/health", requireAdmin, async (_req, res) => {
+  const storage = res.locals.storage!;
   try {
     const health = await storage.getCalendarSyncHealth();
     return res.json({ targets: health });
@@ -67,6 +67,7 @@ calendarSyncRouter.get("/health", requireAdmin, async (_req, res) => {
  * Auth: admin session
  */
 calendarSyncRouter.post("/:jobId/retry", requireAdmin, async (req, res) => {
+  const storage = res.locals.storage!;
   const jobId = Number(req.params.jobId);
   if (!jobId || isNaN(jobId)) {
     return res.status(400).json({ message: "Invalid job ID" });

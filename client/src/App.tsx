@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider, useAdminAuth } from "@/context/AuthContext";
+import { AdminTenantAuthProvider } from "@/context/AdminTenantAuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { CompanySettingsProvider, useCompanySettings } from "@/context/CompanySettingsContext";
 import { BrandColorInjector } from "@/components/BrandColorInjector";
@@ -88,6 +89,13 @@ const StaffSettings = lazy(() => import("@/pages/StaffSettings").then(m => ({ de
 const AccountShell = lazy(() => import("@/pages/AccountShell").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const ClientLogin = lazy(() => import("@/pages/ClientLogin").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const ManageSubscription = lazy(() => import("@/pages/ManageSubscription").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const SuperAdmin = lazy(() => import("@/pages/SuperAdmin"));
+const ForgotPassword = lazy(() => import("@/pages/ForgotPassword").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const ResetPassword = lazy(() => import("@/pages/ResetPassword").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const VerifyEmail = lazy(() => import("@/pages/VerifyEmail").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const AcceptInvite = lazy(() => import("@/pages/AcceptInvite").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const Signup = lazy(() => import("@/pages/Signup").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const BillingPage = lazy(() => import("@/pages/admin/BillingPage").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 
 function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const { data: settings } = useQuery<CompanySettings>({
@@ -168,17 +176,33 @@ function Router() {
     );
   }
 
-  if (isAdminRoute) {
+  const isSuperAdminRoute = location.startsWith('/superadmin');
+  if (isSuperAdminRoute) {
     return (
       <Suspense fallback={fallback}>
         <Switch>
-          <Route path="/admin/login" component={AdminLogin} />
-          <Route path="/admin" component={Admin} />
-          <Route path="/admin/:section" component={Admin} />
-          <Route path="/admin/:section/:tab" component={Admin} />
+          <Route path="/superadmin" component={SuperAdmin} />
           <Route component={NotFound} />
         </Switch>
       </Suspense>
+    );
+  }
+
+  if (isAdminRoute) {
+    return (
+      <AdminTenantAuthProvider>
+        <Suspense fallback={fallback}>
+          <Switch>
+            <Route path="/admin/login" component={AdminLogin} />
+            <Route path="/admin/forgot-password" component={ForgotPassword} />
+            <Route path="/admin/billing" component={BillingPage} />
+            <Route path="/admin" component={Admin} />
+            <Route path="/admin/:section" component={Admin} />
+            <Route path="/admin/:section/:tab" component={Admin} />
+            <Route component={NotFound} />
+          </Switch>
+        </Suspense>
+      </AdminTenantAuthProvider>
     );
   }
 
@@ -204,6 +228,14 @@ function Router() {
             <Route path="/service-areas" component={ServiceAreas} />
             <Route path="/team" component={Team} />
             <Route path="/manage-subscription/:token" component={ManageSubscription} />
+            <Route path="/signup" component={() => (
+              <AdminTenantAuthProvider>
+                <Signup />
+              </AdminTenantAuthProvider>
+            )} />
+            <Route path="/reset-password" component={ResetPassword} />
+            <Route path="/verify-email" component={VerifyEmail} />
+            <Route path="/accept-invite" component={AcceptInvite} />
             <Route component={NotFound} />
           </Switch>
         </Suspense>

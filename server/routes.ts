@@ -23,11 +23,28 @@ import analyticsRouter from "./routes/analytics";
 import clientRouter from "./routes/client";
 import notificationLogsRouter from "./routes/notification-logs";
 import recurringBookingsRouter, { adminRecurringRouter, publicRecurringRouter } from "./routes/recurring-bookings";
+import { superAdminRouter } from "./routes/super-admin";
 import { calendarSyncRouter } from "./routes/calendar-sync";
+import { billingRouter } from "./routes/billing";
+import signupRouter from "./routes/signup";
+import { adminSetupRouter } from "./routes/admin-setup";
+import { staffInvitationRouter } from "./routes/staff-invitations";
+import { adminDomainsRouter } from "./routes/admin-domains";
+import { adminStripeConnectRouter } from "./routes/admin-stripe-connect";
+import { adminPaymentsRouter } from "./routes/admin-payments";
+import { resolveTenantMiddleware } from "./middleware/tenant";
 
 export async function registerRoutes(server: Server, app: Express) {
-  // Mount routers
-  // Mount routers
+  // 1. Super-admin — bypasses tenant resolution (MT-13)
+  app.use("/api/super-admin", superAdminRouter);
+
+  // Phase 51: Signup — platform-level, no tenant required (bypass resolveTenantMiddleware)
+  app.use("/api", signupRouter);
+
+  // 2. Tenant resolution — applies to all routes below
+  app.use(resolveTenantMiddleware);
+
+  // 3. Business routers
   // Auth routes (e.g. /api/admin/session) - mounted at /api to match client expectations
   app.use("/api", authRouter);
   app.use("/api", authRoutes);
@@ -86,4 +103,24 @@ export async function registerRoutes(server: Server, app: Express) {
   // Phase 29: admin and public recurring subscription routes
   app.use("/api/admin/recurring-bookings", adminRecurringRouter);
   app.use("/api/subscriptions/manage", publicRecurringRouter);
+
+  // Billing routes (GET /api/billing/status, POST /api/billing/portal)
+  // guarded by requireAdmin inside the router — per SB-07, SB-08
+  app.use("/api/billing", billingRouter);
+
+  // Setup checklist routes (GET /api/admin/setup-status, POST /api/admin/setup-dismiss) — Phase 56
+  app.use("/api/admin", adminSetupRouter);
+
+  // Staff invitation routes (POST /api/admin/staff/invite, DELETE /:id, GET /staff/invitations) — Phase 57
+  app.use("/api/admin", staffInvitationRouter);
+
+  // Custom domain routes (GET /api/admin/domains, POST /api/admin/domains, POST /:id/verify, DELETE /:id) — Phase 61
+  app.use("/api/admin", adminDomainsRouter);
+
+  // Stripe Connect routes (POST /api/admin/stripe/connect/onboard, GET /api/admin/stripe/status, POST /api/admin/stripe/refresh) — Phase 63
+  app.use("/api/admin", adminStripeConnectRouter);
+
+  // Recent payments table for /admin/payments — Phase 66
+  app.use("/api/admin", adminPaymentsRouter);
+
 }

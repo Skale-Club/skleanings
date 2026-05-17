@@ -213,7 +213,7 @@ export function StaffSection() {
   );
 
   const createStaff = useMutation({
-    mutationFn: async (data: Omit<StaffMember, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
+    mutationFn: async (data: Omit<StaffMember, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'tenantId'>) => {
       return apiRequest('POST', '/api/staff', data);
     },
     onSuccess: () => {

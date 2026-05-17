@@ -1,8 +1,10 @@
 ---
 id: SEED-013
-status: dormant
+status: shipped
 planted: 2026-05-10
 planted_during: v3.0 / Phase 20 (calendar-timeline-structure-audit)
+shipped_in: v8.0 Multi-Tenant Architecture (Phases 38–41)
+shipped_at: 2026-05-13
 trigger_when: when starting the Xkedule SaaS model (Skleanings becomes the first tenant of Xkedule)
 scope: Large
 ---

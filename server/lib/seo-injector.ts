@@ -1,6 +1,6 @@
 import type { CompanySettings } from "@shared/schema";
 import { buildLocalBusinessSchema } from "@shared/seo";
-import { storage } from "../storage";
+import type { IStorage } from "../storage";
 import { getFallbackCompanySettings } from "./public-data-fallback";
 
 // ---------- escape helpers ----------
@@ -131,7 +131,7 @@ export function invalidateSeoCache(): void {
   cached = null;
 }
 
-export async function getCachedSettings(): Promise<CompanySettings | null> {
+export async function getCachedSettings(storage: IStorage): Promise<CompanySettings | null> {
   if (cached && cached.expiresAt > Date.now()) return cached.data;
   let data: CompanySettings | null = null;
   try {

@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { z } from "zod";
-import { storage } from "../../storage";
 import { requireAdmin } from "../../lib/auth";
 import { insertTelegramSettingsSchema } from "@shared/schema";
 import {
@@ -14,6 +13,7 @@ import {
 const router = Router();
 
 router.get("/telegram", requireAdmin, async (_req, res) => {
+    const storage = res.locals.storage!;
     try {
         const settings = await storage.getTelegramSettings();
         if (!settings) {
@@ -26,6 +26,7 @@ router.get("/telegram", requireAdmin, async (_req, res) => {
 });
 
 router.put("/telegram", requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const payload = insertTelegramSettingsSchema.partial().parse(req.body);
         const existingSettings = await storage.getTelegramSettings();
@@ -60,6 +61,7 @@ router.put("/telegram", requireAdmin, async (req, res) => {
 });
 
 router.post("/telegram/test", requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const bodySchema = z.object({ botToken: z.string().optional(), chatIds: z.array(z.string()).optional() });
         const { botToken, chatIds } = bodySchema.parse(req.body || {});
@@ -82,6 +84,7 @@ router.post("/telegram/test", requireAdmin, async (req, res) => {
             chatIds: chatIdsToTest,
             notifyOnNewChat: existingSettings?.notifyOnNewChat ?? true,
             id: existingSettings?.id ?? 0,
+            tenantId: existingSettings?.tenantId ?? 1,
             createdAt: existingSettings?.createdAt ?? new Date(),
             updatedAt: existingSettings?.updatedAt ?? new Date(),
         };
@@ -97,7 +100,7 @@ router.post("/telegram/test", requireAdmin, async (req, res) => {
             (process.env.COMPANY_NAME || "").trim() ||
             "Skleanings";
 
-        const result = await sendTelegramTestMessage(settingsToTest, companyNameForTest);
+        const result = await sendTelegramTestMessage(storage, settingsToTest, companyNameForTest);
         if (!result.success) {
             return res.status(500).json({ success: false, message: result.message || "Failed to send Telegram test message" });
         }

@@ -1,6 +1,6 @@
 ---
 id: SEED-015
-status: dormant
+status: shipped
 planted: 2026-05-10
 planted_during: v3.0 / Phase 20 (calendar-timeline-structure-audit)
 trigger_when: when there are 3+ active tenants, or before implementing multi-tenancy

@@ -1,9 +1,11 @@
 ---
 id: SEED-014
-status: dormant
+status: shipped
 planted: 2026-05-10
-last_revised: 2026-05-10
+last_revised: 2026-05-14
 planted_during: v3.0 / Phase 20 (calendar-timeline-structure-audit)
+shipped_in: v12.0 SaaS Billing (Phases 48–50) + v14.0 Billing Hardening (Phases 53–54)
+shipped_at: 2026-05-14
 trigger_when: when launching the Xkedule SaaS model with multiple paying tenants
 scope: Large
 ---

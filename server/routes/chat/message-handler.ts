@@ -388,6 +388,7 @@ export async function handleMessage(req: Request, res: Response) {
 
             if (twilioSettings && isNewConversation) {
                 chatDeps.twilio.sendNewChatNotification(
+                    chatDeps.storage,
                     twilioSettings,
                     conversationId,
                     input.pageUrl,
@@ -399,6 +400,7 @@ export async function handleMessage(req: Request, res: Response) {
 
             if (telegramSettings && isNewConversation) {
                 chatDeps.telegram.sendNewChatNotification(
+                    chatDeps.storage,
                     telegramSettings,
                     conversationId,
                     input.pageUrl,

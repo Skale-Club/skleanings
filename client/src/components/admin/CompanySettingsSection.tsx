@@ -52,6 +52,9 @@ export function CompanySettingsSection({ getAccessToken }: { getAccessToken: () 
     homepageContent: DEFAULT_HOMEPAGE_CONTENT,
     timeFormat: '12h',
     timeZone: 'America/New_York',
+    language: 'en',
+    startOfWeek: 'sunday',
+    dateFormat: 'MM/DD/YYYY',
     businessHours: DEFAULT_BUSINESS_HOURS,
     minimumBookingValue: '0',
     faviconUrl: '',
@@ -282,6 +285,66 @@ export function CompanySettingsSection({ getAccessToken }: { getAccessToken: () 
                 <p className="text-xs text-muted-foreground mt-1">
                   Paste the iframe "src" attribute from Google Maps "Share → Embed a map" to update the map shown on the home page.
                 </p>
+              </div>
+            </div>
+
+            {/* ── Locale ── */}
+            <div className="space-y-4 pt-2">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Locale</h3>
+              <div className="grid gap-4 sm:grid-cols-3">
+
+                {/* Language */}
+                <div className="space-y-2">
+                  <Label htmlFor="language">Language</Label>
+                  <Select
+                    value={settings.language || 'en'}
+                    onValueChange={(val) => updateField('language', val)}
+                  >
+                    <SelectTrigger id="language">
+                      <SelectValue placeholder="Select language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="pt-BR">Portuguese (Brazil)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Start of Week */}
+                <div className="space-y-2">
+                  <Label htmlFor="startOfWeek">Start of Week</Label>
+                  <Select
+                    value={settings.startOfWeek || 'sunday'}
+                    onValueChange={(val) => updateField('startOfWeek', val)}
+                  >
+                    <SelectTrigger id="startOfWeek">
+                      <SelectValue placeholder="Select first day" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sunday">Sunday</SelectItem>
+                      <SelectItem value="monday">Monday</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Date Format */}
+                <div className="space-y-2">
+                  <Label htmlFor="dateFormat">Date Format</Label>
+                  <Select
+                    value={settings.dateFormat || 'MM/DD/YYYY'}
+                    onValueChange={(val) => updateField('dateFormat', val)}
+                  >
+                    <SelectTrigger id="dateFormat">
+                      <SelectValue placeholder="Select date format" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
+                      <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
+                      <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
               </div>
             </div>
           </div>

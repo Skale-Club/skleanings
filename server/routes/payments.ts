@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { z } from "zod";
-import { storage } from "../storage";
 import { linkBookingToAttribution, recordConversionEvent } from "../storage/analytics";
 import { insertBookingSchema } from "@shared/schema";
 import { checkAvailability } from "../lib/availability";
@@ -8,8 +7,13 @@ import { calculateCartItemPrice } from "../lib/pricing";
 import {
   createCheckoutSession,
   retrieveCheckoutSession,
+  retrieveCheckoutSessionForAccount,
   verifyWebhookEvent,
 } from "../lib/stripe";
+import {
+  getStripeContextForTenant,
+  calculateApplicationFee,
+} from "../lib/stripe-context";
 
 const router = Router();
 
@@ -17,14 +21,26 @@ const router = Router();
 // Creates a booking with pending_payment status + Stripe Checkout session.
 // Returns { sessionUrl, bookingId } — client redirects to sessionUrl.
 router.post("/checkout", async (req, res) => {
+  const storage = res.locals.storage!;
+  const tenant = res.locals.tenant;
+  if (!tenant) return res.status(503).json({ message: "Tenant not resolved" });
+
   try {
-    // Check Stripe is connected + enabled
-    const stripeCreds = await storage.getIntegrationSettings("stripe");
-    if (!stripeCreds?.apiKey || !stripeCreds?.isEnabled) {
+    // Phase 65 (PF-01/PF-03/PF-04): resolve which Stripe path to use for this tenant.
+    const result = await getStripeContextForTenant(tenant.id, storage);
+    if (result.kind === "none") {
       return res.status(501).json({
         message: "Stripe not connected. Connect your Stripe account in Admin → Integrations.",
       });
     }
+    if (result.kind === "connect-incomplete") {
+      // PF-03 — exact message wording required by spec.
+      return res.status(402).json({
+        message: "Stripe Connect onboarding incomplete. Finish onboarding in Admin → Payments.",
+      });
+    }
+    // result.kind is "connect" or "legacy" — both have result.ctx
+    const ctx = result.ctx;
 
     // Validate booking data (same schema as POST /api/bookings)
     const validatedData = insertBookingSchema.parse(req.body);
@@ -33,6 +49,7 @@ router.post("/checkout", async (req, res) => {
 
     // Availability check
     const isAvailable = await checkAvailability(
+      storage,
       validatedData.bookingDate,
       validatedData.startTime,
       validatedData.endTime,
@@ -96,14 +113,23 @@ router.post("/checkout", async (req, res) => {
       console.error("Checkout attribution error:", attrErr);
     }
 
-    // Create Stripe Checkout session
+    // PF-02: compute application_fee_amount from total line-item cents (Connect path only).
+    const totalCents = lineItems.reduce((sum, li) => sum + li.amountCents * li.quantity, 0);
+    const applicationFeeAmount =
+      result.kind === "connect"
+        ? calculateApplicationFee(totalCents, ctx.applicationFeePercent)
+        : 0;
+
+    // Create Stripe Checkout session — context drives Connect vs legacy routing.
     const origin = `${req.protocol}://${req.get("host")}`;
-    const session = await createCheckoutSession({
+    const session = await createCheckoutSession(storage, {
       bookingId: booking.id,
       customerEmail: validatedData.customerEmail || undefined,
       lineItems,
       successUrl: `${origin}/confirmation?session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${origin}/booking?cancelled=1`,
+      context: ctx,
+      applicationFeeAmount,
     });
 
     // Store session ID on booking
@@ -122,15 +148,19 @@ router.post("/checkout", async (req, res) => {
 // Stripe sends events here. Verifies signature using req.rawBody (captured globally).
 // Handles checkout.session.completed → marks booking paid.
 router.post("/webhook", async (req, res) => {
+  const storage = res.locals.storage!;
   const signature = req.headers["stripe-signature"] as string;
   if (!signature) return res.status(400).send("Missing stripe-signature header");
 
   let event;
   try {
-    event = await verifyWebhookEvent(req.rawBody as Buffer, signature);
+    event = await verifyWebhookEvent(storage, req.rawBody as Buffer, signature);
   } catch (err) {
     return res.status(400).send(`Webhook signature verification failed: ${(err as Error).message}`);
   }
+
+  // PF-06: Connect events have event.account set; legacy per-tenant events do not.
+  const connectAccount = event.account ?? undefined;
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as any;
@@ -150,6 +180,25 @@ router.post("/webhook", async (req, res) => {
           } catch (convErr) {
             console.error("Webhook conversion event error:", convErr);
           }
+
+          // PF-05: persist fee breakdown for Connect-routed bookings.
+          // Legacy bookings (no event.account) leave platformFeeAmount + tenantNetAmount NULL.
+          if (connectAccount) {
+            try {
+              const fullSession = await retrieveCheckoutSessionForAccount(session.id, connectAccount);
+              const paymentIntent = fullSession.payment_intent;
+              const platformFeeAmount =
+                paymentIntent && typeof paymentIntent === "object"
+                  ? paymentIntent.application_fee_amount ?? 0
+                  : 0;
+              const amountTotal = fullSession.amount_total ?? 0;
+              const tenantNetAmount = amountTotal - platformFeeAmount;
+              await storage.setBookingPaymentBreakdown(bookingId, platformFeeAmount, tenantNetAmount);
+            } catch (feeErr) {
+              // Non-fatal: log and continue. Webhook must still return 200 so Stripe doesn't retry.
+              console.error("Webhook fee breakdown persist error:", feeErr);
+            }
+          }
         }
       } catch (err) {
         console.error("Webhook booking update error:", err);
@@ -163,9 +212,10 @@ router.post("/webhook", async (req, res) => {
 // GET /api/payments/verify/:sessionId
 // Called by confirmation page to check payment status after Stripe redirect.
 router.get("/verify/:sessionId", async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const { sessionId } = req.params;
-    const session = await retrieveCheckoutSession(sessionId);
+    const session = await retrieveCheckoutSession(storage, sessionId);
     const booking = await storage.getBookingByStripeSessionId(sessionId);
 
     res.json({

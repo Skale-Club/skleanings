@@ -1,9 +1,9 @@
 import type { Booking } from "@shared/schema";
-import { storage } from "../storage";
+import type { IStorage } from "../storage";
 import { deleteGHLAppointment, updateGHLAppointment, formatDateTimeWithTimezone } from "../integrations/ghl";
 import { sendMessageToAll } from "../integrations/telegram";
 
-async function notifyAdminTwilio(message: string): Promise<void> {
+async function notifyAdminTwilio(storage: IStorage, message: string): Promise<void> {
     try {
         const twilioSettings = await storage.getTwilioSettings();
         if (
@@ -23,17 +23,17 @@ async function notifyAdminTwilio(message: string): Promise<void> {
     }
 }
 
-async function notifyAdminTelegram(message: string): Promise<void> {
+async function notifyAdminTelegram(storage: IStorage, message: string): Promise<void> {
     try {
         const telegramSettings = await storage.getTelegramSettings();
         if (!telegramSettings?.enabled || !telegramSettings.botToken || !telegramSettings.chatIds?.length) return;
-        await sendMessageToAll(telegramSettings, message);
+        await sendMessageToAll(storage, telegramSettings, message);
     } catch (err) {
         console.error("[ClientSync] Telegram notification failed:", err);
     }
 }
 
-export async function syncClientCancelToExternal(booking: Booking): Promise<void> {
+export async function syncClientCancelToExternal(storage: IStorage, booking: Booking): Promise<void> {
     try {
         const settings = await storage.getIntegrationSettings("gohighlevel");
         if (settings?.isEnabled && settings.apiKey && booking.ghlAppointmentId) {
@@ -47,10 +47,11 @@ export async function syncClientCancelToExternal(booking: Booking): Promise<void
     }
 
     const msg = `❌ Client cancelled booking #${booking.id} for ${booking.bookingDate} (${booking.customerName})`;
-    await Promise.allSettled([notifyAdminTwilio(msg), notifyAdminTelegram(msg)]);
+    await Promise.allSettled([notifyAdminTwilio(storage, msg), notifyAdminTelegram(storage, msg)]);
 }
 
 export async function syncClientRescheduleToExternal(
+    storage: IStorage,
     booking: Booking,
     newDate: string,
     newStart: string,
@@ -77,5 +78,5 @@ export async function syncClientRescheduleToExternal(
     }
 
     const msg = `🔄 Client rescheduled booking #${booking.id} to ${newDate} ${newStart}–${newEnd} (${booking.customerName})`;
-    await Promise.allSettled([notifyAdminTwilio(msg), notifyAdminTelegram(msg)]);
+    await Promise.allSettled([notifyAdminTwilio(storage, msg), notifyAdminTelegram(storage, msg)]);
 }

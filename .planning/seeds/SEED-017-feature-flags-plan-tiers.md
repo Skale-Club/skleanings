@@ -1,9 +1,11 @@
 ---
 id: SEED-017
-status: dormant
+status: shipped
 planted: 2026-05-10
-last_revised: 2026-05-10
+last_revised: 2026-05-15
 planted_during: v3.0 / Phase 20 (calendar-timeline-structure-audit)
+shipped_in: v17.0 Plan Tiers (Phases 59–60)
+shipped_at: 2026-05-15
 trigger_when: when defining subscription plans (together with SEED-014)
 scope: Medium
 ---

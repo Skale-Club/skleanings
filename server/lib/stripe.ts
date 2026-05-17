@@ -1,11 +1,12 @@
 import Stripe from "stripe";
-import { storage } from "../storage";
+import type { IStorage } from "../storage";
+import type { StripeContext } from "./stripe-context";
 
 /**
  * Returns a Stripe client initialized with the connected account's access_token.
  * Used for creating charges on behalf of the connected Stripe account.
  */
-async function getStripeClient(): Promise<Stripe> {
+async function getStripeClient(storage: IStorage): Promise<Stripe> {
   const creds = await storage.getIntegrationSettings("stripe");
   if (!creds?.apiKey) {
     throw new Error("Stripe not connected. Connect your Stripe account in Admin → Integrations.");
@@ -79,13 +80,21 @@ export interface CheckoutSessionParams {
   lineItems: CheckoutLineItem[];
   successUrl: string; // include {CHECKOUT_SESSION_ID} placeholder
   cancelUrl: string;
+  // Phase 65 — when provided, use this Stripe client + stripeAccount header instead of getStripeClient(storage).
+  context?: StripeContext;
+  // Phase 65 — when > 0 AND context.stripeAccount set, attaches application_fee_amount to payment_intent_data.
+  applicationFeeAmount?: number;
 }
 
 export async function createCheckoutSession(
+  storage: IStorage,
   params: CheckoutSessionParams
 ): Promise<Stripe.Checkout.Session> {
-  const stripe = await getStripeClient();
-  return stripe.checkout.sessions.create({
+  // Phase 65: prefer provided context (Connect-aware path); fall back to legacy getStripeClient when not supplied.
+  const stripe = params.context ? params.context.stripe : await getStripeClient(storage);
+  const stripeAccount = params.context?.stripeAccount;
+
+  const sessionParams: Stripe.Checkout.SessionCreateParams = {
     payment_method_types: ["card"],
     mode: "payment",
     customer_email: params.customerEmail || undefined,
@@ -100,26 +109,74 @@ export async function createCheckoutSession(
     metadata: { bookingId: String(params.bookingId) },
     success_url: params.successUrl,
     cancel_url: params.cancelUrl,
-  });
+  };
+
+  // PF-02: application_fee_amount only on Connect-routed charges (requires stripeAccount header).
+  if (stripeAccount && params.applicationFeeAmount && params.applicationFeeAmount > 0) {
+    sessionParams.payment_intent_data = {
+      application_fee_amount: params.applicationFeeAmount,
+    };
+  }
+
+  // PF-01: pass { stripeAccount } as request options ONLY when set — legacy path must not send it.
+  return stripeAccount
+    ? stripe.checkout.sessions.create(sessionParams, { stripeAccount })
+    : stripe.checkout.sessions.create(sessionParams);
 }
 
 export async function retrieveCheckoutSession(
+  storage: IStorage,
   sessionId: string
 ): Promise<Stripe.Checkout.Session> {
-  const stripe = await getStripeClient();
+  const stripe = await getStripeClient(storage);
   return stripe.checkout.sessions.retrieve(sessionId);
 }
 
 export async function verifyWebhookEvent(
+  storage: IStorage,
   rawBody: Buffer,
   signature: string
 ): Promise<Stripe.Event> {
+  const platformKey = process.env.STRIPE_SECRET_KEY;
+  if (!platformKey) throw new Error("STRIPE_SECRET_KEY env var not set.");
+  const stripe = new Stripe(platformKey, { apiVersion: "2026-03-25.dahlia" });
+
+  // PF-06: Connect events are signed with STRIPE_WEBHOOK_SECRET_CONNECT (platform-level webhook).
+  // Try Connect secret first; on signature mismatch, fall back to legacy per-tenant secret.
+  const connectSecret = process.env.STRIPE_WEBHOOK_SECRET_CONNECT;
+  if (connectSecret) {
+    try {
+      return stripe.webhooks.constructEvent(rawBody, signature, connectSecret);
+    } catch {
+      // Signature did not match Connect secret — fall through to legacy path.
+    }
+  }
+
+  // Legacy per-tenant secret stored in integrationSettings.stripe.calendarId
+  // (field name predates Phase 65 — misleading but stable).
   const creds = await storage.getIntegrationSettings("stripe");
   if (!creds?.calendarId) {
     throw new Error("Stripe webhook secret not configured.");
   }
-  const secretKey = process.env.STRIPE_SECRET_KEY;
-  if (!secretKey) throw new Error("STRIPE_SECRET_KEY env var not set.");
-  const stripe = new Stripe(secretKey, { apiVersion: "2026-03-25.dahlia" });
   return stripe.webhooks.constructEvent(rawBody, signature, creds.calendarId);
+}
+
+/**
+ * Phase 65 (PF-06) — retrieve a Checkout session FROM A CONNECTED ACCOUNT.
+ * Connect events arrive at the platform endpoint with event.account set; the underlying
+ * session lives on that connected account and must be fetched via the Stripe-Account header.
+ * Expands payment_intent so caller can read application_fee_amount.
+ */
+export async function retrieveCheckoutSessionForAccount(
+  sessionId: string,
+  stripeAccount: string,
+): Promise<Stripe.Checkout.Session> {
+  const platformKey = process.env.STRIPE_SECRET_KEY;
+  if (!platformKey) throw new Error("STRIPE_SECRET_KEY env var not set.");
+  const stripe = new Stripe(platformKey, { apiVersion: "2026-03-25.dahlia" });
+  return stripe.checkout.sessions.retrieve(
+    sessionId,
+    { expand: ["payment_intent"] },
+    { stripeAccount },
+  );
 }

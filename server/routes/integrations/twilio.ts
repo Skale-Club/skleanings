@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { storage } from "../../storage";
 import { requireAdmin } from "../../lib/auth";
 
 const router = Router();
 
 router.get("/twilio", requireAdmin, async (_req, res) => {
+    const storage = res.locals.storage!;
     try {
         const settings = await storage.getTwilioSettings();
         if (!settings) {
@@ -17,6 +17,7 @@ router.get("/twilio", requireAdmin, async (_req, res) => {
 });
 
 router.put("/twilio", requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const { accountSid, authToken, fromPhoneNumber, toPhoneNumbers, notifyOnNewChat, enabled } = req.body;
         const existingSettings = await storage.getTwilioSettings();
@@ -43,6 +44,7 @@ router.put("/twilio", requireAdmin, async (req, res) => {
 });
 
 router.post("/twilio/test", requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const { accountSid, authToken, fromPhoneNumber, toPhoneNumbers } = req.body;
 

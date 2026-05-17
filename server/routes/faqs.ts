@@ -1,7 +1,6 @@
 
 import { Router } from "express";
 import { z } from "zod";
-import { storage } from "../storage";
 import { requireAdmin } from "../lib/auth";
 import { insertFaqSchema } from "@shared/schema";
 import { invalidateChatCache } from "./chat/tools";
@@ -10,6 +9,7 @@ const router = Router();
 
 // FAQs (public GET, admin CRUD)
 router.get('/', async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const includeInactive = req.query.includeInactive === '1' || req.query.includeInactive === 'true';
         const faqList = await storage.getFaqs(includeInactive);
@@ -20,6 +20,7 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const validatedData = insertFaqSchema.parse(req.body);
         const faq = await storage.createFaq(validatedData);
@@ -34,6 +35,7 @@ router.post('/', requireAdmin, async (req, res) => {
 });
 
 router.put('/:id', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const validatedData = insertFaqSchema.partial().parse(req.body);
         const faq = await storage.updateFaq(Number(req.params.id), validatedData);
@@ -48,6 +50,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
 });
 
 router.delete('/:id', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         await storage.deleteFaq(Number(req.params.id));
         invalidateChatCache('faqs');

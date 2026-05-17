@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { z } from "zod";
-import { storage } from "../storage";
 import { requireAdmin, supabase } from "../lib/auth";
 import { storageService } from "../services/storage";
 import { DEFAULT_BUSINESS_HOURS, insertCompanySettingsSchema, type CompanySettings } from "@shared/schema";
@@ -94,6 +93,7 @@ router.post("/upload", requireAdmin, async (req, res) => {
 
 // Company Settings (public GET, admin PUT)
 router.get('/api/company-settings', async (req, res) => {
+    const storage = res.locals.storage!;
     if (process.env.VERCEL) {
         try {
             const fallbackSettings = await getFallbackCompanySettings();
@@ -120,6 +120,7 @@ router.get('/api/company-settings', async (req, res) => {
 });
 
 router.put('/api/company-settings', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const validatedData = insertCompanySettingsSchema.partial().parse(req.body);
         const settings = await storage.updateCompanySettings(validatedData);
@@ -135,6 +136,7 @@ router.put('/api/company-settings', requireAdmin, async (req, res) => {
 
 // Robots.txt endpoint
 router.get('/robots.txt', async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const settings = process.env.VERCEL
             ? await getFallbackCompanySettings()
@@ -154,10 +156,11 @@ Sitemap: ${canonicalUrl}/sitemap.xml
 
 // Sitemap.xml endpoint
 router.get('/sitemap.xml', async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const settings = process.env.VERCEL
             ? await getFallbackCompanySettings()
-            : await storage.getCompanySettings().catch(async (err) => {
+            : await storage.getCompanySettings().catch(async (err: unknown) => {
                 console.error("[company] Primary company settings lookup failed for sitemap.", err);
                 return await getFallbackCompanySettings();
             });
@@ -166,7 +169,7 @@ router.get('/sitemap.xml', async (req, res) => {
             : await storage.getCategories();
         const blogPostsList = process.env.VERCEL
             ? await getFallbackPublishedBlogPosts(100, 0)
-            : await storage.getPublishedBlogPosts(100, 0).catch(async (err) => {
+            : await storage.getPublishedBlogPosts(100, 0).catch(async (err: unknown) => {
                 console.error("[company] Primary blog lookup failed for sitemap.", err);
                 return await getFallbackPublishedBlogPosts(100, 0);
             });

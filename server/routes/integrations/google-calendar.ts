@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { storage } from "../../storage";
 import { requireAdmin } from "../../lib/auth";
 
 const router = Router();
 
 router.get("/google-calendar", requireAdmin, async (_req, res) => {
+    const storage = res.locals.storage!;
     try {
         const settings = await storage.getIntegrationSettings("google-calendar");
         if (!settings) {
@@ -21,6 +21,7 @@ router.get("/google-calendar", requireAdmin, async (_req, res) => {
 });
 
 router.put("/google-calendar", requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const { apiKey, locationId, calendarId, isEnabled } = req.body;
         const existingSettings = await storage.getIntegrationSettings("google-calendar");
@@ -57,6 +58,7 @@ router.put("/google-calendar", requireAdmin, async (req, res) => {
 });
 
 router.post("/google-calendar/test", requireAdmin, async (_req, res) => {
+    const storage = res.locals.storage!;
     try {
         const settings = await storage.getIntegrationSettings("google-calendar");
         if (!settings?.apiKey || !settings?.locationId) {

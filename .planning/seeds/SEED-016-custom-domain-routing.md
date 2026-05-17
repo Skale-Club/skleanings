@@ -1,8 +1,10 @@
 ---
 id: SEED-016
-status: dormant
+status: shipped
 planted: 2026-05-10
 planted_during: v3.0 / Phase 20 (calendar-timeline-structure-audit)
+shipped_in: v18.0 Custom Domain Routing (Phases 61–62)
+shipped_at: 2026-05-15
 trigger_when: when the first tenant wants their own domain (e.g., booking.cleanco.com)
 scope: Medium
 ---

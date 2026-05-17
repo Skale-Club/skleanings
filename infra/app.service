@@ -1,0 +1,33 @@
+# /etc/systemd/system/skleanings.service
+# systemd unit for the Skleanings multi-tenant booking platform
+#
+# Installation:
+#   sudo cp infra/app.service /etc/systemd/system/skleanings.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable skleanings
+#   sudo systemctl start skleanings
+#
+# Logs: journalctl -u skleanings -f
+# Status: systemctl status skleanings
+#
+# See infra/README.md for full setup instructions including env file format.
+
+[Unit]
+Description=Skleanings Multi-Tenant Booking Platform
+After=network.target
+
+[Service]
+Type=simple
+User=skleanings
+Group=skleanings
+WorkingDirectory=/var/www/skleanings
+EnvironmentFile=/etc/skleanings/.env
+ExecStart=/usr/bin/node dist/index.cjs
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=skleanings
+
+[Install]
+WantedBy=multi-user.target

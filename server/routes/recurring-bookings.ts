@@ -7,7 +7,6 @@ import { Router } from "express";
 import { runRecurringBookingGeneration } from "../services/recurring-booking-generator";
 import { runRecurringBookingReminders } from "../services/recurring-booking-reminder";
 import { requireAdmin } from "../lib/auth";
-import { storage } from "../storage";
 import {
   getBearerOrBodySecret,
   isMissingDatabaseRelation,
@@ -87,6 +86,7 @@ export const adminRecurringRouter = Router();
  * Returns all subscriptions with contact name and service name (for admin panel table).
  */
 adminRecurringRouter.get("/", requireAdmin, async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const subs = await storage.getRecurringBookingsWithDetails();
     return res.json(subs);
@@ -102,6 +102,7 @@ adminRecurringRouter.get("/", requireAdmin, async (req, res) => {
  * Applies state machine transition and returns updated subscription.
  */
 adminRecurringRouter.patch("/:id", requireAdmin, async (req, res) => {
+  const storage = res.locals.storage!;
   const id = parseInt(req.params.id, 10);
   if (isNaN(id)) return res.status(400).json({ message: "Invalid subscription id" });
 
@@ -143,6 +144,7 @@ export const publicRecurringRouter = Router();
  * No authentication — token IS the auth.
  */
 publicRecurringRouter.get("/:token", async (req, res) => {
+  const storage = res.locals.storage!;
   try {
     const sub = await storage.getRecurringBookingByToken(req.params.token);
     if (!sub) return res.status(404).json({ message: "Subscription not found" });
@@ -166,6 +168,7 @@ publicRecurringRouter.get("/:token", async (req, res) => {
  * Validates token, applies state machine, returns { status }.
  */
 publicRecurringRouter.post("/:token/action", async (req, res) => {
+  const storage = res.locals.storage!;
   const { action } = req.body as { action: string };
   if (!["pause", "unpause", "cancel"].includes(action)) {
     return res.status(400).json({ message: "action must be one of: pause, unpause, cancel" });

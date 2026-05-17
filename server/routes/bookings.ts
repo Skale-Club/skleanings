@@ -1,7 +1,6 @@
 
 import { Router } from "express";
 import { z } from "zod";
-import { storage } from "../storage";
 import { linkBookingToAttribution, recordConversionEvent } from "../storage/analytics";
 import { requireAdmin, getAuthenticatedUser } from "../lib/auth";
 import { insertBookingSchema, insertBookingSchemaBase } from "@shared/schema";
@@ -16,6 +15,7 @@ const router = Router();
 
 // Bookings
 router.get('/', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const { from, to, limit } = req.query;
         if (from && to && typeof from === 'string' && typeof to === 'string') {
@@ -31,6 +31,7 @@ router.get('/', requireAdmin, async (req, res) => {
 });
 
 router.get('/:id(\\d+)', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const booking = await storage.getBooking(Number(req.params.id));
         if (!booking) return res.status(404).json({ message: "Booking not found" });
@@ -41,6 +42,7 @@ router.get('/:id(\\d+)', requireAdmin, async (req, res) => {
 });
 
 router.get('/:id(\\d+)/items', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const items = await storage.getBookingItems(Number(req.params.id));
         res.json(items);
@@ -50,11 +52,13 @@ router.get('/:id(\\d+)/items', requireAdmin, async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const validatedData = insertBookingSchema.parse(req.body);
 
         // Check local availability
         const isAvailable = await checkAvailability(
+            storage,
             validatedData.bookingDate,
             validatedData.startTime,
             validatedData.endTime,
@@ -108,7 +112,7 @@ router.post('/', async (req, res) => {
 
         let bookingUserId: string | null = null;
         try {
-            const authUser = await getAuthenticatedUser(req);
+            const authUser = await getAuthenticatedUser(req, storage);
             if (authUser?.role === 'client') {
                 bookingUserId = authUser.id;
             }
@@ -249,8 +253,8 @@ router.post('/', async (req, res) => {
         try {
             const bookingItems = await storage.getBookingItems(booking.id);
             const serviceNames = bookingItems
-                .map((item) => item.serviceName?.trim())
-                .filter((name): name is string => Boolean(name));
+                .map((item: { serviceName?: string | null }) => item.serviceName?.trim())
+                .filter((name: string | undefined): name is string => Boolean(name));
 
             const [twilioSettings, telegramSettings, companySettings] = await Promise.all([
                 storage.getTwilioSettings(),
@@ -263,6 +267,7 @@ router.post('/', async (req, res) => {
                 if (twilioSettings?.enabled && twilioSettings.authToken && twilioSettings.fromPhoneNumber) {
                     try {
                         await sendAwaitingApprovalNotification(
+                            storage,
                             booking,
                             serviceNames,
                             twilioSettings,
@@ -276,6 +281,7 @@ router.post('/', async (req, res) => {
                 if (telegramSettings?.enabled && telegramSettings.botToken && telegramSettings.chatIds.length > 0) {
                     try {
                         await sendTelegramAwaitingApprovalNotification(
+                            storage,
                             booking,
                             serviceNames,
                             telegramSettings,
@@ -291,6 +297,7 @@ router.post('/', async (req, res) => {
                 if (twilioSettings?.enabled && twilioSettings.authToken && twilioSettings.fromPhoneNumber) {
                     try {
                         await sendBookingNotification(
+                            storage,
                             booking,
                             serviceNames,
                             twilioSettings,
@@ -305,6 +312,7 @@ router.post('/', async (req, res) => {
                 if (telegramSettings?.enabled && telegramSettings.botToken && telegramSettings.chatIds.length > 0) {
                     try {
                         await sendTelegramBookingNotification(
+                            storage,
                             booking,
                             serviceNames,
                             telegramSettings,
@@ -326,8 +334,7 @@ router.post('/', async (req, res) => {
         // Phase 31: Confirmation email via Resend (after response — non-blocking)
         void (async () => {
             try {
-                const emailCfg = await storage.getEmailSettings();
-                if (emailCfg?.enabled && booking.customerEmail) {
+                if (booking.customerEmail) {
                     const [companySettings, bookingItemsList] = await Promise.all([
                         storage.getCompanySettings(),
                         storage.getBookingItems(booking.id),
@@ -347,6 +354,7 @@ router.post('/', async (req, res) => {
                         logoUrl: companySettings?.logoMain ?? '',
                     });
                     await sendResendEmail(
+                        storage,
                         booking.customerEmail,
                         content.subject,
                         content.html,
@@ -368,6 +376,7 @@ router.post('/', async (req, res) => {
 });
 
 async function handleBookingUpdate(req: any, res: any) {
+    const storage = res.locals.storage!;
     try {
         const validatedData = insertBookingSchemaBase.partial().parse(req.body);
         const booking = await storage.updateBooking(Number(req.params.id), validatedData);
@@ -384,6 +393,7 @@ router.put('/:id(\\d+)', requireAdmin, handleBookingUpdate);
 router.patch('/:id(\\d+)', requireAdmin, handleBookingUpdate);
 
 router.put('/:id(\\d+)/status', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const { status } = req.body;
         if (!status) return res.status(400).json({ message: "Status is required" });
@@ -394,32 +404,30 @@ router.put('/:id(\\d+)/status', requireAdmin, async (req, res) => {
         // Phase 31: Cancellation email via Resend
         if (status === 'cancelled' && booking?.customerEmail) {
             try {
-                const emailCfg = await storage.getEmailSettings();
-                if (emailCfg?.enabled) {
-                    const [companySettings, bookingItemsList] = await Promise.all([
-                        storage.getCompanySettings(),
-                        storage.getBookingItems(booking.id),
-                    ]);
-                    const primaryItem = bookingItemsList[0];
-                    const { buildCancellationEmail } = await import('../lib/email-templates');
-                    const { sendResendEmail } = await import('../lib/email-resend');
-                    const content = buildCancellationEmail({
-                        customerName: booking.customerName,
-                        bookingDate: booking.bookingDate,
-                        startTime: booking.startTime,
-                        serviceName: primaryItem?.serviceName ?? 'Cleaning Service',
-                        companyName: companySettings?.companyName ?? 'Your Cleaning Service',
-                        logoUrl: companySettings?.logoMain ?? '',
-                    });
-                    void sendResendEmail(
-                        booking.customerEmail,
-                        content.subject,
-                        content.html,
-                        content.text,
-                        booking.id,
-                        'booking_cancelled'
-                    ).catch(err => console.error('[Email] Cancellation send error:', err));
-                }
+                const [companySettings, bookingItemsList] = await Promise.all([
+                    storage.getCompanySettings(),
+                    storage.getBookingItems(booking.id),
+                ]);
+                const primaryItem = bookingItemsList[0];
+                const { buildCancellationEmail } = await import('../lib/email-templates');
+                const { sendResendEmail } = await import('../lib/email-resend');
+                const content = buildCancellationEmail({
+                    customerName: booking.customerName,
+                    bookingDate: booking.bookingDate,
+                    startTime: booking.startTime,
+                    serviceName: primaryItem?.serviceName ?? 'Cleaning Service',
+                    companyName: companySettings?.companyName ?? 'Your Cleaning Service',
+                    logoUrl: companySettings?.logoMain ?? '',
+                });
+                void sendResendEmail(
+                    storage,
+                    booking.customerEmail,
+                    content.subject,
+                    content.html,
+                    content.text,
+                    booking.id,
+                    'booking_cancelled'
+                ).catch(err => console.error('[Email] Cancellation send error:', err));
             } catch (emailErr) {
                 console.error('[Email] Cancellation setup error:', emailErr);
             }
@@ -440,6 +448,7 @@ router.put('/:id(\\d+)/status', requireAdmin, async (req, res) => {
 
 // Approve a booking awaiting confirmation — sets status to confirmed
 router.put('/:id(\\d+)/approve', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const booking = await storage.updateBookingStatus(Number(req.params.id), 'confirmed');
         res.json(booking);
@@ -451,6 +460,7 @@ router.put('/:id(\\d+)/approve', requireAdmin, async (req, res) => {
 // Reject a booking awaiting confirmation — sets status to cancelled
 // Optional: { reason: string } in body, stored via generic updateBooking
 router.put('/:id(\\d+)/reject', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const id = Number(req.params.id);
         await storage.updateBookingStatus(id, 'cancelled');
@@ -466,32 +476,30 @@ router.put('/:id(\\d+)/reject', requireAdmin, async (req, res) => {
         // Phase 31: Cancellation email via Resend (reject always = cancelled)
         if (booking?.customerEmail) {
             try {
-                const emailCfg = await storage.getEmailSettings();
-                if (emailCfg?.enabled) {
-                    const [companySettings, bookingItemsList] = await Promise.all([
-                        storage.getCompanySettings(),
-                        storage.getBookingItems(id),
-                    ]);
-                    const primaryItem = bookingItemsList[0];
-                    const { buildCancellationEmail } = await import('../lib/email-templates');
-                    const { sendResendEmail } = await import('../lib/email-resend');
-                    const content = buildCancellationEmail({
-                        customerName: booking.customerName,
-                        bookingDate: booking.bookingDate,
-                        startTime: booking.startTime,
-                        serviceName: primaryItem?.serviceName ?? 'Cleaning Service',
-                        companyName: companySettings?.companyName ?? 'Your Cleaning Service',
-                        logoUrl: companySettings?.logoMain ?? '',
-                    });
-                    void sendResendEmail(
-                        booking.customerEmail,
-                        content.subject,
-                        content.html,
-                        content.text,
-                        booking.id,
-                        'booking_cancelled'
-                    ).catch(err => console.error('[Email] Cancellation send error:', err));
-                }
+                const [companySettings, bookingItemsList] = await Promise.all([
+                    storage.getCompanySettings(),
+                    storage.getBookingItems(id),
+                ]);
+                const primaryItem = bookingItemsList[0];
+                const { buildCancellationEmail } = await import('../lib/email-templates');
+                const { sendResendEmail } = await import('../lib/email-resend');
+                const content = buildCancellationEmail({
+                    customerName: booking.customerName,
+                    bookingDate: booking.bookingDate,
+                    startTime: booking.startTime,
+                    serviceName: primaryItem?.serviceName ?? 'Cleaning Service',
+                    companyName: companySettings?.companyName ?? 'Your Cleaning Service',
+                    logoUrl: companySettings?.logoMain ?? '',
+                });
+                void sendResendEmail(
+                    storage,
+                    booking.customerEmail,
+                    content.subject,
+                    content.html,
+                    content.text,
+                    booking.id,
+                    'booking_cancelled'
+                ).catch(err => console.error('[Email] Cancellation send error:', err));
             } catch (emailErr) {
                 console.error('[Email] Cancellation setup error:', emailErr);
             }
@@ -502,6 +510,7 @@ router.put('/:id(\\d+)/reject', requireAdmin, async (req, res) => {
 });
 
 router.delete('/:id(\\d+)', requireAdmin, async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         await storage.deleteBooking(Number(req.params.id));
         res.json({ success: true });
@@ -512,6 +521,7 @@ router.delete('/:id(\\d+)', requireAdmin, async (req, res) => {
 
 // Availability
 router.get('/availability/check', async (req, res) => {
+    const storage = res.locals.storage!;
     try {
         const { date, startTime, endTime } = req.query;
 
@@ -520,6 +530,7 @@ router.get('/availability/check', async (req, res) => {
         }
 
         const isAvailable = await checkAvailability(
+            storage,
             date as string,
             startTime as string,
             endTime as string

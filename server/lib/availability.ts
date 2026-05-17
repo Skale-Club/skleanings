@@ -1,5 +1,5 @@
 
-import { storage } from "../storage";
+import type { IStorage } from "../storage";
 import { getGHLFreeSlots } from "../integrations/ghl";
 import { DEFAULT_BUSINESS_HOURS, type BusinessHours, type DayHours } from "@shared/schema";
 import { type BookingLimits, shiftHHMM } from "./staff-availability";
@@ -27,6 +27,7 @@ export function isTimeSlotAvailable(
 }
 
 export async function getAvailabilityForDate(
+    storage: IStorage,
     date: string,
     durationMinutes: number,
     useGhl: boolean,
@@ -126,6 +127,7 @@ export async function getAvailabilityForDate(
 }
 
 export async function getAvailabilityRange(
+    storage: IStorage,
     startDate: string,
     endDate: string,
     durationMinutes: number,
@@ -146,7 +148,7 @@ export async function getAvailabilityRange(
         cursor.setDate(cursor.getDate() + 1)
     ) {
         const dateStr = cursor.toISOString().split('T')[0];
-        const slots = await getAvailabilityForDate(dateStr, durationMinutes, useGhl, ghlSettings, {
+        const slots = await getAvailabilityForDate(storage, dateStr, durationMinutes, useGhl, ghlSettings, {
             requireGhl: options?.requireGhl,
             timeZone,
         });
@@ -157,6 +159,7 @@ export async function getAvailabilityRange(
 }
 
 export async function checkAvailability(
+    storage: IStorage,
     date: string,
     startTime: string,
     endTime: string,

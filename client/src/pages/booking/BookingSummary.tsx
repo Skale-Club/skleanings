@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
+import { toDateFnsFormat } from '@/lib/locale';
 import { ChevronRight, X, Minus, Plus } from 'lucide-react';
 import type { ServiceFrequency, StaffMember } from '@shared/schema';
 
@@ -37,6 +38,7 @@ interface BookingSummaryProps {
   minimumBookingValue: number;
   adjustmentAmount: number;
   timeFormat: string;
+  dateFormat?: string;
   frequencies: ServiceFrequency[] | undefined;
   selectedFrequencyId: number | null;
   onSelectFrequency: (id: number | null) => void;
@@ -58,6 +60,7 @@ export function BookingSummary({
   minimumBookingValue,
   adjustmentAmount,
   timeFormat,
+  dateFormat,
   frequencies,
   selectedFrequencyId,
   onSelectFrequency,
@@ -140,7 +143,7 @@ export function BookingSummary({
           {selectedDate && (
             <div className="flex justify-between text-slate-500 text-sm">
               <span>Date</span>
-              <span>{format(new Date(selectedDate), "MMM do, yyyy")}</span>
+              <span>{format(new Date(selectedDate), toDateFnsFormat(dateFormat ?? 'MM/DD/YYYY'))}</span>
             </div>
           )}
           {selectedTime && (
