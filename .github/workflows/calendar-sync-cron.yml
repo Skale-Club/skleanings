@@ -1,8 +1,9 @@
 name: Calendar Sync Worker
 
 on:
-  schedule:
-    - cron: '*/5 * * * *'   # every 5 minutes (GH Actions minimum granularity)
+  # Schedule disabled during Vercel→Hetzner migration. Re-enable after Hetzner is live and APP_URL is updated.
+  # schedule:
+  #   - cron: '*/5 * * * *'   # every 5 minutes (GH Actions minimum granularity)
   workflow_dispatch:
     inputs:
       reason:

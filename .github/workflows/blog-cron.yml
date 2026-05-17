@@ -1,8 +1,9 @@
 name: Blog Generation
 
 on:
-  schedule:
-    - cron: '0 9 * * *'   # 09:00 UTC daily
+  # Schedule disabled during Vercel→Hetzner migration. Re-enable after Hetzner is live and APP_URL is updated.
+  # schedule:
+  #   - cron: '0 9 * * *'   # 09:00 UTC daily
   workflow_dispatch:
     inputs:
       reason:
